@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ArchiView — изменения архитектуры</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.mjs"></script>
+</head>
+<body>
+  <a class="skip-link" href="#document-panel">К документу</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="ArchiView">
+      <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="currentColor"/>
+        <path d="M10 9v14m0-7h12m0 0V9m0 7v7" stroke="white" stroke-width="1.7"/>
+        <circle cx="10" cy="9" r="2.5" fill="white"/><circle cx="22" cy="9" r="2.5" fill="white"/>
+        <circle cx="10" cy="23" r="2.5" fill="white"/><circle cx="22" cy="23" r="2.5" fill="white"/>
+      </svg>
+      <span>Archi<span class="brand-light">View</span></span>
+    </a>
+    <span class="brand-caption">Архитектура в изменениях</span>
+    <div class="topbar-actions">
+      <span class="local-indicator"><span class="live-dot"></span>Локальный проект</span>
+      <button id="refresh" class="button button-quiet" type="button">Обновить</button>
+      <button id="save" class="button button-primary" type="button" disabled>Сохранить снимок</button>
+    </div>
+  </header>
+  <section class="comparison-bar" aria-label="Проект и база сравнения">
+    <div class="project-heading">
+      <span class="eyebrow">Рабочий проект</span>
+      <strong id="project-name">Загрузка проекта…</strong>
+      <span id="project-path" class="project-path"></span>
+    </div>
+    <div class="comparison-picker">
+      <label for="baseline">Сравнить</label>
+      <select id="baseline" aria-label="База сравнения" disabled></select>
+      <span class="comparison-arrow" aria-hidden="true">→</span>
+      <span class="working-label"><span class="live-dot"></span>Рабочее дерево</span>
+    </div>
+  </section>
+  <div id="warning" class="global-warning" role="alert" hidden></div>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Навигация по модулям">
+      <div class="sidebar-heading"><h2>Модули</h2><span id="module-total" class="count-pill">—</span></div>
+      <div class="search-field">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <input id="search" type="search" placeholder="Найти модуль…" aria-label="Найти модуль" autocomplete="off">
+        <kbd>Ctrl K</kbd>
+      </div>
+      <div id="filters" class="filters" aria-label="Фильтр по статусу"></div>
+      <div class="tree-toolbar"><span>Структура проекта</span><button id="collapse" class="text-button" type="button">Свернуть</button></div>
+      <div id="tree" class="tree" role="tree" aria-label="Дерево модулей"><div class="loading-state">Читаем структуру проекта…</div></div>
+      <div class="sidebar-footer"><span class="live-dot"></span><span id="updated">Читаем рабочее дерево</span></div>
+    </aside>
+    <main class="content">
+      <div class="content-topline"><button id="tree-toggle" class="button button-quiet mobile-only" type="button">Модули</button><nav id="breadcrumbs" aria-label="Путь к модулю"></nav><span class="view-label">ОБЗОР МОДУЛЯ</span></div>
+      <section class="module-heading">
+        <div><div class="module-title-row"><h1 id="module-title">Ответственность модулей</h1><span id="module-status"></span></div><p id="module-subtitle" class="module-subtitle">Выберите модуль в дереве слева</p></div>
+        <button id="copy-path" class="button button-quiet" type="button" disabled>Копировать путь</button>
+      </section>
+      <div id="module-meta" class="module-meta"></div>
+      <div class="tabs-row"><div class="tabs" role="tablist" aria-label="Представление модуля">
+        <button id="tab-document" role="tab" aria-selected="true" aria-controls="document-panel" data-tab="document" type="button">Контракт</button>
+        <button id="tab-checks" role="tab" aria-selected="false" aria-controls="document-panel" data-tab="checks" type="button">Проверки</button>
+        <button id="tab-findings" role="tab" aria-selected="false" aria-controls="document-panel" data-tab="findings" type="button">Замечания</button>
+        <button id="tab-diff" role="tab" aria-selected="false" aria-controls="document-panel" data-tab="diff" type="button">Изменения<span id="diff-count" class="tab-count" hidden></span></button>
+        <button id="tab-files" role="tab" aria-selected="false" aria-controls="document-panel" data-tab="files" type="button">Файлы<span id="files-count" class="tab-count" hidden></span></button>
+      </div><span id="review-status" class="document-version"></span><span id="document-version" class="document-version"></span></div>
+      <section id="document-panel" class="document-panel" role="tabpanel" aria-labelledby="tab-document" tabindex="-1"><div class="loading-state">Готовим документы…</div></section>
+    </main>
+  </div>
+  <dialog id="snapshot-dialog">
+    <form id="snapshot-form">
+      <div class="dialog-kicker">История архитектуры</div><h2>Сохранить снимок</h2>
+      <p>Сохраните структуру и документы, чтобы сравнить с ними будущие изменения.</p>
+      <label for="snapshot-label">Название снимка</label><input id="snapshot-label" name="label" maxlength="120" required>
+      <div class="dialog-actions"><button id="cancel-save" class="button button-quiet" type="button">Отмена</button><button class="button button-primary" type="submit">Сохранить снимок</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Stdio MCP-сервер правил module.md. Раздаёт единственный канонический SKILL.md
+ * Stdio MCP-сервер правил arch.yaml. Раздаёт единственный канонический SKILL.md
  * по контракту skill:// и предоставляет только читающие инструменты.
  * Рабочий проект задаётся --root, PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT или cwd.
  */
@@ -51,9 +51,9 @@ async function serve() {
   const server = new Server({ name: packageInfo.name, version: packageInfo.version },
     { capabilities: { resources: {}, tools: {} },
       instructions: "For source-code changes, read skill://module-boundaries. " +
-        "Use module_inventory to find missing module.md contracts and module_context " +
+        "Use module_inventory to find missing arch.yaml contracts and module_context " +
         "to read target and ancestor boundaries. Tools are read-only; write documents " +
-        "with your file tools. Responsibility changes require user agreement." });
+        "with your file tools. Migrate module.md immediately. If neither contract exists, analyze source and write arch.yaml with file tools. Responsibility changes require user agreement." });
   server.setRequestHandler(ListResourcesRequestSchema, async () => ({
     resources: [{ uri, name: metadata.name, description: metadata.description,
       mimeType: "text/markdown" }],
@@ -66,13 +66,13 @@ async function serve() {
   });
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [
     { name: "module_inventory",
-      description: "List every source directory and module.md coverage, including " +
+      description: "List every source directory and arch.yaml coverage, including " +
         "missing/empty contracts, source-container directories and planned modules. " +
         "Presence is not a semantic compliance verdict. Read skill://module-boundaries.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
     { name: "module_context",
-      description: "Read module.md for a target directory and all ancestors, root first. " +
+      description: "Read arch.yaml for a target directory and all ancestors, root first. " +
         "Use before editing source code. Reports missing documents explicitly.",
       inputSchema: { type: "object", properties: { directory: {
         type: "string", description: "Project-relative directory; default is ." } },

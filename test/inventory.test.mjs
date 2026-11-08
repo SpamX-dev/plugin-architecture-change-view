@@ -44,7 +44,7 @@ test("covers each source directory and its containers; retains planned modules",
   assert.equal(modules.get("src/domain").status, "missing");
   assert.equal(modules.get("src/empty").status, "empty");
   assert.equal(modules.get("future").required, false);
-  assert.equal(modules.get("future").status, "documented");
+  assert.equal(modules.get("future").status, "migration_required");
 });
 
 test("reads root-to-target contracts without hiding a missing child description", async (t) => {
