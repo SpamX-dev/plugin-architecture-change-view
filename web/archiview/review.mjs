@@ -66,20 +66,6 @@ function renderFreshness(panel, status) {
   }
 }
 
-/** Структурные ошибки видны и тогда, когда содержательных LLM-проверок ещё нет. */
-function renderStructure(panel, detail) {
-  const block = el("section", "structure-result");
-  block.append(el("h3", "section-heading", detail.structure?.complete ? "Структура проверена автоматически" : "Структурная проверка неполна"));
-  const source = detail.after ?? detail.before;
-  const document = source?.document;
-  if (document?.state !== "documented") block.append(el("p", "", document?.errors?.join("; ") || document?.action ||
-    (document?.state === "missing" ? "Для модуля отсутствует arch.yaml." : "Контракт требует исправления.")));
-  for (const diagnostic of detail.structure?.diagnostics ?? []) block.append(el("p", "", diagnostic));
-  if (detail.documentChanged) block.append(el("p", "", "Контракт отличается от выбранной базы."));
-  block.append(el("p", "structure-caption", "Структурные данные обновляются вместе с отчётом. Соответствие кода контракту оценивается содержательной проверкой."));
-  panel.append(block);
-}
-
 /** Создаёт элементы без интерпретации HTML из контрактов, выводов или исходников. */
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -175,7 +161,6 @@ export function renderReview(panel, detail, mode) {
   const toolbar = el("div", "review-toolbar");
   toolbar.append(el("span", "review-toolbar-label", "Результаты анализа модуля"));
   panel.append(toolbar);
-  renderStructure(panel, detail);
   renderFreshness(panel, detail.reviewStatus);
   if (!detail.reviews.length) {
     const empty = el("div", "notice");
