@@ -4,6 +4,7 @@
  * Корень проекта фиксируется при запуске; произвольные файлы через HTTP не выдаются.
  */
 import { createServer } from "node:http";
+import { createServer as createHttpsServer } from "node:https";
 import { readFile, realpath } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { diffLines } from "diff";
@@ -67,7 +68,7 @@ function documentDiff(before, after) {
  * Создаёт сервер, но не открывает порт. Такой жизненный цикл позволяет тестам
  * использовать временный порт и закрывать ровно принадлежащий им экземпляр.
  */
-export async function createArchiView({ root: requestedRoot, stateDirectory, panelToken }) {
+export async function createArchiView({ root: requestedRoot, stateDirectory, panelToken, tls }) {
   const root = await realpath(requestedRoot);
   const store = new SnapshotStore(root, stateDirectory);
   await store.open();
@@ -157,18 +158,18 @@ export async function createArchiView({ root: requestedRoot, stateDirectory, pan
     response.end(JSON.stringify(value));
   }
 
-  const server = createServer(async (request, response) => {
+  const handleRequest = async (request, response) => {
     response.setHeader("Cache-Control", "no-store");
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("Content-Security-Policy", "default-src 'self'; " +
       "script-src 'self'; style-src 'self'; img-src 'self' data:; " +
       "object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
-    const address = server.address();
+    const address = { port: request.socket.localPort };
     const host = request.headers.host;
     if (!["127.0.0.1:" + address.port, "localhost:" + address.port].includes(host)) {
       return json(response, 403, { error: "Недопустимый адрес запроса" });
     }
-    const url = new URL(request.url, "http://" + host);
+    const url = new URL(request.url, (tls ? "https://" : "http://") + host);
     const origin = request.headers.origin;
     const crossOrigin = origin && origin !== url.origin;
     // Отдельный случайный токен даёт панели доступ к API. Предзапрос CORS
@@ -360,6 +361,7 @@ export async function createArchiView({ root: requestedRoot, stateDirectory, pan
     } catch (error) {
       return json(response, error.code === "ENOENT" ? 404 : error instanceof SyntaxError ? 400 : 500, { error: error.message });
     }
-  });
-  return { server, root, store, reviews, reports, changes, analysis };
+  };
+  const server = tls ? createHttpsServer(tls, handleRequest) : createServer(handleRequest);
+  return { server, handleRequest, root, store, reviews, reports, changes, analysis };
 }

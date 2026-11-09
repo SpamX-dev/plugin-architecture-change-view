@@ -10,7 +10,7 @@ export async function connectPanel() {
   if (window.parent === window) return fallback;
   try {
     const { App } = await import("./mcp-app-sdk.mjs");
-    const app = new App({ name: "ArchiView", version: "0.3.0" }, {}, { autoResize: false });
+    const app = new App({ name: "ArchiView", version: "0.3.2" }, {}, { autoResize: false });
     await app.connect(undefined, { timeout: 5000 });
     if (!app.getHostCapabilities()?.message) { await app.close(); return fallback; }
     return {

@@ -9,6 +9,7 @@ import path from "node:path";
 import os from "node:os";
 import { stringify, parse } from "yaml";
 import { createCodexPanel } from "../src/codex/panel.mjs";
+import { loadPanelTls } from "../src/codex/tls.mjs";
 import { AnalysisRequests } from "../src/archiview/analysis.mjs";
 import { SnapshotStore } from "../src/snapshot-store.mjs";
 import { ReportStore } from "../src/report-store.mjs";
@@ -23,8 +24,14 @@ for (const [directory, id, title] of [[".", "preview", "Тестовый про�
     boundaries: { B1: "Не обращаться к сети." }, invariants: { I1: "Результат детерминирован." } }));
 }
 await writeFile(path.join(root, "domain/value.js"), "export const value = () => 42;\n");
-const panel = createCodexPanel(root);
+const panel = createCodexPanel(process.argv.includes("--select-project") ? undefined : root,
+  { tls: process.argv.includes("--https") ? await loadPanelTls() : undefined });
 const resource = (await panel.resource()).contents[0];
+// Воспроизводит ограничение Codex: внешние JS/CSS запрещены, loopback разрешён
+// только для API. Нельзя случайно проверить панель в более свободной среде.
+const panelPolicy = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; " +
+  "img-src data:; connect-src " + resource._meta.ui.csp.connectDomains.join(" ");
+const constrainedHtml = resource.text.replace("<head>", `<head><meta http-equiv="Content-Security-Policy" content="${panelPolicy}">`);
 const messages = [];
 const host = createServer(async (request, response) => {
   if (request.url === "/messages") {
@@ -54,14 +61,16 @@ const host = createServer(async (request, response) => {
   response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
   response.end(`<!doctype html><html lang="ru"><meta charset="utf-8"><title>ArchiView — тестовый хост MCP Apps</title>
     <style>body{margin:0;font:14px system-ui;background:#f4f6f5}header{padding:10px 16px;display:flex;gap:14px;align-items:center}iframe{width:100%;height:calc(100vh - 55px);border:0}#count{margin-left:auto}</style>
-    <header><strong>Тестовый хост MCP Apps</strong><label><input id="reject" type="checkbox">Отклонять поручения</label><button id="complete">Импортировать тестовый результат</button><span id="count">Поручений: 0</span></header>
+    <header><strong>Тестовый хост MCP Apps</strong><span id="connection">Ожидаем подключения</span><label><input id="reject" type="checkbox">Отклонять поручения</label><button id="complete">Импортировать тестовый результат</button><span id="count">Поручений: 0</span></header>
     <iframe id="panel" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
     <script type="module">
       const frame = document.querySelector("iframe");
-      const panelHtml = ${JSON.stringify(resource.text).replace(/</g, "\\u003c")};
+      const panelHtml = ${JSON.stringify(constrainedHtml).replace(/</g, "\\u003c")};
       let count = 0;
       window.addEventListener("message", async (event) => {
-        if (event.source !== frame.contentWindow || !event.data?.method || event.data.id === undefined) return;
+        if (event.source !== frame.contentWindow || !event.data?.method) return;
+        if (event.data.method === "ui/notifications/initialized") document.querySelector("#connection").textContent = "MCP Apps подключён";
+        if (event.data.id === undefined) return;
         const message = event.data;
         let result = {};
         if (message.method === "ui/initialize") result = { protocolVersion: message.params.protocolVersion,

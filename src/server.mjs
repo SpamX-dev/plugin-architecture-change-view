@@ -4,7 +4,7 @@
  * чтения; явный --panel добавляет локальное MCP App с собственным HTTP backend.
  * Рабочий проект задаётся --root, PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT или cwd.
  */
-import { readFile, realpath } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -13,7 +13,9 @@ import { CallToolRequestSchema, ListToolsRequestSchema,
   ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { parse } from "yaml";
 import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from "./inventory.mjs";
-import { createCodexPanel, PANEL_URI, PANEL_TOOL } from "./codex/panel.mjs";
+import { createCodexPanel, PANEL_URI, PANEL_TOOL, PROJECT_INPUT } from "./codex/panel.mjs";
+import { loadPanelTls } from "./codex/tls.mjs";
+import { createProjectBinding } from "./codex/project.mjs";
 
 /** Версионированная метаинформация пакета для MCP initialize. */
 const packageInfo = JSON.parse(await readFile(new URL("../package.json", import.meta.url)));
@@ -23,18 +25,20 @@ const { values } = parseArgs({ options: {
   "max-files": { type: "string", default: "50000" },
   help: { type: "boolean", short: "h" },
   panel: { type: "boolean" },
+  "panel-https": { type: "boolean" },
 } });
 if (values.help) {
   process.stdout.write(packageInfo.name + " [--root DIR] [--extension .ext] " +
-    "[--max-files 50000] [--panel]\n");
+    "[--max-files 50000] [--panel] [--panel-https]\n");
 } else {
   await serve();
 }
 
 /** Создаёт каталог ресурсов и обработчики SDK; stdout резервируется протоколу. */
 async function serve() {
-  const root = await realpath(values.root ?? process.env.PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT ??
-    process.cwd());
+  // Portable plugins запускаются с cwd=PLUGIN_ROOT. Этот cwd нельзя выдавать за проект.
+  const project = await createProjectBinding(values.root ?? process.env.PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT ??
+    (process.env.PLUGIN_ROOT ? undefined : process.cwd()));
   const maxFiles = Number(values["max-files"]);
   if (!Number.isSafeInteger(maxFiles) || maxFiles < 1) {
     throw new Error("--max-files must be a positive integer");
@@ -50,7 +54,9 @@ async function serve() {
   if (!frontmatter) throw new Error("Skill frontmatter is missing");
   const metadata = parse(frontmatter[1]);
   const uri = "skill://" + metadata.name;
-  const panel = values.panel ? createCodexPanel(root) : null;
+  const panel = values.panel ? createCodexPanel(project, {
+    tls: values["panel-https"] ? await loadPanelTls() : undefined,
+  }) : null;
   const server = new Server({ name: packageInfo.name, version: packageInfo.version },
     { capabilities: { resources: {}, tools: {} },
       instructions: "For source-code changes, read skill://module-boundaries. " +
@@ -74,12 +80,12 @@ async function serve() {
       description: "List every source directory and arch.yaml coverage, including " +
         "missing/empty contracts, source-container directories and planned modules. " +
         "Presence is not a semantic compliance verdict. Read skill://module-boundaries.",
-      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT }, additionalProperties: false },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
     { name: "module_context",
       description: "Read arch.yaml for a target directory and all ancestors, root first. " +
         "Use before editing source code. Reports missing documents explicitly.",
-      inputSchema: { type: "object", properties: { directory: {
+      inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT, directory: {
         type: "string", description: "Project-relative directory; default is ." } },
         additionalProperties: false },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
@@ -88,18 +94,22 @@ async function serve() {
     const args = request.params.arguments ?? {};
     const name = request.params.name;
     if (panel && name === PANEL_TOOL.name) {
-      if (Object.keys(args).length) throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments");
-      return panel.open();
+      if (Object.keys(args).some((key) => key !== "projectRoot") ||
+          (args.projectRoot !== undefined && typeof args.projectRoot !== "string")) throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments");
+      try { return await panel.open(args.projectRoot); }
+      catch (error) { return { isError: true, content: [{ type: "text", text: error.message }] }; }
     }
     if (name !== "module_inventory" && name !== "module_context") {
       throw new McpError(ErrorCode.InvalidParams, "Unknown tool: " + name);
     }
-    const allowed = name === "module_context" ? ["directory"] : [];
+    const allowed = name === "module_context" ? ["directory", "projectRoot"] : ["projectRoot"];
     if (Object.keys(args).some((key) => !allowed.includes(key)) ||
-        (args.directory !== undefined && typeof args.directory !== "string")) {
+        (args.directory !== undefined && typeof args.directory !== "string") ||
+        (args.projectRoot !== undefined && typeof args.projectRoot !== "string")) {
       throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments");
     }
     try {
+      const root = await project.select(args.projectRoot);
       const result = name === "module_inventory"
         ? await moduleInventory(root, { extensions, maxFiles })
         : await moduleContext(root, args.directory);

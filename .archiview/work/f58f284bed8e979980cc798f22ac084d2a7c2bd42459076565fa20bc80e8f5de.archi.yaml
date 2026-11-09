@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-codex
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 5915197bef9079a1317e811347410f22251857147c019e142118e1b7201eebd5
+check_hash: c6cfa72fce726312b6c8750423103c5a7ac4854621b230761ffa8d449d5e3ddd
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -16,8 +16,8 @@ input_manifest:
   current:
     exists: true
     directory: src/codex
-    self_digest: sha256:406622f08fa2fedd3ebb7fe3e0f5299f0f822b92526caf8087039ea8133e530d
-    subtree_digest: sha256:9201cd2652242973bab72ac2cdfda98c5056bc1c8fe76874d202abd792e83ada
+    self_digest: sha256:e6dc2d7a0d69b619cbeeeab2228395a50e9825838fcf79847a4aba30f1afa8dd
+    subtree_digest: sha256:ae7791d61ec5cecef8aa04b1bd0727b12aed5b68e3530861681c8efb2924766e
   analyzer:
     name: archiview-structure
     version: 1.0.1
@@ -34,7 +34,13 @@ current:
     directory: src/codex
     own_files:
       - path: src/codex/panel.mjs
-        digest: sha256:0df55dc93f90d059afefc7636c54459affb13a028ea55b13a30d5372c892df8d
+        digest: sha256:287e594bdf4a4ef58a4c2eda6d1c857287f7fa7b65171cf03099b503f3e502ed
+        normalization: text-lf/v1
+      - path: src/codex/project.mjs
+        digest: sha256:ee512e2b904c7c003412fec93401847e8a436e7e73c32d1ba36ec9a549e953ed
+        normalization: text-lf/v1
+      - path: src/codex/tls.mjs
+        digest: sha256:dbd55b6eb8cfadea372eaf5f9149aef1a486f2e64c304ff4f51b633fc407c9b2
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -48,6 +54,8 @@ current:
           адаптеру HTTP-сервером.
         R2: Передавать UI адрес backend и случайный токен, не включая токен в модельный
           результат инструмента.
+        R3: Привязывать экземпляр к явно выбранной папке проекта; каталог установки
+          плагина не является проектом по умолчанию.
       boundaries:
         B1: Данные просмотра и подготовка анализа принадлежат HTTP backend; MCP не
           дублирует его API.
@@ -57,6 +65,8 @@ current:
         I1: Один процесс обслуживает один фиксированный корень; HTTP слушает только
           loopback на свободном порту.
         I2: Отключение MCP-клиента закрывает принадлежащий адаптеру сервер.
+        I3: Панель использует доверенный HTTPS без изменения системного доверия; UI
+          подключается к хосту до чтения дерева проекта.
     document_state: documented
     inherited:
       - module_id: architecture-change-view
@@ -127,7 +137,7 @@ current:
         id: I4
         text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
           файлах.
-  technical_digest: sha256:406622f08fa2fedd3ebb7fe3e0f5299f0f822b92526caf8087039ea8133e530d
+  technical_digest: sha256:e6dc2d7a0d69b619cbeeeab2228395a50e9825838fcf79847a4aba30f1afa8dd
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -135,7 +145,13 @@ current:
     directory: src/codex
     own_files:
       - path: src/codex/panel.mjs
-        digest: sha256:0df55dc93f90d059afefc7636c54459affb13a028ea55b13a30d5372c892df8d
+        digest: sha256:287e594bdf4a4ef58a4c2eda6d1c857287f7fa7b65171cf03099b503f3e502ed
+        normalization: text-lf/v1
+      - path: src/codex/project.mjs
+        digest: sha256:ee512e2b904c7c003412fec93401847e8a436e7e73c32d1ba36ec9a549e953ed
+        normalization: text-lf/v1
+      - path: src/codex/tls.mjs
+        digest: sha256:dbd55b6eb8cfadea372eaf5f9149aef1a486f2e64c304ff4f51b633fc407c9b2
         normalization: text-lf/v1
     contract:
       id: archiview-codex
@@ -147,6 +163,8 @@ current:
           адаптеру HTTP-сервером.
         R2: Передавать UI адрес backend и случайный токен, не включая токен в модельный
           результат инструмента.
+        R3: Привязывать экземпляр к явно выбранной папке проекта; каталог установки
+          плагина не является проектом по умолчанию.
       boundaries:
         B1: Данные просмотра и подготовка анализа принадлежат HTTP backend; MCP не
           дублирует его API.
@@ -156,6 +174,8 @@ current:
         I1: Один процесс обслуживает один фиксированный корень; HTTP слушает только
           loopback на свободном порту.
         I2: Отключение MCP-клиента закрывает принадлежащий адаптеру сервер.
+        I3: Панель использует доверенный HTTPS без изменения системного доверия; UI
+          подключается к хосту до чтения дерева проекта.
     inherited:
       - module_id: architecture-change-view
         section: boundaries
@@ -226,15 +246,15 @@ current:
         text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
           файлах.
     children: []
-  self_digest: sha256:fa314e676e1d8f2c78dbfce7562d64e9412512b84c5aefe884e0630846b5136c
+  self_digest: sha256:1365ed1f8f73a45ee35f3de2bfa2c6690c1be021497e684a78cc2b2853c4659b
   subtree:
-    self: sha256:406622f08fa2fedd3ebb7fe3e0f5299f0f822b92526caf8087039ea8133e530d
+    self: sha256:e6dc2d7a0d69b619cbeeeab2228395a50e9825838fcf79847a4aba30f1afa8dd
     children: []
-  subtree_digest: sha256:9201cd2652242973bab72ac2cdfda98c5056bc1c8fe76874d202abd792e83ada
+  subtree_digest: sha256:ae7791d61ec5cecef8aa04b1bd0727b12aed5b68e3530861681c8efb2924766e
   semantic_subtree:
-    self: sha256:fa314e676e1d8f2c78dbfce7562d64e9412512b84c5aefe884e0630846b5136c
+    self: sha256:1365ed1f8f73a45ee35f3de2bfa2c6690c1be021497e684a78cc2b2853c4659b
     children: []
-  semantic_subtree_digest: sha256:7e038e8c624be4439d6bf9fa3df45532122a62a4cb0383d03f702262e5ed0fd8
+  semantic_subtree_digest: sha256:f19b7477b7d54cf45196de18024b9379f3ff1096e70956535c53047c98e889d8
 change:
   existence: added
   own: true
@@ -249,22 +269,23 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 5
-  comparison_key: sha256:89588b0e50cdbefe400fd5c4b3c35ef306e9cc057fbc2b1d5779d5f2036ad67b
+  generation: 6
+  comparison_key: sha256:f720fc5af855dd630e330caa0a722a3318d8dff12db5b5123ce85d7035eb2309
   baseline: null
   current:
     metadata:
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-09T04:49:24.219Z
-      kind: launch
-      label: Начальное состояние
-      fingerprint: b6f1610d80b6c49757d78e2e4b1df1e551828898312bb8530887231d62c08328
+      capturedAt: 2026-11-09T06:28:45.919Z
+      kind: git
+      revision: 07dda2020ba802c3dd157517016282fd45f6a465
+      label: HEAD · 07dda20
+      fingerprint: 40a1ea5e915241a63ecd5f950c2367cf7be13597f85fe033257ac71a6f6b8004
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      digest: sha256:082f27209b2440a13ab5f13fe5812754ad694de004867e3de8735104d156cc6b
-      id: launch-b6f1610d80b6c49757d78e2e4b1df1e551828898312bb8530887231d62c08328
+      digest: sha256:a265fc410107fc8dfc62a785e4838613c8e1edfb3e00240388b2b32655774db5
+      id: git-07dda2020ba802c3dd157517016282fd45f6a465
     module_index: 4
     module:
       directory: src/codex
@@ -286,12 +307,14 @@ publication:
           responsibilities:
             R1: Регистрировать UI-ресурс и точки открытия панели, управлять принадлежащим адаптеру HTTP-сервером.
             R2: Передавать UI адрес backend и случайный токен, не включая токен в модельный результат инструмента.
+            R3: Привязывать экземпляр к явно выбранной папке проекта; каталог установки плагина не является проектом по умолчанию.
           boundaries:
             B1: Данные просмотра и подготовка анализа принадлежат HTTP backend; MCP не дублирует его API.
             B2: Адаптер использует публичный MCP Apps протокол и метаданные расширений, без внутренних сервисов Codex.
           invariants:
             I1: Один процесс обслуживает один фиксированный корень; HTTP слушает только loopback на свободном порту.
             I2: Отключение MCP-клиента закрывает принадлежащий адаптеру сервер.
+            I3: Панель использует доверенный HTTPS без изменения системного доверия; UI подключается к хосту до чтения дерева проекта.
         format: arch.yaml
         contract:
           schema_version: 1
@@ -305,6 +328,8 @@ publication:
               адаптеру HTTP-сервером.
             R2: Передавать UI адрес backend и случайный токен, не включая токен в модельный
               результат инструмента.
+            R3: Привязывать экземпляр к явно выбранной папке проекта; каталог установки
+              плагина не является проектом по умолчанию.
           boundaries:
             B1: Данные просмотра и подготовка анализа принадлежат HTTP backend; MCP не
               дублирует его API.
@@ -314,21 +339,27 @@ publication:
             I1: Один процесс обслуживает один фиксированный корень; HTTP слушает только
               loopback на свободном порту.
             I2: Отключение MCP-клиента закрывает принадлежащий адаптеру сервер.
+            I3: Панель использует доверенный HTTPS без изменения системного доверия; UI
+              подключается к хосту до чтения дерева проекта.
       files:
         - path: src/codex/arch.yaml
-          hash: 89201149d87e801cbfc5e3570cb659c828331d9e
+          hash: b62842f47e7e16939100c8fea361b9d1585577af
         - path: src/codex/panel.mjs
-          hash: 82a0c86bc06b2fb29add2e4c7252098f7cdf3291
-      sourceFiles: 1
-      fingerprint: 3d7f111ad751adb20170a79494d9681566ece83904828b9a5883ef9986b2e12c
+          hash: eacb45b9dbb6af85a1ade5c118cbaad578b86492
+        - path: src/codex/project.mjs
+          hash: f0a760faa0c923bf960c86205c2104707cc67ee8
+        - path: src/codex/tls.mjs
+          hash: 2bac9188af3f5a7cdda96b809788e8530f999f59
+      sourceFiles: 3
+      fingerprint: 5f32fef3df68adb5b8409951dbfd64f196525784d5de28f756896537dc8dcd8e
     facts:
       - index: 25
         fact:
-          id: sha256:37c643dc7085eeda27e8cd11863a8bf952c9d932293f26e76fda3be50fb5a65e
+          id: sha256:859cfe2b20d3a23e8ad83bed601146041394f6d421fa123de02ca7926cea0684
           kind: file
           path: src/codex/arch.yaml
           start_line: 1
-          end_line: 15
+          end_line: 17
           text: >
             schema_version: 1
 
@@ -344,19 +375,21 @@ publication:
             responsibilities:
               R1: Регистрировать UI-ресурс и точки открытия панели, управлять принадлежащим адаптеру HTTP-сервером.
               R2: Передавать UI адрес backend и случайный токен, не включая токен в модельный результат инструмента.
+              R3: Привязывать экземпляр к явно выбранной папке проекта; каталог установки плагина не является проектом по умолчанию.
             boundaries:
               B1: Данные просмотра и подготовка анализа принадлежат HTTP backend; MCP не дублирует его API.
               B2: Адаптер использует публичный MCP Apps протокол и метаданные расширений, без внутренних сервисов Codex.
             invariants:
               I1: Один процесс обслуживает один фиксированный корень; HTTP слушает только loopback на свободном порту.
               I2: Отключение MCP-клиента закрывает принадлежащий адаптеру сервер.
+              I3: Панель использует доверенный HTTPS без изменения системного доверия; UI подключается к хосту до чтения дерева проекта.
       - index: 26
         fact:
-          id: sha256:9bd6913b6ff6aeb7a25e4d259941bdb2f03d7fbd76aaeed10e42b82bf4d4dd0e
+          id: sha256:52003a06e87abf9bf161ef263c40fc2be7737b18190a217eba064946a43a5734
           kind: file
           path: src/codex/panel.mjs
           start_line: 1
-          end_line: 58
+          end_line: 110
           text: >
             /** Адаптер MCP Apps: публикует готовый web UI и управляет его
             локальным HTTP backend. */
@@ -365,17 +398,27 @@ publication:
 
             import { readFile } from "node:fs/promises";
 
+            import { createServer } from "node:http";
+
+            import { createServer as createHttpsServer } from "node:https";
+
             import { createArchiView } from "../archiview/http.mjs";
 
             import { packageUrl } from "../package-paths.mjs";
 
+            import { createProjectBinding } from "./project.mjs";
 
-            export const PANEL_URI = "ui://archiview/panel-v1.html";
+
+            export const PANEL_URI = "ui://archiview/panel-v3.html";
+
+            export const PROJECT_INPUT = { type: "string", description:
+            "Absolute project directory of the current chat, not the plugin
+            installation. Required until this process is bound to a project." };
 
             export const PANEL_TOOL = {
               name: "archiview_open", title: "ArchiView",
               description: "Open the local ArchiView architecture panel for this project. Navigation uses HTTP; only an explicit Analyze action sends a request to the agent.",
-              inputSchema: { type: "object", properties: {}, additionalProperties: false },
+              inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT }, additionalProperties: false },
               annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
               _meta: { ui: { resourceUri: PANEL_URI }, "openai/ui": { entrypoints: [{ type: "thread" }, { type: "global" }] } },
             };
@@ -384,37 +427,85 @@ publication:
             /** Запускает только принадлежащий MCP-процессу сервер; ошибка
             запуска допускает повтор. */
 
-            export function createCodexPanel(root) {
+            export function createCodexPanel(rootOrBinding, { tls } = {}) {
+              const binding = typeof rootOrBinding === "object" ? Promise.resolve(rootOrBinding) : createProjectBinding(rootOrBinding);
               let pending;
               async function backend() {
                 if (!pending) pending = (async () => {
                   const token = randomBytes(32).toString("hex");
-                  const app = await createArchiView({ root, panelToken: token });
+                  const project = await binding;
+                  let application;
+                  /** UI подключается сразу; дорогое чтение проекта начинается отдельным API-запросом. */
+                  async function handleRequest(request, response) {
+                    const json = (status, value) => {
+                      response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+                      response.end(JSON.stringify(value));
+                    };
+                    if (!["127.0.0.1:" + request.socket.localPort, "localhost:" + request.socket.localPort].includes(request.headers.host)) {
+                      return json(403, { error: "Недопустимый Host" });
+                    }
+                    const origin = request.headers.origin;
+                    if (origin) {
+                      response.setHeader("Access-Control-Allow-Origin", origin);
+                      response.setHeader("Vary", "Origin");
+                    }
+                    if (request.method === "OPTIONS") {
+                      response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                      response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+                      response.setHeader("Access-Control-Allow-Private-Network", "true");
+                      response.writeHead(204); return response.end();
+                    }
+                    if (request.headers.authorization !== "Bearer " + token) return json(403, { error: "Требуется токен панели" });
+                    try {
+                      if (request.url === "/api/project" && request.method === "POST") {
+                        let body = "";
+                        for await (const chunk of request) {
+                          body += chunk;
+                          if (Buffer.byteLength(body) > 4096) return json(413, { error: "Слишком большой запрос" });
+                        }
+                        const args = JSON.parse(body);
+                        return json(200, { root: await project.select(args.projectRoot) });
+                      }
+                      if (!project.root) return json(409, { code: "PROJECT_REQUIRED", error: "Выберите папку проекта" });
+                      if (!application) application = createArchiView({ root: project.root, panelToken: token, tls })
+                        .catch((error) => { application = null; throw error; });
+                      await (await application).handleRequest(request, response);
+                    } catch (error) { json(400, { error: error.message }); }
+                  }
+                  const server = tls ? createHttpsServer(tls, handleRequest) : createServer(handleRequest);
                   await new Promise((resolve, reject) => {
-                    app.server.once("error", reject);
-                    app.server.listen(0, "127.0.0.1", resolve);
+                    server.once("error", reject);
+                    server.listen(0, "127.0.0.1", resolve);
                   });
-                  app.server.unref();
-                  return { ...app, token, origin: "http://127.0.0.1:" + app.server.address().port };
+                  server.unref();
+                  return { server, token, origin: (tls ? "https://localhost:" : "http://127.0.0.1:") + server.address().port };
                 })().catch((error) => { pending = null; throw error; });
                 return pending;
               }
               return {
                 /** Служебное открытие не передаёт секреты в модельный результат инструмента. */
-                async open() {
+                async open(projectRoot) {
+                  const project = await binding;
+                  if (projectRoot !== undefined) await project.select(projectRoot);
                   await backend();
+                  const root = project.root;
+                  if (!root) return { content: [{ type: "text", text: "Выберите папку проекта в панели или передайте projectRoot." }], structuredContent: { projectRequired: true } };
                   return { content: [{ type: "text", text: "ArchiView: " + root }], structuredContent: { root } };
                 },
-                /** Готовый HTML загружает те же web-ресурсы; API-токен известен только экземпляру UI. */
+                /** Самодостаточный HTML подключается к хосту без сети; API-токен известен только UI. */
                 async resource() {
                   const { origin, token } = await backend();
-                  const html = (await readFile(new URL("web/archiview/index.html", packageUrl), "utf8"))
+                  const html = (await readFile(new URL("dist/panel.html", packageUrl), "utf8"))
                     .replace("<head>", `<head><meta name="archiview-backend" content="${origin}"><meta name="archiview-token" content="${token}">`)
-                    .replace('href="/styles.css"', `href="${origin}/styles.css"`)
-                    .replace('src="/app.mjs"', `src="${origin}/app.mjs"`)
                     .replace('href="/" aria-label="ArchiView"', 'href="#" aria-label="ArchiView"');
                   return { contents: [{ uri: PANEL_URI, mimeType: "text/html;profile=mcp-app", text: html,
-                    _meta: { ui: { csp: { connectDomains: [origin], resourceDomains: [origin] } } } }] };
+                    _meta: {
+                      ui: { csp: { connectDomains: [origin], resourceDomains: [] } },
+                      // Codex с прежним обработчиком CSP читает документированный alias.
+                      // Обе формы разрешают только API принадлежащего панели backend.
+                      "openai/widgetCSP": { connect_domains: [origin], resource_domains: [] },
+                      "openai/ui": { availableDisplayModes: ["inline", "fullscreen"] },
+                    } }] };
                 },
                 /** Закрывает HTTP-соединения при отключении хоста, не затрагивая чужие процессы. */
                 async close() {
@@ -425,12 +516,104 @@ publication:
                 },
               };
             }
-      - index: 64
+      - index: 27
         fact:
-          id: sha256:461e2eaa0969a3b95ef48a0b8e4bee06ee76cbb1a8a12c6da66bcc5bc16015d0
+          id: sha256:034092a57618d34552681ef9ada948ceee6c59fbf72e97cb8b17ed88f6e05e31
+          kind: file
+          path: src/codex/project.mjs
+          start_line: 1
+          end_line: 24
+          text: >
+            /** Привязка процесса к проекту: каталог установки плагина не
+            является рабочим проектом. */
+
+            import { realpath, stat } from "node:fs/promises";
+
+            import path from "node:path";
+
+
+            /** Позволяет один раз выбрать существующую абсолютную папку, затем
+            запрещает смену корня. */
+
+            export async function createProjectBinding(initialRoot) {
+              let root;
+              async function select(requested) {
+                if (requested !== undefined) {
+                  if (typeof requested !== "string" || !path.isAbsolute(requested)) {
+                    throw new Error("projectRoot должен быть абсолютным путём к папке проекта");
+                  }
+                  const candidate = await realpath(requested);
+                  if (!(await stat(candidate)).isDirectory()) throw new Error("projectRoot должен указывать на папку");
+                  if (root && candidate !== root) throw new Error("Процесс уже привязан к другому проекту: " + root);
+                  root = candidate;
+                }
+                if (!root) throw new Error("Укажите projectRoot — абсолютный путь к проекту текущего чата");
+                return root;
+              }
+              if (initialRoot !== undefined) await select(path.resolve(initialRoot));
+              return { select, get root() { return root; } };
+            }
+      - index: 28
+        fact:
+          id: sha256:2bd69b11459327f140cb0d7a23ebf6c3e04386dc5ea0e020c769b2c2461f9b40
+          kind: file
+          path: src/codex/tls.mjs
+          start_line: 1
+          end_line: 48
+          text: |
+            /**
+             * TLS локальной панели. Читает явно настроенный PFX либо существующий доверенный
+             * сертификат разработки localhost в Windows. Не создаёт сертификаты, не меняет
+             * доверие системы и не сохраняет закрытый ключ в пакет или проект.
+             */
+            import { execFile } from "node:child_process";
+            import { randomBytes } from "node:crypto";
+            import { readFile } from "node:fs/promises";
+            import { promisify } from "node:util";
+
+            /** Возвращает настройки HTTPS; отсутствие доверенного сертификата — явная ошибка запуска. */
+            export async function loadPanelTls() {
+              if (process.env.ARCHIVIEW_TLS_PFX) return {
+                pfx: await readFile(process.env.ARCHIVIEW_TLS_PFX),
+                passphrase: process.env.ARCHIVIEW_TLS_PASSWORD ?? "",
+              };
+              if (process.platform !== "win32") throw new Error("Для HTTPS панели задайте ARCHIVIEW_TLS_PFX и ARCHIVIEW_TLS_PASSWORD.");
+              const passphrase = randomBytes(32).toString("hex");
+              const script = `
+            $ErrorActionPreference = 'Stop'
+            $now = Get-Date
+            $personal = New-Object System.Security.Cryptography.X509Certificates.X509Store('My', 'CurrentUser')
+            $trusted = New-Object System.Security.Cryptography.X509Certificates.X509Store('Root', 'CurrentUser')
+            $personal.Open('ReadOnly')
+            $trusted.Open('ReadOnly')
+            $cert = $personal.Certificates | Where-Object {
+              $_.HasPrivateKey -and $_.NotBefore -le $now -and $_.NotAfter -gt $now -and
+              $_.Subject -eq 'CN=localhost' -and
+              ($_.Extensions.Oid.Value -contains '1.3.6.1.4.1.311.84.1.1') -and
+              ($trusted.Certificates.Thumbprint -contains $_.Thumbprint)
+            } | Sort-Object NotAfter -Descending | Select-Object -First 1
+            if (-not $cert) { throw 'Trusted localhost development certificate is unavailable' }
+            [Convert]::ToBase64String($cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, $env:ARCHIVIEW_CERT_PASSWORD))
+            $personal.Close()
+            $trusted.Close()
+            `;
+              try {
+                const { stdout } = await promisify(execFile)("powershell.exe", ["-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")], {
+                  windowsHide: true, timeout: 10000, maxBuffer: 1024 * 1024,
+                  env: { ...process.env, ARCHIVIEW_CERT_PASSWORD: passphrase },
+                });
+                return { pfx: Buffer.from(stdout.trim(), "base64"), passphrase };
+              } catch {
+                // Ошибки дочернего процесса не раскрывают PFX или пароль в MCP/журнале.
+                throw new Error("Не найден доступный доверенный сертификат разработки localhost. Настройте ARCHIVIEW_TLS_PFX и ARCHIVIEW_TLS_PASSWORD.");
+              }
+            }
+      - index: 66
+        fact:
+          id: sha256:2d8454cf15f6a70114397b3419b36b79a8d1ed92a18a66c803cc4968062d9324
           kind: module
           path: src/codex
-          text: '{"contract":"documented","format":"arch.yaml","sources":["src/codex/panel.mjs"]}'
+          text: '{"contract":"documented","format":"arch.yaml","sources":["src/codex/panel.mjs","src/codex/project.mjs","src/codex/tls.mjs"]}'
 review_status:
   self:
     current:

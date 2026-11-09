@@ -51,7 +51,7 @@ async function api(url, options) {
   if (panelToken) headers.set("Authorization", "Bearer " + panelToken);
   const response = await fetch(new URL(url, backendOrigin), { ...options, headers });
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error ?? "Не удалось получить данные");
+  if (!response.ok) throw Object.assign(new Error(result.error ?? "Не удалось получить данные"), { code: result.code });
   return result;
 }
 
@@ -586,11 +586,44 @@ function renderPanel() {
 
 /** Объясняет ошибку загрузки и предлагает повторить доступное действие. */
 function renderFailure(error) {
+  if (error.code === "PROJECT_REQUIRED") return renderProjectSelection();
   const box = notice("Не удалось открыть данные", error.message, "removed-notice");
   const retry = el("button", "button button-quiet", "Повторить");
   retry.type = "button";
   retry.addEventListener("click", () => refresh());
   box.append(retry);
+  byId("document-panel").replaceChildren(box);
+}
+
+/** Прямое открытие плагина не содержит пути чата; пользователь выбирает его один раз. */
+function renderProjectSelection() {
+  byId("project-name").textContent = "Выберите проект";
+  byId("project-path").textContent = "";
+  byId("tree").replaceChildren();
+  const box = notice("Папка проекта", "Укажите абсолютный путь к проекту.");
+  const form = el("form", "project-form");
+  const input = el("input");
+  input.type = "text";
+  input.required = true;
+  input.setAttribute("aria-label", "Папка проекта");
+  input.placeholder = "D:\\projects\\my-project";
+  const submit = el("button", "button", "Открыть проект");
+  submit.type = "submit";
+  const error = el("p");
+  error.setAttribute("role", "alert");
+  form.append(input, submit, error);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    submit.disabled = true;
+    error.textContent = "";
+    try {
+      await api("/api/project", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectRoot: input.value.trim() }) });
+      await refresh();
+    } catch (cause) { error.textContent = cause.message; }
+    finally { submit.disabled = false; }
+  });
+  box.append(form);
   byId("document-panel").replaceChildren(box);
 }
 

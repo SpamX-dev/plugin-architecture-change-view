@@ -1,6 +1,6 @@
 /** Реальные stdio/HTTP-сценарии панели и неизменяемого задания на анализ. */
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, writeFile, rm, cp, symlink, rename } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm, cp, symlink, rename, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +13,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { createArchiView } from "../src/archiview/http.mjs";
 import { reviewFreshness } from "../src/report-model.mjs";
 import { digest } from "../src/formats.mjs";
+import { createCodexPanel } from "../src/codex/panel.mjs";
 
 /** Изолированный проект с настоящим наследуемым ограничением и отдельной реализацией ребёнка. */
 export async function panelFixture(t) {
@@ -162,8 +163,60 @@ test("autonomous plugin serves MCP UI and HTTP without node_modules, and disconn
   const token = /name="archiview-token" content="([^"]+)"/.exec(resource.text)[1];
   assert.equal(token.length, 64);
   assert.ok(!JSON.stringify(result).includes(token));
-  assert.equal((await fetch(origin + "/mcp-app-sdk.mjs", { headers: { Origin: "null" } })).status, 200);
+  // Загрузка JS/CSS не должна зависеть от CSP-разрешения loopback-ресурсов.
+  assert.doesNotMatch(resource.text, /<script\b[^>]*\bsrc=|<link\b[^>]*\brel="stylesheet"/i);
+  assert.match(resource.text, /<script type="module">/);
+  assert.match(resource.text, /ui\/initialize/);
+  assert.deepEqual(resource._meta.ui.csp, { connectDomains: [origin], resourceDomains: [] });
+  assert.deepEqual(resource._meta["openai/widgetCSP"], { connect_domains: [origin], resource_domains: [] });
+  assert.equal((await fetch(origin + "/api/comparison")).status, 403);
   assert.equal((await fetch(origin + "/api/comparison", { headers: { Origin: "null", Authorization: "Bearer " + token } })).status, 200);
   await client.close();
   await assert.rejects(fetch(origin + "/api/comparison"), /fetch failed/);
+});
+
+test("plugin cwd is not a project; explicit binding is shared by tools and cannot switch roots", async (t) => {
+  const root = await panelFixture(t);
+  const plugin = await mkdtemp(path.join(os.tmpdir(), "archiview-plugin-cwd-"));
+  const client = new Client({ name: "project-test", version: "1.0.0" });
+  t.after(async () => { await client.close(); await rm(plugin, { recursive: true, force: true }); });
+  await client.connect(new StdioClientTransport({ command: process.execPath,
+    args: [fileURLToPath(new URL("../dist/codex/src/server.mjs", import.meta.url)), "--panel"],
+    cwd: plugin, env: { ...process.env, PLUGIN_ROOT: plugin }, stderr: "pipe" }));
+  assert.equal((await client.callTool({ name: "module_inventory", arguments: {} })).isError, true);
+  const opened = await client.callTool({ name: "archiview_open", arguments: {} });
+  assert.equal(opened.structuredContent.projectRequired, true);
+  await assert.rejects(stat(path.join(plugin, ".archiview")), { code: "ENOENT" });
+  const invalid = await client.callTool({ name: "archiview_open", arguments: { projectRoot: "relative" } });
+  assert.equal(invalid.isError, true);
+  const bound = await client.callTool({ name: "archiview_open", arguments: { projectRoot: root } });
+  assert.equal(bound.structuredContent.root, root);
+  const context = await client.callTool({ name: "module_context", arguments: { directory: "child" } });
+  assert.equal(context.isError, undefined);
+  assert.match(context.content[0].text, /Тестовый модуль/);
+  assert.equal((await client.callTool({ name: "archiview_open", arguments: { projectRoot: plugin } })).isError, true);
+  await assert.rejects(stat(path.join(root, ".archiview")), { code: "ENOENT" });
+});
+
+test("direct panel entry binds a project over authenticated HTTP without routing BFF through MCP", async (t) => {
+  const root = await panelFixture(t);
+  const other = await panelFixture(t);
+  const panel = createCodexPanel();
+  t.after(() => panel.close());
+  const resource = (await panel.resource()).contents[0];
+  const origin = /name="archiview-backend" content="([^"]+)"/.exec(resource.text)[1];
+  const token = /name="archiview-token" content="([^"]+)"/.exec(resource.text)[1];
+  const headers = { Origin: "https://web-sandbox.oaiusercontent.com", Authorization: "Bearer " + token, "Content-Type": "application/json" };
+  assert.equal((await fetch(origin + "/api/comparison", { headers }).then((r) => r.json())).code, "PROJECT_REQUIRED");
+  const bind = (projectRoot, authorized = true) => fetch(origin + "/api/project", { method: "POST", headers: authorized ? headers : { Origin: headers.Origin }, body: JSON.stringify({ projectRoot }) });
+  assert.equal((await bind(root, false)).status, 403);
+  assert.equal((await bind("relative")).status, 400);
+  assert.equal((await bind(path.join(root, "child/code.js"))).status, 400);
+  assert.equal((await bind(root)).status, 200);
+  assert.equal((await bind(other)).status, 400);
+  const response = await fetch(origin + "/api/comparison", { headers });
+  assert.equal(response.status, 200);
+  const view = await response.json();
+  assert.equal(view.root, root);
+  assert.ok(view.modules.some((entry) => entry.moduleId === "child"));
 });
