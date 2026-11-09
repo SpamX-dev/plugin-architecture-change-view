@@ -156,17 +156,30 @@ function assessments(bundle) {
   return row;
 }
 
+/**
+ * Кратко показывает отсутствие применимого анализа. Кнопка пока служит
+ * заглушкой: отключена и не запускает запросы или автоматическую проверку структуры.
+ */
+function analysisNotice(title, state = "not-reviewed") {
+  const notice = el("section", "notice analysis-notice " + state);
+  const button = el("button", "button button-primary", "Провести анализ");
+  button.type = "button";
+  button.disabled = true;
+  button.title = "Запуск анализа пока недоступен";
+  notice.append(el("strong", "", title), button);
+  return notice;
+}
+
 /** Полный просмотр отчёта, включая ограничения, наблюдения, пункты и замечания. */
 export function renderReview(panel, detail, mode) {
+  if (!detail.reviews.length) {
+    panel.append(analysisNotice("Анализ не проводился"));
+    return;
+  }
   const toolbar = el("div", "review-toolbar");
   toolbar.append(el("span", "review-toolbar-label", "Результаты анализа модуля"));
   panel.append(toolbar);
-  renderFreshness(panel, detail.reviewStatus);
-  if (!detail.reviews.length) {
-    const empty = el("div", "notice");
-    empty.append(el("strong", "", "Содержательных проверок пока нет"), el("p", "", "Агент может проверить модуль и сохранить отчёт с выводами и доказательствами. Структурная проверка уже выполняется автоматически."));
-    panel.append(empty); return;
-  }
+  const overview = el("div", "review-overview");
   const picker = el("select", "review-picker");
   picker.setAttribute("aria-label", "История проверок");
   let selected = detail.reviews.findIndex((b) => b.report.id === detail.review?.id);
@@ -177,26 +190,38 @@ export function renderReview(panel, detail, mode) {
     option.value = index; option.selected = index === selected; picker.append(option);
   });
   const body = el("div", "review-body");
-  panel.append(picker, body);
+  panel.append(overview, picker, body);
   picker.onchange = () => draw(detail.reviews[Number(picker.value)]);
   draw(detail.reviews[selected]);
 
   /** Смена истории не меняет выбранную базу и не подставляет новые факты в старый вывод. */
   function draw(bundle) {
+    overview.replaceChildren();
     body.replaceChildren();
     const report = bundle.report;
-    if (bundle.stale) {
-      const warning = el("div", "notice missing-notice");
-      warning.append(el("strong", "", "Отчёт устарел для выбранного сравнения"), el("p", "", "Ниже сохранённый результат и его исторические доказательства. Входы текущего сравнения отличаются."));
-      body.append(warning);
+    // Оценка изменения может устареть при смене базы, даже если сам код ещё проверен.
+    // Неизвестную актуальность не выдаём за доказанное устаревание.
+    const states = bundle.freshness ? [bundle.freshness.current.status, bundle.freshness.change.status] : [];
+    const stale = states.includes("stale") || (!bundle.freshness && bundle.stale);
+    const unknown = states.includes("unknown");
+    let content = body;
+    if (stale || unknown) {
+      overview.append(analysisNotice(stale ? "Анализ устарел" : "Актуальность анализа не установлена", stale ? "stale" : "unknown"));
+      const history = el("details", "analysis-history");
+      history.append(el("summary", "", "Показать сохранённый анализ"));
+      content = el("div", "");
+      history.append(content);
+      body.append(history);
+    } else {
+      renderFreshness(overview, detail.reviewStatus);
     }
-    body.append(assessments(bundle));
+    content.append(assessments(bundle));
     const coverage = el("details", "coverage-note");
     coverage.open = report.analysis.coverage.status !== "complete";
     coverage.append(el("summary", "", "Полнота: " + ({ complete: "выбранная область проверена", partial: "частичная проверка", unavailable: "анализ недоступен" }[report.analysis.coverage.status])));
     const list = el("ul");
     for (const limitation of report.analysis.coverage.limitations) list.append(el("li", "", limitation));
-    coverage.append(list); body.append(coverage);
+    coverage.append(list); content.append(coverage);
     if (bundle.dependencies?.length) {
       const dependencies = el("details", "coverage-note");
       dependencies.open = bundle.dependencies.some((dependency) => dependency.contractOnly || !dependency.available);
@@ -210,10 +235,10 @@ export function renderReview(panel, detail, mode) {
         items.append(el("li", "", identity + " · " + assumption +
           (!dependency.available ? " Вход зависимости недоступен." : "")));
       }
-      dependencies.append(items); body.append(dependencies);
+      dependencies.append(items); content.append(dependencies);
     }
     if (mode === "findings") {
-      if (!report.findings.length) body.append(el("p", "empty-clauses", "Замечания не записаны. Это не означает, что все пункты проверены."));
+      if (!report.findings.length) content.append(el("p", "empty-clauses", "Замечания не записаны. Это не означает, что все пункты проверены."));
       for (const finding of report.findings) {
         const card = el("article", "finding-card " + finding.severity);
         card.append(el("div", "finding-meta", [kinds[finding.kind], { confirmed: "подтверждено", suspected: "предположение" }[finding.certainty],
@@ -224,7 +249,7 @@ export function renderReview(panel, detail, mode) {
         if (finding.recommendation) card.append(el("p", "", "Рекомендация: " + finding.recommendation));
         for (const clause of finding.clauses) card.append(clauseText(bundle, clause));
         if (finding.related_modules?.length) card.append(el("p", "", "Связанные модули: " + finding.related_modules.join(", ")));
-        card.append(evidenceLinks(bundle, finding.evidence)); body.append(card);
+        card.append(evidenceLinks(bundle, finding.evidence)); content.append(card);
       }
     } else {
       const observed = el("details", "observed-note");
@@ -233,19 +258,19 @@ export function renderReview(panel, detail, mode) {
         observed.append(el("h4", "", side === "baseline" ? "В базе" : "В текущем снимке"), el("p", "", report.observed[side].summary));
         for (const responsibility of report.observed[side].responsibilities) observed.append(el("p", "", responsibility.text), evidenceLinks(bundle, responsibility.evidence));
       }
-      body.append(observed, el("h3", "section-heading", "Проверки пунктов · " + report.checks.length));
-      if (!report.checks.length) body.append(el("p", "empty-clauses", "Нет доступных пунктов структурированного контракта."));
+      content.append(observed, el("h3", "section-heading", "Проверки пунктов · " + report.checks.length));
+      if (!report.checks.length) content.append(el("p", "empty-clauses", "Нет доступных пунктов структурированного контракта."));
       for (const check of report.checks) {
         const card = el("article", "check-card");
         const top = el("div", "check-heading");
         top.append(el("span", "verdict " + check.verdict, verdicts[check.verdict]), el("span", "", "Код: " + (check.subject === "current" ? "сейчас" : "база")));
         card.append(top, clauseText(bundle, check.contract), el("p", "", check.explanation), evidenceLinks(bundle, check.evidence));
-        body.append(card);
+        content.append(card);
       }
     }
     const raw = el("details", "raw-document");
     raw.append(el("summary", "", "Все поля отчёта · " + report.id), el("pre", "", JSON.stringify(report, null, 2)));
-    body.append(raw);
+    content.append(raw);
   }
 }
 
