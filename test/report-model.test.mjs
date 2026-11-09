@@ -122,16 +122,95 @@ test("direct child contract invalidates composition but a deep child contract do
   assert.ok(freshness.reasons.some((reason) => reason.code === "child_composition"));
 });
 
-test("ancestor constraints propagate downward while responsibilities remain local", () => {
+test("parent context invalidates the parent's own review without invalidating child review", () => {
   const definitions = definition();
   const before = snapshot(definitions);
   const child = reviewed(null, before, "child");
+  const root = reviewed(null, before, "root");
   definitions[0].contract.responsibilities.R2 = "Объединять независимые модули.";
   assert.equal(reviewFreshness(child, null, snapshot(definitions)).current.status, "fresh");
   definitions[0].contract.invariants.I2 = "Всегда проверять идентичность.";
-  const freshness = reviewFreshness(child, null, snapshot(definitions)).current;
-  assert.equal(freshness.status, "stale");
-  assert.ok(freshness.reasons.some((reason) => reason.code === "inherited_constraints"));
+  const after = snapshot(definitions);
+  assert.equal(reviewFreshness(child, null, after).current.status, "fresh");
+  assert.equal(reviewFreshness(root, null, after).current.status, "stale");
+  assert.ok(reviewFreshness(root, null, after).current.reasons.some((reason) => reason.code === "own_contract"));
+  assert.notEqual(technical(null, before, "child").check_hash, technical(null, after, "child").check_hash);
+});
+
+test("new export contains only own clauses and avoids rechecking unchanged baseline clauses", () => {
+  const current = snapshot();
+  const input = createReviewInput("project-one", current, current, "child");
+  assert.equal(input.manifest.contract_scope, "own");
+  assert.equal(input.inputs.contract_scope, "own");
+  assert.equal(Object.hasOwn(input.inputs.current.state, "inherited"), false);
+  assert.equal(input.manifest.contracts.current.length, 3);
+  assert.ok(input.manifest.contracts.current.every((item) => item.reference.module_id === "child"));
+  assert.equal(input.report.checks.length, 6);
+  assert.equal(input.report.checks.filter((check) => check.subject === "current").length, 3);
+  assert.ok(input.current.modules.some((module) => module.document.contract?.id === "root"));
+});
+
+test("legacy effective reviews retain their original scope and validate alongside own reviews", () => {
+  const definitions = definition();
+  const current = snapshot(definitions);
+  const old = reviewed(null, current, "child", { contractScope: "effective" });
+  const own = reviewed(null, current, "child");
+  assert.equal(old.manifest.contract_scope, undefined);
+  assert.equal(old.inputs.contract_scope, undefined);
+  assert.ok(old.report.checks.some((check) => check.contract.module_id === "root"));
+  const preserved = digest(old);
+  assert.equal(validateReviewEntry(parseYaml(stringify(old, { aliasDuplicateObjects: false }), (value) => value)).review_id, old.review_id);
+  definitions[0].contract.invariants.I2 = "Новый контекст размещения.";
+  const after = snapshot(definitions);
+  assert.equal(reviewFreshness(old, null, after).current.status, "stale");
+  assert.equal(reviewFreshness(own, null, after).current.status, "fresh");
+  assert.equal(digest(old), preserved);
+});
+
+test("changed own baseline clauses still require an explicit check of current code", () => {
+  const definitions = definition();
+  const baseline = snapshot(definitions);
+  definitions[2].contract.responsibilities.R1 = "Возвращать только локальные данные.";
+  const draft = reviewed(baseline, snapshot(definitions), "child", { draft: true });
+  const oldRequirements = draft.report.checks.filter((check) => check.subject === "current" && check.contract.snapshot === "baseline");
+  assert.equal(oldRequirements.length, 1);
+  assert.equal(oldRequirements[0].contract.id, "R1");
+  draft.report.checks = draft.report.checks.filter((check) => check.id !== oldRequirements[0].id);
+  assert.throws(() => createReviewEntry(draft), /Missing explicit clause check/);
+});
+
+test("own review cannot add a parent clause or change its scope under preserved inputs", () => {
+  const current = snapshot();
+  const draft = reviewed(null, current, "child", { draft: true });
+  const foreign = structuredClone(draft);
+  foreign.report.checks.push({ ...structuredClone(foreign.report.checks[0]), id: "foreign-parent",
+    contract: { snapshot: "current", module_id: "root", section: "invariants", id: "I1" } });
+  assert.throws(() => createReviewEntry(foreign), /Own review checks/);
+  const altered = structuredClone(draft);
+  delete altered.inputs.contract_scope;
+  assert.throws(() => createReviewEntry(altered), /contract scope mismatch/);
+});
+
+test("parent placement violation remains at the parent and does not become child violation", () => {
+  const current = snapshot();
+  const parentDraft = reviewed(null, current, "parent", { draft: true });
+  parentDraft.report.assessment.current = { verdict: "violation", summary: "Композиция не соответствует назначению родителя." };
+  parentDraft.report.checks[0].verdict = "violation";
+  const child = reviewed(null, current, "child");
+  const tree = aggregateTreeStatuses([createReviewEntry(parentDraft), child], null, current);
+  assert.equal(tree.get("parent").self.current.verdict, "violation");
+  assert.equal(tree.get("child").self.current.verdict, "consistent");
+  assert.equal(tree.get("child").self.current.current_violation, false);
+});
+
+test("module dependency follows its own inputs rather than its parent's context", () => {
+  const definitions = definition();
+  const current = snapshot(definitions);
+  const consumer = reviewed(null, current, "child", { dependencies: [{ kind: "module", module_id: "provider" }] });
+  definitions[0].contract.boundaries.B2 = "Другой контекст для размещения модулей.";
+  assert.equal(reviewFreshness(consumer, null, snapshot(definitions)).current.status, "fresh");
+  definitions[4].sources["provider.js"] = "export const value = 2;\n";
+  assert.equal(reviewFreshness(consumer, null, snapshot(definitions)).current.status, "stale");
 });
 
 test("title metadata is technical change without invalidating semantic own/composition", () => {
@@ -173,10 +252,74 @@ test("legacy semantic bundle keeps every proof and defaults unknown dependency c
   const entry = createReviewEntry(bundle, { projectId: "project-one" });
   assert.equal(entry.format, "legacy-v1");
   assert.deepEqual(entry.current, current);
-  assert.equal(reviewFreshness(entry, null, current).current.status, "unknown");
+  assert.equal(reviewFreshness(entry, null, current).current.status, "fresh");
+  assert.equal(reviewFreshness(entry, null, current).current.coverage.status, "partial");
   assert.equal(entry.inputs.current.dependency_coverage.status, "unknown");
   const structure = createReviewEntry(createStructuralReview(null, current, comparison));
   assert.equal(aggregateReviewStatus([structure], null, current, "child").current.status, "not_reviewed");
+});
+
+test("unknown dependency coverage is separate from matching and changed checked inputs", () => {
+  const definitions = definition();
+  const current = snapshot(definitions);
+  const draft = reviewed(null, current, "child", { draft: true,
+    dependencies: [{ kind: "module", module_id: "provider" }],
+    dependencyCoverage: { status: "unknown", potential_influence: [{ scope: "project" }] } });
+  draft.report.analysis.coverage = { status: "partial", limitations: ["Перечень зависимостей не подтверждён."] };
+  const entry = createReviewEntry(draft);
+  const savedDigest = digest(entry);
+  const matching = reviewFreshness(entry, null, current);
+  assert.equal(matching.current.status, "fresh");
+  assert.equal(matching.change.status, "fresh");
+  assert.deepEqual(matching.current.reasons, []);
+  assert.equal(matching.current.coverage.status, "partial");
+  assert.ok(matching.current.coverage.reasons.some((reason) => reason.code === "dependency_coverage_unknown"));
+  // Необъявленная область не была проверенным входом: ограничение остаётся в полноте.
+  definitions[0].sources["settings.yaml"] = "mode: other\n";
+  assert.equal(reviewFreshness(entry, null, snapshot(definitions)).current.status, "fresh");
+  // Изменение объявленной реализации по-прежнему инвалидирует сохранённый вывод.
+  definitions[4].sources["provider.js"] = "export const value = 2;\n";
+  const changed = reviewFreshness(entry, null, snapshot(definitions)).current;
+  assert.equal(changed.status, "stale");
+  assert.equal(changed.coverage.status, "partial");
+  assert.ok(changed.reasons.some((reason) => reason.code === "dependency_input"));
+  assert.equal(digest(entry), savedDigest);
+});
+
+test("partial coverage propagates separately from fresh inputs and confirmed violations", () => {
+  const current = snapshot();
+  const entries = definition().map(({ id }) => {
+    const draft = reviewed(null, current, id, { draft: true,
+      dependencyCoverage: { status: "unknown", potential_influence: [{ scope: "project" }] } });
+    draft.report.analysis.coverage = { status: "partial", limitations: ["Частичная проверка фикстуры."] };
+    if (id === "child") {
+      draft.report.assessment.current = { verdict: "violation", summary: "Нарушение в тестовой фикстуре." };
+      draft.report.checks[0].verdict = "violation";
+    }
+    return createReviewEntry(draft);
+  });
+  const tree = aggregateTreeStatuses(entries, null, current);
+  const root = tree.get("root").subtree.current;
+  assert.equal(root.status, "fresh");
+  assert.deepEqual(root.counts, { fresh: 5, stale: 0, unknown: 0, not_reviewed: 0 });
+  assert.equal(root.coverage.status, "partial");
+  assert.ok(root.coverage.reasons.some((reason) => reason.code === "dependency_coverage_unknown"));
+  assert.equal(root.current_violation, true);
+});
+
+test("unavailable declared dependencies and incomplete snapshots remain incomparable", () => {
+  const current = snapshot();
+  const draft = reviewed(null, current, "child", { draft: true,
+    dependencies: [{ kind: "file", path: "absent/api.d.ts" }] });
+  draft.report.analysis.coverage = { status: "partial", limitations: ["Вход зависимости недоступен."] };
+  const unavailable = reviewFreshness(createReviewEntry(draft), null, current).current;
+  assert.equal(unavailable.status, "unknown");
+  assert.equal(unavailable.coverage.status, "partial");
+  assert.ok(unavailable.reasons.some((reason) => reason.code === "dependency_unresolved"));
+  const complete = reviewed(null, current, "child");
+  const incomplete = reviewFreshness(complete, null, snapshot(definition(), { complete: false })).current;
+  assert.equal(incomplete.status, "unknown");
+  assert.ok(incomplete.reasons.some((reason) => reason.code === "input_coverage_incomplete"));
 });
 
 test("baseline changes invalidate change alone even when current own inputs match", () => {

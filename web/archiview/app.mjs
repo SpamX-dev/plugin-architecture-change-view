@@ -3,7 +3,7 @@
  * Статусы получает от сервера; Контракты и доказательства вставляет безопасным текстом.
  * Сравнение остаётся привязанным к неизменяемому view, включая удалённые модули.
  */
-import { renderContract, renderReview, freshnessLabel } from "./review.mjs";
+import { renderContract, renderContractHeading, renderReview, freshnessLabel } from "./review.mjs";
 import { connectPanel } from "./panel-bridge.mjs";
 
 /** Локальное состояние интерфейса, не изменяющее исходные документы проекта. */
@@ -405,10 +405,16 @@ function renderTree() {
 
 /** Обновляет хлебные крошки, статус и контекст выбранного каталога. */
 function renderHeading(module) {
+  byId("module-title").className = "";
+  byId("module-title").removeAttribute("title");
+  byId("module-title").onclick = null;
   byId("module-title").textContent = module.title ?? module.name;
   byId("module-status").replaceChildren(badge(module.status, false, module.descendantChanges));
   byId("module-subtitle").textContent = module.directory === "." ?
     "Корневой модуль проекта" : module.directory;
+  byId("module-subtitle").hidden = false;
+  byId("module-contract-heading").replaceChildren();
+  byId("module-contract-heading").hidden = true;
   const breadcrumbs = byId("breadcrumbs");
   breadcrumbs.replaceChildren();
   for (const [index, directory] of ancestors(module.directory).entries()) {
@@ -433,12 +439,12 @@ function renderHeading(module) {
   }
   byId("copy-path").disabled = false;
   byId("review-status").textContent = module.reviewStatus ?
-    "Модуль: " + freshnessLabel(module.reviewStatus.self.current) + " · Поддерево: " +
-      freshnessLabel(module.reviewStatus.subtree.current) : "Содержательной проверки нет";
+    "Модуль: " + freshnessLabel(module.reviewStatus.self.current, { compact: true }) + " · Поддерево: " +
+      freshnessLabel(module.reviewStatus.subtree.current, { compact: true }) : "Содержательной проверки нет";
   byId("files-count").textContent = module.filesChanged;
   byId("files-count").hidden = module.filesChanged === 0;
-  byId("diff-count").textContent = module.documentChanged ? "1" : "";
-  byId("diff-count").hidden = !module.documentChanged;
+  const findings = module.review?.findings ?? 0;
+  byId("tab-findings").textContent = "Замечания" + (findings ? " · " + findings : "");
   document.title = module.name + " — ArchiView";
   renderAnalysisControls();
 }
@@ -484,7 +490,11 @@ function renderDocument(panel, detail) {
     "Показано описание из выбранной базы сравнения.", "removed-notice"));
   if (selected.document.state === "documented" && selected.document.contract) {
     if (detail.moved) panel.append(notice("Модуль перемещён", detail.baselinePath + " → " + detail.currentPath));
-    renderContract(panel, selected.document); return;
+    renderContract(panel, selected.document, { before: detail.before?.document.contract ?? null,
+      after: detail.after?.document.contract ?? null, compare: detail.status !== "initial",
+      rawChanged: detail.documentChanged, showRawDiff: () => openDocumentDiff(detail), hideHeading: true,
+      review: detail.reviews.find((bundle) => bundle.report.id === detail.review?.id) ?? detail.reviews[0],
+      openFinding: openReviewFinding }); return;
   }
   if (selected.document.state !== "documented") {
     const box = notice(selected.document.state === "missing" ? "arch.yaml ещё не создан" :
@@ -542,6 +552,42 @@ function renderDiff(panel, detail) {
   panel.append(box);
 }
 
+/** Открывает исходный YAML-диф из контракта без отдельного представления модуля. */
+function openDocumentDiff(detail) {
+  const dialog = el("dialog", "contract-diff-dialog");
+  const heading = el("div", "evidence-heading");
+  const close = el("button", "button button-quiet", "Закрыть");
+  close.onclick = () => dialog.close();
+  heading.append(el("strong", "", "arch.yaml · изменения"), close);
+  dialog.append(heading);
+  renderDiff(dialog, detail);
+  dialog.addEventListener("close", () => dialog.remove());
+  document.body.append(dialog);
+  dialog.showModal();
+}
+
+/** Переходит из замечания к конкретному пункту контракта его владельца. */
+async function openReviewClause(reference) {
+  const module = state.view.modules.find((item) => item.moduleId === reference.module_id);
+  if (!module) return;
+  state.tab = "document";
+  await selectModule(module.key);
+  const row = [...document.querySelectorAll("[data-contract-clause]")].find((item) =>
+    item.dataset.clauseSection === reference.section && item.dataset.clauseId === reference.id);
+  if (row) {
+    row.scrollIntoView({ block: "center" });
+    row.classList.add("clause-target");
+    row.tabIndex = -1;
+    row.focus({ preventScroll: true });
+  }
+}
+
+/** Жук открывает конкретное замечание той попытки, из которой он был показан. */
+function openReviewFinding(target) {
+  state.tab = "findings";
+  renderPanel({ reviewId: target.reviewId, findingId: target.findingId });
+}
+
 /** Показывает файлы выбранного модуля и их индивидуальные статусы. */
 function renderFiles(panel, detail) {
   const changed = new Map(detail.files.map((file) => [file.path, file.status]));
@@ -555,7 +601,8 @@ function renderFiles(panel, detail) {
   if (!paths.length) box.append(el("p", "file-empty", "Собственных файлов нет. Откройте вложенный модуль."));
   for (const file of paths) {
     const row = el("div", "file-row");
-    row.append(icon("file"), el("code", "file-path", file), badge(changed.get(file) ?? "unchanged", true));
+    row.title = file;
+    row.append(icon("file"), el("code", "file-path", file.split("/").at(-1)), badge(changed.get(file) ?? "unchanged", true));
     const copy = el("button", "text-button", "Путь");
     copy.type = "button";
     copy.setAttribute("aria-label", "Копировать путь " + file);
@@ -567,7 +614,7 @@ function renderFiles(panel, detail) {
 }
 
 /** Переключает представления одного модуля, сохраняя навигацию и базу сравнения. */
-function renderPanel() {
+function renderPanel(navigation = {}) {
   for (const button of document.querySelectorAll("[data-tab]")) {
     button.setAttribute("aria-selected", String(button.dataset.tab === state.tab));
   }
@@ -575,11 +622,19 @@ function renderPanel() {
   panel.setAttribute("aria-labelledby", "tab-" + state.tab);
   if (!state.detail) return;
   panel.replaceChildren();
+  const heading = byId("module-contract-heading");
+  const selected = state.detail.after ?? state.detail.before;
+  heading.replaceChildren();
+  heading.hidden = !selected.document.contract;
+  byId("module-subtitle").hidden = Boolean(selected.document.contract);
+  if (selected.document.contract) renderContractHeading(heading, selected.document, {
+    before: state.detail.before?.document.contract ?? null, after: state.detail.after?.document.contract ?? null,
+    compare: state.detail.status !== "initial", titleElement: byId("module-title"),
+  });
   byId("document-version").textContent = state.detail.status === "removed" ?
     "Из базы сравнения" : timelineLabel(state.view.target ?? { id: "current" });
   if (state.tab === "document") renderDocument(panel, state.detail);
-  else if (["checks", "findings"].includes(state.tab)) renderReview(panel, state.detail, state.tab, configureAnalysisButton);
-  else if (state.tab === "diff") renderDiff(panel, state.detail);
+  else if (["checks", "findings"].includes(state.tab)) renderReview(panel, state.detail, state.tab, { openClause: openReviewClause, ...navigation });
   else renderFiles(panel, state.detail);
   renderAnalysisControls();
 }

@@ -7,7 +7,7 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { canonical, contractDocument, digest, validateReview } from "./formats.mjs";
-import { ANALYZER, createStructuralReview, effectiveClauses as effectiveClausesForSnapshot,
+import { ANALYZER, createStructuralReview, effectiveClauses as effectiveClausesForSnapshot, requiredClauseChecks, validateContractScope,
   validateReviewBundle } from "./reviews.mjs";
 
 export const REPORT_SCHEMA_VERSION = 2;
@@ -155,7 +155,7 @@ export function isSemanticReview(entry) {
  * только как отдельный файл: неизменность arch.yaml не доказывает неизменность
  * API реализации. Произвольный digest без разрешимого источника не принимается.
  */
-function dependencyInput(selector, snapshot, states) {
+function dependencyInput(selector, snapshot, states, contractScope) {
   const kind = selector.kind;
   const module = selector.module_id ? states.get(selector.module_id) : null;
   if (kind === "contract") {
@@ -165,8 +165,17 @@ function dependencyInput(selector, snapshot, states) {
       .map((key) => [key, clone(module.technical.contract[key])]));
     return { selector: clone(selector), available: true, digest: digest(content), content };
   }
-  if (kind === "module") return { selector: clone(selector), available: Boolean(module) && module.complete,
-    ...(module ? { digest: selector.scope === "subtree" ? module.semantic_subtree_digest : module.self_digest } : {}) };
+  if (kind === "module") {
+    if (contractScope === "own") {
+      const selected = module ? sorted([...states.values()].filter((item) => item.module_id === module.module_id ||
+        selector.scope === "subtree" && (module.directory === "." || item.directory.startsWith(module.directory + "/"))), (item) => item.module_id) : [];
+      return { selector: clone(selector), available: Boolean(module) && selected.every((item) => reviewModuleComplete(item, contractScope)),
+        ...(module ? { digest: digest(selector.scope === "subtree" ? selected.map((item) =>
+          ({ module_id: item.module_id, state: reviewProjection(item, contractScope) })) : reviewProjection(module, contractScope)) } : {}) };
+    }
+    return { selector: clone(selector), available: Boolean(module) && module.complete,
+      ...(module ? { digest: selector.scope === "subtree" ? module.semantic_subtree_digest : module.self_digest } : {}) };
+  }
   if (["file", "api"].includes(kind)) {
     const owner = (snapshot?.modules ?? []).find((item) => (item.files ?? []).some((file) => file.path === selector.path));
     const file = owner?.files.find((item) => item.path === selector.path);
@@ -178,18 +187,37 @@ function dependencyInput(selector, snapshot, states) {
   throw new Error("Unsupported dependency kind: " + kind);
 }
 
-/** Самостоятельная self-проекция не содержит реализацию потомков. */
-function reviewState(snapshot, id, scope, selectors, dependencyCoverage) {
+/**
+ * Техническая модель сохраняет прежнее происхождение и контекст снимка.
+ * Новая собственная оценка использует отдельную проекцию без пунктов предков;
+ * совместимость с назначением родителя проверяется в композиции родителя.
+ */
+function reviewProjection(state, contractScope) {
+  const projection = clone(state.self);
+  if (contractScope === "own") delete projection.inherited;
+  return projection;
+}
+
+/** Для локальной проверки нужны свой контракт, свои файлы и контракты композиции. */
+function reviewModuleComplete(state, contractScope) {
+  if (contractScope !== "own") return state.complete;
+  return state.technical.document_state === "documented" && Boolean(state.technical.contract) &&
+    state.self.own_files.every((file) => !file.error && file.normalization === "text-lf/v1") &&
+    state.self.children.every((child) => child.document_state === "documented" && child.contract);
+}
+
+/** Самостоятельная self-проекция не содержит реализацию потомков или контекст предков. */
+function reviewState(snapshot, id, scope, selectors, dependencyCoverage, contractScope = "effective") {
   const states = buildModuleStates(snapshot);
   const state = states.get(id);
   const descendants = state && scope === "subtree" ? sorted([...states.values()].filter((item) =>
     item.module_id === id || state.directory === "." || item.directory.startsWith(state.directory + "/")), (item) => item.module_id) : [];
-  return { exists: Boolean(state), state: state ? clone(state.self) : null,
-    ...(scope === "subtree" ? { subtree: descendants.map((item) => ({ module_id: item.module_id, state: clone(item.self) })) } : {}),
-    complete: snapshot?.complete !== false && (state?.complete ?? true) &&
+  return { exists: Boolean(state), state: state ? reviewProjection(state, contractScope) : null,
+    ...(scope === "subtree" ? { subtree: descendants.map((item) => ({ module_id: item.module_id, state: reviewProjection(item, contractScope) })) } : {}),
+    complete: snapshot?.complete !== false && (!state || reviewModuleComplete(state, contractScope)) &&
       (!state || state.self.own_files.every((file) => file.normalization === "text-lf/v1")) &&
-      descendants.every((item) => item.complete && item.self.own_files.every((file) => file.normalization === "text-lf/v1")),
-    dependencies: sorted(selectors.map((selector) => dependencyInput(selector, snapshot, states)), (item) => canonical(item.selector)),
+      descendants.every((item) => reviewModuleComplete(item, contractScope) && item.self.own_files.every((file) => file.normalization === "text-lf/v1")),
+    dependencies: sorted(selectors.map((selector) => dependencyInput(selector, snapshot, states, contractScope)), (item) => canonical(item.selector)),
     dependency_coverage: clone(dependencyCoverage) };
 }
 
@@ -200,15 +228,17 @@ function assessmentDigest(input) { return digest(input); }
 function createInputs(baseline, current, id, options, semantic) {
   const scope = options.scope ?? "self";
   if (!["self", "subtree"].includes(scope)) throw new Error("Unsupported review scope: " + scope);
+  const contractScope = options.contractScope ?? "effective";
+  if (!["own", "effective"].includes(contractScope)) throw new Error("Unsupported contract scope");
   const dependencies = options.dependencies ?? [];
   const declaredCoverage = options.dependencyCoverage ?? options.dependency_coverage ??
     { status: semantic ? "unknown" : "complete", potential_influence: semantic ? [{ scope: "project" }] : [] };
   const coverage = { ...clone(declaredCoverage), potential_influence: clone(declaredCoverage.potential_influence ??
     (declaredCoverage.status === "complete" ? [] : [{ scope: "project" }])) };
   if (!["complete", "unknown"].includes(coverage.status)) throw new Error("Invalid dependency coverage");
-  const result = { schema_version: 1, scope,
-    current: reviewState(current, id, scope, dependencies, coverage),
-    baseline: baseline ? reviewState(baseline, id, scope, dependencies, coverage) : null,
+  const result = { schema_version: 1, scope, ...(contractScope === "own" ? { contract_scope: "own" } : {}),
+    current: reviewState(current, id, scope, dependencies, coverage, contractScope),
+    baseline: baseline ? reviewState(baseline, id, scope, dependencies, coverage, contractScope) : null,
     baseline_identity: baselineIdentity(baseline) };
   result.current_digest = assessmentDigest(result.current);
   result.change_digest = assessmentDigest({ baseline_identity: result.baseline_identity, baseline: result.baseline, current: result.current });
@@ -231,7 +261,8 @@ export function createReviewEntry(bundle, options = {}) {
   validateReviewBundle(bundle);
   const id = bundle.report.module.id ?? "directory:" + (bundle.report.module.current_path ?? bundle.report.module.baseline_path);
   const semantic = isSemanticReview(bundle);
-  const inputs = createInputs(bundle.baseline, bundle.current, id, options, semantic);
+  const inputs = createInputs(bundle.baseline, bundle.current, id,
+    { ...options, contractScope: bundle.manifest.contract_scope ?? "effective" }, semantic);
   const comparisonModule = { moduleId: id, directory: bundle.report.module.current_path ?? bundle.report.module.baseline_path };
   const technical = createTechnicalReport(options.projectId ?? options.project_id ?? "legacy", bundle.baseline, bundle.current, comparisonModule);
   const entry = { schema_version: REPORT_SCHEMA_VERSION, kind: "review", module_id: id,
@@ -326,6 +357,7 @@ function scopedSnapshot(snapshot, id, options, report) {
  * report сохраняет известную схему checks/findings v1 для существующего UI.
  */
 export function createReviewInput(projectId, baseline, current, id, options = {}) {
+  options = { ...options, contractScope: options.contractScope ?? "own" };
   const states = buildModuleStates(current);
   const beforeStates = buildModuleStates(baseline);
   const state = states.get(id) ?? beforeStates.get(id);
@@ -334,11 +366,11 @@ export function createReviewInput(projectId, baseline, current, id, options = {}
   const afterModule = current.modules.find((module) => moduleId(module) === id) ?? null;
   const comparison = { moduleId: id, directory: state.directory, baselinePath: beforeModule?.directory ?? null,
     currentPath: afterModule?.directory ?? null, before: beforeModule, after: afterModule };
-  const bundle = createStructuralReview(baseline, current, comparison);
+  const bundle = createStructuralReview(baseline, current, comparison, options);
   bundle.report.id = options.reviewId ?? "review-" + randomUUID();
   bundle.report.analysis.analyzer = { name: "agent-review", version: "1", config_digest: digest({ method: "agent" }) };
   bundle.manifest.analyzer = clone(bundle.report.analysis.analyzer);
-  bundle.manifest.instructions = "Проверить собственную ответственность, границы, инварианты и композицию; заполнить модель, prompt, явные зависимости и результаты.";
+  bundle.manifest.instructions = "Проверить только собственную ответственность, границы, инварианты и свою композицию. Контракты предков служат контекстом и не добавляют пункты в чеклист. Зависимости задавать по реально использованному контракту/API, не по расположению каталога. Заполнить модель, prompt и результаты.";
   bundle.manifest.review_scope = options.scope ?? "self";
   bundle.report.analysis.input_digest = digest(bundle.manifest);
   const inputs = createInputs(baseline, current, id, options, true);
@@ -390,12 +422,10 @@ function validateScopedProof(entry) {
   for (const check of entry.report.checks) { clause(check.contract); check.evidence.forEach(evidence); }
   for (const finding of entry.report.findings) { finding.clauses.forEach(clause); finding.evidence.forEach(evidence); }
   for (const observed of Object.values(entry.report.observed)) observed?.responsibilities.forEach((item) => item.evidence.forEach(evidence));
-  // Все действовавшие пункты остаются явными, включая честное not_checked.
+  // Все требуемые собственные пункты остаются явными, включая честное not_checked.
   // Удаление неудобного пункта не превращает неполный анализ в полный.
-  for (const [clauses, subject] of [[entry.manifest.contracts?.baseline ?? [], "baseline"],
-    [entry.manifest.contracts?.current ?? [], "current"],
-    ...(entry.report.module.current_path !== null ? [[entry.manifest.contracts?.baseline ?? [], "current"]] : [])]) {
-    for (const item of clauses) if (!entry.report.checks.some((check) => check.subject === subject &&
+  for (const { item, subject } of requiredClauseChecks(entry.manifest, entry.report.module.current_path !== null)) {
+    if (!entry.report.checks.some((check) => check.subject === subject &&
       canonical(check.contract) === canonical(item.reference))) throw new Error("Missing explicit clause check: " + item.reference.id);
   }
 }
@@ -407,6 +437,8 @@ export function validateReviewEntry(entry) {
   validateReview(entry.report);
   if (entry.report.module.id !== null && entry.module_id !== entry.report.module.id) throw new Error("Review module identity mismatch");
   if (!entry.inputs || entry.inputs.schema_version !== 1 || !["self", "subtree"].includes(entry.inputs.scope)) throw new Error("Unsupported review inputs");
+  const contractScope = validateContractScope(entry.report, entry.manifest);
+  if ((entry.inputs.contract_scope ?? "effective") !== contractScope) throw new Error("Review contract scope mismatch");
   if (assessmentDigest(entry.inputs.current) !== entry.inputs.current_digest ||
     assessmentDigest({ baseline_identity: entry.inputs.baseline_identity, baseline: entry.inputs.baseline, current: entry.inputs.current }) !== entry.inputs.change_digest) throw new Error("Review assessment input digest mismatch");
   for (const input of [entry.inputs.current, entry.inputs.baseline].filter(Boolean)) {
@@ -438,7 +470,7 @@ export function validateReviewEntry(entry) {
       if ((snapshot === null) !== (input === null)) throw new Error("Missing native assessment input: " + side);
       if (!snapshot) continue;
       const selectors = input.dependencies.map((dependency) => dependency.selector);
-      const actual = reviewState(snapshot, entry.module_id, entry.inputs.scope, selectors, input.dependency_coverage);
+      const actual = reviewState(snapshot, entry.module_id, entry.inputs.scope, selectors, input.dependency_coverage, contractScope);
       if (canonical(actual) !== canonical(input)) throw new Error("Native assessment inputs disagree with saved snapshot: " + side);
       const directory = entry.report.module[side + "_path"];
       const own = snapshot.modules.find((module) => moduleId(module) === entry.module_id);
@@ -447,7 +479,7 @@ export function validateReviewEntry(entry) {
       const technicalReference = side === "baseline" ? entry.check_manifest.baseline?.state : entry.check_manifest.current;
       if (technicalReference?.exists !== Boolean(state) || (state && (technicalReference.directory !== state.directory ||
         technicalReference.self_digest !== state.technical_digest))) throw new Error("Native technical own-state mismatch: " + side);
-      const actualClauses = effectiveClausesForSnapshot(snapshot, directory, side);
+      const actualClauses = effectiveClausesForSnapshot(snapshot, directory, side, contractScope);
       if (canonical(actualClauses) !== canonical(entry.manifest.contracts?.[side])) throw new Error("Native effective contracts mismatch: " + side);
     }
     if (canonical(entry.inputs.baseline_identity) !== canonical(baselineIdentity(entry.baseline))) throw new Error("Native baseline identity mismatch");
@@ -509,28 +541,55 @@ function inputDifferences(previous, current) {
 }
 
 /**
- * Неизвестная область влияния не становится гарантией свежести. Сначала
- * сообщаются известные изменения, затем отдельно неполнота/неразрешённые связи.
+ * Объединяет ограничения проверки, не меняя актуальность или вердикт.
+ * Неполный перечень зависимостей не отменяет сравнение сохранённых входов,
+ * но остаётся явным ограничением полноты даже у свежей содержательной оценки.
+ */
+function combineCoverage(values) {
+  return {
+    status: values.every((value) => value.status === "complete") ? "complete" :
+      values.every((value) => value.status === "unavailable") ? "unavailable" : "partial",
+    limitations: [...new Set(values.flatMap((value) => value.limitations))],
+    reasons: [...new Map(values.flatMap((value) => value.reasons ?? [])
+      .map((reason) => [canonical(reason), reason])).values()],
+  };
+}
+
+/**
+ * Сравнивает только проверяемые сохранённые входы. Неизвестная полнота списка
+ * зависимостей относится к coverage; unknown остаётся для входов, которые
+ * действительно невозможно сопоставить. Известное изменение сохраняет stale.
  */
 function inputFreshness(previous, current) {
   const reasons = inputDifferences(previous, current);
   const unknown = [];
-  if (previous?.dependency_coverage?.status !== "complete") unknown.push({ code: "dependency_coverage_unknown",
-    potential_influence: clone(previous?.dependency_coverage?.potential_influence ?? [{ scope: "project" }]) });
-  if (current?.dependencies.some((input) => !input.available)) unknown.push({ code: "dependency_unresolved" });
+  const limitations = [];
+  const coverageReasons = [];
+  if (previous?.dependency_coverage?.status !== "complete") {
+    coverageReasons.push({ code: "dependency_coverage_unknown",
+      potential_influence: clone(previous?.dependency_coverage?.potential_influence ?? [{ scope: "project" }]) });
+    limitations.push("Полнота зависимостей не подтверждена.");
+  }
+  if (previous?.dependencies.some((input) => !input.available) || current?.dependencies.some((input) => !input.available)) {
+    unknown.push({ code: "dependency_unresolved" });
+    limitations.push("Часть объявленных зависимостей недоступна для сравнения.");
+  }
   if (!previous?.complete || !current?.complete) unknown.push({ code: "input_coverage_incomplete" });
-  return { status: reasons.length ? "stale" : unknown.length ? "unknown" : "fresh", reasons: [...reasons, ...unknown] };
+  if (!previous?.complete || !current?.complete) limitations.push("Сохранённые или текущие входные данные неполны.");
+  return { status: reasons.length ? "stale" : unknown.length ? "unknown" : "fresh", reasons: [...reasons, ...unknown],
+    coverage: { status: limitations.length ? "partial" : "complete", limitations, reasons: [...coverageReasons, ...unknown] } };
 }
 
 /** Current зависит от проверенного состояния; change дополнительно от явной базы. */
 export function reviewFreshness(entry, baseline, current) {
   if (!entry?.inputs || entry.schema_version !== REPORT_SCHEMA_VERSION || entry.inputs.schema_version !== 1) {
-    return { current: { status: "unknown", reasons: [{ code: "legacy_manifest_missing" }] },
-      change: { status: "unknown", reasons: [{ code: "legacy_manifest_missing" }] } };
+    const unavailable = { status: "unknown", reasons: [{ code: "legacy_manifest_missing" }],
+      coverage: { status: "unavailable", limitations: ["Нет проверяемого описания входов прежнего анализа."] } };
+    return { current: clone(unavailable), change: clone(unavailable) };
   }
   const selectors = (entry.inputs.current.dependencies ?? []).map((dependency) => dependency.selector);
   const options = { scope: entry.inputs.scope, dependencies: selectors,
-    dependencyCoverage: entry.inputs.current.dependency_coverage };
+    dependencyCoverage: entry.inputs.current.dependency_coverage, contractScope: entry.inputs.contract_scope ?? "effective" };
   const actual = createInputs(baseline, current, entry.module_id, options, isSemanticReview(entry));
   const own = inputFreshness(entry.inputs.current, actual.current);
   const change = inputFreshness(entry.inputs.current, actual.current);
@@ -540,6 +599,7 @@ export function reviewFreshness(entry, baseline, current) {
   if (entry.inputs.baseline || actual.baseline) {
     const baselineStatus = inputFreshness(entry.inputs.baseline, actual.baseline);
     change.reasons.push(...baselineStatus.reasons.map((reason) => ({ ...reason, side: "baseline" })));
+    change.coverage = combineCoverage([change.coverage, baselineStatus.coverage]);
     if (baselineStatus.status === "stale") change.status = "stale";
     else if (baselineStatus.status === "unknown" && change.status === "fresh") change.status = "unknown";
   }
@@ -566,12 +626,13 @@ function aggregateAssessment(candidates, side) {
   const resultKeys = new Set(applicable.map((candidate) => assessmentResultDigest(candidate.entry.report, side)));
   const conflict = resultKeys.size > 1;
   const verdicts = [...new Set(applicable.map((candidate) => candidate.entry.report.assessment[side].verdict))];
-  const coverage = selected.some((candidate) => candidate.entry.report.analysis.coverage.status !== "complete") ? "partial" : "complete";
+  const coverage = combineCoverage(selected.flatMap((candidate) =>
+    [candidate.entry.report.analysis.coverage, candidate.freshness[side].coverage]));
   return { status: fresh.length ? "fresh" : applicable.length ? "unknown" : "stale",
     reasons: selected.flatMap((candidate) => candidate.freshness[side].reasons),
     verdict: conflict ? "inconclusive" : verdicts.length === 1 ? verdicts[0] : null,
     verdicts, review_ids: selected.map((candidate) => candidate.entry.review_id), conflict,
-    coverage: { status: coverage, limitations: [...new Set(selected.flatMap((candidate) => candidate.entry.report.analysis.coverage.limitations))] },
+    coverage,
     current_violation: fresh.some((candidate) => candidate.entry.report.assessment[side].verdict === "violation") };
 }
 
@@ -611,8 +672,7 @@ export function aggregateTreeStatuses(entries, baseline, current) {
       }
       subtree[side] = { status: counts.stale ? "stale" : counts.unknown ? "unknown" : counts.not_reviewed ? "not_reviewed" : "fresh",
         counts, conflict: statuses.some((status) => status.conflict), current_violation: statuses.some((status) => status.current_violation),
-        coverage: { status: statuses.every((status) => status.coverage.status === "complete") ? "complete" : "partial",
-          limitations: [...new Set(statuses.flatMap((status) => status.coverage.limitations ?? []))] } };
+        coverage: combineCoverage(statuses.map((status) => status.coverage)) };
     }
     const value = { self, subtree, explicit_subtree: explicitSubtree };
     visiting.delete(id); result.set(id, value); return value;

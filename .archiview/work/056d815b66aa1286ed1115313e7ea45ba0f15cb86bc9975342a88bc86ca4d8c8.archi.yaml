@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: architecture-web
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 31d6d978a3c3a6ed3aeb84a5c6dd3e9307e1c01cf9888199704f1cd919b145dc
+check_hash: 605eea4023628f3af9ff2f73ac34c7266fe4ee054e9985ed7278d9a7a26f6c3a
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -20,7 +20,7 @@ input_manifest:
     exists: true
     directory: web
     self_digest: sha256:96302d82984a9d12e70717b6452c0428a12ee5c3f0325740e438df384849c30d
-    subtree_digest: sha256:e845035fffb377e4e350e82e25853358181fd55970d267b71e2906d7b8f3aaee
+    subtree_digest: sha256:1265e00c75233a0e1d16929223ece85164a1913871243f0704760a05918a8f8a
   analyzer:
     name: archiview-structure
     version: 1.0.1
@@ -286,11 +286,19 @@ current:
           responsibilities:
             R1: Владеть поиском, фильтрами, выбором модуля и представлением его
               структурированного контракта.
-            R2: Показывать разницу контрактов, состав файлов, историю проверок, две итоговые
-              оценки, замечания и сохранённые доказательства.
+            R2: Показывать изменения непосредственно в контракте цветом и открывать диф
+              выбранного поля. Представлять состав файлов, историю проверок,
+              замечания и сохранённые доказательства. Ошибки показываются в
+              замечаниях без дублирующего общего вердикта; пункт и его владелец
+              доступны из замечания. Основной чеклист содержит только
+              собственные пункты выбранного состояния модуля; пункты предков и
+              повторы версий в него не включаются. Изменение текста пункта и
+              замечания к нему представлены независимо; каждое замечание
+              доступно отдельным переходом из пункта.
             R3: Раздельно показывать собственную актуальность и актуальность поддерева,
-              причины перепроверки, ограничения покрытия и расхождения
-              содержательных оценок.
+              причины перепроверки, полноту проверки, подтверждённость перечня
+              зависимостей и расхождения содержательных оценок; совпадение
+              проверенных входов не скрывать из-за частичного покрытия.
             R4: Представлять хронологию коммитов, незакоммиченных изменений и текущего
               сжатого состояния; выбирать просматриваемое состояние в едином
               списке от свежих состояний к ранним.
@@ -310,19 +318,19 @@ current:
             I4: Неполнота и устаревание видны рядом с выводами; содержимое документов не
               исполняется.
         document_state: documented
-  self_digest: sha256:04541e315eca4b00fe97736ab890b8b5e8f0470fd2ad2ae1c1ef7d68ba5a0d27
+  self_digest: sha256:09f263194873c67202ea72662899ad3432bd9133eee2fc9ed1d440063fc80bc8
   subtree:
     self: sha256:96302d82984a9d12e70717b6452c0428a12ee5c3f0325740e438df384849c30d
     children:
       - module_id: archiview-client
-        digest: sha256:caf264153e9da80b3f08861a9c31ce54d2314e0b5bb5513dd8d21c230ce3cf53
-  subtree_digest: sha256:e845035fffb377e4e350e82e25853358181fd55970d267b71e2906d7b8f3aaee
+        digest: sha256:ff4aa86dfc3e1c507bf4af1fe50ad7f8d17624e17209279e779ae651c14658d4
+  subtree_digest: sha256:1265e00c75233a0e1d16929223ece85164a1913871243f0704760a05918a8f8a
   semantic_subtree:
-    self: sha256:04541e315eca4b00fe97736ab890b8b5e8f0470fd2ad2ae1c1ef7d68ba5a0d27
+    self: sha256:09f263194873c67202ea72662899ad3432bd9133eee2fc9ed1d440063fc80bc8
     children:
       - module_id: archiview-client
-        digest: sha256:7f3989f5f59d05f1e186668764ff8b438264516cdbff03c9bc0a228c1f458f17
-  semantic_subtree_digest: sha256:18a46ac793169e2cc000d2afef459856b73e4fa91e8de7e37ffe8348f062336e
+        digest: sha256:7e018fded5f7e97fad111eca889a5f07c4b50e155bcf849d7664b7cf567f76ec
+  semantic_subtree_digest: sha256:c832b1fa7a9b0cbbbcbda6064d8d4ae84227dfa9da325ef04600f1eae279fd82
 change:
   existence: retained
   own: false
@@ -337,8 +345,8 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 6
-  comparison_key: sha256:f720fc5af855dd630e330caa0a722a3318d8dff12db5b5123ce85d7035eb2309
+  generation: 7
+  comparison_key: sha256:d85198c2d1edf0169358921774bd9fc7c8ba80d34ac29f83dfc3a46958d4c3b5
   baseline:
     metadata:
       schema_version: 2
@@ -435,16 +443,15 @@ publication:
     metadata:
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-09T06:28:45.919Z
-      kind: git
-      revision: 07dda2020ba802c3dd157517016282fd45f6a465
-      label: HEAD · 07dda20
-      fingerprint: 40a1ea5e915241a63ecd5f950c2367cf7be13597f85fe033257ac71a6f6b8004
+      capturedAt: 2026-11-09T18:15:54.461Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 0541d434bd25b3165490b996bbf1e5d726747fe6eda57b3e8414d7c566729b5f
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      digest: sha256:a265fc410107fc8dfc62a785e4838613c8e1edfb3e00240388b2b32655774db5
-      id: git-07dda2020ba802c3dd157517016282fd45f6a465
+      digest: sha256:16a8b76ae12e07398734e66ed95d3ecb1dcd752ff13c74ecc82a698efacbee74
+      id: launch-0541d434bd25b3165490b996bbf1e5d726747fe6eda57b3e8414d7c566729b5f
     module_index: 6
     module:
       directory: web
@@ -490,7 +497,7 @@ publication:
       sourceFiles: 0
       fingerprint: e9af515b948b2f1e05ac53b5d1dc3e6f1cdbc47b1e3e27649c4c3b4031bd5d2c
     facts:
-      - index: 55
+      - index: 56
         fact:
           id: sha256:d0767fe7f02f99e2ca5128af528fd891aa9fe3d2257d752ba62c8e97f6ef69f7
           kind: file
@@ -516,7 +523,7 @@ publication:
             invariants:
               I1: Содержимое контрактов, отчётов и исходников отображается как данные.
               I2: Клиент не изменяет исходники и принятые границы ответственности.
-      - index: 68
+      - index: 69
         fact:
           id: sha256:2b3e47596bdc4880277b6889c3e1f496096888947bfc95a09821304cdefee294
           kind: module
@@ -565,9 +572,10 @@ review_status:
       conflict: false
       current_violation: false
       coverage:
-        status: partial
+        status: unavailable
         limitations:
           - Содержательная проверка отсутствует.
+        reasons: []
     change:
       status: not_reviewed
       counts:
@@ -578,9 +586,10 @@ review_status:
       conflict: false
       current_violation: false
       coverage:
-        status: partial
+        status: unavailable
         limitations:
           - Содержательная проверка отсутствует.
+        reasons: []
   explicit_subtree:
     current:
       status: not_reviewed

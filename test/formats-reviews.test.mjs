@@ -81,7 +81,7 @@ test("stable ids preserve module identity across moves and initial analysis has 
   assert.equal(bundle.report.assessment.change.verdict, "not_applicable");
 });
 
-test("reviews retain old evidence, inherit constraints, remain immutable and become stale", async (t) => {
+test("reviews retain old evidence and own clauses, remain immutable and become stale", async (t) => {
   const { root, state } = await fixture(t);
   const before = await captureWorkingTree(root);
   await writeFile(path.join(root, "child/arch.yaml"), stringify({ ...contract("child"), boundaries: { B1: "Не выполнять запись." } }));
@@ -89,8 +89,9 @@ test("reviews retain old evidence, inherit constraints, remain immutable and bec
   const module = compareSnapshots(before, after).modules.find((m) => m.moduleId === "child");
   const bundle = createStructuralReview(before, after, module);
   assert.equal(bundle.report.assessment.change.verdict, "needs_review");
-  assert.ok(bundle.report.checks.some((c) => c.contract.module_id === "root" && c.contract.section === "boundaries"));
-  assert.ok(!bundle.report.checks.some((c) => c.contract.module_id === "root" && c.contract.section === "responsibilities"));
+  assert.equal(bundle.manifest.contract_scope, "own");
+  assert.ok(bundle.report.checks.length);
+  assert.ok(bundle.report.checks.every((c) => c.contract.module_id === bundle.report.module.id));
   assert.ok(bundle.report.checks.every((c) => c.verdict === "not_checked"));
   const store = new ReviewStore(new SnapshotStore(root, state));
   await store.save(bundle);

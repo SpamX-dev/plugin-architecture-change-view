@@ -41,15 +41,15 @@ async function published(root) {
 }
 
 /** Искусственная содержательная оценка проверяет доставку входов и статусов, а не смысл тестового кода. */
-function fixtureReview(app, current, id, verdict = "consistent", dependencies = []) {
+function fixtureReview(app, current, id, verdict = "consistent", dependencies = [], options = {}) {
   const input = createReviewInput(digest(app.store.snapshotRoot), null, current, id,
-    { dependencies, dependencyCoverage: { status: "complete", potential_influence: [] } });
+    { dependencies, dependencyCoverage: options.dependencyCoverage ?? { status: "complete", potential_influence: [] } });
   input.report.analysis.model = { provider: "test", id: "fixture" };
   input.report.analysis.prompt_digest = digest("Fixture review");
   input.manifest.model = input.report.analysis.model;
   input.manifest.prompt_digest = input.report.analysis.prompt_digest;
   input.report.analysis.input_digest = digest(input.manifest);
-  input.report.analysis.coverage = { status: "complete", limitations: [] };
+  input.report.analysis.coverage = options.coverage ?? { status: "complete", limitations: [] };
   input.report.assessment.current = { verdict, summary: "Fixture assessment: " + verdict };
   for (const check of input.report.checks) {
     check.verdict = verdict;
@@ -147,6 +147,33 @@ test("HTTP keeps parent self fresh while changed child invalidates subtree and p
   const rootReview = sameCodeNewBase.modules.find((module) => module.moduleId === "root").reviewStatus.self;
   assert.equal(rootReview.current.status, "fresh");
   assert.equal(rootReview.change.status, "stale");
+});
+
+test("HTTP exposes matching inputs and dependency coverage independently without rewriting the review", async (t) => {
+  const root = await fixture(t);
+  const app = await serve(t, root);
+  const current = await captureWorkingTree(root);
+  const review = fixtureReview(app, current, "child", "violation", [], {
+    dependencyCoverage: { status: "unknown", potential_influence: [{ scope: "project" }] },
+    coverage: { status: "partial", limitations: ["Частичная проверка фикстуры."] },
+  });
+  await app.reports.saveReview(review);
+  const response = await fetch(app.url + "/api/comparison?baseline=initial");
+  const view = await response.json();
+  const child = view.modules.find((module) => module.moduleId === "child");
+  assert.equal(child.review.stale, false);
+  assert.equal(child.reviewStatus.self.current.status, "fresh");
+  assert.equal(child.reviewStatus.self.current.coverage.status, "partial");
+  assert.equal(child.reviewStatus.self.current.current_violation, true);
+  const detail = await (await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: "child" }))).json();
+  assert.equal(detail.reviews[0].freshness.current.status, "fresh");
+  assert.ok(detail.reviews[0].freshness.current.coverage.reasons.some((reason) => reason.code === "dependency_coverage_unknown"));
+  assert.deepEqual(detail.reviews[0].report, review.report);
+  await writeFile(path.join(root, "child/code.js"), "export const value = 2;\n");
+  const changed = await (await fetch(app.url + "/api/comparison?baseline=initial")).json();
+  const changedChild = changed.modules.find((module) => module.moduleId === "child");
+  assert.equal(changedChild.reviewStatus.self.current.status, "stale");
+  assert.equal(changedChild.reviewStatus.self.current.coverage.status, "partial");
 });
 
 test("HTTP preserves conflicting attempts and reports both conflict and subtree coverage", async (t) => {
