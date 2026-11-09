@@ -157,23 +157,24 @@ function assessments(bundle) {
 }
 
 /**
- * Кратко показывает отсутствие применимого анализа. Кнопка пока служит
- * заглушкой: отключена и не запускает запросы или автоматическую проверку структуры.
+ * Показывает отсутствие применимого анализа. Доступность явного действия
+ * задаёт клиент, который знает выбранный снимок и возможности bridge хоста.
  */
-function analysisNotice(title, state = "not-reviewed") {
+function analysisNotice(title, state = "not-reviewed", configureAnalysisButton) {
   const notice = el("section", "notice analysis-notice " + state);
   const button = el("button", "button button-primary", "Провести анализ");
   button.type = "button";
   button.disabled = true;
   button.title = "Запуск анализа пока недоступен";
+  configureAnalysisButton?.(button);
   notice.append(el("strong", "", title), button);
   return notice;
 }
 
 /** Полный просмотр отчёта, включая ограничения, наблюдения, пункты и замечания. */
-export function renderReview(panel, detail, mode) {
+export function renderReview(panel, detail, mode, configureAnalysisButton) {
   if (!detail.reviews.length) {
-    panel.append(analysisNotice("Анализ не проводился"));
+    panel.append(analysisNotice("Анализ не проводился", "not-reviewed", configureAnalysisButton));
     return;
   }
   const toolbar = el("div", "review-toolbar");
@@ -206,7 +207,7 @@ export function renderReview(panel, detail, mode) {
     const unknown = states.includes("unknown");
     let content = body;
     if (stale || unknown) {
-      overview.append(analysisNotice(stale ? "Анализ устарел" : "Актуальность анализа не установлена", stale ? "stale" : "unknown"));
+      overview.append(analysisNotice(stale ? "Анализ устарел" : "Актуальность анализа не установлена", stale ? "stale" : "unknown", configureAnalysisButton));
       const history = el("details", "analysis-history");
       history.append(el("summary", "", "Показать сохранённый анализ"));
       content = el("div", "");

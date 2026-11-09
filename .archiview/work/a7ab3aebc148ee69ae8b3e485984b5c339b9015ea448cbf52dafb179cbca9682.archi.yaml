@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: architecture-change-view
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: b4b3062012172f30f9725edfda3d53b3a6f28c39e83d6db00bf5d6aeca031555
+check_hash: 284c1a4c91063e99179669d231d289d91713c71f658ea38a85a86e6685f9c022
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -19,8 +19,8 @@ input_manifest:
   current:
     exists: true
     directory: .
-    self_digest: sha256:59c06c7b2e241babe0298aa0779283706ddedefcd469881bc2fc420ac348820f
-    subtree_digest: sha256:3ce73369da61adc02dab988bd7d9df66d41345d7ea775cd874a599ffae6a7954
+    self_digest: sha256:425c5aaff769576c13c7abc8710d53d48b88ba1f67d7ae2d3374670830d9b575
+    subtree_digest: sha256:95a973926aafc50833431f217acc746c8c5b36295fdc2b21989d9dd0829c264f
   analyzer:
     name: archiview-structure
     version: 1.0.1
@@ -244,25 +244,32 @@ current:
     - architecture-core
     - architecture-tests
     - architecture-web
+    - archiview-distribution
   technical:
     normalization: archiview/module-state/v1
     module_id: architecture-change-view
     directory: .
     own_files:
+      - path: .agents/plugins/marketplace.json
+        digest: sha256:aba5eb3b70c8aa113080095bd0391885755509e0b9ee293266e25d7e03d4c6ad
+        normalization: text-lf/v1
       - path: .gitattributes
         digest: sha256:bafed029b6f1b8aa5cfabdf99af5d51484d17b4924bda81c43804061c98594fa
         normalization: text-lf/v1
       - path: .gitignore
-        digest: sha256:b6d2c99664543c8182936df1a826ca5e4d98c99b1a5773f720cd14fe1769cde9
+        digest: sha256:bef6e8500459f3e74c064a1707bf8fe6bd8a85ffacb38429c371a06dffec9c34
         normalization: text-lf/v1
       - path: LICENSE
         digest: sha256:37eeb569660ab5e98012f7d9a65fbb5242cddba0c7a976d1a134fa38a6b423f3
         normalization: text-lf/v1
       - path: README.md
-        digest: sha256:6843f21642a6b149c8014c908ea557895f1df5df5774c21e8f4e203087629e32
+        digest: sha256:52e89cbd594fbf4745d1e504251039fff8ac4c2c9905ac0841108e7a4328ede4
         normalization: text-lf/v1
       - path: docs/arch-review-format-v1.md
         digest: sha256:ee72652bf173bfe61d6cee3b9737ae58b55b704b67b2bdbd00de9dcb0ef15fce
+        normalization: text-lf/v1
+      - path: docs/codex-panel.md
+        digest: sha256:bd202dbe35cc02313550d973ddd95127942ce70eb7f2a4a80aaafd013ee6da48
         normalization: text-lf/v1
       - path: docs/report-format-v2.md
         digest: sha256:0daa642a7cd96a3637900dae4fcf08d46f9654696667377db1a517de19829d55
@@ -270,11 +277,17 @@ current:
       - path: docs/report-storage-and-compaction-design.md
         digest: sha256:e6d918bee91580e82a4f792b0a4f12b917825dee86f17e6c4866740f7a848c9e
         normalization: text-lf/v1
+      - path: mcp.json
+        digest: sha256:0ea2b4693f1abd8ded5e0333ba2b7d354662d2beecc0c787f998e50119d359bc
+        normalization: text-lf/v1
       - path: package-lock.json
-        digest: sha256:f6194ba654d969df40f01efe42944fefd04c81e7920b839bc2eca51c88498266
+        digest: sha256:17bedbba319c7708c94df13ae1c35a82fb5dd1c327a6c897a0e7eea540ad707c
         normalization: text-lf/v1
       - path: package.json
-        digest: sha256:be53e715281e300be9fc8a5e0b8f8018547a95dea15a8299f01000672846130a
+        digest: sha256:8d2a77747b939764feadff5ee024d92ddfd2469eaf4f2527fcc483c875c6c707
+        normalization: text-lf/v1
+      - path: plugin.json
+        digest: sha256:0f09a26268b0a0bd620e350ba3ed67915c92921be3d5fcc0f505957010401923
         normalization: text-lf/v1
       - path: skills/module-boundaries/SKILL.md
         digest: sha256:54d3aa5300b3b2f21d0884c415d5b50014d926f1b35ed85c1bd698134b9e061e
@@ -298,6 +311,8 @@ current:
         R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю
           содержательных проверок и отдельно определяя актуальность модуля и его
           поддерева.
+        R5: Поставлять локальный плагин Codex с веб-панелью и явным запуском анализа
+          выбранного модуля.
       boundaries:
         B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми
           инструментами. Просмотр не изменяет исходники проекта.
@@ -315,27 +330,33 @@ current:
         I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
     document_state: documented
     inherited: []
-  technical_digest: sha256:59c06c7b2e241babe0298aa0779283706ddedefcd469881bc2fc420ac348820f
+  technical_digest: sha256:425c5aaff769576c13c7abc8710d53d48b88ba1f67d7ae2d3374670830d9b575
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: architecture-change-view
     directory: .
     own_files:
+      - path: .agents/plugins/marketplace.json
+        digest: sha256:aba5eb3b70c8aa113080095bd0391885755509e0b9ee293266e25d7e03d4c6ad
+        normalization: text-lf/v1
       - path: .gitattributes
         digest: sha256:bafed029b6f1b8aa5cfabdf99af5d51484d17b4924bda81c43804061c98594fa
         normalization: text-lf/v1
       - path: .gitignore
-        digest: sha256:b6d2c99664543c8182936df1a826ca5e4d98c99b1a5773f720cd14fe1769cde9
+        digest: sha256:bef6e8500459f3e74c064a1707bf8fe6bd8a85ffacb38429c371a06dffec9c34
         normalization: text-lf/v1
       - path: LICENSE
         digest: sha256:37eeb569660ab5e98012f7d9a65fbb5242cddba0c7a976d1a134fa38a6b423f3
         normalization: text-lf/v1
       - path: README.md
-        digest: sha256:6843f21642a6b149c8014c908ea557895f1df5df5774c21e8f4e203087629e32
+        digest: sha256:52e89cbd594fbf4745d1e504251039fff8ac4c2c9905ac0841108e7a4328ede4
         normalization: text-lf/v1
       - path: docs/arch-review-format-v1.md
         digest: sha256:ee72652bf173bfe61d6cee3b9737ae58b55b704b67b2bdbd00de9dcb0ef15fce
+        normalization: text-lf/v1
+      - path: docs/codex-panel.md
+        digest: sha256:bd202dbe35cc02313550d973ddd95127942ce70eb7f2a4a80aaafd013ee6da48
         normalization: text-lf/v1
       - path: docs/report-format-v2.md
         digest: sha256:0daa642a7cd96a3637900dae4fcf08d46f9654696667377db1a517de19829d55
@@ -343,11 +364,17 @@ current:
       - path: docs/report-storage-and-compaction-design.md
         digest: sha256:e6d918bee91580e82a4f792b0a4f12b917825dee86f17e6c4866740f7a848c9e
         normalization: text-lf/v1
+      - path: mcp.json
+        digest: sha256:0ea2b4693f1abd8ded5e0333ba2b7d354662d2beecc0c787f998e50119d359bc
+        normalization: text-lf/v1
       - path: package-lock.json
-        digest: sha256:f6194ba654d969df40f01efe42944fefd04c81e7920b839bc2eca51c88498266
+        digest: sha256:17bedbba319c7708c94df13ae1c35a82fb5dd1c327a6c897a0e7eea540ad707c
         normalization: text-lf/v1
       - path: package.json
-        digest: sha256:be53e715281e300be9fc8a5e0b8f8018547a95dea15a8299f01000672846130a
+        digest: sha256:8d2a77747b939764feadff5ee024d92ddfd2469eaf4f2527fcc483c875c6c707
+        normalization: text-lf/v1
+      - path: plugin.json
+        digest: sha256:0f09a26268b0a0bd620e350ba3ed67915c92921be3d5fcc0f505957010401923
         normalization: text-lf/v1
       - path: skills/module-boundaries/SKILL.md
         digest: sha256:54d3aa5300b3b2f21d0884c415d5b50014d926f1b35ed85c1bd698134b9e061e
@@ -369,6 +396,8 @@ current:
         R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю
           содержательных проверок и отдельно определяя актуальность модуля и его
           поддерева.
+        R5: Поставлять локальный плагин Codex с веб-панелью и явным запуском анализа
+          выбранного модуля.
       boundaries:
         B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми
           инструментами. Просмотр не изменяет исходники проекта.
@@ -413,6 +442,8 @@ current:
               ревизии; предоставлять последовательность коммитов и точные снимки
               истории без изменения исходников.
           boundaries:
+            B3: Адаптер Codex находится в codex; он открывает веб-интерфейс и не заменяет
+              HTTP API инструментами MCP.
             B1: Локальный HTTP-интерфейс находится в подмодуле archiview; отображение
               принадлежит web.
             B2: Семантический вывод ответственности выполняет агент или внешний анализатор.
@@ -440,6 +471,8 @@ current:
             R2: Проверять неизменность истории, разрешение доказательств, устаревание и
               границы файловой области.
             R3: Проверять реальные stdio- и HTTP-сценарии на изолированных проектах.
+            R4: Проверять авторизацию панели, привязку анализа к неизменяемым входам и
+              доставку запроса агенту без подмены анализа структурной проверкой.
           boundaries:
             B1: Тесты не подменяют содержательный анализ пользовательской ответственности
               эвристикой.
@@ -464,27 +497,48 @@ current:
             I1: Содержимое контрактов, отчётов и исходников отображается как данные.
             I2: Клиент не изменяет исходники и принятые границы ответственности.
         document_state: documented
-  self_digest: sha256:65ed14f8456abccf46e82603a5e1b0780ee1a6c04385860551815b4d2aab7d04
+      - module_id: archiview-distribution
+        directory: scripts
+        contract:
+          id: archiview-distribution
+          kind: module
+          purpose: Собирать автономный локальный плагин Codex из исходников ArchiView.
+          responsibilities:
+            R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый
+              каталог без зависимости от node_modules установленного плагина.
+            R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для
+              проверки UI, bridge и отказа хоста без запуска модели.
+          boundaries:
+            B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
+          invariants:
+            I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не
+              заменяются.
+        document_state: documented
+  self_digest: sha256:2b27a2955bcf2b5b35d69b31ecfc7de4cd095edd70ecd6338e97fe8377b6e9c6
   subtree:
-    self: sha256:59c06c7b2e241babe0298aa0779283706ddedefcd469881bc2fc420ac348820f
+    self: sha256:425c5aaff769576c13c7abc8710d53d48b88ba1f67d7ae2d3374670830d9b575
     children:
       - module_id: architecture-core
-        digest: sha256:4ee0117c80449ae0ea35dffe5d8ffccedea8fc3931f4f27848616cc9d55ca1b3
+        digest: sha256:5058d7c817c3071918506e7db8aaffd806f5872c0c524fd771b56d32513a83c7
       - module_id: architecture-tests
-        digest: sha256:40c37f50e626ae8f2a2947033ee30cdc532c0f98109edd4584c0e2d4f272dd2f
+        digest: sha256:94581d918da2c7ecc282da33939345fb098e82e326e15162d3b801682108e213
       - module_id: architecture-web
-        digest: sha256:ec5ef84b53dba05ce458a2117a356e8c63699eeb152ab69d8c1159d776bbb8e7
-  subtree_digest: sha256:3ce73369da61adc02dab988bd7d9df66d41345d7ea775cd874a599ffae6a7954
+        digest: sha256:fb26740820d729ba3f48e98369fa79174f40020ec06a23d399b28edbed7c1ff8
+      - module_id: archiview-distribution
+        digest: sha256:41c16035d07a8f22cbaf023a8bec5fc016d7d983dd8b541217b847d2345d3a9d
+  subtree_digest: sha256:95a973926aafc50833431f217acc746c8c5b36295fdc2b21989d9dd0829c264f
   semantic_subtree:
-    self: sha256:65ed14f8456abccf46e82603a5e1b0780ee1a6c04385860551815b4d2aab7d04
+    self: sha256:2b27a2955bcf2b5b35d69b31ecfc7de4cd095edd70ecd6338e97fe8377b6e9c6
     children:
       - module_id: architecture-core
-        digest: sha256:b77fc5612943ece28a63be54ad2a592cb45f742d7e46cefc83b98c328b85f74c
+        digest: sha256:fcfd5a61070e1035dfbd3ae12a22d3c58dc7cd36d558b1eb177e5a6af2149039
       - module_id: architecture-tests
-        digest: sha256:dc2a60243aa68339cd6ac44ddc1fd183fd3989329aa80d6521f15d424db747ab
+        digest: sha256:23c6edff7643430f5d1924f980ef3c567c55e1ef067b1386093fb8d214e04ea8
       - module_id: architecture-web
-        digest: sha256:56039bdafbfb45fee782369ef504ee78c9ff6ae5a8d3617182226b5b0ea3222d
-  semantic_subtree_digest: sha256:d160d4bd38322e77c838e8933a16f8c7f5d2b1db7da9366c8a1fcffcb1dba197
+        digest: sha256:2cf505a3421e029325be0627af4460921835a1c45442af7d7f99434929ae372f
+      - module_id: archiview-distribution
+        digest: sha256:0a7a6d594fe59f54272839d118fb6b9ee254360a9962a0fcd46961459a15d2e1
+  semantic_subtree_digest: sha256:11a868a0967a81dd63bfba754d5b037b45381028da057d63de2ecee86167e8fc
 change:
   existence: retained
   own: true
@@ -499,8 +553,8 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 4
-  comparison_key: sha256:b40e6ef4cffc9d8081ae683f84a5a7917c331e261ab8599c8c643eb2c4b712c8
+  generation: 5
+  comparison_key: sha256:89588b0e50cdbefe400fd5c4b3c35ef306e9cc057fbc2b1d5779d5f2036ad67b
   baseline:
     metadata:
       schema_version: 2
@@ -3137,15 +3191,15 @@ publication:
     metadata:
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-09T04:27:48.303Z
+      capturedAt: 2026-11-09T04:49:24.219Z
       kind: launch
       label: Начальное состояние
-      fingerprint: e9ba5212f9e582c34488026e075ccb74651cb47fb94112b5ad4e3ab7f8fff6b8
+      fingerprint: b6f1610d80b6c49757d78e2e4b1df1e551828898312bb8530887231d62c08328
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      digest: sha256:0518fcb0d7d40fad73129f77b7bef40fcb0e4ef6acdd15afd988448d3c678bb5
-      id: launch-e9ba5212f9e582c34488026e075ccb74651cb47fb94112b5ad4e3ab7f8fff6b8
+      digest: sha256:082f27209b2440a13ab5f13fe5812754ad694de004867e3de8735104d156cc6b
+      id: launch-b6f1610d80b6c49757d78e2e4b1df1e551828898312bb8530887231d62c08328
     module_index: 0
     module:
       directory: .
@@ -3172,6 +3226,7 @@ publication:
               review.yaml для выбранного сравнения.
             R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю содержательных
               проверок и отдельно определяя актуальность модуля и его поддерева.
+            R5: Поставлять локальный плагин Codex с веб-панелью и явным запуском анализа выбранного модуля.
           boundaries:
             B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
               Просмотр не изменяет исходники проекта.
@@ -3205,6 +3260,8 @@ publication:
             R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю
               содержательных проверок и отдельно определяя актуальность модуля и
               его поддерева.
+            R5: Поставлять локальный плагин Codex с веб-панелью и явным запуском анализа
+              выбранного модуля.
           boundaries:
             B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми
               инструментами. Просмотр не изменяет исходники проекта.
@@ -3221,32 +3278,59 @@ publication:
               текущий код не разрешают её расширять.
             I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
       files:
+        - path: .agents/plugins/marketplace.json
+          hash: 3e1bd92cb0884f7dd8f0db3ed1c7d1c933d150f9
         - path: .gitattributes
           hash: 6313b56c57848efce05faa7aa7e901ccfc2886ea
         - path: .gitignore
-          hash: 552f22184f212d5dc7566f5dcaf6ac9ccb2a98d5
+          hash: f9f8a05db58d7a22414012e98b610e88ea49c14c
         - path: arch.yaml
-          hash: 9d6a666e9eaff9fc42891d5fb3c0885febdada33
+          hash: 622df7ddf5fd4090796f82f6a686b08c8cf24d70
         - path: docs/arch-review-format-v1.md
           hash: 64da5dabd23f281b1c045168e7b0c04d66a91f99
+        - path: docs/codex-panel.md
+          hash: e034434a3c8ee6072b5ce01c3c1718434fc78fc4
         - path: docs/report-format-v2.md
           hash: 2aa69ed3c94d819ee7857f68ba283970095ea335
         - path: docs/report-storage-and-compaction-design.md
           hash: 2024f190c190160802502dad4cb5c41c31f85b41
         - path: LICENSE
           hash: e39aafab71a6a8f1935b0f87dbbf721f6ff867ca
+        - path: mcp.json
+          hash: 3daa617577b0e17a0c8ae4d1c571160328d40212
         - path: package-lock.json
-          hash: 91af2c81cbfbf5ab22cb47199e7aedacda060e58
+          hash: 868a7a23cb0572920ac6d6c13c63965ffcb7f5e1
         - path: package.json
-          hash: 1455cd2430aabc768b65b1cb990982047ce765c5
+          hash: bb31175bc14bae1443888aeb3340d3b40a4044d8
+        - path: plugin.json
+          hash: e45c2988f7de46264f3c0998a4e2a64c6052e4ee
         - path: README.md
-          hash: 261e2a71075130256546e4a58fdc95f01d007162
+          hash: 44e9569d570e98bad4a426fea0fb7aa42d1b6ae7
         - path: skills/module-boundaries/SKILL.md
           hash: 082b82e7623ceff62feeff4e25a7e918be311d45
       sourceFiles: 0
-      fingerprint: 61e7dfffd91400717400fccbde49410b079c365e625cd221e7de019f7f0b7a05
+      fingerprint: 2dbaadc8ce58e44dd6827a7258f58fcbdb753d19c1ef1165e8e5eab22b9d483d
     facts:
       - index: 0
+        fact:
+          id: sha256:98604c74d2ba398a215f6ec1f27af5e66fb3459cda71e127be6692de7edefa9a
+          kind: file
+          path: .agents/plugins/marketplace.json
+          start_line: 1
+          end_line: 12
+          text: >
+            {
+              "name": "archiview-local",
+              "plugins": [
+                {
+                  "name": "archiview",
+                  "source": { "source": "local", "path": "./dist/codex" },
+                  "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+                  "category": "Developer Tools"
+                }
+              ]
+            }
+      - index: 1
         fact:
           id: sha256:0c905749f35583dee6ce8ace4bd8d1ba8e45a58ce7bc003d786a74c0b1d66adc
           kind: file
@@ -3255,17 +3339,18 @@ publication:
           end_line: 2
           text: |
             * text=auto eol=lf
-      - index: 1
+      - index: 2
         fact:
-          id: sha256:7a2607beda362863a4f5a8f7246b0c8adca92cb60b4ddf7c1690102b15795632
+          id: sha256:22470ee02ec8a8630a6548086cd75b41d5fcc73081af22a42b7f7398704bf3ab
           kind: file
           path: .gitignore
           start_line: 1
-          end_line: 3
+          end_line: 4
           text: |
             node_modules/
             *.log
-      - index: 2
+            dist/
+      - index: 3
         fact:
           id: sha256:97313dfabeb4b8dc70b8338dae4d6688aa75c7bcce7f62abba7715f195efda3c
           kind: file
@@ -3322,19 +3407,55 @@ publication:
             DEALINGS IN THE
 
             SOFTWARE.
-      - index: 3
+      - index: 4
         fact:
-          id: sha256:2db4a41654209d4d509dd78d89be7720978626bbab2b75b76136e112ed100c36
+          id: sha256:ecac0e0477b21e5654dc09de481b4fd9ecfddbdc3f09bb12e07448bb54f17abf
           kind: file
           path: README.md
           start_line: 1
-          end_line: 216
+          end_line: 252
           text: |
             # ArchiView
 
             Локальный просмотр архитектуры проекта: дерево модулей, структурированные
             контракты arch.yaml, изменения между снимками и результаты проверок review.yaml.
             Пакет также предоставляет MCP-инструменты и скилл module-boundaries.
+
+            ## Панель Codex
+
+            ArchiView поставляется как локальный плагин Codex. Сборка не требует npm-зависимостей
+            в установленном кеше плагина:
+
+            ```powershell
+            npm ci
+            npm run build:plugin
+            codex plugin marketplace add .
+            codex plugin add archiview@archiview-local
+            ```
+
+            Откройте новый локальный чат в Codex после установки. Плагин регистрирует
+            приложение **ArchiView** для панели разговора и бокового меню. Если хост не
+            показывает точку входа автоматически, попросите открыть ArchiView: служебный
+            инструмент `archiview_open` возвращает UI-ресурс. Проект определяется рабочим
+            каталогом MCP-процесса; `--root` или `PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT`
+            позволяют зафиксировать другой корень.
+
+            В панели работают те же HTML/CSS/JavaScript и HTTP backend. Дерево, поиск,
+            контракты, история, проверки и обновление данных не требуют вызовов инструментов
+            моделью. MCP используется для регистрации и открытия приложения; кнопка
+            **«Анализировать модуль»** передаёт явное поручение агенту хоста через MCP Apps bridge.
+
+            Кнопка доступна при полном снимке, корректном arch.yaml и поддержке отправки
+            сообщений хостом. Backend экспортирует входы выбранного снимка; агент анализирует
+            их и импортирует результат отдельной CLI-командой. Панель ждёт именно импорт,
+            сохраняет выбранный модуль и показывает актуальность результата отдельно от
+            факта завершения. Отказ передачи отображается явно и позволяет повторить действие.
+            Обычный запуск в браузере сохраняется; без bridge кнопка анализа отключена.
+
+            Подробности протокола, расширения области зависимостей, проверки и ограничения
+            описаны в [интеграции с Codex](docs/codex-panel.md). Доступность MCP Apps UI
+            и отправки сообщений зависит от версии хоста; установка плагина сама по себе
+            не подтверждает работу нативного интерфейса в текущем открытом чате.
 
             ## Запуск
 
@@ -3545,13 +3666,13 @@ publication:
             Тесты используют временные проекты, настоящий stdio MCP и HTTP. Проверяются
             строгая схема, миграционные состояния, наследование, перемещения, исторические
             доказательства, неизменность отчётов, устаревание и границы хранения.
-      - index: 4
+      - index: 5
         fact:
-          id: sha256:3f1375ab3932d8863d7030fe2db5d9912f21c5bcd7c6b37768f12ec972786701
+          id: sha256:0af036ad9c8c327cd25590b61be45bd643f2d02f6e743648c1a77ef411dedbd8
           kind: file
           path: arch.yaml
           start_line: 1
-          end_line: 28
+          end_line: 29
           text: >
             schema_version: 1
 
@@ -3572,6 +3693,7 @@ publication:
                 review.yaml для выбранного сравнения.
               R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю содержательных
                 проверок и отдельно определяя актуальность модуля и его поддерева.
+              R5: Поставлять локальный плагин Codex с веб-панелью и явным запуском анализа выбранного модуля.
             boundaries:
               B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
                 Просмотр не изменяет исходники проекта.
@@ -3585,7 +3707,7 @@ publication:
               I3: arch.yaml содержит устойчивую ответственность; эвристические оценки и текущий код не разрешают
                 её расширять.
               I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
-      - index: 5
+      - index: 6
         fact:
           id: sha256:2ce4bbd4674d49811d406340432760fd2ee7ce07250da22b92204fac42a45ab2
           kind: file
@@ -4420,7 +4542,233 @@ publication:
 
             внешний контекст считается зафиксированным в манифесте, а не
             отслеживаемым ресурсом.
-      - index: 6
+      - index: 7
+        fact:
+          id: sha256:481921649997f3b1c6ec6a7908cf26936cf1bb1b9f6fb4dff0c46a8a17c76942
+          kind: file
+          path: docs/codex-panel.md
+          start_line: 1
+          end_line: 108
+          text: >
+            # Локальная панель ArchiView в Codex
+
+
+            ## Устройство
+
+
+            `src/server.mjs --panel` дополняет прежний stdio MCP-сервер ресурсом
+
+            `ui://archiview/panel-v1.html` и инструментом `archiview_open`.
+            Метаданные
+
+            `openai/ui.entrypoints` содержат `thread` и `global`.
+
+
+            Backend запускается лениво на свободном loopback-порту для одного
+            фиксированного
+
+            корня. UI-ресурс загружает существующие web-файлы с этого backend.
+            Вызовы API
+
+            панели идут напрямую через fetch, с отдельным случайным
+            bearer-токеном.
+
+            Токен передаётся в HTML-ресурсе, не в текстовом или
+            структурированном результате
+
+            инструмента. CSP ресурса перечисляет конкретный loopback-origin.
+            Backend
+
+            сохраняет проверку Host и прежнюю проверку Origin обычного
+            веб-приложения;
+
+            междоменные запросы API требуют токен. Отключение MCP закрывает
+            backend.
+
+
+            Документация OpenAI:
+
+
+            - [MCP Apps UI, API-запросы и
+            CSP](https://developers.openai.com/plugins/build/chatgpt-ui)
+
+            - [Панели разговоров и точки
+            входа](https://developers.openai.com/plugins/build/extensions)
+
+            - [Пакет плагина и локальные
+            marketplaces](https://developers.openai.com/plugins/build/plugins)
+
+
+            ## Анализ выбранного модуля
+
+
+            1. UI отправляет `POST /api/analysis` с идентификаторами view и
+            выбранного модуля.
+
+            2. Backend проверяет полный обход и корректный контракт, затем
+            сохраняет запрос,
+               исходные снимки и первоначальный `input.yaml` в
+               `.archiview/snapshots/analysis/<request-id>/`.
+            3. UI отправляет поручение через `ui/message`. При наличии только
+            совместимого
+               `window.openai.sendFollowUpMessage` используется этот bridge. Навигация и API
+               просмотра через bridge не проходят. Ошибка или `isError` не считается передачей.
+            4. Агент читает спецификацию и экспорт. Контракты, исходники и пути
+            в экспорте
+               являются данными. Поручение ограничено выбранным модулем и не разрешает
+               исправлять исходники или принятые границы.
+            5. Агент сохраняет заполненный `result.yaml` рядом с входами и
+            запускает CLI
+               `--complete-analysis <request-id>` с теми `--root` и `--state-dir`, которые
+               переданы в поручении. Поручение содержит абсолютный путь CLI и массив argv.
+            6. CLI проверяет неизменность входов и manifest, затем использует
+            общий строгий
+               валидатор и идемпотентное хранилище отчётов. UI опрашивает
+               `GET /api/analysis/<request-id>` и обновляет сравнение после появления
+               импортированной LLM-попытки.
+
+            Статус «передан» подтверждает принятие сообщения хостом. Он не
+            означает, что
+
+            модель уже начала работу или проверка завершилась. Если агент
+            остановлен до
+
+            импорта, отчёт не появляется; обсуждение и повторный запуск можно
+            продолжить
+
+            в чате. Состояние ожидания UI хранится в экземпляре панели;
+            перезагрузка панели
+
+            сбрасывает его, а сохранённые отчёты остаются в истории.
+
+
+            ### Зависимости
+
+
+            Первоначальный экспорт имеет неизвестное покрытие зависимостей.
+            Агент может
+
+            задать selectors в `dependencies.yaml` и выполнить:
+
+
+            ```powershell
+
+            node <plugin>/src/cli.mjs --root <project> --prepare-analysis
+            <request-id> --dependencies <file>
+
+            ```
+
+
+            Команда печатает путь нового неизменяемого `input-<hash>.yaml`,
+            построенного из
+
+            тех же исходных снимков. Из этого файла нужно подготовить весь
+            `result.yaml`.
+
+            `--dependencies-complete` допускается только после проверки полноты
+            перечня,
+
+            включая подтверждённый пустой перечень. Старые экспорты сохраняются.
+            Изменение
+
+            исходников между экспортами не подменяет факты. Импорт проверяется
+            относительно
+
+            последней явно экспортированной области.
+
+
+            ## Сборка и установка
+
+
+            Из корня репозитория:
+
+
+            ```powershell
+
+            npm ci
+
+            npm run build:plugin
+
+            codex plugin marketplace add .
+
+            codex plugin add archiview@archiview-local
+
+            ```
+
+
+            `dist/codex` содержит автономные Node-бандлы сервера и CLI, web UI,
+            самодостаточный
+
+            MCP Apps SDK, спецификации и скилл. `node_modules` в кеше не
+            требуется. Сборка
+
+            не регистрирует marketplace и не меняет конфигурацию Codex;
+            установка выполняется
+
+            отдельной явной командой. После изменения исходников повторите
+            сборку и установку.
+
+
+            Новый локальный чат подхватывает установленный плагин. Текущий чат
+            может требовать
+
+            перезагрузки клиента для обнаружения новых инструментов и UI-точек
+            входа.
+
+            Публичная публикация этой локальной поставки не выполняется.
+
+
+            ## Проверка
+
+
+            `npm test` сначала собирает плагин. Тесты проверяют настоящий stdio
+            MCP,
+
+            автономный пакет без node_modules, CORS/токен, CLI-импорт,
+            неизменность выбранного
+
+            снимка, расширение зависимостей, недопустимые пути и ссылки,
+            идемпотентность,
+
+            а также устаревание отчёта после изменения кода.
+
+
+            Для ручной проверки web UI и bridge предусмотрен:
+
+
+            ```powershell
+
+            node scripts/preview-panel.mjs
+
+            ```
+
+
+            Он создаёт временный проект и явно обозначенный тестовый хост MCP
+            Apps. В нём
+
+            можно отклонить поручение, повторить передачу и импортировать
+            искусственный
+
+            результат с отметкой `test`. Стенд не запускает модель и не
+            доказывает совместимость
+
+            с конкретным нативным клиентом Codex. Остановка процесса удаляет
+            только его
+
+            временный проект.
+
+
+            На установленном Codex отдельно проверяются отображение панели,
+            разрешённый
+
+            доступ к loopback-origin и фактический запуск агента после
+            ui/message.
+
+            При отсутствии отправки сообщений интерфейс остаётся доступным для
+            просмотра,
+
+            а кнопка анализа отключается с пояснением.
+      - index: 8
         fact:
           id: sha256:fe278540f9ae8795afa3e25580975c083217236b35f6f609818cf0d919c7af09
           kind: file
@@ -4929,7 +5277,7 @@ publication:
 
             политики хранения: отсутствие лимита истории не обещает полноту
             любого обхода.
-      - index: 7
+      - index: 9
         fact:
           id: sha256:79c3400d437c5c1cddf166e4b2e41d2d1a236dc8e0fb365911d85faf95c1cb11
           kind: file
@@ -6016,35 +6364,499 @@ publication:
 
             отображаются; отсутствие лимита истории не отменяет этих
             ограничений.
-      - index: 8
+      - index: 10
         fact:
-          id: sha256:10396279c37fa40143bb43ea9d912a1c2add5b6c05b09d17e8cc21e46a04dfdd
+          id: sha256:017a8734016a165907f43b5026d8834107e432de3676b291cc53eb6935dbd869
+          kind: file
+          path: mcp.json
+          start_line: 1
+          end_line: 11
+          text: >
+            {
+              "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+              "mcpServers": {
+                "archiview": {
+                  "type": "stdio",
+                  "command": "node",
+                  "args": ["${PLUGIN_ROOT}/src/server.mjs", "--panel"]
+                }
+              }
+            }
+      - index: 11
+        fact:
+          id: sha256:980fd1bd17a7bea6a0a1fe005fa2b6d3a15a1b15e97e166891f0d3700425c8a8
           kind: file
           path: package-lock.json
           start_line: 1
-          end_line: 1258
+          end_line: 1818
           text: >
             {
               "name": "plugin-architecture-change-view",
-              "version": "0.2.0",
+              "version": "0.3.0",
               "lockfileVersion": 3,
               "requires": true,
               "packages": {
                 "": {
                   "name": "plugin-architecture-change-view",
-                  "version": "0.2.0",
+                  "version": "0.3.0",
                   "license": "MIT",
                   "dependencies": {
+                    "@modelcontextprotocol/ext-apps": "^2.0.4",
                     "@modelcontextprotocol/sdk": "^1.32.2",
                     "diff": "^9.0.0",
                     "yaml": "^2.8.2"
                   },
                   "bin": {
-                    "archiview": "src/archiview/cli.mjs",
+                    "archiview": "src/cli.mjs",
                     "plugin-architecture-change-view": "src/server.mjs"
+                  },
+                  "devDependencies": {
+                    "esbuild": "^0.28.2"
                   },
                   "engines": {
                     "node": ">=22"
+                  }
+                },
+                "node_modules/@esbuild/aix-ppc64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/aix-ppc64/-/aix-ppc64-0.28.2.tgz",
+                  "integrity": "sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ==",
+                  "cpu": [
+                    "ppc64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "aix"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/android-arm": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/android-arm/-/android-arm-0.28.2.tgz",
+                  "integrity": "sha512-kXXoiPVVGQcnIYGOeaovwOURpniDBpSq4A03qkQ+BMQqtGG6HYap3xne9C1O1yo4TR3qxlCX5IqqmX6fFo2Lqg==",
+                  "cpu": [
+                    "arm"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "android"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/android-arm64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/android-arm64/-/android-arm64-0.28.2.tgz",
+                  "integrity": "sha512-5YfKeeI8qWfBZIX+u2xZC3Zlb3Os/gLS2sbEKM+I4ZOcsWmHS2WLysCcQZDAFRslDUU5Oiq44gf6PYN1vGwG5A==",
+                  "cpu": [
+                    "arm64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "android"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/android-x64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/android-x64/-/android-x64-0.28.2.tgz",
+                  "integrity": "sha512-O387ite7SzUyCcy3JQX4P4bLtEA7bLLkx+esve5JHnyYfNTxcVpXZo9jhdB0lTKN44gztELTdU7nS8Nr16Fs1Q==",
+                  "cpu": [
+                    "x64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "android"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/darwin-arm64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.28.2.tgz",
+                  "integrity": "sha512-n4KqkOQrraxHJcgjM1RvwbigfQKIKJVpM7xp+KsxiyUSrRdIXnt73VhrPAx0fV44hgfmIVKjxMN9J1t5jySVkw==",
+                  "cpu": [
+                    "arm64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "darwin"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/darwin-x64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.28.2.tgz",
+                  "integrity": "sha512-uq6suIWYP37qzGddBKPw5QEQPi6HiLGsO7UmkpfyaYNQ3D+rN6w6WfwH+nuqcGXWvawGwxOEroO4YGnFh95azw==",
+                  "cpu": [
+                    "x64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "darwin"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/freebsd-arm64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/freebsd-arm64/-/freebsd-arm64-0.28.2.tgz",
+                  "integrity": "sha512-n+I0BTSRIoy+d6RPKnEVwql5UwBJolytvY4mAOIEJorKlqgPII8ix6slVVrfZ5Tnj7glIZvloylbB/EJPMWEXw==",
+                  "cpu": [
+                    "arm64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "freebsd"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/freebsd-x64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/freebsd-x64/-/freebsd-x64-0.28.2.tgz",
+                  "integrity": "sha512-78XJTJkvPs0kz2w61301PJjXl4g7q3JqiYMZ/M/yVI73EHBrCRTgkhu9oqG7vPqq+a/yadEW8aD+agKlk5xrmg==",
+                  "cpu": [
+                    "x64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "freebsd"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/linux-arm": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/linux-arm/-/linux-arm-0.28.2.tgz",
+                  "integrity": "sha512-XlDnu2q5yoqems+xay6wSAcg9DDD7K9RLKZEBOMZm3ckNpJBvOX20tSfby8KfrrhINDyv9V2YVZKY/SpoGJI8w==",
+                  "cpu": [
+                    "arm"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "linux"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/linux-arm64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.28.2.tgz",
+                  "integrity": "sha512-pW4AC0P3it8c7do9MVM4p51FzHzdM/TZrerurgRcHJ2WTa1VQ1CIq18xncfpBJw4ojkiZZrKW2yIBWBP92j6Ug==",
+                  "cpu": [
+                    "arm64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "linux"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/linux-ia32": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.28.2.tgz",
+                  "integrity": "sha512-CYbnj78HsIeA+DhgUKgFCfvNsTHFhMMrinUrMZpDXJXKN8T3XViTZ/+wtHeVxEWY8ewSzTFN+nRmSwO2tZaLUQ==",
+                  "cpu": [
+                    "ia32"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "linux"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/linux-loong64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/linux-loong64/-/linux-loong64-0.28.2.tgz",
+                  "integrity": "sha512-buwkd8nsph4R+ajRvw0qM5Hja/TXQow3ptzWO2EbG/cqcIkHloRrdlBtQlshyYGTNFvfkfJ5tpPLVkY4DtsPfQ==",
+                  "cpu": [
+                    "loong64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "linux"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/linux-mips64el": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/linux-mips64el/-/linux-mips64el-0.28.2.tgz",
+                  "integrity": "sha512-ZVykbDyk7519VwiNb9Lcj9m8XM6v5V9uKPvrEMkkEedVewf+0itkhahp4HDpgERXhwLRpWFypsGbG/J8s0QjJA==",
+                  "cpu": [
+                    "mips64el"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "linux"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/linux-ppc64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/linux-ppc64/-/linux-ppc64-0.28.2.tgz",
+                  "integrity": "sha512-CAXl+Dtd9UUuJd8pKKdwh6MLm3MUMiqMPmhZ3tTSXPqfyQ3vDl6R5hZdZ/kYojK4ofXtdfSv1tFq8XzWx3heNQ==",
+                  "cpu": [
+                    "ppc64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "linux"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/linux-riscv64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/linux-riscv64/-/linux-riscv64-0.28.2.tgz",
+                  "integrity": "sha512-GeXCej4IQtU1B+QlDV8W/RRvbzI3O/Stss+/bCXv4lZls5WGRtu2a+3JkA3i4qIUlMXpcHebWpF8AkJhATowuA==",
+                  "cpu": [
+                    "riscv64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "linux"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/linux-s390x": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/linux-s390x/-/linux-s390x-0.28.2.tgz",
+                  "integrity": "sha512-3H1weTYZPxt/WOhByszQZybS9w5lKzUn1FDMsgEChbHWQwHYQQRfBxgCcZvPhjHfKyJjIievvMmEUawJrdY9Dg==",
+                  "cpu": [
+                    "s390x"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "linux"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/linux-x64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.28.2.tgz",
+                  "integrity": "sha512-4xTZr1FUmSoQW4XIWmit3tzQrUTZM+N3P0XV8xROKYF50XfI7xeO90+1bZvNwxIufQ9hDQVRJH5YhgPVF8A/HQ==",
+                  "cpu": [
+                    "x64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "linux"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/netbsd-arm64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/netbsd-arm64/-/netbsd-arm64-0.28.2.tgz",
+                  "integrity": "sha512-sSATRjPeDBg3pdgHoQfoYBob11Kk1FGa9lui5RIHZCoCkJa9QKlvl3/vKz2usCmYYjs7ymJR/2Nnsqe+Hjt5nw==",
+                  "cpu": [
+                    "arm64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "netbsd"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/netbsd-x64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/netbsd-x64/-/netbsd-x64-0.28.2.tgz",
+                  "integrity": "sha512-lqnzCV+mM0gIADaKihiCg6ifgfU2L3h5E33rNQBN1Y4MaVGnzryzmvvf7UHxprpQdE8hpqLolJ9Rl+SkIRDpyw==",
+                  "cpu": [
+                    "x64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "netbsd"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/openbsd-arm64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/openbsd-arm64/-/openbsd-arm64-0.28.2.tgz",
+                  "integrity": "sha512-AL2qJILH7lNjrDmCQDvdxMfAUIv8KMNZOvrwAQ8i8//ntL9FflhOyMJ8OZSMBb8/AWXe3/5v5S20y3zCoZWKoQ==",
+                  "cpu": [
+                    "arm64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "openbsd"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/openbsd-x64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/openbsd-x64/-/openbsd-x64-0.28.2.tgz",
+                  "integrity": "sha512-QtiuPytchRyC4rwUKhexJdQKvDuZ6hWloi3igqPQNUJCS1/v9EiO3UTOXR6A3FoMo4fnAKbWJdqaIwhOzh8qEw==",
+                  "cpu": [
+                    "x64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "openbsd"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/openharmony-arm64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/openharmony-arm64/-/openharmony-arm64-0.28.2.tgz",
+                  "integrity": "sha512-WkhYDmpTjLvGlScA1rwjRUmhl4k8oXR3cIbtqWmELgU/dFeHHlEllxDvdWcNJV9rbzCexB5vz8gtNewWLgCT7Q==",
+                  "cpu": [
+                    "arm64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "openharmony"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/sunos-x64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/sunos-x64/-/sunos-x64-0.28.2.tgz",
+                  "integrity": "sha512-GPMSkTOtMnv2U2F8gxe4Io6qmVs+YKyp832Etqqxr0hFngmXQ3rzwytelm3GIn7T4VviRUlf3sOgBOiTdvaf7g==",
+                  "cpu": [
+                    "x64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "sunos"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/win32-arm64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.28.2.tgz",
+                  "integrity": "sha512-PIhhEkE9uPBleRBrQEJpUn7MBnibZzbGzYWPmY3x+YoVg/95zbjB4CxPPOQ8l5tYYM4mMaCthF8/1DIfBQQyWQ==",
+                  "cpu": [
+                    "arm64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "win32"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/win32-ia32": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.28.2.tgz",
+                  "integrity": "sha512-YmJbfTlvU7Sdn9BB+4PRES4oB6pxgS37MAONj+hBr/cpXS1aBPKXxNnDbu+QCWPj0o9dgyxeq79g6c5P8KeuYA==",
+                  "cpu": [
+                    "ia32"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "win32"
+                  ],
+                  "engines": {
+                    "node": ">=18"
+                  }
+                },
+                "node_modules/@esbuild/win32-x64": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.28.2.tgz",
+                  "integrity": "sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g==",
+                  "cpu": [
+                    "x64"
+                  ],
+                  "dev": true,
+                  "license": "MIT",
+                  "optional": true,
+                  "os": [
+                    "win32"
+                  ],
+                  "engines": {
+                    "node": ">=18"
                   }
                 },
                 "node_modules/@hono/node-server": {
@@ -6057,6 +6869,72 @@ publication:
                   },
                   "peerDependencies": {
                     "hono": "^4 || ^5.0.0-0"
+                  }
+                },
+                "node_modules/@modelcontextprotocol/client": {
+                  "version": "2.4.0",
+                  "resolved": "https://registry.npmjs.org/@modelcontextprotocol/client/-/client-2.4.0.tgz",
+                  "integrity": "sha512-LgrD2OphHuG12vfKFKz6SOnq7bKHQmhGJIAYdD+MZBn2npHEyry6uD8zvktodtl5CQM85MO0anUyD9JwmUmxww==",
+                  "license": "Apache-2.0",
+                  "peer": true,
+                  "dependencies": {
+                    "@modelcontextprotocol/core": "2.4.0",
+                    "cross-spawn": "^7.0.5",
+                    "eventsource": "^3.0.2",
+                    "eventsource-parser": "^3.0.8",
+                    "jose": "^6.1.3",
+                    "pkce-challenge": "^5.0.0",
+                    "zod": "^4.2.0"
+                  },
+                  "engines": {
+                    "node": ">=20"
+                  }
+                },
+                "node_modules/@modelcontextprotocol/core": {
+                  "version": "2.4.0",
+                  "resolved": "https://registry.npmjs.org/@modelcontextprotocol/core/-/core-2.4.0.tgz",
+                  "integrity": "sha512-z8QBKqdfXLPzkLQuG4xp8hrVEMm1PZ1IgxMN2sMbJiFiAKOWXnAzogXn2W4aqIBlP1ea6U5yiqVquvUNM1Cj6Q==",
+                  "license": "Apache-2.0",
+                  "peer": true,
+                  "dependencies": {
+                    "zod": "^4.2.0"
+                  },
+                  "engines": {
+                    "node": ">=20"
+                  }
+                },
+                "node_modules/@modelcontextprotocol/ext-apps": {
+                  "version": "2.0.4",
+                  "resolved": "https://registry.npmjs.org/@modelcontextprotocol/ext-apps/-/ext-apps-2.0.4.tgz",
+                  "integrity": "sha512-B+PcbuGiaf0e5I3uy4iO5tS3Abo+5w8JvZFzHMzQdq9yVwP836zJkw2+KCGOQ0r4TM1fuQi4JdnbuWjkS4aBvg==",
+                  "license": "MIT",
+                  "workspaces": [
+                    "examples/*"
+                  ],
+                  "dependencies": {
+                    "@standard-schema/spec": "^1.1.0"
+                  },
+                  "engines": {
+                    "node": ">=20"
+                  },
+                  "peerDependencies": {
+                    "@modelcontextprotocol/client": "^2.0.0",
+                    "@modelcontextprotocol/core": "^2.0.0",
+                    "@modelcontextprotocol/server": "^2.0.0",
+                    "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
+                    "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0",
+                    "zod": "^4.2.0"
+                  },
+                  "peerDependenciesMeta": {
+                    "@modelcontextprotocol/server": {
+                      "optional": true
+                    },
+                    "react": {
+                      "optional": true
+                    },
+                    "react-dom": {
+                      "optional": true
+                    }
                   }
                 },
                 "node_modules/@modelcontextprotocol/sdk": {
@@ -6098,6 +6976,12 @@ publication:
                       "optional": false
                     }
                   }
+                },
+                "node_modules/@standard-schema/spec": {
+                  "version": "1.1.0",
+                  "resolved": "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz",
+                  "integrity": "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==",
+                  "license": "MIT"
                 },
                 "node_modules/accepts": {
                   "version": "2.0.0",
@@ -6387,6 +7271,48 @@ publication:
                   },
                   "engines": {
                     "node": ">= 0.4"
+                  }
+                },
+                "node_modules/esbuild": {
+                  "version": "0.28.2",
+                  "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+                  "integrity": "sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==",
+                  "dev": true,
+                  "hasInstallScript": true,
+                  "license": "MIT",
+                  "bin": {
+                    "esbuild": "bin/esbuild"
+                  },
+                  "engines": {
+                    "node": ">=18"
+                  },
+                  "optionalDependencies": {
+                    "@esbuild/aix-ppc64": "0.28.2",
+                    "@esbuild/android-arm": "0.28.2",
+                    "@esbuild/android-arm64": "0.28.2",
+                    "@esbuild/android-x64": "0.28.2",
+                    "@esbuild/darwin-arm64": "0.28.2",
+                    "@esbuild/darwin-x64": "0.28.2",
+                    "@esbuild/freebsd-arm64": "0.28.2",
+                    "@esbuild/freebsd-x64": "0.28.2",
+                    "@esbuild/linux-arm": "0.28.2",
+                    "@esbuild/linux-arm64": "0.28.2",
+                    "@esbuild/linux-ia32": "0.28.2",
+                    "@esbuild/linux-loong64": "0.28.2",
+                    "@esbuild/linux-mips64el": "0.28.2",
+                    "@esbuild/linux-ppc64": "0.28.2",
+                    "@esbuild/linux-riscv64": "0.28.2",
+                    "@esbuild/linux-s390x": "0.28.2",
+                    "@esbuild/linux-x64": "0.28.2",
+                    "@esbuild/netbsd-arm64": "0.28.2",
+                    "@esbuild/netbsd-x64": "0.28.2",
+                    "@esbuild/openbsd-arm64": "0.28.2",
+                    "@esbuild/openbsd-x64": "0.28.2",
+                    "@esbuild/openharmony-arm64": "0.28.2",
+                    "@esbuild/sunos-x64": "0.28.2",
+                    "@esbuild/win32-arm64": "0.28.2",
+                    "@esbuild/win32-ia32": "0.28.2",
+                    "@esbuild/win32-x64": "0.28.2"
                   }
                 },
                 "node_modules/escape-html": {
@@ -7281,17 +8207,17 @@ publication:
                 }
               }
             }
-      - index: 9
+      - index: 12
         fact:
-          id: sha256:498e1cba3c81232c21b59f16e50bb667467a9e3040b116f0ed3dfffa22021b73
+          id: sha256:94e917ce2e1d52b0c52a8120be5dd0385297877db6a6aad3e6bd97b0f918079e
           kind: file
           path: package.json
           start_line: 1
-          end_line: 41
+          end_line: 49
           text: >
             {
               "name": "plugin-architecture-change-view",
-              "version": "0.2.0",
+              "version": "0.3.0",
               "description": "ArchiView: structured architecture contracts, snapshot evidence and review visualization",
               "repository": {
                 "type": "git",
@@ -7308,7 +8234,7 @@ publication:
               },
               "bin": {
                 "plugin-architecture-change-view": "src/server.mjs",
-                "archiview": "src/archiview/cli.mjs"
+                "archiview": "src/cli.mjs"
               },
               "files": [
                 "src",
@@ -7316,20 +8242,53 @@ publication:
                 "web",
                 "docs",
                 "arch.yaml",
+                "plugin.json",
+                "mcp.json",
                 "README.md"
               ],
               "scripts": {
                 "start": "node src/server.mjs",
+                "build:plugin": "node scripts/build-plugin.mjs",
+                "pretest": "npm run build:plugin",
                 "archiview": "node src/archiview/cli.mjs",
                 "test": "node --test"
               },
               "dependencies": {
+                "@modelcontextprotocol/ext-apps": "^2.0.4",
                 "@modelcontextprotocol/sdk": "^1.32.2",
                 "diff": "^9.0.0",
                 "yaml": "^2.8.2"
+              },
+              "devDependencies": {
+                "esbuild": "^0.28.2"
               }
             }
-      - index: 10
+      - index: 13
+        fact:
+          id: sha256:8243a219af93d66409b1381cded285b5b8e86e59fa7bfaefd33ca3d9d5be34d0
+          kind: file
+          path: plugin.json
+          start_line: 1
+          end_line: 18
+          text: >
+            {
+              "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+              "name": "archiview",
+              "version": "0.3.0",
+              "description": "Локальная панель архитектуры проекта и анализ выбранного модуля в Codex.",
+              "license": "MIT",
+              "extensions": {
+                "com.openai": {
+                  "requires_local_executor": true,
+                  "interface": {
+                    "displayName": "ArchiView",
+                    "shortDescription": "Архитектура проекта и анализ модулей",
+                    "category": "Developer Tools"
+                  }
+                }
+              }
+            }
+      - index: 17
         fact:
           id: sha256:54ef8f1b0118695e44e28a2d2780f83cdbe0e09e869c5c28e11570b9e0c484b5
           kind: file
@@ -7520,7 +8479,7 @@ publication:
             находится в
 
             plugin-architecture-change-view/docs/arch-review-format-v1.md.
-      - index: 46
+      - index: 60
         fact:
           id: sha256:c4be8f536e98ab3be92486a16970b7ff51385218b5ccd25ca4de86da838b011b
           kind: module
@@ -7565,7 +8524,7 @@ review_status:
         fresh: 0
         stale: 0
         unknown: 0
-        not_reviewed: 6
+        not_reviewed: 8
       conflict: false
       current_violation: false
       coverage:
@@ -7578,7 +8537,7 @@ review_status:
         fresh: 0
         stale: 0
         unknown: 0
-        not_reviewed: 6
+        not_reviewed: 8
       conflict: false
       current_violation: false
       coverage:

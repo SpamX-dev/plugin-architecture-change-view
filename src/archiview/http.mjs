@@ -14,6 +14,8 @@ import { ReportStore } from "../report-store.mjs";
 import { aggregateTreeStatuses, createTechnicalReport, reviewFreshness } from "../report-model.mjs";
 import { ChangeHistory } from "../change-history.mjs";
 import { digest } from "../formats.mjs";
+import { packageUrl } from "../package-paths.mjs";
+import { AnalysisRequests } from "./analysis.mjs";
 
 /** Метаданные базы, необходимые интерфейсу без передачи всех документов. */
 function metadata(snapshot) {
@@ -65,13 +67,14 @@ function documentDiff(before, after) {
  * Создаёт сервер, но не открывает порт. Такой жизненный цикл позволяет тестам
  * использовать временный порт и закрывать ровно принадлежащий им экземпляр.
  */
-export async function createArchiView({ root: requestedRoot, stateDirectory }) {
+export async function createArchiView({ root: requestedRoot, stateDirectory, panelToken }) {
   const root = await realpath(requestedRoot);
   const store = new SnapshotStore(root, stateDirectory);
   await store.open();
   const reviews = new ReviewStore(store);
   const reports = new ReportStore(store);
   const changes = new ChangeHistory(store);
+  const analysis = new AnalysisRequests(store, reports);
   const captureOptions = { snapshotRoot: store.snapshotRoot };
   const gitSnapshots = new Map();
   const startup = await captureLiveState();
@@ -88,11 +91,17 @@ export async function createArchiView({ root: requestedRoot, stateDirectory }) {
   if (startupView.complete) await reports.rebuild(initialBaseline, launch, startupView.modules);
   const views = new Map();
   const assets = new Map([
-    ["/", [new URL("../../web/archiview/index.html", import.meta.url), "text/html"]],
-    ["/app.mjs", [new URL("../../web/archiview/app.mjs", import.meta.url), "text/javascript"]],
-    ["/review.mjs", [new URL("../../web/archiview/review.mjs", import.meta.url), "text/javascript"]],
-    ["/styles.css", [new URL("../../web/archiview/styles.css", import.meta.url), "text/css"]],
+    ["/", [new URL("web/archiview/index.html", packageUrl), "text/html"]],
+    ["/app.mjs", [new URL("web/archiview/app.mjs", packageUrl), "text/javascript"]],
+    ["/panel-bridge.mjs", [new URL("web/archiview/panel-bridge.mjs", packageUrl), "text/javascript"]],
+    ["/review.mjs", [new URL("web/archiview/review.mjs", packageUrl), "text/javascript"]],
+    ["/styles.css", [new URL("web/archiview/styles.css", packageUrl), "text/css"]],
   ]);
+  // Пакет UI SDK самодостаточен; автономная сборка кладёт его рядом с клиентом.
+  let sdkUrl;
+  try { sdkUrl = new URL(import.meta.resolve("@modelcontextprotocol/ext-apps/app-with-deps")); }
+  catch { sdkUrl = new URL("web/archiview/mcp-app-sdk.mjs", packageUrl); }
+  assets.set("/mcp-app-sdk.mjs", [sdkUrl, "text/javascript"]);
 
   /** Исторические коммиты читаются по выбору; список не загружает исходники всей истории. */
   async function gitSnapshot(revision, headRevision) {
@@ -160,8 +169,23 @@ export async function createArchiView({ root: requestedRoot, stateDirectory }) {
       return json(response, 403, { error: "Недопустимый адрес запроса" });
     }
     const url = new URL(request.url, "http://" + host);
-    if (request.headers.origin && request.headers.origin !== url.origin) {
-      return json(response, 403, { error: "Запрос должен исходить из ArchiView" });
+    const origin = request.headers.origin;
+    const crossOrigin = origin && origin !== url.origin;
+    // Отдельный случайный токен даёт панели доступ к API. Предзапрос CORS
+    // не читает данные; сам запрос всегда проверяет Authorization.
+    if (panelToken && crossOrigin) {
+      response.setHeader("Access-Control-Allow-Origin", origin);
+      response.setHeader("Vary", "Origin");
+      if (request.method === "OPTIONS") {
+        response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+        response.setHeader("Access-Control-Allow-Private-Network", "true");
+        response.writeHead(204); return response.end();
+      }
+    }
+    if (crossOrigin && !(panelToken && request.method === "GET" && assets.has(url.pathname) && url.pathname !== "/") &&
+        !(panelToken && request.headers.authorization === "Bearer " + panelToken)) {
+      return json(response, 403, { error: "Запрос должен исходить из ArchiView или авторизованной панели" });
     }
     try {
       if (request.method === "GET" && assets.has(url.pathname)) {
@@ -275,6 +299,25 @@ export async function createArchiView({ root: requestedRoot, stateDirectory }) {
           contracts: bundle.manifest.contracts,
         })), diff: documentDiff(module.before?.document.text, module.after?.document.text) });
       }
+      if (request.method === "POST" && url.pathname === "/api/analysis") {
+        let body = "";
+        for await (const chunk of request) {
+          body += chunk;
+          if (Buffer.byteLength(body) > 4096) return json(response, 413, { error: "Слишком большой запрос" });
+        }
+        const args = JSON.parse(body || "{}");
+        if (typeof args.view !== "string" || typeof args.path !== "string") return json(response, 400, { error: "Нужны view и path" });
+        const view = views.get(args.view);
+        if (!view) return json(response, 409, { error: "Обновите сравнение" });
+        const module = view.modules.find((entry) => entry.key === args.path);
+        if (!module) return json(response, 404, { error: "Модуль не найден" });
+        if (!view.complete || !(module.after ?? module.before)?.document.contract || !module.moduleId)
+          return json(response, 422, { error: "Нужны полный снимок и корректный arch.yaml модуля" });
+        return json(response, 201, await analysis.create(view, module));
+      }
+      if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname)) {
+        return json(response, 200, await analysis.status(url.pathname.split("/").at(-1)));
+      }
       if (request.method === "POST" && url.pathname === "/api/reviews") {
         let body = "";
         for await (const chunk of request) {
@@ -315,8 +358,8 @@ export async function createArchiView({ root: requestedRoot, stateDirectory }) {
       }
       return json(response, 404, { error: "Ресурс не найден" });
     } catch (error) {
-      return json(response, error instanceof SyntaxError ? 400 : 500, { error: error.message });
+      return json(response, error.code === "ENOENT" ? 404 : error instanceof SyntaxError ? 400 : 500, { error: error.message });
     }
   });
-  return { server, root, store, reviews, reports, changes };
+  return { server, root, store, reviews, reports, changes, analysis };
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Stdio MCP-сервер правил arch.yaml. Раздаёт единственный канонический SKILL.md
- * по контракту skill:// и предоставляет только читающие инструменты.
+ * Stdio MCP-сервер правил arch.yaml. Раздаёт канонический SKILL.md и инструменты
+ * чтения; явный --panel добавляет локальное MCP App с собственным HTTP backend.
  * Рабочий проект задаётся --root, PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT или cwd.
  */
 import { readFile, realpath } from "node:fs/promises";
@@ -13,6 +13,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema,
   ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { parse } from "yaml";
 import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from "./inventory.mjs";
+import { createCodexPanel, PANEL_URI, PANEL_TOOL } from "./codex/panel.mjs";
 
 /** Версионированная метаинформация пакета для MCP initialize. */
 const packageInfo = JSON.parse(await readFile(new URL("../package.json", import.meta.url)));
@@ -21,10 +22,11 @@ const { values } = parseArgs({ options: {
   root: { type: "string" }, extension: { type: "string", multiple: true },
   "max-files": { type: "string", default: "50000" },
   help: { type: "boolean", short: "h" },
+  panel: { type: "boolean" },
 } });
 if (values.help) {
   process.stdout.write(packageInfo.name + " [--root DIR] [--extension .ext] " +
-    "[--max-files 50000]\n");
+    "[--max-files 50000] [--panel]\n");
 } else {
   await serve();
 }
@@ -48,23 +50,26 @@ async function serve() {
   if (!frontmatter) throw new Error("Skill frontmatter is missing");
   const metadata = parse(frontmatter[1]);
   const uri = "skill://" + metadata.name;
+  const panel = values.panel ? createCodexPanel(root) : null;
   const server = new Server({ name: packageInfo.name, version: packageInfo.version },
     { capabilities: { resources: {}, tools: {} },
       instructions: "For source-code changes, read skill://module-boundaries. " +
         "Use module_inventory to find missing arch.yaml contracts and module_context " +
-        "to read target and ancestor boundaries. Tools are read-only; write documents " +
+        "to read target and ancestor boundaries. Module tools are read-only; write documents " +
         "with your file tools. Migrate module.md immediately. If neither contract exists, analyze source and write arch.yaml with file tools. Responsibility changes require user agreement." });
   server.setRequestHandler(ListResourcesRequestSchema, async () => ({
     resources: [{ uri, name: metadata.name, description: metadata.description,
-      mimeType: "text/markdown" }],
+      mimeType: "text/markdown" }, ...(panel ? [{ uri: PANEL_URI, name: "ArchiView", mimeType: "text/html;profile=mcp-app" }] : [])],
   }));
   server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    if (panel && request.params.uri === PANEL_URI) return panel.resource();
     if (request.params.uri !== uri) {
       throw new McpError(ErrorCode.InvalidParams, "Unknown resource: " + request.params.uri);
     }
     return { contents: [{ uri, mimeType: "text/markdown", text }] };
   });
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [
+    ...(panel ? [PANEL_TOOL] : []),
     { name: "module_inventory",
       description: "List every source directory and arch.yaml coverage, including " +
         "missing/empty contracts, source-container directories and planned modules. " +
@@ -82,6 +87,10 @@ async function serve() {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const args = request.params.arguments ?? {};
     const name = request.params.name;
+    if (panel && name === PANEL_TOOL.name) {
+      if (Object.keys(args).length) throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments");
+      return panel.open();
+    }
     if (name !== "module_inventory" && name !== "module_context") {
       throw new McpError(ErrorCode.InvalidParams, "Unknown tool: " + name);
     }
@@ -99,5 +108,6 @@ async function serve() {
       return { isError: true, content: [{ type: "text", text: error.message }] };
     }
   });
+  if (panel) server.onclose = () => { panel.close().catch(() => {}); };
   await server.connect(new StdioServerTransport());
 }
