@@ -211,6 +211,21 @@ export function contractChanges(before, after, compare = true) {
 }
 
 /**
+ * Шапка — один блок из названия, типа, id и назначения. Удаление строже изменения,
+ * изменение строже добавления; диф сохраняет все четыре поля обеих версий.
+ * Пункты контракта и прочие метаданные не меняют статус этой группы.
+ */
+export function contractHeadingChange(before, after, compare = true) {
+  const keys = ["title", "kind", "id", "purpose"];
+  const rank = { unchanged: 0, added: 1, modified: 2, removed: 3 };
+  const fields = contractChanges(before, after, compare).filter((change) => keys.includes(change.key));
+  const pick = (contract) => contract == null ? undefined :
+    Object.fromEntries(keys.filter((key) => contract[key] !== undefined).map((key) => [key, contract[key]]));
+  return { key: "heading", before: pick(before), after: pick(after),
+    status: fields.reduce((status, change) => rank[change.status] > rank[status] ? change.status : status, "unchanged") };
+}
+
+/**
  * Замечания связаны с устойчивым пунктом отдельно от изменения его текста.
  * Каждый результат ведёт в конкретную попытку анализа и конкретное замечание;
  * исходные статусы, текст и доказательства отчёта остаются неизменными.
@@ -266,6 +281,10 @@ function showContractChange(change, label) {
 
 /** Выделенное поле открывает диф одинаково в заголовке и в пунктах контракта. */
 function decorateContractChange(node, change, label) {
+    node.classList.remove("contract-change", "change-added", "change-removed", "change-modified");
+    node.querySelector(":scope > .contract-change-action")?.remove();
+    node.removeAttribute("title");
+    node.onclick = null;
     if (!change || change.status === "unchanged") return node;
     node.classList.add("contract-change", "change-" + change.status);
     const button = el("button", "contract-change-action",
@@ -285,21 +304,19 @@ export function renderContractHeading(panel, document, options = {}) {
   const before = options.before === undefined ? document.contract : options.before;
   const after = options.after === undefined ? document.contract : options.after;
   const contract = after ?? before;
-  const changes = contractChanges(before, after, options.compare ?? true);
-  const byKey = new Map(changes.map((item) => [item.key, item]));
-  const decorate = (node, key, label) => decorateContractChange(node, byKey.get(key), label);
   const header = el("div", "contract-header");
   const title = options.titleElement ?? el("h2", "", contract.title);
   title.textContent = contract.title;
   title.className = "";
   title.removeAttribute("title");
   title.onclick = null;
-  decorate(title, "title", "Название");
-  header.append(decorate(el("span", "contract-kind", contract.kind === "group" ? "ГРУППА МОДУЛЕЙ" : "КОНТРАКТ МОДУЛЯ"), "kind", "Тип"),
-    decorate(el("code", "contract-id", contract.id), "id", "Идентификатор"));
+  header.append(el("span", "contract-kind", contract.kind === "group" ? "ГРУППА МОДУЛЕЙ" : "КОНТРАКТ МОДУЛЯ"),
+    el("code", "contract-id", contract.id));
   if (!options.titleElement) header.append(title);
-  header.append(decorate(el("p", "contract-purpose", contract.purpose), "purpose", "Назначение"));
+  header.append(el("p", "contract-purpose", contract.purpose));
   panel.append(header);
+  decorateContractChange(options.groupElement ?? header,
+    contractHeadingChange(before, after, options.compare ?? true), "Описание модуля");
 }
 
 /** Контракт выделяет изменённые поля; удалённые пункты остаются в своих разделах. */

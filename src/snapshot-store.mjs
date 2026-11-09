@@ -148,8 +148,8 @@ export class SnapshotStore {
     this.migration = { from: legacy, snapshots, reviews };
   }
 
-  /** Возвращает сохранённые базы; повреждение схемы или хеша сообщается явно. */
-  async list() {
+  /** Возвращает сохранённые базы; HTTP может передать уже восстановленные published отдельно. */
+  async list({ includePublished = true } = {}) {
     await this.open();
     await this.assertLocation();
     let entries;
@@ -167,8 +167,10 @@ export class SnapshotStore {
       snapshots.push(parseYaml((await readStoredFile(path.join(raw, file))).toString("utf8"), (value) => validate(value, this.snapshotRoot)));
     }
     // Опубликованные фрагменты восстанавливают выбранную базу даже без локальных snapshots.
-    const { readPublishedSnapshots } = await import("./report-store.mjs");
-    for (const snapshot of await readPublishedSnapshots(this)) snapshots.push(validate(snapshot, this.snapshotRoot));
+    if (includePublished) {
+      const { readPublishedSnapshots } = await import("./report-store.mjs");
+      for (const snapshot of await readPublishedSnapshots(this)) snapshots.push(validate(snapshot, this.snapshotRoot));
+    }
     return [...new Map(snapshots.map((snapshot) => [snapshot.id, snapshot])).values()]
       .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
   }

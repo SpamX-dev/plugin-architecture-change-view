@@ -20,6 +20,37 @@ const contractFile = (file) => ["arch.yaml", "module.md"].includes(path.posix.ba
 const normalizeText = (text) => text.replace(/\r\n?/g, "\n");
 const moduleId = (module) => module?.document?.state === "documented" && module.document.contract?.id || "directory:" + module.directory;
 
+/**
+ * Переиспользует вычисления только внутри одной синхронной операции модели.
+ * Контекст не выходит наружу и не живёт между версиями изменяемого снимка;
+ * возвращаемые карты служат внутренними входами и не дополняются потребителями.
+ */
+class ModuleStateContext {
+  #states = new WeakMap();
+
+  states(snapshot) {
+    if (!snapshot) return new Map();
+    if (!this.#states.has(snapshot)) this.#states.set(snapshot, buildModuleStates(snapshot));
+    return this.#states.get(snapshot);
+  }
+}
+
+/**
+ * Фиксирует пару снимков для серии отчётов и оценок актуальности. Собственные
+ * копии изолируют расчёт от последующих изменений объектов вызывающей стороны;
+ * новая операция создаёт новую модель и видит новые данные без глобального кэша.
+ * Готовые состояния каждого снимка вычисляются лениво и остаются внутри модели.
+ */
+export function createReportModel(baseline, current) {
+  const snapshots = clone({ baseline, current });
+  const context = new ModuleStateContext();
+  return Object.freeze({
+    createTechnicalReport: (projectId, module) => technicalReport(projectId, snapshots.baseline, snapshots.current, module, context),
+    reviewFreshness: (entry) => freshness(entry, snapshots.baseline, snapshots.current, context),
+    aggregateTreeStatuses: (entries) => treeStatuses(entries, snapshots.baseline, snapshots.current, context),
+  });
+}
+
 /** Смысл контракта отделён от заголовка, оформления YAML и сырого arch.yaml. */
 export function semanticContract(contract) {
   return contract ? Object.fromEntries(SEMANTIC_FIELDS.filter((key) => contract[key] !== undefined)
@@ -105,10 +136,10 @@ export function buildModuleStates(snapshot) {
 }
 
 /** База фиксируется commit/id, а не подвижной меткой HEAD или абсолютным root. */
-function baselineIdentity(snapshot) {
+function baselineIdentity(snapshot, context) {
   if (!snapshot) return null;
   return { kind: snapshot.kind ?? "snapshot", id: snapshot.revision ?? snapshot.id ??
-    digest(sorted([...buildModuleStates(snapshot).values()].map((state) =>
+    digest(sorted([...context.states(snapshot).values()].map((state) =>
       ({ module_id: state.module_id, digest: state.subtree_digest })), (state) => state.module_id)) };
 }
 
@@ -118,13 +149,18 @@ const stateReference = (state) => state ? { exists: true, directory: state.direc
 
 /** Формирует чистый технический результат; будущие LLM-статусы в него не пишутся. */
 export function createTechnicalReport(projectId, baseline, current, comparisonModule) {
+  return createReportModel(baseline, current).createTechnicalReport(projectId, comparisonModule);
+}
+
+/** Готовые состояния принадлежат контексту; наружу передаются независимые данные отчёта. */
+function technicalReport(projectId, baseline, current, comparisonModule, context) {
   const id = comparisonModule.moduleId ?? comparisonModule.module_id ??
     (comparisonModule.after ? moduleId(comparisonModule.after) : comparisonModule.before ? moduleId(comparisonModule.before) :
       "directory:" + comparisonModule.directory);
-  const before = buildModuleStates(baseline).get(id);
-  const after = buildModuleStates(current).get(id);
+  const before = context.states(baseline).get(id);
+  const after = context.states(current).get(id);
   const input = { domain: "archiview/module-check/v1", project_id: projectId, module_id: id,
-    baseline: baseline ? { identity: baselineIdentity(baseline), state: stateReference(before) } : null,
+    baseline: baseline ? { identity: baselineIdentity(baseline, context), state: stateReference(before) } : null,
     current: stateReference(after), analyzer: clone(ANALYZER) };
   const ownChanged = canonical(before?.technical.own_files ?? null) !== canonical(after?.technical.own_files ?? null);
   const childrenChanged = canonical(before?.subtree.children ?? []) !== canonical(after?.subtree.children ?? []);
@@ -207,8 +243,8 @@ function reviewModuleComplete(state, contractScope) {
 }
 
 /** Самостоятельная self-проекция не содержит реализацию потомков или контекст предков. */
-function reviewState(snapshot, id, scope, selectors, dependencyCoverage, contractScope = "effective") {
-  const states = buildModuleStates(snapshot);
+function reviewState(snapshot, id, scope, selectors, dependencyCoverage, contractScope, context) {
+  const states = context.states(snapshot);
   const state = states.get(id);
   const descendants = state && scope === "subtree" ? sorted([...states.values()].filter((item) =>
     item.module_id === id || state.directory === "." || item.directory.startsWith(state.directory + "/")), (item) => item.module_id) : [];
@@ -225,7 +261,7 @@ function reviewState(snapshot, id, scope, selectors, dependencyCoverage, contrac
 function assessmentDigest(input) { return digest(input); }
 
 /** Готовит независимые current/change входы; полнота dependencies всегда явная. */
-function createInputs(baseline, current, id, options, semantic) {
+function createInputs(baseline, current, id, options, semantic, context) {
   const scope = options.scope ?? "self";
   if (!["self", "subtree"].includes(scope)) throw new Error("Unsupported review scope: " + scope);
   const contractScope = options.contractScope ?? "effective";
@@ -237,9 +273,9 @@ function createInputs(baseline, current, id, options, semantic) {
     (declaredCoverage.status === "complete" ? [] : [{ scope: "project" }])) };
   if (!["complete", "unknown"].includes(coverage.status)) throw new Error("Invalid dependency coverage");
   const result = { schema_version: 1, scope, ...(contractScope === "own" ? { contract_scope: "own" } : {}),
-    current: reviewState(current, id, scope, dependencies, coverage, contractScope),
-    baseline: baseline ? reviewState(baseline, id, scope, dependencies, coverage, contractScope) : null,
-    baseline_identity: baselineIdentity(baseline) };
+    current: reviewState(current, id, scope, dependencies, coverage, contractScope, context),
+    baseline: baseline ? reviewState(baseline, id, scope, dependencies, coverage, contractScope, context) : null,
+    baseline_identity: baselineIdentity(baseline, context) };
   result.current_digest = assessmentDigest(result.current);
   result.change_digest = assessmentDigest({ baseline_identity: result.baseline_identity, baseline: result.baseline, current: result.current });
   return result;
@@ -247,6 +283,7 @@ function createInputs(baseline, current, id, options, semantic) {
 
 /** Факты внешнего/широкого review не теряются при миграции прежнего пакета. */
 export function createReviewEntry(bundle, options = {}) {
+  const context = new ModuleStateContext();
   if (bundle.schema_version === 2 && ["review", "review-input"].includes(bundle.kind)) {
     if (bundle.kind === "review") return validateReviewEntry(clone(bundle));
     const entry = clone(bundle);
@@ -262,9 +299,9 @@ export function createReviewEntry(bundle, options = {}) {
   const id = bundle.report.module.id ?? "directory:" + (bundle.report.module.current_path ?? bundle.report.module.baseline_path);
   const semantic = isSemanticReview(bundle);
   const inputs = createInputs(bundle.baseline, bundle.current, id,
-    { ...options, contractScope: bundle.manifest.contract_scope ?? "effective" }, semantic);
+    { ...options, contractScope: bundle.manifest.contract_scope ?? "effective" }, semantic, context);
   const comparisonModule = { moduleId: id, directory: bundle.report.module.current_path ?? bundle.report.module.baseline_path };
-  const technical = createTechnicalReport(options.projectId ?? options.project_id ?? "legacy", bundle.baseline, bundle.current, comparisonModule);
+  const technical = technicalReport(options.projectId ?? options.project_id ?? "legacy", bundle.baseline, bundle.current, comparisonModule, context);
   const entry = { schema_version: REPORT_SCHEMA_VERSION, kind: "review", module_id: id,
     review_id: bundle.report.id, project_id: options.projectId ?? options.project_id ?? null,
     check_hash: technical.check_hash,
@@ -292,9 +329,9 @@ function entryContentDigest(entry) {
  * Native экспорт содержит только область проверки. Прежние snapshot id/digest
  * остаются происхождением, а scope_digest удостоверяет именно сохранённую часть.
  */
-function scopedSnapshot(snapshot, id, options, report) {
+function scopedSnapshot(snapshot, id, options, report, context) {
   if (!snapshot) return null;
-  const states = buildModuleStates(snapshot);
+  const states = context.states(snapshot);
   const own = states.get(id);
   const ids = new Set([id]);
   if (own) {
@@ -357,9 +394,10 @@ function scopedSnapshot(snapshot, id, options, report) {
  * report сохраняет известную схему checks/findings v1 для существующего UI.
  */
 export function createReviewInput(projectId, baseline, current, id, options = {}) {
+  const context = new ModuleStateContext();
   options = { ...options, contractScope: options.contractScope ?? "own" };
-  const states = buildModuleStates(current);
-  const beforeStates = buildModuleStates(baseline);
+  const states = context.states(current);
+  const beforeStates = context.states(baseline);
   const state = states.get(id) ?? beforeStates.get(id);
   if (!state) throw new Error("Unknown review module: " + id);
   const beforeModule = baseline?.modules.find((module) => moduleId(module) === id) ?? null;
@@ -373,14 +411,14 @@ export function createReviewInput(projectId, baseline, current, id, options = {}
   bundle.manifest.instructions = "Проверить только собственную ответственность, границы, инварианты и свою композицию. Контракты предков служат контекстом и не добавляют пункты в чеклист. Зависимости задавать по реально использованному контракту/API, не по расположению каталога. Заполнить модель, prompt и результаты.";
   bundle.manifest.review_scope = options.scope ?? "self";
   bundle.report.analysis.input_digest = digest(bundle.manifest);
-  const inputs = createInputs(baseline, current, id, options, true);
-  const technical = createTechnicalReport(projectId, baseline, current, comparison);
+  const inputs = createInputs(baseline, current, id, options, true, context);
+  const technical = technicalReport(projectId, baseline, current, comparison, context);
   const entry = { schema_version: REPORT_SCHEMA_VERSION, kind: "review-input", module_id: id,
     project_id: projectId, review_id: bundle.report.id,
     check_hash: technical.check_hash, check_manifest: technical.input_manifest,
     analysis_kind: "semantic", format: "native-v2", inputs,
     report: clone(bundle.report), manifest: clone(bundle.manifest),
-    baseline: scopedSnapshot(baseline, id, options, bundle.report), current: scopedSnapshot(current, id, options, bundle.report) };
+    baseline: scopedSnapshot(baseline, id, options, bundle.report, context), current: scopedSnapshot(current, id, options, bundle.report, context) };
   return entry;
 }
 
@@ -432,6 +470,7 @@ function validateScopedProof(entry) {
 
 /** Строгая целостность переносимой записи; неизвестные версии не «актуальны». */
 export function validateReviewEntry(entry) {
+  const context = new ModuleStateContext();
   if (entry?.schema_version !== REPORT_SCHEMA_VERSION || entry.kind !== "review" || !["native-v2", "legacy-v1"].includes(entry.format)) throw new Error("Unsupported review entry schema");
   if (!entry.module_id || entry.review_id !== entry.report?.id || !/^[a-f0-9]{64}$/.test(entry.check_hash)) throw new Error("Invalid review entry identity");
   validateReview(entry.report);
@@ -470,19 +509,19 @@ export function validateReviewEntry(entry) {
       if ((snapshot === null) !== (input === null)) throw new Error("Missing native assessment input: " + side);
       if (!snapshot) continue;
       const selectors = input.dependencies.map((dependency) => dependency.selector);
-      const actual = reviewState(snapshot, entry.module_id, entry.inputs.scope, selectors, input.dependency_coverage, contractScope);
+      const actual = reviewState(snapshot, entry.module_id, entry.inputs.scope, selectors, input.dependency_coverage, contractScope, context);
       if (canonical(actual) !== canonical(input)) throw new Error("Native assessment inputs disagree with saved snapshot: " + side);
       const directory = entry.report.module[side + "_path"];
       const own = snapshot.modules.find((module) => moduleId(module) === entry.module_id);
       if ((own?.directory ?? null) !== directory) throw new Error("Native module path mismatch: " + side);
-      const state = buildModuleStates(snapshot).get(entry.module_id);
+      const state = context.states(snapshot).get(entry.module_id);
       const technicalReference = side === "baseline" ? entry.check_manifest.baseline?.state : entry.check_manifest.current;
       if (technicalReference?.exists !== Boolean(state) || (state && (technicalReference.directory !== state.directory ||
         technicalReference.self_digest !== state.technical_digest))) throw new Error("Native technical own-state mismatch: " + side);
       const actualClauses = effectiveClausesForSnapshot(snapshot, directory, side, contractScope);
       if (canonical(actualClauses) !== canonical(entry.manifest.contracts?.[side])) throw new Error("Native effective contracts mismatch: " + side);
     }
-    if (canonical(entry.inputs.baseline_identity) !== canonical(baselineIdentity(entry.baseline))) throw new Error("Native baseline identity mismatch");
+    if (canonical(entry.inputs.baseline_identity) !== canonical(baselineIdentity(entry.baseline, context))) throw new Error("Native baseline identity mismatch");
     if (canonical(entry.check_manifest.baseline?.identity ?? null) !== canonical(entry.inputs.baseline_identity)) throw new Error("Native technical baseline mismatch");
     if (entry.report.analysis.coverage.status === "complete") {
       if ([entry.inputs.current, entry.inputs.baseline].filter(Boolean).some((input) => !input.complete ||
@@ -582,6 +621,11 @@ function inputFreshness(previous, current) {
 
 /** Current зависит от проверенного состояния; change дополнительно от явной базы. */
 export function reviewFreshness(entry, baseline, current) {
+  return createReportModel(baseline, current).reviewFreshness(entry);
+}
+
+/** Все проекции одной оценки используют те же состояния зафиксированных снимков. */
+function freshness(entry, baseline, current, context) {
   if (!entry?.inputs || entry.schema_version !== REPORT_SCHEMA_VERSION || entry.inputs.schema_version !== 1) {
     const unavailable = { status: "unknown", reasons: [{ code: "legacy_manifest_missing" }],
       coverage: { status: "unavailable", limitations: ["Нет проверяемого описания входов прежнего анализа."] } };
@@ -590,7 +634,7 @@ export function reviewFreshness(entry, baseline, current) {
   const selectors = (entry.inputs.current.dependencies ?? []).map((dependency) => dependency.selector);
   const options = { scope: entry.inputs.scope, dependencies: selectors,
     dependencyCoverage: entry.inputs.current.dependency_coverage, contractScope: entry.inputs.contract_scope ?? "effective" };
-  const actual = createInputs(baseline, current, entry.module_id, options, isSemanticReview(entry));
+  const actual = createInputs(baseline, current, entry.module_id, options, isSemanticReview(entry), context);
   const own = inputFreshness(entry.inputs.current, actual.current);
   const change = inputFreshness(entry.inputs.current, actual.current);
   if (canonical(entry.inputs.baseline_identity) !== canonical(actual.baseline_identity)) {
@@ -638,10 +682,15 @@ function aggregateAssessment(candidates, side) {
 
 /** Широкая subtree-попытка не выдаётся за self-проверки всех узлов. */
 export function aggregateReviewStatus(entries, baseline, current, id) {
+  return reviewStatus(entries, baseline, current, id, new ModuleStateContext());
+}
+
+/** Объединяет оценки одного узла в общем контексте всего дерева. */
+function reviewStatus(entries, baseline, current, id, context) {
   validateReviewRelations(entries);
   const resolved = new Set(entries.flatMap((entry) => entry.resolution?.review_ids ?? []));
   const candidates = entries.filter((entry) => !resolved.has(entry.review_id) && entry.module_id === id && entry.inputs?.scope === "self" && isSemanticReview(entry))
-    .map((entry) => ({ entry, freshness: reviewFreshness(entry, baseline, current) }));
+    .map((entry) => ({ entry, freshness: freshness(entry, baseline, current, context) }));
   const own = { current: aggregateAssessment(candidates, "current"), change: aggregateAssessment(candidates, "change") };
   return { ...own, conflict: own.current.conflict || own.change.conflict,
     coverage: { current: own.current.coverage, change: own.change.coverage } };
@@ -649,17 +698,25 @@ export function aggregateReviewStatus(entries, baseline, current, id) {
 
 /** Объединяет полноту и актуальность вверх, не запускает LLM и не меняет вердикты. */
 export function aggregateTreeStatuses(entries, baseline, current) {
-  const states = buildModuleStates(current);
+  return createReportModel(baseline, current).aggregateTreeStatuses(entries);
+}
+
+/**
+ * Удалённые узлы добавляются лишь в рабочую карту обхода. Исходная карта current
+ * остаётся неизменной для следующих отчётов и проверок актуальности этой модели.
+ */
+function treeStatuses(entries, baseline, current, context) {
+  const states = new Map(context.states(current));
   const result = new Map();
-  for (const state of buildModuleStates(baseline).values()) if (!states.has(state.module_id)) states.set(state.module_id, state);
+  for (const state of context.states(baseline).values()) if (!states.has(state.module_id)) states.set(state.module_id, state);
   const visit = (id, visiting = new Set()) => {
     if (result.has(id)) return result.get(id);
     if (visiting.has(id)) throw new Error("Cyclic module tree");
     visiting.add(id);
     const state = states.get(id);
-    const self = aggregateReviewStatus(entries, baseline, current, id);
+    const self = reviewStatus(entries, baseline, current, id, context);
     const broadCandidates = entries.filter((entry) => entry.module_id === id && entry.inputs?.scope === "subtree" && isSemanticReview(entry))
-      .map((entry) => ({ entry, freshness: reviewFreshness(entry, baseline, current) }));
+      .map((entry) => ({ entry, freshness: freshness(entry, baseline, current, context) }));
     const explicitSubtree = { current: aggregateAssessment(broadCandidates, "current"), change: aggregateAssessment(broadCandidates, "change") };
     const children = state.children.filter((child) => states.has(child)).map((child) => visit(child, visiting));
     const subtree = {};

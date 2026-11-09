@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-distribution
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 749d3e5eed0fca5ff25354fb36260b4756a33467a082ce1b60fe0949aac3d99b
+check_hash: 8214b6bcde5c73b0d671a97a378e682594dc5d886e390084498630d1bb0b157e
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,20 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 662062339ce738b1e8f79d2a2aaa8ac9e052e91f
+      id: 267c6cbfde7e809032495efb3971fbdbc05f61da
     state:
-      exists: false
+      exists: true
+      directory: scripts
+      self_digest: sha256:c0f2613b3a69a85592d6fefed653e3fb1a6750c469334122af816fe391947d64
+      subtree_digest: sha256:d80d6b36673f1c8edd4388e50da30764af1316e2dad667ea3e660ffe4ea55815
   current:
     exists: true
     directory: scripts
-    self_digest: sha256:c0f2613b3a69a85592d6fefed653e3fb1a6750c469334122af816fe391947d64
-    subtree_digest: sha256:d80d6b36673f1c8edd4388e50da30764af1316e2dad667ea3e660ffe4ea55815
+    self_digest: sha256:a84a09356127f099b5b7d6e0490a172da8d2afd6362abc0ef0ecb2a36967a69d
+    subtree_digest: sha256:c09eb9727a7aea2b2643a47ccccf219f3ed1089f978c59e5b2b5b55a96ffa0ef
   analyzer:
     name: archiview-structure
     version: 1.0.1
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
-baseline: null
-current:
+baseline:
   module_id: archiview-distribution
   directory: scripts
   parent_id: architecture-change-view
@@ -159,12 +161,148 @@ current:
     self: sha256:c0ceb9c394769d4ea71ce2bc357229136a24383c8148f9baee2426fd105339df
     children: []
   semantic_subtree_digest: sha256:4d6aea8b5e24fb81494e3fb25673a64e9ada336220f93a86036c1273bf4023b0
+current:
+  module_id: archiview-distribution
+  directory: scripts
+  parent_id: architecture-change-view
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-distribution
+    directory: scripts
+    own_files:
+      - path: scripts/build-plugin.mjs
+        digest: sha256:ae4cb0abb05ac5336ca8090a237f818cae5f9f9b252079923aad509f53a2694d
+        normalization: text-lf/v1
+      - path: scripts/preview-panel.mjs
+        digest: sha256:28d8741d7e78733519267f1c1fe9cf0e1fee85a77beecff4e6a771647abba064
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-distribution
+      title: Сборка локального плагина
+      kind: module
+      purpose: Собирать автономный локальный плагин Codex из исходников ArchiView.
+      responsibilities:
+        R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый
+          каталог без зависимости от node_modules установленного плагина.
+        R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для
+          проверки UI, bridge и отказа хоста без запуска модели.
+      boundaries:
+        B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
+      invariants:
+        I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не
+          заменяются.
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Экспорт скиллов в Codex принадлежит отдельному адаптеру. Извлечение
+          символов, разрешение зависимостей и индексация AST принадлежат
+          ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено настроенным корнем проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+  technical_digest: sha256:a84a09356127f099b5b7d6e0490a172da8d2afd6362abc0ef0ecb2a36967a69d
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-distribution
+    directory: scripts
+    own_files:
+      - path: scripts/build-plugin.mjs
+        digest: sha256:ae4cb0abb05ac5336ca8090a237f818cae5f9f9b252079923aad509f53a2694d
+        normalization: text-lf/v1
+      - path: scripts/preview-panel.mjs
+        digest: sha256:28d8741d7e78733519267f1c1fe9cf0e1fee85a77beecff4e6a771647abba064
+        normalization: text-lf/v1
+    contract:
+      id: archiview-distribution
+      kind: module
+      purpose: Собирать автономный локальный плагин Codex из исходников ArchiView.
+      responsibilities:
+        R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый
+          каталог без зависимости от node_modules установленного плагина.
+        R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для
+          проверки UI, bridge и отказа хоста без запуска модели.
+      boundaries:
+        B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
+      invariants:
+        I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не
+          заменяются.
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Экспорт скиллов в Codex принадлежит отдельному адаптеру. Извлечение
+          символов, разрешение зависимостей и индексация AST принадлежат
+          ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено настроенным корнем проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+    children: []
+  self_digest: sha256:79fcf0901f07a4437910e56a0f4e28e8a565e88055bbd9a81342c74c57346789
+  subtree:
+    self: sha256:a84a09356127f099b5b7d6e0490a172da8d2afd6362abc0ef0ecb2a36967a69d
+    children: []
+  subtree_digest: sha256:c09eb9727a7aea2b2643a47ccccf219f3ed1089f978c59e5b2b5b55a96ffa0ef
+  semantic_subtree:
+    self: sha256:79fcf0901f07a4437910e56a0f4e28e8a565e88055bbd9a81342c74c57346789
+    children: []
+  semantic_subtree_digest: sha256:aa0f006403a38e4a3d79685b22b2b44f5c8077b313bba1dd4f2b59efb3ea34b1
 change:
-  existence: added
+  existence: retained
   own: true
   own_code: true
-  own_contract: true
-  inherited_constraints: true
+  own_contract: false
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -173,22 +311,23 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 7
-  comparison_key: sha256:d85198c2d1edf0169358921774bd9fc7c8ba80d34ac29f83dfc3a46958d4c3b5
-  baseline: null
-  current:
+  generation: 17
+  comparison_key: sha256:847ed71f0510ea25853945e7bf54d14e4d8d180f485c181779c5a73b39e4f0f1
+  baseline:
     metadata:
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-09T18:15:54.461Z
-      kind: launch
-      label: Начальное состояние
+      capturedAt: 2026-11-09T19:41:10.178Z
+      kind: git
+      revision: 267c6cbfde7e809032495efb3971fbdbc05f61da
+      label: HEAD
       fingerprint: 0541d434bd25b3165490b996bbf1e5d726747fe6eda57b3e8414d7c566729b5f
       complete: true
       diagnostics: []
       evidenceLimitations: []
       digest: sha256:16a8b76ae12e07398734e66ed95d3ecb1dcd752ff13c74ecc82a698efacbee74
-      id: launch-0541d434bd25b3165490b996bbf1e5d726747fe6eda57b3e8414d7c566729b5f
+      id: git-267c6cbfde7e809032495efb3971fbdbc05f61da
+      isHead: true
     module_index: 1
     module:
       directory: scripts
@@ -475,6 +614,312 @@ publication:
             for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal,
             close);
       - index: 64
+        fact:
+          id: sha256:7b97effd1bb0ca88d6dc518118078147c2b88f8c93f06402506c1e3e17a11f6f
+          kind: module
+          path: scripts
+          text: '{"contract":"documented","format":"arch.yaml","sources":["scripts/build-plugin.mjs","scripts/preview-panel.mjs"]}'
+  current:
+    metadata:
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-09T20:12:47.303Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: bae538baad7a886f70a2e7f11d53ecef8ea63bc8b4413067e1781d06bdcc8640
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+      digest: sha256:223a6e424e5b4d0570a54a815dd3703f7d5b66c2ec548c401d6843f6195b3e61
+      id: launch-bae538baad7a886f70a2e7f11d53ecef8ea63bc8b4413067e1781d06bdcc8640
+    module_index: 1
+    module:
+      directory: scripts
+      documentPath: scripts/arch.yaml
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-distribution
+
+          title: Сборка локального плагина
+
+          kind: module
+
+          purpose: Собирать автономный локальный плагин Codex из исходников
+          ArchiView.
+
+          responsibilities:
+            R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый каталог без зависимости от node_modules установленного плагина.
+            R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для проверки UI, bridge и отказа хоста без запуска модели.
+          boundaries:
+            B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
+          invariants:
+            I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не заменяются.
+        format: arch.yaml
+        contract:
+          schema_version: 1
+          id: archiview-distribution
+          title: Сборка локального плагина
+          kind: module
+          purpose: Собирать автономный локальный плагин Codex из исходников ArchiView.
+          responsibilities:
+            R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый
+              каталог без зависимости от node_modules установленного плагина.
+            R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для
+              проверки UI, bridge и отказа хоста без запуска модели.
+          boundaries:
+            B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
+          invariants:
+            I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не
+              заменяются.
+      files:
+        - path: scripts/arch.yaml
+          hash: fa033312d23b6939070ece9f077fe94d2b118db0
+        - path: scripts/build-plugin.mjs
+          hash: deea8cc42eb5cbe7d90cf7cf9f6ae0c37709ad66
+        - path: scripts/preview-panel.mjs
+          hash: 6abbb5837b8e34463c3f8fc460720f6375346f2b
+      sourceFiles: 2
+      fingerprint: 014035723be5b57cf13ae219b756b069c96737d245733523040bc1e8d8f7db8d
+    facts:
+      - index: 14
+        fact:
+          id: sha256:c7795b50543eab8c509277ade24f7f5347c617596b3118a928a684c962e915d2
+          kind: file
+          path: scripts/arch.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: archiview-distribution
+
+            title: Сборка локального плагина
+
+            kind: module
+
+            purpose: Собирать автономный локальный плагин Codex из исходников
+            ArchiView.
+
+            responsibilities:
+              R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый каталог без зависимости от node_modules установленного плагина.
+              R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для проверки UI, bridge и отказа хоста без запуска модели.
+            boundaries:
+              B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
+            invariants:
+              I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не заменяются.
+      - index: 15
+        fact:
+          id: sha256:128fc8ce75994eb17e8dafb26ddd40d49cf09d87a4d490d22a22d4498698c14c
+          kind: file
+          path: scripts/build-plugin.mjs
+          start_line: 1
+          end_line: 52
+          text: |
+            /**
+             * Автономная локальная поставка: бандлы Node и самодостаточный UI SDK исключают
+             * npm install внутри кеша плагинов. Результат всегда находится только в dist/codex.
+             */
+            import { build } from "esbuild";
+            import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
+            import { fileURLToPath } from "node:url";
+
+            const root = new URL("../", import.meta.url);
+            const output = new URL("dist/codex/", root);
+            await mkdir(new URL("src/", output), { recursive: true });
+            // Панель должна выполнить ui/initialize без загрузки скриптов с loopback:
+            // хост может применять отдельную CSP для ресурсов и сетевых запросов.
+            const panelBundle = await build({
+              entryPoints: [fileURLToPath(new URL("web/archiview/app.mjs", root))],
+              bundle: true, write: false, platform: "browser", target: "es2022", format: "esm",
+              plugins: [{ name: "panel-sdk", setup(builder) {
+                builder.onResolve({ filter: /^\.\/mcp-app-sdk\.mjs$/ }, () => ({
+                  path: fileURLToPath(new URL(import.meta.resolve("@modelcontextprotocol/ext-apps/app-with-deps"))),
+                }));
+              } }],
+            });
+            const [template, styles] = await Promise.all([
+              readFile(new URL("web/archiview/index.html", root), "utf8"),
+              readFile(new URL("web/archiview/styles.css", root), "utf8"),
+            ]);
+            const panelHtml = template
+              .replace('<link rel="stylesheet" href="/styles.css">', () => `<style>${styles.replace(/<\/style/gi, "<\\/style")}</style>`)
+              .replace('<script type="module" src="/app.mjs"></script>', () => `<script type="module">${panelBundle.outputFiles[0].text.replace(/<\/script/gi, "<\\/script")}</script>`);
+            await writeFile(new URL("dist/panel.html", root), panelHtml);
+            await mkdir(new URL("dist/", output), { recursive: true });
+            await writeFile(new URL("dist/panel.html", output), panelHtml);
+            await build({
+              entryPoints: { server: fileURLToPath(new URL("src/server.mjs", root)), cli: fileURLToPath(new URL("src/cli.mjs", root)) },
+              outdir: fileURLToPath(new URL("src/", output)), outExtension: { ".js": ".mjs" },
+              bundle: true, platform: "node", target: "node22", format: "esm",
+              banner: { js: 'import { createRequire as archiviewCreateRequire } from "node:module"; const require = archiviewCreateRequire(import.meta.url);' },
+            });
+            for (const name of ["web", "skills", "docs"]) await cp(new URL(name, root), new URL(name, output), { recursive: true });
+            for (const name of ["plugin.json", "mcp.json", "package.json", "README.md", "LICENSE"])
+              await cp(new URL(name, root), new URL(name, output));
+            await cp(new URL(import.meta.resolve("@modelcontextprotocol/ext-apps/app-with-deps")),
+              new URL("web/archiview/mcp-app-sdk.mjs", output));
+            // Версии npm и плагина согласованы; пакет не требует установки зависимостей в кеше.
+            const metadata = JSON.parse(await readFile(new URL("package.json", output), "utf8"));
+            delete metadata.dependencies;
+            delete metadata.devDependencies;
+            delete metadata.scripts;
+            metadata.bin.archiview = "src/cli.mjs";
+            await writeFile(new URL("package.json", output), JSON.stringify(metadata, null, 2) + "\n");
+            process.stdout.write("Codex plugin built: " + fileURLToPath(output) + "\n");
+      - index: 16
+        fact:
+          id: sha256:fdbaa02f5d1beec4f379fcdd5d025b0004d8aef4585f504390474230dc9e4ec6
+          kind: file
+          path: scripts/preview-panel.mjs
+          start_line: 1
+          end_line: 106
+          text: >
+            /**
+             * Ручной протокольный стенд: настоящий UI и прикладной сервис во временном проекте,
+             * с явно обозначенным тестовым хостом MCP Apps. Не запускает модель и не подменяет
+             * проверку в настоящем Codex. Позволяет проверить bridge без сети в iframe и отказ отправки.
+             */
+            import { createServer } from "node:http";
+
+            import { mkdtemp, mkdir, writeFile, rm, readFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import os from "node:os";
+
+            import { stringify, parse } from "yaml";
+
+            import { createCodexPanel } from "../src/codex/panel.mjs";
+
+            import { AnalysisRequests } from "../src/application/analysis.mjs";
+
+            import { SnapshotStore } from "../src/snapshot-store.mjs";
+
+            import { ReportStore } from "../src/report-store.mjs";
+
+            import { digest } from "../src/formats.mjs";
+
+
+            const root = await mkdtemp(path.join(os.tmpdir(),
+            "archiview-panel-preview-"));
+
+            await mkdir(path.join(root, "domain"));
+
+            for (const [directory, id, title] of [[".", "preview", "Тестовый
+            проект"], ["domain", "domain", "Игровой модуль"]]) {
+              await writeFile(path.join(root, directory, "arch.yaml"), stringify({ schema_version: 1, id, title,
+                kind: "module", purpose: "Обслуживать тестовый игровой модуль.",
+                responsibilities: { R1: "Вычислять значение без изменения состояния." },
+                boundaries: { B1: "Не обращаться к сети." }, invariants: { I1: "Результат детерминирован." } }));
+            }
+
+            await writeFile(path.join(root, "domain/value.js"), "export const
+            value = () => 42;\n");
+
+            const panel =
+            createCodexPanel(process.argv.includes("--select-project") ?
+            undefined : root);
+
+            const resource = (await panel.resource()).contents[0];
+
+            // В iframe запрещена вся сеть; только тестовый хост снаружи
+            пересылает MCP-сообщения.
+
+            const panelPolicy = "default-src 'none'; script-src 'unsafe-inline';
+            style-src 'unsafe-inline'; " +
+              "img-src data:; connect-src 'none'";
+            const constrainedHtml = resource.text.replace("<head>", `<head><meta
+            http-equiv="Content-Security-Policy" content="${panelPolicy}">`);
+
+            const messages = [];
+
+            const host = createServer(async (request, response) => {
+              if (request.url === "/tools" && request.method === "POST") {
+                let body = ""; for await (const chunk of request) body += chunk;
+                const call = JSON.parse(body);
+                response.writeHead(200, { "Content-Type": "application/json" });
+                return response.end(JSON.stringify(await panel.callUi(call.name, call.arguments)));
+              }
+              if (request.url === "/messages") {
+                response.writeHead(200, { "Content-Type": "application/json" }); return response.end(JSON.stringify(messages));
+              }
+              if (request.url === "/message" && request.method === "POST") {
+                let body = ""; for await (const chunk of request) body += chunk;
+                messages.push(JSON.parse(body)); response.writeHead(204); return response.end();
+              }
+              if (request.url === "/complete" && request.method === "POST") {
+                // Искусственный результат стенда явно помечен test; он хранится только во временном проекте.
+                const store = new SnapshotStore(root); await store.open();
+                const reports = new ReportStore(store);
+                const directory = path.join(root, ".archiview/snapshots/analysis");
+                const id = /"requestId":"([a-f0-9-]+)"/.exec(messages.at(-1)?.content?.[0]?.text ?? "")?.[1];
+                if (!id) { response.writeHead(400); return response.end("No accepted request"); }
+                const input = parse(await readFile(path.join(directory, id, "input.yaml"), "utf8"));
+                input.report.analysis.model = { provider: "test", id: "UI protocol fixture" };
+                input.report.analysis.prompt_digest = digest("UI protocol fixture");
+                input.manifest.model = input.report.analysis.model;
+                input.manifest.prompt_digest = input.report.analysis.prompt_digest;
+                input.report.analysis.coverage = { status: "partial", limitations: ["Искусственный результат протокольного стенда; анализ кода не выполнялся."] };
+                await writeFile(path.join(directory, id, "result.yaml"), stringify(input, { aliasDuplicateObjects: false }));
+                await new AnalysisRequests(store, reports).complete(id);
+                response.writeHead(204); return response.end();
+              }
+              response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+              response.end(`<!doctype html><html lang="ru"><meta charset="utf-8"><title>ArchiView — тестовый хост MCP Apps</title>
+                <style>body{margin:0;font:14px system-ui;background:#f4f6f5}header{padding:10px 16px;display:flex;gap:14px;align-items:center}iframe{width:100%;height:calc(100vh - 55px);border:0}#count{margin-left:auto}</style>
+                <header><strong>Тестовый хост MCP Apps</strong><span id="connection">Ожидаем подключения</span><label><input id="reject" type="checkbox">Отклонять поручения</label><button id="complete">Импортировать тестовый результат</button><span id="count">Поручений: 0</span></header>
+                <iframe id="panel" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
+                <script type="module">
+                  const frame = document.querySelector("iframe");
+                  const panelHtml = ${JSON.stringify(constrainedHtml).replace(/</g, "\\u003c")};
+                  let count = 0;
+                  window.addEventListener("message", async (event) => {
+                    if (event.source !== frame.contentWindow || !event.data?.method) return;
+                    if (event.data.method === "ui/notifications/initialized") document.querySelector("#connection").textContent = "MCP Apps подключён";
+                    if (event.data.id === undefined) return;
+                    const message = event.data;
+                    let result = {};
+                    if (message.method === "ui/initialize") result = { protocolVersion: message.params.protocolVersion,
+                      hostInfo: { name: "ArchiView protocol test host", version: "1" }, hostCapabilities: { message: { text: {} }, serverTools: {} },
+                      hostContext: { theme: "light", displayMode: "inline", availableDisplayModes: ["inline"] } };
+                    if (message.method === "ui/message") {
+                      result = { isError: document.querySelector("#reject").checked };
+                      if (!result.isError) {
+                        await fetch("/message", { method: "POST", body: JSON.stringify(message.params) });
+                        document.querySelector("#count").textContent = "Поручений: " + (++count);
+                      }
+                    }
+                    if (message.method === "tools/call") result = await (await fetch("/tools", { method: "POST", body: JSON.stringify(message.params) })).json();
+                    frame.contentWindow.postMessage({ jsonrpc: "2.0", id: message.id, result }, "*");
+                  });
+                  document.querySelector("#complete").onclick = () => fetch("/complete", { method: "POST" });
+                  frame.srcdoc = panelHtml;
+                </script></html>`);
+            });
+
+            await new Promise((resolve) => host.listen(0, "127.0.0.1",
+            resolve));
+
+            process.stdout.write("UI protocol preview: http://127.0.0.1:" +
+            host.address().port + "\nTemporary project: " + root + "\n");
+
+            /** Убирает только временный проект, созданный этим стендом, и
+            принадлежащие ему серверы. */
+
+            async function close() {
+              host.closeAllConnections(); host.close();
+              await panel.close();
+              await rm(root, { recursive: true, force: true });
+              process.exit();
+            }
+
+            for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal,
+            close);
+      - index: 71
         fact:
           id: sha256:7b97effd1bb0ca88d6dc518118078147c2b88f8c93f06402506c1e3e17a11f6f
           kind: module

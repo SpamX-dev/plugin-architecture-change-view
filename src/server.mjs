@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Stdio MCP-сервер правил arch.yaml. Раздаёт канонический SKILL.md и инструменты
- * чтения; явный --panel добавляет локальное MCP App с собственным HTTP backend.
+ * чтения; явный --panel добавляет локальное MCP App со скрытыми от модели операциями UI.
  * Рабочий проект задаётся --root, PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT или cwd.
  */
 import { readFile } from "node:fs/promises";
@@ -14,8 +14,8 @@ import { CallToolRequestSchema, ListToolsRequestSchema,
 import { parse } from "yaml";
 import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from "./inventory.mjs";
 import { createCodexPanel, PANEL_URI, PANEL_TOOL, PROJECT_INPUT } from "./codex/panel.mjs";
-import { loadPanelTls } from "./codex/tls.mjs";
-import { createProjectBinding } from "./codex/project.mjs";
+import { createProjectBinding } from "./application/project.mjs";
+import { UI_TOOLS, UI_TOOL_METHODS } from "./codex/ui-tools.mjs";
 
 /** Версионированная метаинформация пакета для MCP initialize. */
 const packageInfo = JSON.parse(await readFile(new URL("../package.json", import.meta.url)));
@@ -25,11 +25,10 @@ const { values } = parseArgs({ options: {
   "max-files": { type: "string", default: "50000" },
   help: { type: "boolean", short: "h" },
   panel: { type: "boolean" },
-  "panel-https": { type: "boolean" },
 } });
 if (values.help) {
   process.stdout.write(packageInfo.name + " [--root DIR] [--extension .ext] " +
-    "[--max-files 50000] [--panel] [--panel-https]\n");
+    "[--max-files 50000] [--panel]\n");
 } else {
   await serve();
 }
@@ -54,9 +53,7 @@ async function serve() {
   if (!frontmatter) throw new Error("Skill frontmatter is missing");
   const metadata = parse(frontmatter[1]);
   const uri = "skill://" + metadata.name;
-  const panel = values.panel ? createCodexPanel(project, {
-    tls: values["panel-https"] ? await loadPanelTls() : undefined,
-  }) : null;
+  const panel = values.panel ? createCodexPanel(project) : null;
   const server = new Server({ name: packageInfo.name, version: packageInfo.version },
     { capabilities: { resources: {}, tools: {} },
       instructions: "For source-code changes, read skill://module-boundaries. " +
@@ -75,7 +72,7 @@ async function serve() {
     return { contents: [{ uri, mimeType: "text/markdown", text }] };
   });
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [
-    ...(panel ? [PANEL_TOOL] : []),
+    ...(panel ? [PANEL_TOOL, ...UI_TOOLS] : []),
     { name: "module_inventory",
       description: "List every source directory and arch.yaml coverage, including " +
         "missing/empty contracts, source-container directories and planned modules. " +
@@ -93,6 +90,7 @@ async function serve() {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const args = request.params.arguments ?? {};
     const name = request.params.name;
+    if (panel && UI_TOOL_METHODS.has(name)) return panel.callUi(name, args);
     if (panel && name === PANEL_TOOL.name) {
       if (Object.keys(args).some((key) => key !== "projectRoot") ||
           (args.projectRoot !== undefined && typeof args.projectRoot !== "string")) throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments");

@@ -10,7 +10,7 @@ import { isAlias, isMap, isScalar, isSeq, parseDocument, stringify } from "yaml"
 import { canonical, digest } from "./formats.mjs";
 import { readReviewBundle } from "./review-store.mjs";
 import { snapshotDigest } from "./snapshots.mjs";
-import { aggregateTreeStatuses, createTechnicalReport, createReviewEntry, isSemanticReview, reviewFreshness, validateReviewEntry, validateReviewRelations } from "./report-model.mjs";
+import { createReportModel, createReviewEntry, isSemanticReview, validateReviewEntry, validateReviewRelations } from "./report-model.mjs";
 
 const HASH = /^[a-f0-9]{64}$/;
 const START = "# BEGIN ArchiView managed";
@@ -119,8 +119,9 @@ function reconstruct(reports) {
   if (!result.current) throw new Error("Missing published current snapshot");
   const expectedKey = digest({ baseline: result.baseline ? [result.baseline.id, snapshotContentDigest(result.baseline)] : null, current: [result.current.id, snapshotContentDigest(result.current)] });
   if (selected[0].publication.comparison_key !== expectedKey) throw new Error("Published comparison identity mismatch");
+  const model = createReportModel(result.baseline, result.current);
   for (const report of selected) {
-    const expected = createTechnicalReport(report.project_id, result.baseline, result.current, { moduleId: report.module_id });
+    const expected = model.createTechnicalReport(report.project_id, { moduleId: report.module_id });
     if (canonical(technicalCore(report)) !== canonical(expected)) throw new Error("Published technical state differs from saved snapshot: " + report.module_id);
   }
   return result;
@@ -155,9 +156,10 @@ export class ReportStore {
       try { await lstat(path.join(this.control, ".publication.yaml")); } catch (journalError) { if (journalError.code === "ENOENT") return null; throw journalError; }
     }
     return this.#locked(async () => {
-      const state = await this.#read();
+      // Опубликованные фрагменты самодостаточны; raw не участвует в выборе базы.
+      const state = await this.#read(this.work, false);
       if (state.workErrors.length) throw new Error(state.workErrors.join("; "));
-      return reconstruct(state.reports);
+      return state.comparison;
     });
   }
 
@@ -187,19 +189,29 @@ export class ReportStore {
       const generation = same ? previousGeneration : previousGeneration + 1;
       const old = new Map(state.reports.map((r) => [r.module_id, r]));
       const projectId = digest(this.snapshotStore.snapshotRoot);
+      const model = createReportModel(baseline, current);
+      let technicalChanged = !same;
       for (const module of comparisonModules) {
-        const report = validateArchiReport(createTechnicalReport(projectId, baseline, current, module));
+        const report = validateArchiReport(model.createTechnicalReport(projectId, module));
+        const previousReport = old.get(report.module_id);
+        const unchanged = previousReport && canonical(technicalCore(previousReport)) === canonical(technicalCore(report));
+        technicalChanged ||= !unchanged;
         // Повторный запуск с теми же данными сохраняет исходную метку времени снимка.
         const preserved = same ? old.get(report.module_id)?.publication : null;
         report.publication = preserved ?? { generation, comparison_key: comparisonKey,
           baseline: snapshotFragment(baseline, module.baselinePath), current: snapshotFragment(current, module.currentPath) };
-        old.set(report.module_id, report);
-        await this.#rawArchi(report);
+        // Вместе с прежними входами сохраняем вычисленные статусы и диагностику.
+        old.set(report.module_id, same && unchanged ? previousReport : report);
+        // Общий reader уже проверил существующий raw-файл в этой же операции.
+        if (!state.rawArchi.has(report.check_hash + "/" + report.module_id)) await this.#rawArchi(report);
       }
       state.reports = [...old.values()];
-      await this.#publish(state);
+      // Не меняем файлы и время публикации, если входы, история и диагностика прежние.
+      // Чтение под lock всё равно обнаруживает внешние импорты и повреждения work/raw.
+      if (technicalChanged || state.publishedEntries !== digest(state.entries) ||
+          state.publishedDiagnostics !== digest([...new Set(state.diagnostics)])) await this.#publish(state);
       const result = this.#result(state);
-      result.statuses = state.entries.map((entry) => ({ module_id: entry.module_id, review_id: entry.review_id, ...reviewFreshness(entry, baseline, current) }));
+      result.statuses = state.entries.map((entry) => ({ module_id: entry.module_id, review_id: entry.review_id, ...model.reviewFreshness(entry) }));
       return result;
     });
   }
@@ -258,12 +270,12 @@ export class ReportStore {
 
   #result(state) {
     return { bundles: state.entries.filter((e) => e.report?.schema_version === 1).map(({ report, manifest, baseline, current }) => ({ report, manifest, baseline, current })),
-      entries: state.entries, reports: state.reports, diagnostics: state.diagnostics };
+      entries: state.entries, reports: state.reports, diagnostics: state.diagnostics, comparison: state.comparison };
   }
 
   /** Общий reader объединяет work и raw: work остаётся первичным после clone. */
   async #read(workDirectory = this.work, includeRaw = true) {
-    const state = { entries: [], reports: [], diagnostics: [], workErrors: [], integrityErrors: [] };
+    const state = { entries: [], reports: [], diagnostics: [], workErrors: [], integrityErrors: [], rawArchi: new Set(), comparison: null };
     const readDirectory = async (directory, published) => {
       await this.snapshotStore.assertLocation(directory);
       let names;
@@ -288,7 +300,7 @@ export class ReportStore {
             if (published) {
               state.reports.push(data);
               state.diagnostics.push(...data.storage_diagnostics ?? []);
-            }
+            } else state.rawArchi.add(data.check_hash + "/" + data.module_id);
           } else {
             if (data.schema_version !== 2 || data.kind !== "review_history" || !Array.isArray(data.entries) || Object.keys(data).some((key) => !["schema_version", "kind", "module_id", "entries"].includes(key))) throw new Error("Invalid review history schema");
             for (const entry of data.entries) {
@@ -308,10 +320,12 @@ export class ReportStore {
       }
     };
     await readDirectory(workDirectory, true);
-    try { reconstruct(state.reports); } catch (error) {
+    try { state.comparison = reconstruct(state.reports); } catch (error) {
       const message = "work publication: " + error.message;
       state.diagnostics.push(message); state.workErrors.push(message);
     }
+    state.publishedEntries = digest([...state.entries].sort((a, b) => a.registration_order - b.registration_order));
+    state.publishedDiagnostics = digest([...new Set(state.diagnostics)]);
     let rawDirectories = [];
     if (includeRaw) try { rawDirectories = await readdir(this.raw, { withFileTypes: true }); } catch (error) { if (error.code !== "ENOENT") throw error; }
     for (const directory of rawDirectories.sort((a, b) => a.name.localeCompare(b.name))) {
@@ -395,8 +409,9 @@ export class ReportStore {
   async #publish(state) {
     validateReviewRelations(state.entries);
     const comparison = reconstruct(state.reports);
+    state.comparison = comparison;
     if (comparison) {
-      const statuses = aggregateTreeStatuses(state.entries, comparison.baseline, comparison.current);
+      const statuses = createReportModel(comparison.baseline, comparison.current).aggregateTreeStatuses(state.entries);
       for (const report of state.reports) if (statuses.has(report.module_id)) report.review_status = statuses.get(report.module_id);
     }
     const anchor = state.reports.find((report) => report.current?.directory === ".") ?? state.reports.find((report) => report.baseline?.directory === ".") ?? state.reports[0];

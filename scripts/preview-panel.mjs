@@ -1,7 +1,7 @@
 /**
- * Ручной протокольный стенд: настоящий UI и HTTP backend во временном проекте,
+ * Ручной протокольный стенд: настоящий UI и прикладной сервис во временном проекте,
  * с явно обозначенным тестовым хостом MCP Apps. Не запускает модель и не подменяет
- * проверку в настоящем Codex. Позволяет проверить bridge, CORS и отказ отправки.
+ * проверку в настоящем Codex. Позволяет проверить bridge без сети в iframe и отказ отправки.
  */
 import { createServer } from "node:http";
 import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
@@ -9,8 +9,7 @@ import path from "node:path";
 import os from "node:os";
 import { stringify, parse } from "yaml";
 import { createCodexPanel } from "../src/codex/panel.mjs";
-import { loadPanelTls } from "../src/codex/tls.mjs";
-import { AnalysisRequests } from "../src/archiview/analysis.mjs";
+import { AnalysisRequests } from "../src/application/analysis.mjs";
 import { SnapshotStore } from "../src/snapshot-store.mjs";
 import { ReportStore } from "../src/report-store.mjs";
 import { digest } from "../src/formats.mjs";
@@ -24,16 +23,20 @@ for (const [directory, id, title] of [[".", "preview", "Тестовый про�
     boundaries: { B1: "Не обращаться к сети." }, invariants: { I1: "Результат детерминирован." } }));
 }
 await writeFile(path.join(root, "domain/value.js"), "export const value = () => 42;\n");
-const panel = createCodexPanel(process.argv.includes("--select-project") ? undefined : root,
-  { tls: process.argv.includes("--https") ? await loadPanelTls() : undefined });
+const panel = createCodexPanel(process.argv.includes("--select-project") ? undefined : root);
 const resource = (await panel.resource()).contents[0];
-// Воспроизводит ограничение Codex: внешние JS/CSS запрещены, loopback разрешён
-// только для API. Нельзя случайно проверить панель в более свободной среде.
+// В iframe запрещена вся сеть; только тестовый хост снаружи пересылает MCP-сообщения.
 const panelPolicy = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; " +
-  "img-src data:; connect-src " + resource._meta.ui.csp.connectDomains.join(" ");
+  "img-src data:; connect-src 'none'";
 const constrainedHtml = resource.text.replace("<head>", `<head><meta http-equiv="Content-Security-Policy" content="${panelPolicy}">`);
 const messages = [];
 const host = createServer(async (request, response) => {
+  if (request.url === "/tools" && request.method === "POST") {
+    let body = ""; for await (const chunk of request) body += chunk;
+    const call = JSON.parse(body);
+    response.writeHead(200, { "Content-Type": "application/json" });
+    return response.end(JSON.stringify(await panel.callUi(call.name, call.arguments)));
+  }
   if (request.url === "/messages") {
     response.writeHead(200, { "Content-Type": "application/json" }); return response.end(JSON.stringify(messages));
   }
@@ -74,7 +77,7 @@ const host = createServer(async (request, response) => {
         const message = event.data;
         let result = {};
         if (message.method === "ui/initialize") result = { protocolVersion: message.params.protocolVersion,
-          hostInfo: { name: "ArchiView protocol test host", version: "1" }, hostCapabilities: { message: { text: {} } },
+          hostInfo: { name: "ArchiView protocol test host", version: "1" }, hostCapabilities: { message: { text: {} }, serverTools: {} },
           hostContext: { theme: "light", displayMode: "inline", availableDisplayModes: ["inline"] } };
         if (message.method === "ui/message") {
           result = { isError: document.querySelector("#reject").checked };
@@ -83,6 +86,7 @@ const host = createServer(async (request, response) => {
             document.querySelector("#count").textContent = "Поручений: " + (++count);
           }
         }
+        if (message.method === "tools/call") result = await (await fetch("/tools", { method: "POST", body: JSON.stringify(message.params) })).json();
         frame.contentWindow.postMessage({ jsonrpc: "2.0", id: message.id, result }, "*");
       });
       document.querySelector("#complete").onclick = () => fetch("/complete", { method: "POST" });

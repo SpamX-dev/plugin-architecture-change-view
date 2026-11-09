@@ -1,7 +1,7 @@
 /** Проверяет состав видимого локального чеклиста без изменения сохранённого отчёта. */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ownClauseGroups, reviewVersions, observedVersionGroups, contractChanges, evidenceLabel,
+import { ownClauseGroups, reviewVersions, observedVersionGroups, contractChanges, contractHeadingChange, evidenceLabel,
   reviewFindingItems, freshnessLabel, clauseFindingTargets } from "../web/archiview/review.mjs";
 
 /** Фикстура старого отчёта содержит локальные, родительские и исторические проверки. */
@@ -128,6 +128,22 @@ test("contract fields distinguish new, removed and changed clauses while preserv
     key: "responsibilities.R1", before: "Было.", after: "Стало.", status: "modified" });
   assert.equal(changes.get("responsibilities.R2").status, "removed");
   assert.equal(changes.get("responsibilities.R3").status, "added");
+  assert.deepEqual({ before, after }, original);
+});
+
+test("heading uses the strictest field change and retains both versions in one diff", () => {
+  const before = { title: "Прежнее название", kind: "module", id: "one", responsibilities: { R1: "Прежний пункт" } };
+  const after = { ...before, title: "Новое название", purpose: "Добавленное назначение", responsibilities: {} };
+  const original = structuredClone({ before, after });
+  const change = contractHeadingChange(before, after);
+  assert.equal(change.status, "modified", "a removed clause outside the heading does not affect its status");
+  assert.deepEqual(change.before, { title: "Прежнее название", kind: "module", id: "one" });
+  assert.deepEqual(change.after, { title: "Новое название", kind: "module", id: "one", purpose: "Добавленное назначение" });
+  assert.equal(contractHeadingChange(after, before).status, "removed", "a removed heading field outranks a changed title");
+  assert.equal(contractHeadingChange(null, after).status, "added");
+  assert.equal(contractHeadingChange(after, null).status, "removed");
+  assert.equal(contractHeadingChange(null, after, false).status, "unchanged", "initial comparison has no invented additions");
+  assert.equal(contractHeadingChange(before, { ...before, responsibilities: {} }).status, "unchanged");
   assert.deepEqual({ before, after }, original);
 });
 

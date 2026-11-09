@@ -5,14 +5,16 @@
  */
 import { renderContract, renderContractHeading, renderReview, freshnessLabel } from "./review.mjs";
 import { connectPanel } from "./panel-bridge.mjs";
+import { createArchiViewClient } from "./client.mjs";
 
 /** Локальное состояние интерфейса, не изменяющее исходные документы проекта. */
 const state = { view: null, detail: null, selected: null, tab: "document",
   filter: "all", search: "", expanded: new Set(), selection: 0, refresh: 0,
   target: "current", historyLimit: 50, bridge: null, analyses: new Map() };
-/** Адрес API и токен экземпляра доступны только HTML-ресурсу панели. */
-const backendOrigin = document.querySelector('meta[name="archiview-backend"]')?.content ?? location.origin;
-const panelToken = document.querySelector('meta[name="archiview-token"]')?.content;
+/** Транспорт задаёт точка сборки; интерфейс работает с одинаковыми прикладными методами. */
+const transportMode = document.querySelector('meta[name="archiview-transport"]')?.content ?? "http";
+const connection = connectPanel();
+const client = createArchiViewClient({ mode: transportMode, connection });
 /** Человекочитаемые подписи сравнительных статусов. */
 const labels = { initial: "Первый", new: "Новый", changed: "Изменён", removed: "Удалён", unchanged: "Без изменений" };
 /** Статические SVG-значки, не содержащие пользовательских строк. */
@@ -45,25 +47,15 @@ function icon(name) {
   return node;
 }
 
-/** Выполняет запрос к собственному API, сохраняя серверную причину ошибки. */
-async function api(url, options) {
-  const headers = new Headers(options?.headers);
-  if (panelToken) headers.set("Authorization", "Bearer " + panelToken);
-  const response = await fetch(new URL(url, backendOrigin), { ...options, headers });
-  const result = await response.json();
-  if (!response.ok) throw Object.assign(new Error(result.error ?? "Не удалось получить данные"), { code: result.code });
-  return result;
-}
-
 /** Обновляет кнопку для выбранного модуля, включая повторные кнопки на вкладке проверок. */
 function configureAnalysisButton(button) {
   const module = state.view?.modules.find((entry) => entry.key === state.selected);
   const request = state.analyses.get(module?.moduleId);
   const pending = request && request.status !== "completed" && request.status !== "error";
   button.dataset.analysis = "true";
-  button.disabled = !state.bridge || !state.view?.complete || module?.documentState !== "documented" || !module?.moduleId || Boolean(pending);
+  button.disabled = !state.bridge?.send || !state.view?.complete || module?.documentState !== "documented" || !module?.moduleId || Boolean(pending);
   button.textContent = pending ? "Ожидаем анализ…" : "Анализировать модуль";
-  button.title = !state.bridge ? "Откройте ArchiView как приложение в Codex с поддержкой отправки поручений" :
+  button.title = !state.bridge?.send ? "Откройте ArchiView как приложение в Codex с поддержкой отправки поручений" :
     module?.documentState !== "documented" ? "Сначала подготовьте корректный arch.yaml" : "Проверить выбранный снимок модуля агентом Codex";
   button.onclick = runAnalysis;
 }
@@ -78,18 +70,17 @@ function renderAnalysisControls() {
   status.textContent = request?.message ?? "";
 }
 
-/** Фиксирует входы по HTTP, затем один раз передаёт явное поручение агенту хоста. */
+/** Фиксирует входы через сервис, затем один раз передаёт явное поручение агенту хоста. */
 async function runAnalysis() {
   const module = state.view?.modules.find((entry) => entry.key === state.selected);
-  if (!module || !state.bridge) return;
+  if (!module || !state.bridge?.send) return;
   const previous = state.analyses.get(module.moduleId);
   if (previous && !["completed", "error"].includes(previous.status)) return;
   const record = { status: "preparing", message: "Подготавливаем входы выбранного снимка…" };
   state.analyses.set(module.moduleId, record);
   renderAnalysisControls();
   try {
-    const request = await api("/api/analysis", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ view: state.view.id, path: module.key }) });
+    const request = await client.prepareAnalysis({ view: state.view.id, path: module.key });
     Object.assign(record, request);
     await state.bridge.send(request.prompt);
     record.message = "Запрос передан в Codex. Ожидаем импорт результата для выбранного снимка.";
@@ -107,7 +98,7 @@ function pollAnalysis(record) {
   record.timer = setTimeout(async () => {
     if (document.visibilityState === "hidden") return pollAnalysis(record);
     try {
-      const status = await api("/api/analysis/" + record.id);
+      const status = await client.getAnalysis({ id: record.id });
       if (status.status === "completed") {
         record.status = "completed";
         record.message = "Анализ выбранного снимка сохранён. Актуальность показана в результатах проверки.";
@@ -405,6 +396,11 @@ function renderTree() {
 
 /** Обновляет хлебные крошки, статус и контекст выбранного каталога. */
 function renderHeading(module) {
+  const group = byId("module-heading-content");
+  group.className = "module-heading-content";
+  group.removeAttribute("title");
+  group.onclick = null;
+  group.querySelector(":scope > .contract-change-action")?.remove();
   byId("module-title").className = "";
   byId("module-title").removeAttribute("title");
   byId("module-title").onclick = null;
@@ -459,15 +455,13 @@ async function selectModule(directory) {
   for (const parent of ancestors(module.directory)) state.expanded.add(parent);
   // URL sandbox-ресурса принадлежит хосту; about:srcdoc и opaque origins
   // запрещают replaceState. Обычная веб-страница сохраняет собственный hash.
-  if (!panelToken) history.replaceState(null, "", "#" + encodeURIComponent(directory));
+  if (transportMode === "http") history.replaceState(null, "", "#" + encodeURIComponent(directory));
   renderHeading(module);
   renderTree();
   document.body.classList.remove("tree-open");
   byId("document-panel").replaceChildren(el("div", "loading-state", "Читаем документ…"));
   try {
-    const detail = await api("/api/module?" + new URLSearchParams({
-      view: state.view.id, path: module.key,
-    }));
+    const detail = await client.getModule({ view: state.view.id, path: module.key });
     if (token !== state.selection) return;
     state.detail = detail;
     renderPanel();
@@ -629,7 +623,7 @@ function renderPanel(navigation = {}) {
   byId("module-subtitle").hidden = Boolean(selected.document.contract);
   if (selected.document.contract) renderContractHeading(heading, selected.document, {
     before: state.detail.before?.document.contract ?? null, after: state.detail.after?.document.contract ?? null,
-    compare: state.detail.status !== "initial", titleElement: byId("module-title"),
+    compare: state.detail.status !== "initial", titleElement: byId("module-title"), groupElement: byId("module-heading-content"),
   });
   byId("document-version").textContent = state.detail.status === "removed" ?
     "Из базы сравнения" : timelineLabel(state.view.target ?? { id: "current" });
@@ -672,8 +666,7 @@ function renderProjectSelection() {
     submit.disabled = true;
     error.textContent = "";
     try {
-      await api("/api/project", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectRoot: input.value.trim() }) });
+      await client.setProject({ projectRoot: input.value.trim() });
       await refresh();
     } catch (cause) { error.textContent = cause.message; }
     finally { submit.disabled = false; }
@@ -691,8 +684,7 @@ async function refresh(options = {}) {
   button.classList.add("is-loading");
   try {
     const selectedTarget = options.target ?? state.target;
-    const parameters = new URLSearchParams({ target: selectedTarget, baseline: "auto", historyLimit: String(state.historyLimit) });
-    const view = await api("/api/comparison?" + parameters);
+    const view = await client.getComparison({ target: selectedTarget, baseline: "auto", historyLimit: state.historyLimit });
     if (token !== state.refresh) return;
     state.view = view;
     state.target = view.target?.id ?? selectedTarget;
@@ -731,7 +723,7 @@ async function copyText(text) {
 }
 
 initializeTreeWidth();
-connectPanel().then((bridge) => { state.bridge = bridge; renderAnalysisControls(); });
+connection.then((bridge) => { state.bridge = bridge; renderAnalysisControls(); });
 byId("refresh").prepend(icon("refresh"));
 byId("save").prepend(icon("save"));
 byId("refresh").addEventListener("click", () => refresh());
@@ -769,8 +761,7 @@ byId("snapshot-form").addEventListener("submit", async (event) => {
   const submit = event.submitter;
   submit.disabled = true;
   try {
-    await api("/api/snapshots", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ view: state.view.id, label: byId("snapshot-label").value }) });
+    await client.saveSnapshot({ view: state.view.id, label: byId("snapshot-label").value });
     byId("snapshot-dialog").close();
     toast("Снимок сохранён и доступен в хронологии");
     await refresh();

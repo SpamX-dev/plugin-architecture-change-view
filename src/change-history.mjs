@@ -31,6 +31,11 @@ export class ChangeHistory {
     await this.snapshotStore.open();
     await this.snapshotStore.assertLocation(this.directory);
     const state = await this.#read();
+    return this.#history(state, headRevision, { beforeSequence, limit });
+  }
+
+  /** Формирует страницу из уже проверенного состояния, не перечитывая снимки истории. */
+  #history(state, headRevision, { beforeSequence = null, limit = null } = {}) {
     const records = state.changes.filter((record) => (headRevision === undefined || record.baseRevision === headRevision) &&
       (beforeSequence === null || record.sequence < beforeSequence));
     const newest = records.sort((a, b) => b.sequence - a.sequence);
@@ -54,8 +59,10 @@ export class ChangeHistory {
   /**
    * Наблюдает рабочие исходники независимо от выбранной исторической точки UI.
    * Чистый первый/new HEAD не создаёт change; dirty→clean при прежнем HEAD создаёт.
+   * includeHistory возвращает историю выбранного HEAD из того же чтения под lock:
+   * вызывающему не требуется сразу после наблюдения заново читать все снимки.
    */
-  async observe(current, head = null) {
+  async observe(current, head = null, { includeHistory = false } = {}) {
     return this.#locked(async () => {
       this.#snapshot(current);
       let headSnapshot = head;
@@ -68,20 +75,23 @@ export class ChangeHistory {
       this.#revision(baseRevision);
       const state = await this.#read();
       this.#writable(state);
+      const observed = (record, created) => ({ record, created,
+        ...(includeHistory ? { history: this.#history(state, baseRevision) } : {}) });
       let cursor = await this.#cursor(state);
       const same = cursor?.digest === current.digest && cursor?.headRevision === baseRevision;
-      if (same) return { record: state.changes.find((record) => record.id === cursor.recordId) ?? null, created: false };
+      if (same) return observed(state.changes.find((record) => record.id === cursor.recordId) ?? null, false);
       const clean = Boolean(headSnapshot && current.digest === headSnapshot.digest);
       if (clean && (!cursor || cursor.headRevision !== baseRevision)) {
         await this.#writeCursor({ schema_version: 1, headRevision: baseRevision, digest: current.digest,
           recordId: null, sequence: Math.max(0, ...state.changes.map((record) => record.sequence)), capturedAt: current.capturedAt });
-        return { record: null, created: false };
+        return observed(null, false);
       }
       const record = this.#record(current, baseRevision, Math.max(0, ...state.changes.map((entry) => entry.sequence)) + 1,
         "change-" + digest({ nonce: randomUUID() }).slice(7));
       await this.#save(record);
       await this.#writeCursor(this.#recordCursor(record));
-      return { record, created: true };
+      state.changes.push(record);
+      return observed(record, true);
     });
   }
 

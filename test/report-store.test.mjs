@@ -1,6 +1,6 @@
 /** Переносимость, неизменность реальных попыток и восстановление публикаций v2. */
 import assert from "node:assert/strict";
-import { cp, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -75,6 +75,45 @@ test("publishes exact baseline/current snapshots and technical reports without L
   assert.equal(raw.length, 2);
   assert.ok(raw.every((name) => /^[a-f0-9]{64}$/.test(name)));
   assert.equal((await store.list()).entries.length, 0);
+});
+
+test("unchanged rebuild preserves the publication files and still detects external raw reviews", async (t) => {
+  const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
+  const first = await store.rebuild(baseline, current, comparison.modules);
+  const file = path.join(store.work, moduleReportName("child") + ".archi.yaml");
+  const original = await readFile(file, "utf8");
+  const oldTime = new Date("2020-01-01T00:00:00.000Z");
+  await utimes(file, oldTime, oldTime);
+  const before = await stat(file);
+  const unchanged = await store.rebuild(baseline, await captureWorkingTree(snapshotStore.root), comparison.modules);
+  assert.equal((await stat(file)).mtimeMs, before.mtimeMs);
+  assert.equal(await readFile(file, "utf8"), original);
+  assert.deepEqual(unchanged.comparison, stored({ baseline, current }));
+  assert.deepEqual(new Map(unchanged.reports.map((report) => [report.module_id, report])),
+    new Map(first.reports.map((report) => [report.module_id, report])));
+
+  // Raw может содержать завершённый импорт другого процесса до его публикации work.
+  const entry = nativeReview(snapshotStore, baseline, current, "external-raw-attempt");
+  const raw = path.join(store.raw, entry.check_hash);
+  await mkdir(raw, { recursive: true });
+  await writeFile(path.join(raw, moduleReportName("child") + ".review.yaml"), stringify({
+    schema_version: 2, kind: "review_history", module_id: "child", entries: [entry],
+  }, { aliasDuplicateObjects: false }));
+  const updated = await store.rebuild(baseline, current, comparison.modules);
+  assert.deepEqual(updated.entries.map((item) => item.review_id), ["external-raw-attempt"]);
+  const published = parseReportYaml(await readFile(path.join(store.work, moduleReportName("child") + ".review.yaml"), "utf8"));
+  assert.equal(published.entries[0].review_id, "external-raw-attempt");
+});
+
+test("unchanged rebuild detects damage to its raw report and published baselines remain independent of raw", async (t) => {
+  const { store, baseline, current, comparison } = await fixture(t);
+  const first = await store.rebuild(baseline, current, comparison.modules);
+  const report = first.reports.find((item) => item.module_id === "child");
+  const raw = path.join(store.raw, report.check_hash, moduleReportName("child") + ".archi.yaml");
+  await writeFile(raw, "schema_version: 999\nkind: archi\nmodule_id: child\n");
+  assert.deepEqual(await store.publishedComparison(), stored({ baseline, current }));
+  assert.match((await store.list()).diagnostics.join("\n"), /Invalid archi report schema/);
+  await assert.rejects(store.rebuild(baseline, current, comparison.modules), /Invalid archi report schema/);
 });
 
 test("retains a selected legacy v1 snapshot without rewriting its original identity", async (t) => {
