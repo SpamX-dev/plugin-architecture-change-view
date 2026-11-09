@@ -4,7 +4,7 @@
  * Неизвестные поля и неоднозначный YAML отвергаются до использования данных.
  */
 import { createHash } from "node:crypto";
-import { parseDocument } from "yaml";
+import { parseDocument, isAlias, isMap, isScalar, isSeq } from "yaml";
 
 /** Канонический JSON сортирует ключи словарей, сохраняя порядок массивов. */
 export function canonical(value) {
@@ -114,6 +114,21 @@ export function validateReview(value) {
 export function parseYaml(text, validate) {
   const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2" });
   if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
+  // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
+  // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
+  const inspect = (node) => {
+    if (node == null) return;
+    if (isAlias(node)) throw new Error("YAML aliases are not allowed");
+    if (isMap(node)) {
+      for (const pair of node.items) {
+        if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
+        inspect(pair.value);
+      }
+    } else if (isSeq(node)) node.items.forEach(inspect);
+    else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+      typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
+  };
+  inspect(doc.contents);
   return validate(doc.toJS({ maxAliasCount: 0 }));
 }
 

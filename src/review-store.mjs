@@ -27,7 +27,7 @@ export async function readReviewBundle(directory) {
   return validateReviewBundle({ report, manifest, baseline, current });
 }
 
-/** Владеет результатами одного проекта; источник и внешняя папка задаются SnapshotStore. */
+/** Владеет результатами одного проекта; размещение и происхождение задаются SnapshotStore. */
 export class ReviewStore {
   constructor(snapshotStore) {
     this.root = snapshotStore.root; this.directory = path.join(snapshotStore.directory, "reviews"); this.snapshotStore = snapshotStore;
@@ -38,10 +38,12 @@ export class ReviewStore {
 
   /** Сохраняет новый результат атомарно, отклоняя коллизию id и чужой проект. */
   async save(bundle) {
-    await this.snapshotStore.assertExternal(this.directory);
+    await this.snapshotStore.open();
+    await this.snapshotStore.assertLocation(this.directory);
     validateReviewBundle(bundle);
-    if (bundle.current.root !== this.root) throw new Error("Foreign review project");
+    if (bundle.current.root !== this.snapshotStore.snapshotRoot) throw new Error("Foreign review project");
     const id = bundle.report.id;
+    await this.snapshotStore.ensureIdentity();
     await mkdir(this.directory, { recursive: true });
     const temporary = path.join(this.directory, ".pending-" + randomUUID());
     await mkdir(temporary);
@@ -58,7 +60,8 @@ export class ReviewStore {
 
   /** История не скрывает повреждённые результаты: ошибка становится диагностикой UI. */
   async list() {
-    await this.snapshotStore.assertExternal(this.directory);
+    await this.snapshotStore.open();
+    await this.snapshotStore.assertLocation(this.directory);
     let entries;
     try { entries = await readdir(this.directory, { withFileTypes: true }); }
     catch (error) { if (error.code === "ENOENT") return { bundles: [], diagnostics: [] }; throw error; }
@@ -67,8 +70,9 @@ export class ReviewStore {
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.isSymbolicLink() || entry.name.startsWith(".")) continue;
       try {
+        await this.snapshotStore.assertLocation(path.join(this.directory, entry.name));
         const bundle = await readReviewBundle(path.join(this.directory, entry.name));
-        if (bundle.current.root !== this.root) throw new Error("Foreign review project");
+        if (bundle.current.root !== this.snapshotStore.snapshotRoot) throw new Error("Foreign review project");
         bundles.push(bundle);
       } catch (error) { diagnostics.push(entry.name + ": " + error.message); }
     }

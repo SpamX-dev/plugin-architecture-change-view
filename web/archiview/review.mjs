@@ -10,6 +10,76 @@ const kinds = { boundary_violation: "Выход за границы", invariant_
   undeclared_responsibility: "Неописанная обязанность", responsibility_gap: "Разрыв ответственности",
   contract_conflict: "Конфликт контракта", contract_change: "Изменение контракта", missing_contract: "Нет контракта v1" };
 
+/** Актуальность описывает применимость оценки, а не положительный вердикт. */
+export function freshnessLabel(value) {
+  if (!value) return "проверки нет";
+  if (value.conflict) return "расхождение выводов" + (value.current_violation ? " · есть оценка «нарушение»" : "");
+  const label = { fresh: "актуальна", stale: "требует перепроверки", unknown: "актуальность не установлена",
+    not_reviewed: "проверки нет" }[value.status] ?? value.status;
+  return label + (value.verdict === "violation" || value.current_violation ? " · нарушение" : "");
+}
+
+/** Переводит причины модели без вычисления собственных правил актуальности. */
+function reasonText(reason) {
+  const code = typeof reason === "string" ? reason : reason.code;
+  const labels = { own_code_changed: "Изменились собственные файлы", own_contract_changed: "Изменился собственный контракт",
+    inherited_constraint_changed: "Изменились ограничения предка", child_contract_changed: "Изменились контракты подмодулей",
+    composition_changed: "Изменился состав подмодулей", dependency_input_changed: "Изменился вход зависимости",
+    descendants_require_review: "Подмодули требуют проверки", baseline_changed: "Изменилась база сравнения",
+    missing_manifest: "Нет полного описания входов проверки", legacy_manifest: "Прежняя проверка не описывает всю область влияния",
+    dependency_coverage_unknown: "Влияние зависимостей не установлено", unresolved_dependency_changed: "Изменилась область возможного влияния",
+    incomplete_snapshot: "Снимок неполный", not_reviewed: "Содержательная проверка ещё не выполнялась",
+    module_existence: "Изменилось наличие модуля", module_path: "Модуль перемещён", own_code: "Изменились собственные файлы",
+    own_contract: "Изменился собственный контракт", inherited_constraints: "Изменились ограничения предков",
+    child_composition: "Изменились состав или контракты подмодулей", subtree_inputs: "Изменились входы поддерева",
+    dependency_input: "Изменился вход зависимости", dependency_unresolved: "Не удалось разрешить зависимость",
+    input_coverage_incomplete: "Входные данные проверки неполны", baseline_identity: "Изменилась база сравнения",
+    legacy_manifest_missing: "Прежняя проверка не описывает всю область влияния" };
+  return (typeof reason === "object" && (reason.message ?? reason.description)) || labels[code] || code;
+}
+
+/** Показывает собственную оценку и агрегацию независимо от метки изменения файлов. */
+function renderFreshness(panel, status) {
+  if (!status) return;
+  const grid = el("div", "assessment-grid freshness-grid");
+  for (const [title, value] of [["Собственная проверка", status.self.current],
+    ["Оценка изменения", status.self.change], ["Проверки поддерева", status.subtree.current]]) {
+    const card = el("div", "assessment-card freshness-card " + value.status);
+    card.append(el("span", "assessment-label", title), el("strong", "", freshnessLabel(value)));
+    const reasons = el("ul", "freshness-reasons");
+    for (const reason of value.reasons ?? []) reasons.append(el("li", "", reasonText(reason)));
+    if (reasons.childNodes.length) card.append(reasons);
+    const coverage = value.coverage;
+    if (coverage?.status && coverage.status !== "complete") card.append(el("p", "", "Покрытие ограничено"));
+    for (const limitation of coverage?.limitations ?? []) card.append(el("p", "", limitation));
+    if (value.counts) card.append(el("p", "", "Актуальны: " + value.counts.fresh +
+      " · Требуют перепроверки: " + value.counts.stale + " · Неизвестно: " + value.counts.unknown +
+      " · Без проверки: " + value.counts.not_reviewed));
+    grid.append(card);
+  }
+  panel.append(grid);
+  if (status.self.conflict || status.subtree.current.conflict) {
+    const warning = el("div", "notice missing-notice");
+    warning.append(el("strong", "", "Применимые проверки расходятся"),
+      el("p", "", "Сохранены все выводы. До разбора расхождения единое соответствие не подтверждено."));
+    panel.append(warning);
+  }
+}
+
+/** Структурные ошибки видны и тогда, когда содержательных LLM-проверок ещё нет. */
+function renderStructure(panel, detail) {
+  const block = el("section", "structure-result");
+  block.append(el("h3", "section-heading", detail.structure?.complete ? "Структура проверена автоматически" : "Структурная проверка неполна"));
+  const source = detail.after ?? detail.before;
+  const document = source?.document;
+  if (document?.state !== "documented") block.append(el("p", "", document?.errors?.join("; ") || document?.action ||
+    (document?.state === "missing" ? "Для модуля отсутствует arch.yaml." : "Контракт требует исправления.")));
+  for (const diagnostic of detail.structure?.diagnostics ?? []) block.append(el("p", "", diagnostic));
+  if (detail.documentChanged) block.append(el("p", "", "Контракт отличается от выбранной базы."));
+  block.append(el("p", "structure-caption", "Структурные данные обновляются вместе с отчётом. Соответствие кода контракту оценивается содержательной проверкой."));
+  panel.append(block);
+}
+
 /** Создаёт элементы без интерпретации HTML из контрактов, выводов или исходников. */
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -91,24 +161,25 @@ function assessments(bundle) {
   const row = el("div", "assessment-grid");
   for (const [key, title] of [["current", "Текущее состояние"], ["change", "Изменение относительно базы"]]) {
     const value = bundle.report.assessment[key];
-    const card = el("div", "assessment-card " + value.verdict);
+    const applicable = !bundle.freshness || bundle.freshness[key].status === "fresh";
+    const card = el("div", "assessment-card " + (applicable ? value.verdict : "historical"));
     card.append(el("span", "assessment-label", title), el("strong", "", verdicts[value.verdict]), el("p", "", value.summary));
+    if (bundle.freshness) card.append(el("p", "assessment-freshness", freshnessLabel(bundle.freshness[key])));
     row.append(card);
   }
   return row;
 }
 
 /** Полный просмотр отчёта, включая ограничения, наблюдения, пункты и замечания. */
-export function renderReview(panel, detail, mode, generate) {
+export function renderReview(panel, detail, mode) {
   const toolbar = el("div", "review-toolbar");
-  const action = el("button", "button button-primary", "Проверить структуру");
-  action.type = "button";
-  action.onclick = async () => { action.disabled = true; try { await generate(); } finally { action.disabled = false; } };
-  toolbar.append(el("span", "review-toolbar-label", "Результаты анализа модуля"), action);
+  toolbar.append(el("span", "review-toolbar-label", "Результаты анализа модуля"));
   panel.append(toolbar);
+  renderStructure(panel, detail);
+  renderFreshness(panel, detail.reviewStatus);
   if (!detail.reviews.length) {
     const empty = el("div", "notice");
-    empty.append(el("strong", "", "Проверок пока нет"), el("p", "", "Создайте структурную проверку выбранной пары снимков. Она проверит наличие контрактов и зафиксирует изменения. Анализ смысла кода подключается отдельным отчётом."));
+    empty.append(el("strong", "", "Содержательных проверок пока нет"), el("p", "", "Агент может проверить модуль и сохранить отчёт с выводами и доказательствами. Структурная проверка уже выполняется автоматически."));
     panel.append(empty); return;
   }
   const picker = el("select", "review-picker");
@@ -116,7 +187,8 @@ export function renderReview(panel, detail, mode, generate) {
   let selected = detail.reviews.findIndex((b) => b.report.id === detail.review?.id);
   if (selected < 0) selected = 0;
   detail.reviews.forEach((bundle, index) => {
-    const option = el("option", "", new Date(bundle.report.analysis.created_at).toLocaleString("ru-RU") + " · " + bundle.report.analysis.analyzer.name + (bundle.stale ? " · устарел" : " · актуален"));
+    const option = el("option", "", new Date(bundle.report.analysis.created_at).toLocaleString("ru-RU") + " · " + bundle.report.analysis.analyzer.name +
+      " · " + (bundle.freshness ? freshnessLabel(bundle.freshness.current) : bundle.stale ? "устарел" : "актуален"));
     option.value = index; option.selected = index === selected; picker.append(option);
   });
   const body = el("div", "review-body");
@@ -140,6 +212,21 @@ export function renderReview(panel, detail, mode, generate) {
     const list = el("ul");
     for (const limitation of report.analysis.coverage.limitations) list.append(el("li", "", limitation));
     coverage.append(list); body.append(coverage);
+    if (bundle.dependencies?.length) {
+      const dependencies = el("details", "coverage-note");
+      dependencies.open = bundle.dependencies.some((dependency) => dependency.contractOnly || !dependency.available);
+      dependencies.append(el("summary", "", "Использованные зависимости и предпосылки"));
+      const items = el("ul");
+      for (const dependency of bundle.dependencies) {
+        const identity = dependency.selector.module_id ?? dependency.selector.path;
+        const assumption = dependency.contractOnly ?
+          "Вывод предполагает соблюдение контракта поставщиком. Проверка поставщика: " + freshnessLabel(dependency.providerStatus) + "." :
+          "Реализация включена во входы этой проверки.";
+        items.append(el("li", "", identity + " · " + assumption +
+          (!dependency.available ? " Вход зависимости недоступен." : "")));
+      }
+      dependencies.append(items); body.append(dependencies);
+    }
     if (mode === "findings") {
       if (!report.findings.length) body.append(el("p", "empty-clauses", "Замечания не записаны. Это не означает, что все пункты проверены."));
       for (const finding of report.findings) {

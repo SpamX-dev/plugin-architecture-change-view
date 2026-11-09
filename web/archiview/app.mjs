@@ -3,11 +3,12 @@
  * Статусы получает от сервера; Контракты и доказательства вставляет безопасным текстом.
  * Сравнение остаётся привязанным к неизменяемому view, включая удалённые модули.
  */
-import { renderContract, renderReview } from "/review.mjs";
+import { renderContract, renderReview, freshnessLabel } from "/review.mjs";
 
 /** Локальное состояние интерфейса, не изменяющее исходные документы проекта. */
 const state = { view: null, detail: null, selected: null, tab: "document",
-  filter: "all", search: "", expanded: new Set(), selection: 0, refresh: 0 };
+  filter: "all", search: "", expanded: new Set(), selection: 0, refresh: 0,
+  target: "current", historyLimit: 50 };
 /** Человекочитаемые подписи сравнительных статусов. */
 const labels = { initial: "Первый", new: "Новый", changed: "Изменён", removed: "Удалён", unchanged: "Без изменений" };
 /** Статические SVG-значки, не содержащие пользовательских строк. */
@@ -63,9 +64,57 @@ function date(value) {
     .format(new Date(value));
 }
 
+/** Хронология различает изменения, снятые в пределах одной минуты. */
+function timelineDate(value) {
+  if (!value || !Number.isFinite(Date.parse(value))) return "";
+  return new Intl.DateTimeFormat("ru-RU", { year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(value));
+}
+
+/** Подписи отражают пользовательские состояния без внутренних имён снимков. */
+function timelineLabel(entry) {
+  if (entry.id === "current" || entry.kind === "current") return "Текущее состояние";
+  if (entry.kind === "git") return entry.isHead ? "HEAD" : "Revision " + (entry.revision ?? entry.id.replace(/^git-/, "")).slice(0, 8);
+  if (entry.kind === "change") return "Изменение " + timelineDate(entry.capturedAt);
+  return entry.label;
+}
+
+/**
+ * Один список выбирает просматриваемое состояние. Текущее и самые свежие
+ * изменения идут первыми; базу сравнения определяет сервер. Сохранённые вручную
+ * снимки доступны здесь же, а подгрузка старых коммитов не меняет выбор.
+ */
+function renderTimeline() {
+  const picker = byId("timeline");
+  picker.replaceChildren();
+  const entries = state.view.timeline ?? [{ id: "current", kind: "current", label: "Текущее состояние" }];
+  const saved = (state.view.baselines ?? []).filter(entry => entry.kind === "saved" && !entries.some(item => item.id === entry.id))
+    .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
+  const options = [...entries].reverse().concat(saved);
+  // После нового коммита прежняя локальная точка исчезает из активной истории,
+  // но её открытый просмотр должен сохранять видимое выбранное значение.
+  if (state.view.target && !options.some(entry => entry.id === state.target)) options.push(state.view.target);
+  for (const entry of options) {
+    const label = timelineLabel(entry);
+    const option = el("option", "", label);
+    option.value = entry.id;
+    option.selected = entry.id === state.target;
+    option.title = [label, entry.kind === "current" ? "Сжатый результат" : entry.subject, entry.revision].filter(Boolean).join("\n");
+    picker.append(option);
+  }
+  if (state.view.historyHasMore) {
+    const more = el("option", "", "Загрузить ранние коммиты…");
+    more.value = "load-earlier";
+    picker.append(more);
+  }
+  picker.title = picker.selectedOptions[0]?.title ?? "Хронология";
+}
+
 /** Представляет статус цветом и подписью, доступной без различения цветов. */
-function badge(status, small = false) {
-  return el("span", "status-badge " + status + (small ? " small" : ""), labels[status]);
+function badge(status, small = false, descendantChanges = 0) {
+  const title = descendantChanges && status === "unchanged" ? "Изменены подмодули" :
+    descendantChanges && status === "changed" ? "Изменены модуль и подмодули" : labels[status];
+  return el("span", "status-badge " + status + (small ? " small" : ""), title);
 }
 
 /** Возвращает цепочку каталогов выбранного модуля от корня проекта. */
@@ -252,11 +301,13 @@ function renderTree() {
       count.title = "Изменённые вложенные модули";
       row.append(count);
     }
-    if (module.review) {
-      const review = el("span", "review-marker" + (module.review.stale ? " stale" : ""), module.review.stale ? "◷" : "◉");
-      review.title = module.review.stale ? "Проверка устарела" : "Есть результат проверки"; row.append(review);
+    if (module.reviewStatus) {
+      const status = module.reviewStatus.subtree.current;
+      const review = el("span", "review-marker " + status.status,
+        status.conflict || status.current_violation ? "!" : status.status === "fresh" ? "◉" : "◷");
+      review.title = "Поддерево: " + freshnessLabel(status); row.append(review);
     }
-    row.append(badge(module.status, true));
+    row.append(badge(module.status, true, module.descendantChanges));
     row.addEventListener("click", (event) => {
       if (event.target.closest("[data-toggle]") && nested.length) {
         if (state.expanded.has(module.directory)) state.expanded.delete(module.directory);
@@ -283,7 +334,7 @@ function renderTree() {
 /** Обновляет хлебные крошки, статус и контекст выбранного каталога. */
 function renderHeading(module) {
   byId("module-title").textContent = module.title ?? module.name;
-  byId("module-status").replaceChildren(badge(module.status));
+  byId("module-status").replaceChildren(badge(module.status, false, module.descendantChanges));
   byId("module-subtitle").textContent = module.directory === "." ?
     "Корневой модуль проекта" : module.directory;
   const breadcrumbs = byId("breadcrumbs");
@@ -309,7 +360,9 @@ function renderHeading(module) {
     meta.append(item);
   }
   byId("copy-path").disabled = false;
-  byId("review-status").textContent = module.review ? (module.review.stale ? "Проверка устарела" : "Есть проверка") : "Проверки нет";
+  byId("review-status").textContent = module.reviewStatus ?
+    "Модуль: " + freshnessLabel(module.reviewStatus.self.current) + " · Поддерево: " +
+      freshnessLabel(module.reviewStatus.subtree.current) : "Содержательной проверки нет";
   byId("files-count").textContent = module.filesChanged;
   byId("files-count").hidden = module.filesChanged === 0;
   byId("diff-count").textContent = module.documentChanged ? "1" : "";
@@ -448,9 +501,9 @@ function renderPanel() {
   if (!state.detail) return;
   panel.replaceChildren();
   byId("document-version").textContent = state.detail.status === "removed" ?
-    "Из базы сравнения" : "Рабочее дерево";
+    "Из базы сравнения" : timelineLabel(state.view.target ?? { id: "current" });
   if (state.tab === "document") renderDocument(panel, state.detail);
-  else if (["checks", "findings"].includes(state.tab)) renderReview(panel, state.detail, state.tab, generateReview);
+  else if (["checks", "findings"].includes(state.tab)) renderReview(panel, state.detail, state.tab);
   else if (state.tab === "diff") renderDiff(panel, state.detail);
   else renderFiles(panel, state.detail);
 }
@@ -465,36 +518,29 @@ function renderFailure(error) {
   byId("document-panel").replaceChildren(box);
 }
 
-/** Обновляет дерево целиком; модуль и выбранная база сохраняются, если доступны. */
-async function refresh(baseline) {
+/** Обновляет дерево целиком; выбранные модуль и состояние сохраняются, если доступны. */
+async function refresh(options = {}) {
   const token = ++state.refresh;
   const button = byId("refresh");
   button.disabled = true;
+  byId("timeline").disabled = true;
   button.classList.add("is-loading");
   try {
-    const selectedBase = baseline ?? state.view?.before.id;
-    const view = await api("/api/comparison" +
-      (selectedBase ? "?" + new URLSearchParams({ baseline: selectedBase }) : ""));
+    const selectedTarget = options.target ?? state.target;
+    const parameters = new URLSearchParams({ target: selectedTarget, baseline: "auto", historyLimit: String(state.historyLimit) });
+    const view = await api("/api/comparison?" + parameters);
     if (token !== state.refresh) return;
     state.view = view;
+    state.target = view.target?.id ?? selectedTarget;
+    renderTimeline();
     byId("project-name").textContent = view.modules[0]?.name ?? "Проект";
     byId("project-path").textContent = view.root;
     byId("project-path").title = view.root;
-    const picker = byId("baseline");
-    picker.replaceChildren();
-    for (const base of view.baselines) {
-      const option = el("option", "", base.label +
-        (base.kind === "saved" ? " · " + date(base.capturedAt) : ""));
-      option.value = base.id;
-      option.selected = base.id === view.before.id;
-      picker.append(option);
-    }
-    picker.disabled = false;
-    byId("save").disabled = !view.complete;
+    byId("save").disabled = !view.complete || state.target !== "current";
     byId("warning").hidden = view.complete && !view.reviewDiagnostics.length;
     byId("warning").textContent = [...view.diagnostics, ...view.reviewDiagnostics].join("; ");
-    byId("updated").textContent = "Обновлено " + new Intl.DateTimeFormat("ru-RU",
-      { hour: "2-digit", minute: "2-digit" }).format(new Date(view.after.capturedAt));
+    byId("updated").textContent = state.target === "current" ? "Обновлено " + new Intl.DateTimeFormat("ru-RU",
+      { hour: "2-digit", minute: "2-digit" }).format(new Date(view.after.capturedAt)) : "Состояние от " + timelineDate(view.after.capturedAt);
     if (!state.expanded.size && view.modules.length < 100) {
       for (const module of view.modules) state.expanded.add(module.directory);
     }
@@ -505,7 +551,13 @@ async function refresh(baseline) {
       view.modules.some((module) => module.key === directory)) ?? view.modules[0]?.key;
     if (selected !== undefined) await selectModule(selected);
   } catch (error) { renderFailure(error); }
-  finally { if (token === state.refresh) { button.disabled = false; button.classList.remove("is-loading"); } }
+  finally {
+    if (token === state.refresh) {
+      button.disabled = false; button.classList.remove("is-loading");
+      byId("timeline").value = state.target;
+      byId("timeline").disabled = !state.view;
+    }
+  }
 }
 
 /** Копирует путь выбранного модуля или файла без изменения документов. */
@@ -514,21 +566,17 @@ async function copyText(text) {
   catch { toast(text); }
 }
 
-/** Сохраняет структурную проверку именно показанной пары снимков. */
-async function generateReview() {
-  try {
-    await api("/api/reviews", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ view: state.view.id, path: state.selected }) });
-    toast("Структурная проверка сохранена");
-    await refresh();
-  } catch (error) { toast(error.message); }
-}
-
 initializeTreeWidth();
 byId("refresh").prepend(icon("refresh"));
 byId("save").prepend(icon("save"));
 byId("refresh").addEventListener("click", () => refresh());
-byId("baseline").addEventListener("change", (event) => refresh(event.target.value));
+byId("timeline").addEventListener("change", (event) => {
+  if (event.target.value === "load-earlier") {
+    state.historyLimit += 50;
+    event.target.value = state.target;
+    refresh();
+  } else refresh({ target: event.target.value });
+});
 byId("search").addEventListener("input", (event) => {
   state.search = event.target.value.trim().toLowerCase();
   renderTree();
@@ -559,7 +607,7 @@ byId("snapshot-form").addEventListener("submit", async (event) => {
     await api("/api/snapshots", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ view: state.view.id, label: byId("snapshot-label").value }) });
     byId("snapshot-dialog").close();
-    toast("Снимок сохранён и доступен в выборе базы");
+    toast("Снимок сохранён и доступен в хронологии");
     await refresh();
   } catch (error) { toast(error.message); }
   finally { submit.disabled = false; }

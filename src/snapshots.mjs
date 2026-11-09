@@ -11,6 +11,7 @@ import path from "node:path";
 import { SOURCE_EXTENSIONS, excludedProjectPath, projectFiles,
   regularProjectFile } from "./inventory.mjs";
 import { contractDocument, digest as contentDigest } from "./formats.mjs";
+import { readSnapshotRoot } from "./project-state.mjs";
 
 /** Контракты читаются в обоих форматах; новый формат имеет безусловный приоритет. */
 const isContract = (file) => ["arch.yaml", "module.md"].includes(path.posix.basename(file));
@@ -148,7 +149,6 @@ function assemble(root, records, metadata, diagnostics) {
   const evidenceLimitations = [];
   let remaining = 16 * 1024 * 1024;
   for (const record of records) {
-    if (!isSource(record.path) && !isContract(record.path)) continue;
     if (record.text === undefined || Buffer.byteLength(record.text) > remaining) {
       evidenceLimitations.push(record.path + ": текст недоступен или превышен лимит доказательств");
       continue;
@@ -210,12 +210,14 @@ export async function captureWorkingTree(projectRoot, options = {}) {
         const fullPath = path.join(root, file);
         const hash = hashes?.[offset + index] ?? await fileHash(fullPath);
         let text;
-        if (isContract(file) || isSource(file)) {
+        {
           const size = (await lstat(fullPath)).size;
           if (isContract(file) && size > 128 * 1024) throw new Error("Contract exceeds 128 KiB");
           if (size <= 256 * 1024 && size <= evidenceBudget) {
             evidenceBudget -= size;
-            text = (await readFile(fullPath, "utf8")).replace(/\r\n/g, "\n");
+            const bytes = await readFile(fullPath);
+            if (!bytes.includes(0) && Buffer.from(bytes.toString("utf8")).equals(bytes))
+              text = bytes.toString("utf8").replace(/\r\n?/g, "\n");
           } else if (isContract(file)) throw new Error("Contract evidence budget exceeded");
         }
         return { path: file, hash, text };
@@ -226,10 +228,20 @@ export async function captureWorkingTree(projectRoot, options = {}) {
     }));
     records.push(...batch);
   }
-  const snapshot = assemble(root, records, { kind: "working", label: "Рабочее дерево" },
+  const snapshotRoot = options.snapshotRoot ?? await readSnapshotRoot(root) ?? root;
+  const snapshot = assemble(snapshotRoot, records, { kind: "working", label: "Рабочее дерево" },
     diagnostics);
   snapshot.id = "working-" + snapshot.digest.slice(7);
   return snapshot;
+}
+
+/** Читает только идентичность HEAD; повторная проверка не загружает исходники коммита. */
+export async function readGitHeadRevision(projectRoot) {
+  try { return (await git(projectRoot, ["rev-parse", "--verify", "--quiet", "HEAD"])).toString().trim(); }
+  catch (error) {
+    if (error.code === "ENOENT" || error.exitCode === 1 || error.message.includes("not a git repository")) return null;
+    throw error;
+  }
 }
 
 /** Читает структуру HEAD и документы из Git, сохраняя удалённые рабочие файлы. */
@@ -237,8 +249,10 @@ export async function captureGitHead(projectRoot, options = {}) {
   const root = await realpath(projectRoot);
   const info = await gitInfo(root);
   if (!info) return null;
-  let revision;
+  let revision = options.revision;
+  if (revision && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(revision)) throw new Error("Selected Git revision must be a full object hash");
   try {
+    if (!revision)
     revision = (await git(root, ["rev-parse", "--verify", "--quiet", "HEAD"])).toString().trim();
   } catch (error) {
     if (error.exitCode === 1 || error.message.includes("Needed a single revision") ||
@@ -265,11 +279,11 @@ export async function captureGitHead(projectRoot, options = {}) {
   }
   for (let index = 0; index < records.length; index += 16) {
     await Promise.all(records.slice(index, index + 16).map(async (record) => {
-      if (!isContract(record.path) && !isSource(record.path)) return;
       try {
-        record.text = (await git(info.repository,
-          ["cat-file", "blob", record.hash], "", isContract(record.path) ? 128 * 1024 : 256 * 1024)).toString()
-          .replace(/\r\n/g, "\n");
+        const bytes = await git(info.repository,
+          ["cat-file", "blob", record.hash], "", isContract(record.path) ? 128 * 1024 : 256 * 1024);
+        if (!bytes.includes(0) && Buffer.from(bytes.toString("utf8")).equals(bytes))
+          record.text = bytes.toString("utf8").replace(/\r\n?/g, "\n");
       } catch (error) {
         if (isContract(record.path)) {
           record.error = error.message;
@@ -278,10 +292,64 @@ export async function captureGitHead(projectRoot, options = {}) {
       }
     }));
   }
-  const snapshot = assemble(root, records,
+  const snapshotRoot = options.snapshotRoot ?? await readSnapshotRoot(root) ?? root;
+  const snapshot = assemble(snapshotRoot, records,
     { kind: "git", revision, label: "HEAD · " + revision.slice(0, 7) }, diagnostics);
   snapshot.id = "git-" + revision;
   return snapshot;
+}
+
+/**
+ * Ленивая первая родительская линия текущей ветки: метаданные не загружают исходники
+ * всех коммитов. Страница идёт от старого к новому, before исключает сам курсор.
+ */
+export async function listGitRevisions(projectRoot, { limit = 50, before = null } = {}) {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 500) throw new Error("Revision page limit must be between 1 and 500");
+  if (before !== null && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(before)) throw new Error("Invalid Git revision cursor");
+  const root = await realpath(projectRoot);
+  const info = await gitInfo(root);
+  const empty = { revisions: [], hasMore: false, nextBefore: null, headRevision: null };
+  if (!info) return empty;
+  let head;
+  try { head = (await git(root, ["rev-parse", "--verify", "--quiet", "HEAD"])).toString().trim(); }
+  catch (error) { if (error.exitCode === 1) return empty; throw error; }
+  let start = head;
+  if (before) {
+    const distance = (await git(root, ["rev-list", "--first-parent", "--count", before + ".." + head])).toString().trim();
+    let ancestor;
+    try { ancestor = (await git(root, ["rev-parse", "--verify", head + "~" + distance])).toString().trim(); }
+    catch { throw new Error("Git revision cursor is outside the current first-parent history"); }
+    if (ancestor !== before) throw new Error("Git revision cursor is outside the current first-parent history");
+    // Только хеш проходит в Git, поэтому курсор не может подменить его параметры.
+    const parents = (await git(root, ["show", "-s", "--format=%P", before, "--"])).toString().trim().split(/\s+/).filter(Boolean);
+    if (!parents.length) return { ...empty, headRevision: head };
+    start = parents[0];
+  }
+  const output = await git(root, ["log", "--first-parent", "-z", "--format=%H%x00%ct%x00%s%x00%P", "--max-count=" + (limit + 1), start, "--"]);
+  const fields = output.toString("utf8").split("\0");
+  if (fields.at(-1) === "") fields.pop();
+  if (fields.length % 4 !== 0) throw new Error("Invalid Git revision metadata");
+  const records = [];
+  for (let index = 0; index < fields.length; index += 4) {
+    const [revision, timestamp, subject, parents] = fields.slice(index, index + 4);
+    if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(revision) || !/^-?\d+$/.test(timestamp)) throw new Error("Invalid Git revision metadata");
+    const date = new Date(Number(timestamp) * 1000).toISOString();
+    records.push({ id: "git-" + revision, revision, parentRevision: parents.split(" ")[0] || null, isHead: revision === head,
+      kind: "git", capturedAt: date, date, subject,
+      label: "Revision " + revision.slice(0, 7) + (subject ? " · " + subject : "") });
+  }
+  const hasMore = records.length > limit;
+  const page = records.slice(0, limit).reverse();
+  return { revisions: page, hasMore, nextBefore: hasMore ? page[0].revision : null, headRevision: head };
+}
+
+/** Снимает подготовленный индекс Git, включая ещё не закоммиченные добавления и удаления. */
+export async function captureGitIndex(projectRoot, options = {}) {
+  const root = await realpath(projectRoot);
+  if (!await gitInfo(root)) throw new Error("Index verification requires a Git repository");
+  // write-tree фиксирует точные staged blobs; рабочие файлы и HEAD не заменяют индекс.
+  const revision = (await git(root, ["write-tree"])).toString().trim();
+  return captureGitHead(root, { ...options, revision });
 }
 
 /** Вычисляет изменения собственных файлов модуля, включая конфигурацию и документы. */
@@ -300,7 +368,7 @@ function changedFiles(before, after) {
  * Сравнивает объединение модулей двух снимков. Родитель сохраняет собственный
  * статус, а число изменённых потомков передаётся отдельным полем.
  */
-export function compareSnapshots(before, after) {
+export function compareSnapshots(before, after, { projectRoot = after.root } = {}) {
   if (before && before.root !== after.root) throw new Error("Snapshots belong to different projects");
   const previous = new Map((before?.modules ?? []).map((module) => [module.directory, module]));
   const current = new Map(after.modules.map((module) => [module.directory, module]));
@@ -320,7 +388,7 @@ export function compareSnapshots(before, after) {
   const modules = pairs.map(([oldModule, newModule]) => {
     const directory = newModule?.directory ?? oldModule.directory;
     const files = changedFiles(oldModule, newModule);
-    return { directory, name: directory === "." ? path.basename(after.root) :
+    return { directory, name: directory === "." ? path.basename(projectRoot) :
       path.posix.basename(directory),
       moduleId: identity(newModule ?? oldModule),
       title: (newModule ?? oldModule).document.contract?.title,
@@ -348,7 +416,7 @@ export function compareSnapshots(before, after) {
     }
   }
   return { schema_version: 2, id: digest((before?.id ?? "initial") + after.digest).slice(0, 24),
-    root: after.root, before: before ? { id: before.id, label: before.label, kind: before.kind,
+    root: projectRoot, before: before ? { id: before.id, label: before.label, kind: before.kind,
       digest: before.digest ?? snapshotDigest(before), capturedAt: before.capturedAt } :
       { id: "initial", label: "Первый анализ", kind: "initial" },
     after: { id: after.id, digest: after.digest, capturedAt: after.capturedAt },

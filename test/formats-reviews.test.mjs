@@ -116,7 +116,7 @@ test("reviews retain old evidence, inherit constraints, remain immutable and bec
   assert.ok(!yaml.includes("stale:"));
 });
 
-test("HTTP creates, displays and reloads a review with retained evidence and stale state", async (t) => {
+test("HTTP automatically checks structure without inventing a semantic review", async (t) => {
   const { root, state } = await fixture(t);
   const { server } = await createArchiView({ root, stateDirectory: state });
   server.listen(0, "127.0.0.1"); await once(server, "listening");
@@ -126,15 +126,16 @@ test("HTTP creates, displays and reloads a review with retained evidence and sta
   const view = await (await fetch(url + "/api/comparison?baseline=initial")).json();
   const result = await fetch(url + "/api/reviews", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ view: view.id, path: "child" }) });
-  assert.equal(result.status, 201, JSON.stringify(await result.json()));
+  assert.equal(result.status, 200, JSON.stringify(await result.json()));
   let refreshed = await (await fetch(url + "/api/comparison?baseline=initial")).json();
-  assert.equal(refreshed.modules.find((m) => m.directory === "child").review.stale, false);
+  assert.equal(refreshed.modules.find((m) => m.directory === "child").structure.automatic, true);
+  assert.equal(refreshed.modules.find((m) => m.directory === "child").reviewStatus.self.current.status, "not_reviewed");
   const detail = await (await fetch(url + "/api/module?" + new URLSearchParams({ view: refreshed.id, path: "child" }))).json();
-  assert.deepEqual(detail.reviews[0].facts.current, []);
+  assert.deepEqual(detail.reviews, []);
   assert.equal(detail.after.document.contract.id, "child");
   await writeFile(path.join(root, "child/code.js"), "changed");
   refreshed = await (await fetch(url + "/api/comparison?baseline=initial")).json();
-  assert.equal(refreshed.modules.find((m) => m.directory === "child").review.stale, true);
+  assert.equal(refreshed.modules.find((m) => m.directory === "child").reviewStatus.self.current.status, "not_reviewed");
 });
 
 test("replacing an id at the same path yields distinct new and removed modules", async (t) => {

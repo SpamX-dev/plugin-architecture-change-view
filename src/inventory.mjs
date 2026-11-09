@@ -8,9 +8,11 @@ import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { contractDocument } from "./formats.mjs";
+import { STATE_DIRECTORY } from "./project-state.mjs";
 
 /** Каталоги зависимостей и результатов сборки, исключаемые из обоих обходов. */
 const EXCLUDED = new Set([
+  STATE_DIRECTORY,
   ".git", ".hg", ".svn", "node_modules", "target", "dist", "build", "coverage",
   ".venv", "venv", "__pycache__", ".next", ".nuxt", ".cache", "obj",
 ]);
@@ -83,7 +85,7 @@ export async function projectFiles(root, maxFiles) {
       const output = await runFile("git",
         ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "."],
         { cwd: root, timeout: 15000, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
-      const files = [...new Set(output.stdout.split("\0").filter(Boolean))];
+      const files = [...new Set(output.stdout.split("\0").filter((file) => file && !excludedProjectPath(file)))];
       const limited = files.length > maxFiles;
       if (limited) diagnostics.push("File limit reached: " + maxFiles);
       return { files: files.slice(0, maxFiles), discovery: "git",

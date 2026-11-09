@@ -125,5 +125,5 @@ test("persists immutable documents outside source and refuses incomplete snapsho
   assert.throws(() => new SnapshotStore(root, path.join(root, "cache")), /outside/);
   await assert.rejects(storage.save({ ...snapshot, complete: false }), /Invalid/);
   await assert.rejects(storage.save({ ...snapshot, root: root + "-other" }), /foreign/);
-  assert.ok((await readFile(path.join(store, saved.id + ".json"), "utf8")).includes("Root boundary"));
+  assert.ok((await readFile(path.join(store, "snapshots", saved.id + ".yaml"), "utf8")).includes("Root boundary"));
 });
