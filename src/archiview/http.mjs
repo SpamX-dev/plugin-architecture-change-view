@@ -20,6 +20,19 @@ async function bodyOf(request) {
   return value;
 }
 
+/**
+ * Разбирает request-target относительно уже проверенного Host. Цель приходит из
+ * сети и может быть синтаксически некорректной; такая ошибка становится
+ * прикладной, чтобы обработчик ответил 400, а не завершил процесс отказом Promise.
+ */
+function requestUrl(request, host) {
+  try {
+    return new URL(request.url, "http://" + host);
+  } catch {
+    throw new ApplicationError("INVALID_ARGUMENT", "Некорректная цель запроса");
+  }
+}
+
 /** Создаёт самостоятельный веб-сервер; плагин Codex использует сервис напрямую и этот модуль не импортирует. */
 export async function createArchiView({ root, stateDirectory, panelToken }) {
   const session = await createArchiViewSession({ root, stateDirectory });
@@ -38,31 +51,33 @@ export async function createArchiView({ root, stateDirectory, panelToken }) {
     response.end(JSON.stringify(value));
   };
   const server = createServer(async (request, response) => {
-    response.setHeader("Cache-Control", "no-store");
-    response.setHeader("X-Content-Type-Options", "nosniff");
-    response.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
-    const host = request.headers.host;
-    if (!["127.0.0.1:" + request.socket.localPort, "localhost:" + request.socket.localPort].includes(host)) {
-      return json(response, 403, { error: "Недопустимый адрес запроса" });
-    }
-    const url = new URL(request.url, "http://" + host);
-    const origin = request.headers.origin;
-    const crossOrigin = origin && origin !== url.origin;
-    if (panelToken && crossOrigin) {
-      response.setHeader("Access-Control-Allow-Origin", origin);
-      response.setHeader("Vary", "Origin");
-      if (request.method === "OPTIONS") {
-        response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
-        response.setHeader("Access-Control-Allow-Private-Network", "true");
-        response.writeHead(204); return response.end();
-      }
-    }
-    if (crossOrigin && !(panelToken && request.method === "GET" && assets.has(url.pathname) && url.pathname !== "/") &&
-        !(panelToken && request.headers.authorization === "Bearer " + panelToken)) {
-      return json(response, 403, { error: "Запрос должен исходить из ArchiView или авторизованной панели" });
-    }
+    // Обработчик асинхронный и не имеет внешнего catch, поэтому все способные
+    // бросить этапы, включая разбор request-target, входят в единый перехват.
     try {
+      response.setHeader("Cache-Control", "no-store");
+      response.setHeader("X-Content-Type-Options", "nosniff");
+      response.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
+      const host = request.headers.host;
+      if (!["127.0.0.1:" + request.socket.localPort, "localhost:" + request.socket.localPort].includes(host)) {
+        return json(response, 403, { error: "Недопустимый адрес запроса" });
+      }
+      const url = requestUrl(request, host);
+      const origin = request.headers.origin;
+      const crossOrigin = origin && origin !== url.origin;
+      if (panelToken && crossOrigin) {
+        response.setHeader("Access-Control-Allow-Origin", origin);
+        response.setHeader("Vary", "Origin");
+        if (request.method === "OPTIONS") {
+          response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+          response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+          response.setHeader("Access-Control-Allow-Private-Network", "true");
+          response.writeHead(204); return response.end();
+        }
+      }
+      if (crossOrigin && !(panelToken && request.method === "GET" && assets.has(url.pathname) && url.pathname !== "/") &&
+          !(panelToken && request.headers.authorization === "Bearer " + panelToken)) {
+        return json(response, 403, { error: "Запрос должен исходить из ArchiView или авторизованной панели" });
+      }
       if (request.method === "GET" && assets.has(url.pathname)) {
         const [asset, contentType] = assets.get(url.pathname);
         const content = await readFile(asset);
@@ -84,6 +99,8 @@ export async function createArchiView({ root, stateDirectory, panelToken }) {
       }
       return json(response, 404, { error: "Ресурс не найден" });
     } catch (cause) {
+      // После начала ответа заголовки уже отправлены: второй ответ невозможен.
+      if (response.headersSent) return response.destroy();
       const error = applicationError(cause);
       return json(response, error.code === "REQUEST_TOO_LARGE" ? 413 : errorStatus[error.code] ?? 500,
         { error: error.message, code: error.code });
