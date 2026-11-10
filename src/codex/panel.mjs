@@ -5,48 +5,60 @@ import { createProjectBinding } from "../application/project.mjs";
 import { applicationError, ApplicationError } from "../application/errors.mjs";
 import { packageUrl } from "../package-paths.mjs";
 import { UI_TOOL_METHODS, validateUiArguments } from "./ui-tools.mjs";
+import { chooseProjectDirectory } from "./directory-picker.mjs";
 
-export const PANEL_URI = "ui://archiview/panel-v4.html";
-export const PROJECT_INPUT = { type: "string", description: "Absolute project directory of the current chat, not the plugin installation. Required until this process is bound to a project." };
+export const PANEL_URI = "ui://archiview/panel-v6.html";
+export const PROJECT_INPUT = { type: "string", description: "Absolute project directory of the current chat, not the plugin installation. Normally selected automatically from the working folder supplied by Codex." };
 export const PANEL_TOOL = {
   name: "archiview_open", title: "ArchiView",
   description: "Open the local architecture panel for this project. Browsing stays in the UI; only an explicit Analyze action sends a request to the agent.",
   inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT }, additionalProperties: false },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  _meta: { ui: { resourceUri: PANEL_URI }, "openai/ui": { entrypoints: [{ type: "thread" }, { type: "global" }] } },
+  _meta: { ui: { resourceUri: PANEL_URI }, "openai/ui": { entrypoints: [{ type: "thread" }] } },
 };
 
 /** Одна панель владеет одной сессией; загрузка HTML не читает проект и не открывает сокеты. */
-export function createCodexPanel(rootOrBinding, { stateDirectory } = {}) {
+export function createCodexPanel(rootOrBinding, { stateDirectory, chooseDirectory = chooseProjectDirectory } = {}) {
   const binding = rootOrBinding && typeof rootOrBinding.select === "function" ? Promise.resolve(rootOrBinding) : createProjectBinding(rootOrBinding);
   let session;
   let closed = false;
   let queue = Promise.resolve();
   const checkOpen = () => { if (closed) throw new ApplicationError("SESSION_CLOSED", "Сессия панели закрыта"); };
-  async function service() {
+  async function service(metadata) {
     const project = await binding;
-    const root = await project.select();
+    const root = await project.select(undefined, metadata);
     if (!session) session = createArchiViewSession({ root, stateDirectory }).catch((error) => { session = null; throw error; });
     return session;
   }
   return {
-    /** Публичный инструмент сообщает только выбранный корень; большие данные остаются внутри UI. */
-    async open(projectRoot) {
+    /** Открытие UI не зависит от готовности контекста пустого чата; ошибки папки затем показывает сама панель. */
+    async open(projectRoot, metadata) {
       checkOpen();
       const project = await binding;
-      if (projectRoot !== undefined) await project.select(projectRoot);
+      try { await project.select(projectRoot, metadata); }
+      catch (error) {
+        if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE", "PROJECT_UNAVAILABLE"].includes(error.code)) throw error;
+        const unavailable = error.code === "PROJECT_UNAVAILABLE";
+        return { content: [{ type: "text", text: unavailable ? error.message : "ArchiView: подготовка рабочей папки проекта." }],
+          structuredContent: { projectRequired: !unavailable, projectStatus: unavailable ? "unavailable" : "initializing" },
+          _meta: { bootstrap: applicationError(error) } };
+      }
       const root = project.root;
-      if (!root) return { content: [{ type: "text", text: "Выберите папку проекта в панели или передайте projectRoot." }], structuredContent: { projectRequired: true } };
       return { content: [{ type: "text", text: "ArchiView: " + root }], structuredContent: { root } };
     },
     /** Сериализация операций сохраняет согласованность view и публикации; ошибки тоже доставляются только UI. */
-    callUi(name, args) {
+    callUi(name, args, metadata) {
       const operation = queue.then(async () => {
         checkOpen();
         validateUiArguments(name, args);
         const method = UI_TOOL_METHODS.get(name);
-        const result = method === "setProject" ? { root: await (await binding).select(args.projectRoot) } :
-          await (await service())[method](args);
+        if (method === "chooseProject") {
+          try { await (await binding).select(undefined, metadata); }
+          catch (error) { if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE"].includes(error.code)) throw error; }
+          return { content: [], _meta: { result: await chooseDirectory() } };
+        }
+        const result = method === "setProject" ? { root: await (await binding).select(args.projectRoot, metadata) } :
+          await (await service(metadata))[method](args);
         // Ни content, ни structuredContent не содержат данные просмотра.
         return { content: [], _meta: { result } };
       }).catch((error) => ({ isError: true, content: [], _meta: { error: applicationError(error) } }));
@@ -57,7 +69,7 @@ export function createCodexPanel(rootOrBinding, { stateDirectory } = {}) {
     async resource() {
       checkOpen();
       const html = (await readFile(new URL("dist/panel.html", packageUrl), "utf8"))
-        .replace("<head>", '<head><meta name="archiview-transport" content="mcp">')
+        .replace("<head>", '<head><meta name="archiview-transport" content="mcp"><meta name="archiview-directory-picker" content="' + (process.platform === "win32") + '">')
         .replace('href="/" aria-label="ArchiView"', 'href="#" aria-label="ArchiView"');
       return { contents: [{ uri: PANEL_URI, mimeType: "text/html;profile=mcp-app", text: html,
         _meta: { ui: { csp: { connectDomains: [], resourceDomains: [] } },

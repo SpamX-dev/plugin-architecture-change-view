@@ -223,6 +223,8 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       }) ?? matching.find((bundle) => model.reviewFreshness(bundle).current.status === "fresh") ?? matching[0];
       module.review = latest ? { id: latest.report.id, stale: model.reviewFreshness(latest).current.status !== "fresh",
         assessment: latest.report.assessment, findings: latest.report.findings.length,
+        activeFindings: latest.report.findings.length ? latest.report.findings.filter((finding) => finding.lifecycle !== "resolved").length :
+          Number(latest.report.assessment.current.verdict === "violation"),
         createdAt: latest.report.analysis.created_at } : null;
       const moduleId = module.moduleId ?? "directory:" + module.directory;
       module.reviewStatus = statuses.get(moduleId) ?? null;

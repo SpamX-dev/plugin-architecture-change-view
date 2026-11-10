@@ -3,7 +3,8 @@
  * Статусы получает от сервера; Контракты и доказательства вставляет безопасным текстом.
  * Сравнение остаётся привязанным к неизменяемому view, включая удалённые модули.
  */
-import { renderContract, renderContractHeading, renderReview, freshnessLabel } from "./review.mjs";
+import { renderContract, renderContractHeading, renderReview, freshnessLabel,
+  findingBug, moduleFindingCount, treeFindingCounts } from "./review.mjs";
 import { connectPanel } from "./panel-bridge.mjs";
 import { createArchiViewClient } from "./client.mjs";
 
@@ -13,8 +14,13 @@ const state = { view: null, detail: null, selected: null, tab: "document",
   target: "current", historyLimit: 50, bridge: null, analyses: new Map() };
 /** Транспорт задаёт точка сборки; интерфейс работает с одинаковыми прикладными методами. */
 const transportMode = document.querySelector('meta[name="archiview-transport"]')?.content ?? "http";
+/** Префикс маршрутов плагина хоста; пустой означает корень сервера (standalone и Codex). */
+const transportBase = document.querySelector('meta[name="archiview-base"]')?.content ?? "";
+/** Чат, которому принадлежит страница: по нему хост разрешает корень проекта. */
+const transportSession = document.querySelector('meta[name="archiview-session"]')?.content ?? "";
 const connection = connectPanel();
-const client = createArchiViewClient({ mode: transportMode, connection });
+const client = createArchiViewClient({ mode: transportMode, connection, base: transportBase,
+  sessionId: transportSession });
 /** Человекочитаемые подписи сравнительных статусов. */
 const labels = { initial: "Первый", new: "Новый", changed: "Изменён", removed: "Удалён", unchanged: "Без изменений" };
 /** Статические SVG-значки, не содержащие пользовательских строк. */
@@ -22,7 +28,6 @@ const icons = {
   folder: '<path d="M3 6.5h6l2 2h10v11H3z"/><path d="M3 9h18"/>',
   file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 12h6m-6 4h6"/>',
   refresh: '<path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/>',
-  save: '<path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5"/>',
   check: '<path d="m5 12 4 4L19 6"/>',
 };
 
@@ -47,16 +52,24 @@ function icon(name) {
   return node;
 }
 
-/** Обновляет кнопку для выбранного модуля, включая повторные кнопки на вкладке проверок. */
+/**
+ * Обновляет действие для выбранного модуля: хосту отправляет поручение, в браузере
+ * предлагает копирование промпта. Ожидание импорта не мешает скопировать его повторно.
+ */
 function configureAnalysisButton(button) {
   const module = state.view?.modules.find((entry) => entry.key === state.selected);
   const request = state.analyses.get(module?.moduleId);
   const pending = request && request.status !== "completed" && request.status !== "error";
+  const sendToHost = Boolean(state.bridge?.send);
+  const busy = request?.status === "preparing";
   button.dataset.analysis = "true";
-  button.disabled = !state.bridge?.send || !state.view?.complete || module?.documentState !== "documented" || !module?.moduleId || Boolean(pending);
-  button.textContent = pending ? "Ожидаем анализ…" : "Анализировать модуль";
-  button.title = !state.bridge?.send ? "Откройте ArchiView как приложение в Codex с поддержкой отправки поручений" :
-    module?.documentState !== "documented" ? "Сначала подготовьте корректный arch.yaml" : "Проверить выбранный снимок модуля агентом Codex";
+  button.disabled = (!sendToHost && transportMode === "mcp") || !state.view?.complete ||
+    module?.documentState !== "documented" || !module?.moduleId || busy || (sendToHost && Boolean(pending));
+  button.textContent = busy ? "Подготавливаем…" : sendToHost ?
+    (pending ? "Ожидаем анализ…" : "Анализировать модуль") : "Копировать промпт";
+  button.title = !sendToHost && transportMode === "mcp" ? "Хост не поддерживает отправку поручений из панели" :
+    module?.documentState !== "documented" ? "Сначала подготовьте корректный arch.yaml" :
+    sendToHost ? "Проверить выбранный снимок модуля агентом хоста" : "Скопировать промпт для анализа выбранного снимка модуля";
   button.onclick = runAnalysis;
 }
 
@@ -70,24 +83,40 @@ function renderAnalysisControls() {
   status.textContent = request?.message ?? "";
 }
 
-/** Фиксирует входы через сервис, затем один раз передаёт явное поручение агенту хоста. */
+/**
+ * Фиксирует входы через сервис и передаёт промпт агенту хоста либо в буфер обмена.
+ * Повторное копирование использует тот же запрос только для того же view; успешное
+ * копирование означает подготовку поручения, а завершение подтверждается импортом.
+ */
 async function runAnalysis() {
   const module = state.view?.modules.find((entry) => entry.key === state.selected);
-  if (!module || !state.bridge?.send) return;
+  const sendToHost = Boolean(state.bridge?.send);
+  if (!module || (!sendToHost && transportMode === "mcp")) return;
   const previous = state.analyses.get(module.moduleId);
-  if (previous && !["completed", "error"].includes(previous.status)) return;
-  const record = { status: "preparing", message: "Подготавливаем входы выбранного снимка…" };
+  if (previous?.status === "preparing" || (sendToHost && previous && !["completed", "error"].includes(previous.status))) return;
+  clearTimeout(previous?.timer);
+  const record = !sendToHost && previous?.prompt && previous.viewId === state.view.id && previous.status !== "completed" ?
+    previous : {};
+  record.status = "preparing";
+  record.message = "Подготавливаем входы выбранного снимка…";
   state.analyses.set(module.moduleId, record);
   renderAnalysisControls();
   try {
-    const request = await client.prepareAnalysis({ view: state.view.id, path: module.key });
-    Object.assign(record, request);
-    await state.bridge.send(request.prompt);
-    record.message = "Запрос передан в Codex. Ожидаем импорт результата для выбранного снимка.";
+    if (!record.prompt) Object.assign(record,
+      await client.prepareAnalysis({ view: state.view.id, path: module.key }), { status: "preparing" });
+    if (sendToHost) {
+      await state.bridge.send(record.prompt);
+      record.message = "Поручение передано агенту хоста. Ожидаем импорт результата для выбранного снимка.";
+    } else {
+      await navigator.clipboard.writeText(record.prompt);
+      record.message = "Промпт скопирован. Вставьте его в чат с агентом. Ожидаем импорт результата для выбранного снимка.";
+      toast("Промпт для анализа модуля скопирован");
+    }
+    record.status = "prepared";
     pollAnalysis(record);
   } catch (error) {
     record.status = "error";
-    record.message = "Не удалось передать анализ: " + error.message;
+    record.message = (sendToHost ? "Не удалось передать анализ: " : "Не удалось скопировать промпт: ") + error.message;
   }
   renderAnalysisControls();
 }
@@ -119,12 +148,6 @@ function toast(message) {
   node.hidden = false;
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => { node.hidden = true; }, 4000);
-}
-
-/** Форматирует UTC-время снимка в локальное время пользователя. */
-function date(value) {
-  return new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "short" })
-    .format(new Date(value));
 }
 
 /** Хронология различает изменения, снятые в пределах одной минуты. */
@@ -330,6 +353,9 @@ function renderTree() {
   }
   const roots = state.view.modules.filter((module) => module.directory === ".");
   const searching = state.search.length > 0 || state.filter !== "all";
+  const visibleModules = state.view.modules.filter((module) => visible.has(module.directory));
+  const findingCounts = treeFindingCounts(visibleModules,
+    searching ? new Set(visibleModules.map((module) => module.directory)) : state.expanded);
   const render = (module) => {
     const item = el("li", "tree-item");
     item.setAttribute("role", "none");
@@ -354,6 +380,15 @@ function renderTree() {
     label.append(el("span", "tree-name", title));
     if (title !== module.name) label.append(el("span", "tree-path", module.name));
     row.append(caret, icon("folder"), label);
+    const findings = findingCounts.get(module.key) ?? 0;
+    if (findings) {
+      const marker = el("span", "finding-marker");
+      marker.title = "Открытые замечания" + (findings > moduleFindingCount(module) ? " в модуле и вложенных модулях" : " модуля") + " · " + findings;
+      marker.setAttribute("role", "img");
+      marker.setAttribute("aria-label", marker.title);
+      marker.append(findingBug());
+      row.append(marker);
+    }
     if (module.documentState !== "documented") {
       const marker = el("span", "missing-marker", "!");
       marker.title = module.documentState === "missing" ? "Нет arch.yaml" : "Контракт требует исправления";
@@ -441,6 +476,7 @@ function renderHeading(module) {
   byId("files-count").hidden = module.filesChanged === 0;
   const findings = module.review?.findings ?? 0;
   byId("tab-findings").textContent = "Замечания" + (findings ? " · " + findings : "");
+  if (moduleFindingCount(module)) byId("tab-findings").prepend(findingBug());
   document.title = module.name + " — ArchiView";
   renderAnalysisControls();
 }
@@ -692,7 +728,6 @@ async function refresh(options = {}) {
     byId("project-name").textContent = view.modules[0]?.name ?? "Проект";
     byId("project-path").textContent = view.root;
     byId("project-path").title = view.root;
-    byId("save").disabled = !view.complete || state.target !== "current";
     byId("warning").hidden = view.complete && !view.reviewDiagnostics.length;
     byId("warning").textContent = [...view.diagnostics, ...view.reviewDiagnostics].join("; ");
     byId("updated").textContent = state.target === "current" ? "Обновлено " + new Intl.DateTimeFormat("ru-RU",
@@ -725,7 +760,6 @@ async function copyText(text) {
 initializeTreeWidth();
 connection.then((bridge) => { state.bridge = bridge; renderAnalysisControls(); });
 byId("refresh").prepend(icon("refresh"));
-byId("save").prepend(icon("save"));
 byId("refresh").addEventListener("click", () => refresh());
 byId("timeline").addEventListener("change", (event) => {
   if (event.target.value === "load-earlier") {
@@ -750,24 +784,6 @@ byId("copy-path").addEventListener("click", () => {
 for (const tab of document.querySelectorAll("[data-tab]")) {
   tab.addEventListener("click", () => { state.tab = tab.dataset.tab; renderPanel(); });
 }
-byId("save").addEventListener("click", () => {
-  byId("snapshot-label").value = "Снимок · " + date(new Date().toISOString());
-  byId("snapshot-dialog").showModal();
-  byId("snapshot-label").select();
-});
-byId("cancel-save").addEventListener("click", () => byId("snapshot-dialog").close());
-byId("snapshot-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const submit = event.submitter;
-  submit.disabled = true;
-  try {
-    await client.saveSnapshot({ view: state.view.id, label: byId("snapshot-label").value });
-    byId("snapshot-dialog").close();
-    toast("Снимок сохранён и доступен в хронологии");
-    await refresh();
-  } catch (error) { toast(error.message); }
-  finally { submit.disabled = false; }
-});
 document.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
     event.preventDefault();

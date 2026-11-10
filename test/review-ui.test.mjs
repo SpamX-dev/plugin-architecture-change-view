@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ownClauseGroups, reviewVersions, observedVersionGroups, contractChanges, contractHeadingChange, evidenceLabel,
-  reviewFindingItems, freshnessLabel, clauseFindingTargets } from "../web/archiview/review.mjs";
+  reviewFindingItems, freshnessLabel, clauseFindingTargets, moduleFindingCount, treeFindingCounts } from "../web/archiview/review.mjs";
 
 /** Фикстура старого отчёта содержит локальные, родительские и исторические проверки. */
 function historicalReview() {
@@ -249,4 +249,49 @@ test("a legacy violation without findings links to its explicit assessment remar
   assert.deepEqual(clauseFindingTargets(bundle, contract, "responsibilities", "R1"), []);
   assert.deepEqual(clauseFindingTargets(null, contract, "responsibilities", "R1"), []);
   assert.deepEqual(bundle.report.findings, []);
+});
+
+/** Три уровня дерева отличают собственные замечания от скрытых и от соседней ветки. */
+function findingTree() {
+  return [[".", 0], ["src", 0], ["src/domain", 2], ["src/domain/leaf", 1], ["other", 0]]
+    .map(([directory, activeFindings]) => ({ directory, key: directory, status: "unchanged", review: { activeFindings } }));
+}
+
+test("finding bugs move up through collapsed ancestors and return to their modules on expansion", () => {
+  const modules = findingTree();
+  const original = structuredClone(modules);
+  const expanded = new Set(modules.map((module) => module.directory));
+  assert.deepEqual([...treeFindingCounts(modules, expanded).values()], [0, 0, 2, 1, 0]);
+  expanded.delete("src/domain");
+  assert.deepEqual([...treeFindingCounts(modules, expanded).values()], [0, 0, 3, 1, 0]);
+  expanded.delete("src");
+  assert.equal(treeFindingCounts(modules, expanded).get("src"), 3);
+  expanded.delete(".");
+  assert.equal(treeFindingCounts(modules, expanded).get("."), 3);
+  expanded.add("."); expanded.add("src"); expanded.add("src/domain");
+  assert.deepEqual([...treeFindingCounts(modules, expanded).values()], [0, 0, 2, 1, 0]);
+  assert.deepEqual(modules, original);
+});
+
+test("forced expansion for search shows own findings while unrelated filtered branches contribute nothing", () => {
+  const modules = findingTree().filter((module) => [".", "other"].includes(module.directory));
+  assert.deepEqual([...treeFindingCounts(modules, new Set()).values()], [0, 0]);
+  const all = findingTree();
+  assert.equal(treeFindingCounts(all, new Set(all.map((module) => module.directory))).get("src"), 0);
+});
+
+test("a removed module at a reused path does not inherit the replacement module's children", () => {
+  const modules = findingTree();
+  modules.push({ directory: "src", key: "removed:src", status: "removed", review: { activeFindings: 1 } });
+  const counts = treeFindingCounts(modules, new Set());
+  assert.equal(counts.get("src"), 3);
+  assert.equal(counts.get("removed:src"), 1);
+  assert.equal(counts.get("."), 4);
+});
+
+test("resolved findings do not show a bug, and old summaries retain their explicit violation", () => {
+  assert.equal(moduleFindingCount({ review: null }), 0);
+  assert.equal(moduleFindingCount({ review: { findings: 2, activeFindings: 0 } }), 0);
+  assert.equal(moduleFindingCount({ review: { findings: 0, assessment: { current: { verdict: "violation" } } } }), 1);
+  assert.equal(moduleFindingCount({ review: { findings: 2 } }), 2);
 });

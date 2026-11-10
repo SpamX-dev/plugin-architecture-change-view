@@ -11,35 +11,34 @@
 <body>
   <a class="skip-link" href="#document-panel">К документу</a>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="ArchiView">
-      <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <rect width="32" height="32" rx="9" fill="currentColor"/>
-        <path d="M10 9v14m0-7h12m0 0V9m0 7v7" stroke="white" stroke-width="1.7"/>
-        <circle cx="10" cy="9" r="2.5" fill="white"/><circle cx="22" cy="9" r="2.5" fill="white"/>
-        <circle cx="10" cy="23" r="2.5" fill="white"/><circle cx="22" cy="23" r="2.5" fill="white"/>
-      </svg>
-      <span>Archi<span class="brand-light">View</span></span>
-    </a>
-    <span class="brand-caption">Архитектура в изменениях</span>
+    <div class="brand-group">
+      <a class="brand" href="/" aria-label="ArchiView">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect width="32" height="32" rx="9" fill="currentColor"/>
+          <path d="M10 9v14m0-7h12m0 0V9m0 7v7" stroke="white" stroke-width="1.7"/>
+          <circle cx="10" cy="9" r="2.5" fill="white"/><circle cx="22" cy="9" r="2.5" fill="white"/>
+          <circle cx="10" cy="23" r="2.5" fill="white"/><circle cx="22" cy="23" r="2.5" fill="white"/>
+        </svg>
+        <span>Archi<span class="brand-light">View</span></span>
+      </a>
+      <span class="brand-caption">Архитектура в изменениях</span>
+    </div>
+    <div class="project-context" aria-label="Рабочий проект">
+      <span class="live-dot" role="img" aria-label="Локальный проект" title="Локальный проект"></span>
+      <div class="project-heading">
+        <strong id="project-name">Загрузка проекта…</strong>
+        <span id="project-path" class="project-path"></span>
+      </div>
+    </div>
     <div class="topbar-actions">
-      <span class="local-indicator"><span class="live-dot"></span>Локальный проект</span>
       <button id="refresh" class="button button-quiet" type="button">Обновить</button>
-      <button id="save" class="button button-primary" type="button" disabled>Сохранить снимок</button>
+      <div class="comparison-picker">
+        <select id="timeline" aria-label="Хронология" disabled>
+          <option>Читаем историю…</option>
+        </select>
+      </div>
     </div>
   </header>
-  <section class="comparison-bar" aria-label="Проект и хронология">
-    <div class="project-heading">
-      <span class="eyebrow">Рабочий проект</span>
-      <strong id="project-name">Загрузка проекта…</strong>
-      <span id="project-path" class="project-path"></span>
-    </div>
-    <div class="comparison-picker">
-      <label for="timeline">Хронология</label>
-      <select id="timeline" aria-label="Хронология" disabled>
-        <option>Читаем историю…</option>
-      </select>
-    </div>
-  </section>
   <div id="warning" class="global-warning" role="alert" hidden></div>
   <div id="app-shell" class="app-shell">
     <aside id="module-sidebar" class="sidebar" aria-label="Навигация по модулям">
@@ -60,10 +59,9 @@
       aria-description="Перетащите границу или используйте стрелки влево и вправо. Home и End задают пределы, Enter возвращает исходную ширину."
       title="Перетащите, чтобы изменить ширину. Стрелки ←/→ — изменить, Enter или двойной щелчок — сбросить."></div>
     <main class="content">
-      <div class="content-topline"><button id="tree-toggle" class="button button-quiet mobile-only" type="button">Модули</button><nav id="breadcrumbs" aria-label="Путь к модулю"></nav><span class="view-label">ОБЗОР МОДУЛЯ</span></div>
+      <div class="content-topline"><button id="tree-toggle" class="button button-quiet mobile-only" type="button">Модули</button><nav id="breadcrumbs" aria-label="Путь к модулю"></nav><div class="topline-tools"><span class="view-label">ОБЗОР МОДУЛЯ</span><button id="copy-path" class="button button-quiet" type="button" disabled>Копировать путь</button><button id="analyze-module" data-analysis class="button button-primary" type="button" disabled>Анализировать модуль</button></div></div>
       <section class="module-heading">
         <div id="module-heading-content" class="module-heading-content"><div class="module-title-row"><h1 id="module-title">Ответственность модулей</h1><span id="module-status"></span></div><p id="module-subtitle" class="module-subtitle">Выберите модуль в дереве слева</p><div id="module-contract-heading" class="module-contract-heading" hidden></div></div>
-        <div class="module-actions"><button id="analyze-module" data-analysis class="button button-primary" type="button" disabled>Анализировать модуль</button><button id="copy-path" class="button button-quiet" type="button" disabled>Копировать путь</button></div>
       </section>
       <div id="module-meta" class="module-meta"></div>
       <p id="analysis-status" class="analysis-status" role="status" hidden></p>
@@ -76,14 +74,6 @@
       <section id="document-panel" class="document-panel" role="tabpanel" aria-labelledby="tab-document" tabindex="-1"><div class="loading-state">Готовим документы…</div></section>
     </main>
   </div>
-  <dialog id="snapshot-dialog">
-    <form id="snapshot-form">
-      <div class="dialog-kicker">История архитектуры</div><h2>Сохранить снимок</h2>
-      <p>Сохраните структуру и документы, чтобы вернуться к этому состоянию через хронологию.</p>
-      <label for="snapshot-label">Название снимка</label><input id="snapshot-label" name="label" maxlength="120" required>
-      <div class="dialog-actions"><button id="cancel-save" class="button button-quiet" type="button">Отмена</button><button class="button button-primary" type="submit">Сохранить снимок</button></div>
-    </form>
-  </dialog>
   <div id="toast" class="toast" role="status" hidden></div>
 </body>
 </html>

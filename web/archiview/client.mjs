@@ -9,17 +9,29 @@ const operations = {
   saveSnapshot: ["save_snapshot", "POST", "/api/snapshots"],
 };
 
-/** Выбирает транспорт один раз; сбой MCP не вызывает скрытого перехода к сети. */
-export function createArchiViewClient({ mode, connection, fetcher = globalThis.fetch }) {
+/**
+ * Выбирает транспорт один раз; сбой MCP не вызывает скрытого перехода к сети.
+ *
+ * `base` — префикс маршрутов панели, когда интерфейс обслуживает не корень
+ * сервера, а плагин хоста (например, `/archiview` в dsh). В Codex и
+ * standalone-режиме префикс пуст, поэтому адреса операций остаются прежними.
+ *
+ * `sessionId` — чат, которому принадлежит страница. Плагин хоста разрешает по
+ * нему рабочий каталог проекта, поэтому идентификатор добавляется к каждому
+ * запросу: и к GET-параметрам, и к адресу POST.
+ */
+export function createArchiViewClient({ mode, connection, fetcher = globalThis.fetch, base = "", sessionId = "" }) {
   return Object.fromEntries(Object.entries(operations).map(([method, [tool, verb, route]]) => [method, async (args = {}) => {
     if (mode === "mcp") {
       const bridge = await connection;
       if (!bridge?.call) throw new Error("Хост не поддерживает вызовы MCP из панели");
       return bridge.call("archiview_ui_" + tool, args);
     }
-    const target = typeof route === "function" ? route(args) : route;
-    const query = verb === "GET" && typeof route !== "function" ? "?" + new URLSearchParams(args) : "";
-    const response = await fetcher(target + query, verb === "GET" ? undefined : {
+    const target = base + (typeof route === "function" ? route(args) : route);
+    const params = new URLSearchParams(verb === "GET" && typeof route !== "function" ? args : {});
+    if (typeof sessionId === "string" && sessionId !== "") params.set("session", sessionId);
+    const search = params.toString();
+    const response = await fetcher(target + (search === "" ? "" : "?" + search), verb === "GET" ? undefined : {
       method: verb, headers: { "Content-Type": "application/json" }, body: JSON.stringify(args),
     });
     const result = await response.json();

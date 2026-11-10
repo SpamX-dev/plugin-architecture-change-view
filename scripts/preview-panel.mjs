@@ -9,6 +9,7 @@ import path from "node:path";
 import os from "node:os";
 import { stringify, parse } from "yaml";
 import { createCodexPanel } from "../src/codex/panel.mjs";
+import { createCodexProjectBinding } from "../src/codex/project-context.mjs";
 import { AnalysisRequests } from "../src/application/analysis.mjs";
 import { SnapshotStore } from "../src/snapshot-store.mjs";
 import { ReportStore } from "../src/report-store.mjs";
@@ -23,7 +24,10 @@ for (const [directory, id, title] of [[".", "preview", "Тестовый про�
     boundaries: { B1: "Не обращаться к сети." }, invariants: { I1: "Результат детерминирован." } }));
 }
 await writeFile(path.join(root, "domain/value.js"), "export const value = () => 42;\n");
-const panel = createCodexPanel(process.argv.includes("--select-project") ? undefined : root);
+const binding = process.argv.includes("--unknown-context") ? await createCodexProjectBinding(undefined, {
+  readContext: async () => ({ status: "unknown" }),
+}) : process.argv.includes("--select-project") ? undefined : root;
+const panel = createCodexPanel(binding);
 const resource = (await panel.resource()).contents[0];
 // В iframe запрещена вся сеть; только тестовый хост снаружи пересылает MCP-сообщения.
 const panelPolicy = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; " +

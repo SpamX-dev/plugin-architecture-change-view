@@ -2,7 +2,7 @@
 /**
  * Stdio MCP-сервер правил arch.yaml. Раздаёт канонический SKILL.md и инструменты
  * чтения; явный --panel добавляет локальное MCP App со скрытыми от модели операциями UI.
- * Рабочий проект задаётся --root, PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT или cwd.
+ * Рабочий проект задаётся явно, контекстом рабочей папки Codex или cwd вне плагина.
  */
 import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
@@ -15,6 +15,7 @@ import { parse } from "yaml";
 import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from "./inventory.mjs";
 import { createCodexPanel, PANEL_URI, PANEL_TOOL, PROJECT_INPUT } from "./codex/panel.mjs";
 import { createProjectBinding } from "./application/project.mjs";
+import { createCodexProjectBinding } from "./codex/project-context.mjs";
 import { UI_TOOLS, UI_TOOL_METHODS } from "./codex/ui-tools.mjs";
 
 /** Версионированная метаинформация пакета для MCP initialize. */
@@ -36,7 +37,8 @@ if (values.help) {
 /** Создаёт каталог ресурсов и обработчики SDK; stdout резервируется протоколу. */
 async function serve() {
   // Portable plugins запускаются с cwd=PLUGIN_ROOT. Этот cwd нельзя выдавать за проект.
-  const project = await createProjectBinding(values.root ?? process.env.PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT ??
+  const bindProject = values.panel ? createCodexProjectBinding : createProjectBinding;
+  const project = await bindProject(values.root ?? process.env.PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT ??
     (process.env.PLUGIN_ROOT ? undefined : process.cwd()));
   const maxFiles = Number(values["max-files"]);
   if (!Number.isSafeInteger(maxFiles) || maxFiles < 1) {
@@ -90,11 +92,11 @@ async function serve() {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const args = request.params.arguments ?? {};
     const name = request.params.name;
-    if (panel && UI_TOOL_METHODS.has(name)) return panel.callUi(name, args);
+    if (panel && UI_TOOL_METHODS.has(name)) return panel.callUi(name, args, request.params._meta);
     if (panel && name === PANEL_TOOL.name) {
       if (Object.keys(args).some((key) => key !== "projectRoot") ||
           (args.projectRoot !== undefined && typeof args.projectRoot !== "string")) throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments");
-      try { return await panel.open(args.projectRoot); }
+      try { return await panel.open(args.projectRoot, request.params._meta); }
       catch (error) { return { isError: true, content: [{ type: "text", text: error.message }] }; }
     }
     if (name !== "module_inventory" && name !== "module_context") {
@@ -107,7 +109,7 @@ async function serve() {
       throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments");
     }
     try {
-      const root = await project.select(args.projectRoot);
+      const root = await project.select(args.projectRoot, request.params._meta);
       const result = name === "module_inventory"
         ? await moduleInventory(root, { extensions, maxFiles })
         : await moduleContext(root, args.directory);

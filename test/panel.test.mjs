@@ -37,17 +37,18 @@ test("autonomous MCP panel serves project operations with no listening sockets a
     cwd: distribution, env: { ...process.env, PLUGIN_ROOT: distribution }, stderr: "pipe" }));
   const tools = (await client.listTools()).tools;
   const hidden = tools.filter((tool) => tool.name.startsWith("archiview_ui_"));
-  assert.equal(hidden.length, 7);
+  assert.equal(hidden.length, 8);
   for (const tool of hidden) assert.deepEqual(tool._meta.ui.visibility, ["app"]);
   assert.deepEqual(tools.filter((tool) => !tool._meta?.ui?.visibility || tool._meta.ui.visibility.includes("model")).map((tool) => tool.name),
     ["archiview_open", "module_inventory", "module_context"]);
   const openTool = tools.find((tool) => tool.name === "archiview_open");
+  assert.deepEqual(openTool._meta["openai/ui"].entrypoints, [{ type: "thread" }]);
   const resource = (await client.readResource({ uri: openTool._meta.ui.resourceUri })).contents[0];
   assert.doesNotMatch(resource.text, /<script\b[^>]*\bsrc=|<link\b[^>]*\brel="stylesheet"|name="archiview-backend"|name="archiview-token"/i);
   assert.match(resource.text, /ui\/initialize/);
   assert.deepEqual(resource._meta.ui.csp, { connectDomains: [], resourceDomains: [] });
   const call = (name, args = {}) => client.callTool({ name: "archiview_ui_" + name, arguments: args });
-  await assert.rejects(call("get_comparison").then(uiData), { code: "PROJECT_REQUIRED" });
+  await assert.rejects(call("get_comparison").then(uiData), { code: "CODEX_CONTEXT_UNAVAILABLE" });
   assert.equal((await client.callTool({ name: "module_inventory", arguments: {} })).isError, true);
   await assert.rejects(stat(path.join(distribution, ".archiview")), { code: "ENOENT" });
   await assert.rejects(call("set_project", { projectRoot: "relative" }).then(uiData), { code: "INVALID_ARGUMENT" });

@@ -5,6 +5,7 @@ const string = { type: "string", maxLength: 4096 };
 const selectedModule = { view: string, path: string };
 /** Явный набор операций сервиса, без произвольного URL, имени функции или доступа к файлам. */
 const operations = [
+  ["choose_project", "chooseProject", "Show a native folder chooser after an explicit user click. Cancellation keeps the current input.", {}, [], false],
   ["set_project", "setProject", "Bind this panel to a project directory.", { projectRoot: string }, ["projectRoot"], false],
   ["get_comparison", "getComparison", "Load the selected comparison and timeline for the panel.", { target: string, baseline: string, historyLimit: { type: "integer", minimum: 1, maximum: 10000 } }, [], false],
   ["get_module", "getModule", "Load module details from an existing comparison.", selectedModule, ["view", "path"], true],

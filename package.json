@@ -11,6 +11,24 @@
     "url": "https://github.com/SpamX-dev/plugin-architecture-change-view/issues"
   },
   "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-ui-session"
+      ]
+    }
+  },
   "license": "MIT",
   "engines": {
     "node": ">=22"
@@ -20,12 +38,14 @@
     "archiview": "src/cli.mjs"
   },
   "files": [
+    "lib",
     "src",
     "skills",
     "web",
     "docs",
     "dist/panel.html",
     "arch.yaml",
+    "cordis.patch.yml",
     "plugin.json",
     "mcp.json",
     "README.md"
@@ -33,6 +53,8 @@
   "scripts": {
     "start": "node src/server.mjs",
     "build:plugin": "node scripts/build-plugin.mjs",
+    "install:codex": "node scripts/install-plugin.mjs",
+    "build:dsh": "node scripts/build-dsh.mjs",
     "pretest": "npm run build:plugin",
     "archiview": "node src/archiview/cli.mjs",
     "test": "node --test"
@@ -45,5 +67,25 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.2"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/dsh-skill": "^0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.4"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-skill": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
   }
 }

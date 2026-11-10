@@ -246,8 +246,39 @@ export function clauseFindingTargets(bundle, contract, section, id) {
       (bundle.freshness?.current.status !== "fresh" ? " · нужна перепроверка" : "") }));
 }
 
-/** Отдельный жук показывает замечание, не подменяя цвет изменения контракта. */
-function findingBug() {
+/** Число открытых замечаний выбранной проверки; старые ответы API сохраняют общий вывод об ошибке. */
+export function moduleFindingCount(module) {
+  return module.review?.activeFindings ?? (module.review?.findings ||
+    Number(module.review?.assessment?.current?.verdict === "violation"));
+}
+
+/**
+ * Счётчики жуков для строк дерева: свои замечания видны всегда, вложенные —
+ * только на свёрнутом родителе. Удалённая версия в занятом каталоге не владеет
+ * его детьми; поиск передаёт фактически раскрытые каталоги и видимые модули.
+ */
+export function treeFindingCounts(modules, expanded) {
+  const counts = new Map(modules.map((module) => [module.key, moduleFindingCount(module)]));
+  const parents = new Map();
+  for (const module of modules) {
+    if (!parents.has(module.directory) || module.status !== "removed") parents.set(module.directory, module);
+  }
+  for (const module of modules) {
+    const count = moduleFindingCount(module);
+    if (!count || module.directory === ".") continue;
+    let directory = module.directory;
+    while (directory !== ".") {
+      const index = directory.lastIndexOf("/");
+      directory = index < 0 ? "." : directory.slice(0, index);
+      const parent = parents.get(directory);
+      if (parent && !expanded.has(directory)) counts.set(parent.key, counts.get(parent.key) + count);
+    }
+  }
+  return counts;
+}
+
+/** Общий жук для пункта, вкладки и дерева, независимый от цвета изменения контракта. */
+export function findingBug() {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 20 20");
   svg.setAttribute("aria-hidden", "true");

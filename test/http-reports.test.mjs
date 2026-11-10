@@ -162,6 +162,7 @@ test("HTTP exposes matching inputs and dependency coverage independently without
   const view = await response.json();
   const child = view.modules.find((module) => module.moduleId === "child");
   assert.equal(child.review.stale, false);
+  assert.equal(child.review.activeFindings, 1, "a legacy violation remains an explicit open remark");
   assert.equal(child.reviewStatus.self.current.status, "fresh");
   assert.equal(child.reviewStatus.self.current.coverage.status, "partial");
   assert.equal(child.reviewStatus.self.current.current_violation, true);
@@ -174,6 +175,28 @@ test("HTTP exposes matching inputs and dependency coverage independently without
   const changedChild = changed.modules.find((module) => module.moduleId === "child");
   assert.equal(changedChild.reviewStatus.self.current.status, "stale");
   assert.equal(changedChild.reviewStatus.self.current.coverage.status, "partial");
+});
+
+test("HTTP separates open findings from resolved findings without changing the saved report", async (t) => {
+  const root = await fixture(t);
+  const app = await serve(t, root);
+  const current = await captureWorkingTree(root);
+  for (const [id, lifecycles] of [["root", ["resolved"]], ["child", ["introduced", "persisting", "resolved"]]]) {
+    const review = fixtureReview(app, current, id);
+    review.report.findings = lifecycles.map((lifecycle, index) => ({ id: "finding-" + index,
+      kind: "responsibility_gap", severity: "warning", certainty: "confirmed", lifecycle,
+      summary: "Замечание фикстуры.", clauses: [review.report.checks[0].contract], evidence: review.report.checks[0].evidence }));
+    await app.reports.saveReview(review);
+  }
+  const view = await (await fetch(app.url + "/api/comparison?baseline=initial")).json();
+  const parent = view.modules.find((module) => module.moduleId === "root");
+  const child = view.modules.find((module) => module.moduleId === "child");
+  assert.equal(parent.review.findings, 1);
+  assert.equal(parent.review.activeFindings, 0);
+  assert.equal(child.review.findings, 3);
+  assert.equal(child.review.activeFindings, 2);
+  const detail = await (await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: "child" }))).json();
+  assert.deepEqual(detail.reviews[0].report.findings.map((finding) => finding.lifecycle), ["introduced", "persisting", "resolved"]);
 });
 
 test("HTTP preserves conflicting attempts and reports both conflict and subtree coverage", async (t) => {
