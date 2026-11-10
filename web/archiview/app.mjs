@@ -11,7 +11,7 @@ import { createArchiViewClient } from "./client.mjs";
 /** Локальное состояние интерфейса, не изменяющее исходные документы проекта. */
 const state = { view: null, detail: null, selected: null, tab: "document",
   filter: "all", search: "", expanded: new Set(), selection: 0, refresh: 0,
-  target: "current", historyLimit: 50, bridge: null, analyses: new Map() };
+  target: "current", historyLimit: 50, bridge: null, analyses: new Map(), findingFixes: new Map() };
 /** Транспорт задаёт точка сборки; интерфейс работает с одинаковыми прикладными методами. */
 const transportMode = document.querySelector('meta[name="archiview-transport"]')?.content ?? "http";
 /** Префикс маршрутов плагина хоста; пустой означает корень сервера (standalone и Codex). */
@@ -664,7 +664,20 @@ function renderPanel(navigation = {}) {
   byId("document-version").textContent = state.detail.status === "removed" ?
     "Из базы сравнения" : timelineLabel(state.view.target ?? { id: "current" });
   if (state.tab === "document") renderDocument(panel, state.detail);
-  else if (["checks", "findings"].includes(state.tab)) renderReview(panel, state.detail, state.tab, { openClause: openReviewClause, ...navigation });
+  else if (["checks", "findings"].includes(state.tab)) {
+    // Копирование доступно самостоятельной странице; встроенный хост без
+    // capability отправки показывает недоступное действие, не меняя транспорт.
+    const send = state.bridge?.send;
+    const copying = !send && transportMode === "http" && transportBase === "";
+    renderReview(panel, state.detail, state.tab, { openClause: openReviewClause,
+      projectRoot: state.view.root, fixStates: state.findingFixes, fixMode: copying ? "copy" : "send",
+      fixFinding: send ? (prompt) => send(prompt) : copying ? (prompt) => navigator.clipboard.writeText(prompt) : undefined,
+      fixChanged: (reviewId) => {
+        if (state.tab === "findings" && panel.querySelector(".review-body")?.dataset.reviewId === reviewId)
+          renderPanel({ reviewId });
+      },
+      ...navigation });
+  }
   else renderFiles(panel, state.detail);
   renderAnalysisControls();
 }
@@ -758,7 +771,11 @@ async function copyText(text) {
 }
 
 initializeTreeWidth();
-connection.then((bridge) => { state.bridge = bridge; renderAnalysisControls(); });
+connection.then((bridge) => {
+  state.bridge = bridge;
+  renderAnalysisControls();
+  if (state.detail && state.tab === "findings") renderPanel();
+});
 byId("refresh").prepend(icon("refresh"));
 byId("refresh").addEventListener("click", () => refresh());
 byId("timeline").addEventListener("change", (event) => {

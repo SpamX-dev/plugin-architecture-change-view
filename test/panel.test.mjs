@@ -37,7 +37,7 @@ test("autonomous MCP panel serves project operations with no listening sockets a
     cwd: distribution, env: { ...process.env, PLUGIN_ROOT: distribution }, stderr: "pipe" }));
   const tools = (await client.listTools()).tools;
   const hidden = tools.filter((tool) => tool.name.startsWith("archiview_ui_"));
-  assert.equal(hidden.length, 8);
+  assert.equal(hidden.length, 9);
   for (const tool of hidden) assert.deepEqual(tool._meta.ui.visibility, ["app"]);
   assert.deepEqual(tools.filter((tool) => !tool._meta?.ui?.visibility || tool._meta.ui.visibility.includes("model")).map((tool) => tool.name),
     ["archiview_open", "module_inventory", "module_context"]);

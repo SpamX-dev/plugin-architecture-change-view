@@ -9,7 +9,7 @@ import { digest, validateReview } from "./formats.mjs";
 import { snapshotDigest } from "./snapshots.mjs";
 
 /** Версия включает алгоритм структурной проверки; настройки участвуют в manifest. */
-export const ANALYZER = { name: "archiview-structure", version: "1.0.1",
+export const ANALYZER = { name: "archiview-structure", version: "1.0.2",
   config_digest: digest({ semantic: false, inherited: ["boundaries", "invariants"] }) };
 
 /** Точная ссылка на сохранённое содержание, независимо от пользовательской метки. */
@@ -98,17 +98,6 @@ export function createStructuralReview(before, after, module, { contractScope = 
       else limitations.push(side + ": снимок прежнего формата не содержит фактов о модуле.");
     }
   }
-  const beforeContract = module.before?.document.contract;
-  const afterContract = module.after?.document.contract;
-  if (before && module.before && module.after && digest(beforeContract ?? null) !== digest(afterContract ?? null)) {
-    const evidence = [...fact(before, "baseline", "file", module.before.documentPath),
-      ...fact(after, "current", "file", module.after.documentPath)];
-    if (evidence.length) findings.push({ id: "contract-change", kind: "contract_change",
-      certainty: "confirmed", severity: "info", lifecycle: "introduced",
-      summary: "Изменился принятый контракт модуля.",
-      details: "Изменение текста само по себе не доказывает выход за границы или согласование новых обязанностей.",
-      clauses: [], evidence });
-  }
   for (const { item, subject } of requiredClauseChecks(manifest, Boolean(module.after))) {
     checks.push({ id: "check-" + (checks.length + 1), contract: item.reference,
       subject, verdict: "not_checked", explanation: "Структурный анализ не определяет соответствие кода этому пункту.", evidence: [] });
@@ -123,7 +112,7 @@ export function createStructuralReview(before, after, module, { contractScope = 
     assessment: {
       current: { verdict: !module.after ? "not_applicable" : findings.some((f) => f.id === "contract-current") ? "needs_review" : "inconclusive",
         summary: !module.after ? "Модуль отсутствует в текущем снимке." : "Структура проверена; соответствие кода контракту не установлено." },
-      change: { verdict: !before ? "not_applicable" : findings.some((f) => f.kind === "contract_change") ? "needs_review" : "inconclusive",
+      change: { verdict: !before ? "not_applicable" : "inconclusive",
         summary: !before ? "Первый анализ без базового снимка." : "Изменения файлов зафиксированы; оценка ответственности требует анализа кода." },
     } };
   validateReviewBundle({ report, manifest, baseline: before, current: after });

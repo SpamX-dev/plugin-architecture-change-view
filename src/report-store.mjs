@@ -22,6 +22,9 @@ const originalBundle = ({ report, manifest, baseline, current }) => ({ report, m
 const semantic = isSemanticReview;
 const snapshotContentDigest = (snapshot) => snapshot.digest ?? snapshotDigest(snapshot);
 
+/** Обе версии используют одинаковые правила технического состояния; новые версии добавляются после проверки совместимости. */
+export const SUPPORTED_TECHNICAL_ANALYZER_VERSIONS = Object.freeze(["1.0.1", "1.0.2"]);
+
 /** Идентификатор модуля никогда не становится пользовательским фрагментом пути. */
 export const moduleReportName = (id) => digest(id).slice(7);
 
@@ -49,6 +52,10 @@ export function validateArchiReport(value) {
   if (Object.keys(value).some((key) => !["schema_version", "kind", "module_id", "project_id", "check_hash", "input_manifest", "baseline", "current", "change", "structure", "publication", "review_status", "storage_diagnostics"].includes(key))) throw new Error("Unknown archi report field");
   if (!value.input_manifest || digest(value.input_manifest).slice(7) !== value.check_hash) throw new Error("Technical check hash mismatch");
   if (value.input_manifest.project_id !== value.project_id || value.input_manifest.module_id !== value.module_id) throw new Error("Technical report identity mismatch");
+  const version = value.input_manifest.analyzer?.version;
+  if (!SUPPORTED_TECHNICAL_ANALYZER_VERSIONS.includes(version)) throw new Error(
+    "Версия анализатора технического отчёта «" + (typeof version === "string" ? version : "не указана") +
+    "» не поддерживается. Поддерживаемые версии: " + SUPPORTED_TECHNICAL_ANALYZER_VERSIONS.join(", ") + ".");
   for (const side of ["baseline", "current"]) {
     const state = value[side];
     const reference = side === "baseline" ? value.input_manifest.baseline?.state : value.input_manifest.current;
@@ -122,6 +129,11 @@ function reconstruct(reports) {
   const model = createReportModel(result.baseline, result.current);
   for (const report of selected) {
     const expected = model.createTechnicalReport(report.project_id, { moduleId: report.module_id });
+    // validateArchiReport допускает только явно поддержанные версии. Общий
+    // обработчик сохраняет версию старого отчёта в manifest и его check_hash;
+    // имя, конфигурация анализатора и все состояния сверяются без послаблений.
+    expected.input_manifest.analyzer.version = report.input_manifest.analyzer.version;
+    expected.check_hash = digest(expected.input_manifest).slice(7);
     if (canonical(technicalCore(report)) !== canonical(expected)) throw new Error("Published technical state differs from saved snapshot: " + report.module_id);
   }
   return result;

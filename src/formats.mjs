@@ -89,6 +89,7 @@ export function validateReview(value) {
     checks: array(shape({ id: string, contract: clause, subject: side,
       verdict: enumeration("consistent", "violation", "uncertain", "not_checked", "not_applicable"),
       explanation: string, evidence: array(evidence) })),
+    // contract_change читается только для сохранения совместимости с неизменяемой историей.
     findings: array(shape({ id: string, kind: enumeration("boundary_violation", "invariant_violation",
       "undeclared_responsibility", "responsibility_gap", "contract_conflict", "contract_change", "missing_contract"),
       certainty: enumeration("confirmed", "suspected"), severity: enumeration("info", "warning", "error"),

@@ -150,6 +150,31 @@ test("Codex client opens the original form on unknown context, missing root or a
   await assert.rejects(absent.getComparison(), { code: "PROJECT_UNAVAILABLE" });
 });
 
+test("a resolved project keeps loading beyond the folder timeout and preserves comparison errors", async () => {
+  const root = path.resolve("project"), calls = [];
+  let finish, started, failure;
+  const loading = new Promise((resolve) => { started = resolve; });
+  const view = { root, modules: [] };
+  const client = createCodexClient({ mode: "mcp", connection: Promise.resolve({ call: async (name) => {
+    calls.push(name);
+    if (name === "archiview_ui_get_project") return { root };
+    assert.equal(name, "archiview_ui_get_comparison");
+    if (failure) throw failure;
+    started();
+    return new Promise((resolve) => { finish = resolve; });
+  } }) }, { document: null, timeoutMs: 10 });
+  let outcome = "pending";
+  const comparison = client.getComparison().then((result) => { outcome = "loaded"; return result; }, (error) => { outcome = error.code; throw error; });
+  await loading;
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(outcome, "pending", "Slow snapshots must not ask for the already resolved folder");
+  finish(view);
+  assert.deepEqual(await comparison, view);
+  failure = Object.assign(new Error("Snapshot unavailable"), { code: "INCOMPLETE_VIEW" });
+  await assert.rejects(client.getComparison(), failure);
+  assert.deepEqual(calls, ["archiview_ui_get_project", "archiview_ui_get_comparison", "archiview_ui_get_comparison"]);
+});
+
 test("directory selection preserves cancellation and supports Unicode paths without changing the root", async () => {
   for (const projectRoot of [null, "D:\\Папка проекта\\Example"]) {
     assert.deepEqual(await chooseProjectDirectory({ platform: "win32", run: async () => ({ stdout: JSON.stringify({ projectRoot }) }) }), { projectRoot });
@@ -225,6 +250,9 @@ test("bundled plugin loads the selected folder on its first UI call and rejects 
   const env = { ...process.env, PLUGIN_ROOT: distribution, CODEX_APP_TOOLS_PIPE_PATH: pipe.address };
   delete env.PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT;
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [path.join(distribution, "src/server.mjs"), "--panel"], cwd: distribution, env, stderr: "pipe" }));
+  const project = await client.callTool({ name: "archiview_ui_get_project", arguments: {}, _meta: { threadId: "chat-1" } }).then(uiData);
+  assert.deepEqual(project, { root: roots[0] });
+  await assert.rejects(readFile(path.join(roots[0], ".archiview/project.json")), { code: "ENOENT" });
   const call = (threadId) => client.callTool({ name: "archiview_ui_get_comparison", arguments: {}, _meta: { threadId } }).then(uiData);
   assert.equal((await call("chat-1")).root, roots[0]);
   assert.deepEqual(pipe.calls.filter((call) => call.method === "tools/call").map((call) => call.params.tool).sort(), ["list_projects", "read_thread"]);

@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import net from "node:net";
 import { randomUUID } from "node:crypto";
 import { execFile, spawn } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, mkdtemp, readFile, realpath, rm, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
@@ -24,6 +24,61 @@ async function fixture(t) {
   await cp(fileURLToPath(new URL("../dist/codex/", import.meta.url)), plugin, { recursive: true });
   return { directory, plugin, cleanup };
 }
+
+/**
+ * Настоящий дочерний Node играет роль CLI во временной установке Windows.
+ * Его PATH не содержит Codex; фиктивный CLI только возвращает принадлежащий тесту
+ * пакет и аргументы. Пользовательская конфигурация Codex не читается и не меняется.
+ */
+async function installerFixture(t) {
+  const { directory, plugin } = await fixture(t);
+  const localAppData = path.join(directory, "Local AppData");
+  const executable = path.join(localAppData, "OpenAI", "Codex", "bin", "current build", "codex.exe");
+  await mkdir(path.dirname(executable), { recursive: true });
+  await copyFile(process.execPath, executable);
+  // Аргументы фиксируются отдельно, чтобы проверить запуск без shell и потерянных пробелов.
+  await writeFile(path.join(directory, "plugin"), "process.stdout.write(JSON.stringify({ ..." +
+    JSON.stringify({ pluginId: "archiview@archiview-local", installedPath: plugin }) +
+    ", arguments: process.argv.slice(2) }));");
+  const env = { ...process.env, LOCALAPPDATA: localAppData };
+  for (const key of Object.keys(env)) if (["path", "archiview_codex_executable"].includes(key.toLowerCase())) delete env[key];
+  env.PATH = directory;
+  const installer = pathToFileURL(fileURLToPath(new URL("../scripts/install-plugin.mjs", import.meta.url))).href;
+  const script = "import { installCodexPlugin } from " + JSON.stringify(installer) + "; " +
+    "console.log(JSON.stringify(await installCodexPlugin({ cwd: " + JSON.stringify(directory) + " })));";
+  const run = () => promisify(execFile)(process.execPath, ["--input-type=module", "--eval", script],
+    { cwd: directory, env, windowsHide: true });
+  return { directory, plugin, localAppData, executable, env, run };
+}
+
+test("Windows installer finds the application CLI without PATH and ignores other runtime builds", { skip: process.platform !== "win32" }, async (t) => {
+  const { plugin, localAppData, run } = await installerFixture(t);
+  const bin = path.join(localAppData, "OpenAI", "Codex", "bin");
+  await mkdir(path.join(bin, "newer node runtime"));
+  await writeFile(path.join(bin, "newer node runtime", "node.exe"), "not a Codex CLI");
+  const obsolete = path.join(bin, "old build", "codex.exe");
+  await mkdir(path.dirname(obsolete));
+  await writeFile(obsolete, "not executable");
+  await utimes(obsolete, new Date(0), new Date(0));
+  const installed = JSON.parse((await run()).stdout);
+  assert.equal(installed.mcpPathsResolved, true);
+  assert.equal(installed.installedPath, await realpath(plugin));
+  assert.deepEqual(installed.arguments, ["add", "archiview@archiview-local", "--json"]);
+  const configuration = JSON.parse(await readFile(path.join(plugin, ".mcp.json"), "utf8"));
+  assert.equal(path.normalize(configuration.mcpServers.archiview.args[0]), path.join(installed.installedPath, "src/server.mjs"));
+  assert.equal(configuration.mcpServers.archiview.cwd, undefined);
+});
+
+test("Windows installer accepts an explicit CLI path and reports a missing CLI clearly", { skip: process.platform !== "win32" }, async (t) => {
+  const { plugin, executable, env, run } = await installerFixture(t);
+  env.LOCALAPPDATA += "-not-installed";
+  env.ARCHIVIEW_CODEX_EXECUTABLE = executable;
+  assert.equal(JSON.parse((await run()).stdout).mcpPathsResolved, true);
+  const preserved = await readFile(path.join(plugin, ".mcp.json"), "utf8");
+  delete env.ARCHIVIEW_CODEX_EXECUTABLE;
+  await assert.rejects(run(), (error) => error.stderr.includes("Не найден CLI Codex") && error.stderr.includes("ARCHIVIEW_CODEX_EXECUTABLE"));
+  assert.equal(await readFile(path.join(plugin, ".mcp.json"), "utf8"), preserved);
+});
 
 test("installed configuration starts from another cwd without host placeholder substitution", async (t) => {
   const { directory, plugin, cleanup } = await fixture(t);
@@ -144,6 +199,11 @@ test("native Codex loader discovers a connected thread-only panel", { skip: !pro
     const tool = server.tools.archiview_open;
     assert.ok(tool, "Connected server must publish the panel entrypoint");
     assert.deepEqual(tool._meta["openai/ui"].entrypoints, [{ type: "thread" }]);
+    const projectContext = await rpc("mcpServer/tool/call", { threadId: thread.thread.id, server: server.name, tool: "archiview_ui_get_project", arguments: {} });
+    assert.deepEqual(projectContext.content, []);
+    assert.equal(projectContext.structuredContent, undefined);
+    assert.equal(projectContext._meta?.result?.root, project, "First UI call resolves the workspace without reading snapshots");
+    await assert.rejects(readFile(path.join(project, ".archiview/project.json")), { code: "ENOENT" });
     const opened = await rpc("mcpServer/tool/call", { threadId: thread.thread.id, server: server.name, tool: "archiview_open", arguments: {} });
     assert.notEqual(opened.isError, true, "Cold opening must not fail before the host loads the UI");
     assert.equal(opened.structuredContent?.root, project, "Cold opening uses the workspace supplied to native Codex");

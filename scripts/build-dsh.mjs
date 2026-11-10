@@ -1,8 +1,8 @@
 /**
  * Сборка плагина dsh: две половины одного пакета и автономный каталог установки.
  *
- * `lib/index.js` — хост-половина для Node: cordis-плагин, который регистрирует
- * инструменты, маршруты и скилл. `lib/client.js` — браузерная половина в
+ * `dist/dsh/lib/index.js` — хост-половина для Node: cordis-плагин, который регистрирует
+ * инструменты, маршруты и скилл. `dist/dsh/lib/client.js` — браузерная половина в
  * формате загрузчика dsh: бандл лишь регистрирует фабрику через
  * `window.__ModuleLoader__.load`, а тело выполняется при первом открытии
  * вкладки.
@@ -26,10 +26,10 @@ import { fileURLToPath } from "node:url";
 
 /** Корень пакета. */
 const root = new URL("../", import.meta.url);
-/** Каталог собранных половин. */
-const output = new URL("lib/", root);
 /** Каталог автономного пакета для установки в профиль dsh. */
 const distribution = new URL("dist/dsh/", root);
+/** Обе половины создаются сразу в пакете: сборка не пишет за пределами dist. */
+const output = new URL("lib/", distribution);
 /** Идентификатор бандла в загрузчике клиента dsh — имя пакета. */
 const metadata = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
 
@@ -87,7 +87,7 @@ await build({
   format: "esm",
   banner: nodeBanner,
 });
-for (const name of ["lib", "web", "skills", "docs"]) {
+for (const name of ["web", "skills", "docs"]) {
   await cp(new URL(name, root), new URL(name, distribution), { recursive: true });
 }
 await cp(new URL("LICENSE", root), new URL("LICENSE", distribution));

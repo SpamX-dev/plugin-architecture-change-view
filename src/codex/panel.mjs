@@ -57,7 +57,9 @@ export function createCodexPanel(rootOrBinding, { stateDirectory, chooseDirector
           catch (error) { if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE"].includes(error.code)) throw error; }
           return { content: [], _meta: { result: await chooseDirectory() } };
         }
-        const result = method === "setProject" ? { root: await (await binding).select(args.projectRoot, metadata) } :
+        // Проверка папки не создаёт сессию и не ждёт обхода исходников или истории.
+        const result = ["getProject", "setProject"].includes(method) ?
+          { root: await (await binding).select(method === "setProject" ? args.projectRoot : undefined, metadata) } :
           await (await service(metadata))[method](args);
         // Ни content, ни structuredContent не содержат данные просмотра.
         return { content: [], _meta: { result } };

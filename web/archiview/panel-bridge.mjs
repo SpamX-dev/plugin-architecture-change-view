@@ -2,7 +2,7 @@
  * Канал панели ArchiView с хостом.
  *
  * Панель работает в iframe и не имеет прямого доступа к агенту. Отправка
- * поручения анализа выделена в отдельный явный метод `send`: просмотр,
+ * поручения анализа или исправления выделена в отдельный явный метод `send`: просмотр,
  * навигация и обновление данных сообщений модели не создают.
  *
  * Поддерживаются три хоста, в порядке проверки:
@@ -22,7 +22,7 @@ const PROTOCOL = 1;
 const HELLO = "archiview:hello";
 /** Ответ хоста на приветствие. */
 const HOST = "archiview:host";
-/** Поручение анализа. */
+/** Явное поручение агенту: анализ модуля или исправление замечания. */
 const SEND = "archiview:send";
 /** Подтверждение принятия поручения. */
 const SENT = "archiview:sent";
@@ -64,7 +64,7 @@ export async function connectPanel() {
       /** Успешный ответ означает только принятие поручения, а не готовность анализа. */
       send: capabilities?.message ? async (prompt) => {
         const result = await app.sendMessage({ role: "user", content: [{ type: "text", text: prompt }] });
-        if (result.isError) throw new Error("Codex отклонил запрос анализа");
+        if (result.isError) throw new Error("Codex отклонил поручение");
       } : fallback?.send,
     };
   } catch { return fallback; }
@@ -137,7 +137,7 @@ function waitForHost(origin) {
  */
 function sendThroughHost(prompt, origin) {
   if (typeof prompt !== "string" || prompt === "") {
-    return Promise.reject(new Error("Пустое поручение анализа"));
+    return Promise.reject(new Error("Пустое поручение"));
   }
   return new Promise((resolve, reject) => {
     const id = newId();

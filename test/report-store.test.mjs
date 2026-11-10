@@ -10,9 +10,10 @@ import { digest } from "../src/formats.mjs";
 import { captureWorkingTree, compareSnapshots } from "../src/snapshots.mjs";
 import { SnapshotStore } from "../src/snapshot-store.mjs";
 import { ReviewStore } from "../src/review-store.mjs";
-import { createStructuralReview } from "../src/reviews.mjs";
+import { ANALYZER, createStructuralReview } from "../src/reviews.mjs";
+import { createCodexPanel } from "../src/codex/panel.mjs";
 import { createReviewInput, createReviewEntry, validateReviewEntry } from "../src/report-model.mjs";
-import { ReportStore, moduleReportName, parseReportYaml, readPublishedSnapshots } from "../src/report-store.mjs";
+import { ReportStore, moduleReportName, parseReportYaml, readPublishedSnapshots, validateArchiReport } from "../src/report-store.mjs";
 
 const stored = (value) => JSON.parse(JSON.stringify(value));
 
@@ -75,6 +76,81 @@ test("publishes exact baseline/current snapshots and technical reports without L
   assert.equal(raw.length, 2);
   assert.ok(raw.every((name) => /^[a-f0-9]{64}$/.test(name)));
   assert.equal((await store.list()).entries.length, 0);
+});
+
+/** Меняет только версию и её хеш в тестовой публикации, сохраняя снимки и историю. */
+async function publicationVersion(store, version) {
+  const files = [];
+  for (const name of (await readdir(store.work)).filter((name) => name.endsWith(".archi.yaml"))) {
+    const file = path.join(store.work, name);
+    const report = parseReportYaml(await readFile(file, "utf8"));
+    report.input_manifest.analyzer.version = version;
+    report.check_hash = digest(report.input_manifest).slice(7);
+    const text = stringify(report, { aliasDuplicateObjects: false });
+    await writeFile(file, text);
+    files.push([file, text]);
+  }
+  return files;
+}
+
+test("supported analyzer versions retain exact snapshots and review history across an upgrade", async (t) => {
+  const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
+  await store.rebuild(baseline, current, comparison.modules);
+  await store.saveReview(nativeReview(snapshotStore, baseline, current, "before-upgrade"));
+  const reviewFile = path.join(store.work, moduleReportName("child") + ".review.yaml");
+  const reviewBytes = await readFile(reviewFile, "utf8");
+  const files = await publicationVersion(store, "1.0.1");
+  assert.deepEqual(await store.publishedComparison(), stored({ baseline, current }));
+  assert.deepEqual(await readPublishedSnapshots(snapshotStore), stored([baseline, current]));
+  assert.deepEqual((await store.list()).diagnostics, []);
+  for (const [file, text] of files) assert.equal(await readFile(file, "utf8"), text);
+  const updated = await store.rebuild(baseline, current, comparison.modules);
+  assert.ok(updated.reports.every((report) => report.input_manifest.analyzer.version === ANALYZER.version));
+  assert.deepEqual(updated.comparison, stored({ baseline, current }));
+  assert.deepEqual(updated.entries.map((entry) => entry.review_id), ["before-upgrade"]);
+  assert.equal(await readFile(reviewFile, "utf8"), reviewBytes);
+});
+
+test("unsupported analyzer versions reach the panel as a clear error and cannot replace history", async (t) => {
+  const { root, store, baseline, current, comparison } = await fixture(t);
+  await store.rebuild(baseline, current, comparison.modules);
+  const files = await publicationVersion(store, "9.0.0");
+  const message = "Версия анализатора технического отчёта «9.0.0» не поддерживается. Поддерживаемые версии: 1.0.1, 1.0.2.";
+  await assert.rejects(store.publishedComparison(), (error) => error.message.includes(message));
+  const panel = createCodexPanel(root);
+  t.after(() => panel.close());
+  const result = await panel.callUi("archiview_ui_get_comparison", {});
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.content, []);
+  assert.equal(result.structuredContent, undefined);
+  assert.ok(result._meta.error.message.includes(message));
+  await assert.rejects(store.rebuild(baseline, current, comparison.modules), /refusing to replace/);
+  for (const [file, text] of files) assert.equal(await readFile(file, "utf8"), text);
+});
+
+test("a supported earlier version keeps checksum, analyzer identity and snapshot validation strict", async (t) => {
+  const { store, baseline, current, comparison } = await fixture(t);
+  await store.rebuild(baseline, current, comparison.modules);
+  await publicationVersion(store, "1.0.1");
+  const file = path.join(store.work, moduleReportName("child") + ".archi.yaml");
+  const original = parseReportYaml(await readFile(file, "utf8"));
+  const wrongHash = stored(original);
+  wrongHash.input_manifest.analyzer.version = "1.0.2";
+  assert.throws(() => validateArchiReport(wrongHash), /Technical check hash mismatch/);
+  for (const mutate of [
+    (report) => { report.change.own_code = !report.change.own_code; },
+    (report) => { report.input_manifest.analyzer.name = "another-analyzer"; },
+    (report) => { report.input_manifest.analyzer.config_digest = digest("other configuration"); },
+  ]) {
+    const report = stored(original);
+    mutate(report);
+    report.check_hash = digest(report.input_manifest).slice(7);
+    const damaged = stringify(report, { aliasDuplicateObjects: false });
+    await writeFile(file, damaged);
+    await assert.rejects(store.publishedComparison(), /Published technical state differs from saved snapshot: child/);
+    await assert.rejects(store.rebuild(baseline, current, comparison.modules), /refusing to replace/);
+    assert.equal(await readFile(file, "utf8"), damaged);
+  }
 });
 
 test("unchanged rebuild preserves the publication files and still detects external raw reviews", async (t) => {

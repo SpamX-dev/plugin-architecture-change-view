@@ -5,8 +5,9 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { stringify } from "yaml";
+import { stringify, parse } from "yaml";
 import { createArchiView } from "../src/archiview/http.mjs";
+import { createArchiViewSession } from "../src/application/session.mjs";
 import { digest } from "../src/formats.mjs";
 import { createReviewInput } from "../src/report-model.mjs";
 import { captureWorkingTree } from "../src/snapshots.mjs";
@@ -89,6 +90,27 @@ test("startup and comparison compact structure without creating an LLM review", 
   const detail = await (await fetch(app.url + "/api/module?" + new URLSearchParams({ view: changed.id, path: "child" }))).json();
   assert.equal(detail.structure.automatic, true);
   assert.deepEqual(detail.reviews, []);
+});
+
+test("a cached current view cannot republish its older snapshot over the work publication", async (t) => {
+  const root = await fixture(t);
+  const app = await serve(t, root);
+  const first = await (await fetch(app.url + "/api/comparison")).json();
+  await writeFile(path.join(root, "child/code.js"), "export const value = 2;\n");
+  const latest = await (await fetch(app.url + "/api/comparison")).json();
+  const before = await published(root);
+  // Пересборка по устаревшему представлению отклоняется, и work сохраняет последнее состояние.
+  const staleResponse = await fetch(app.url + "/api/reviews", { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ view: first.id, path: "child" }) });
+  const stale = await staleResponse.json();
+  assert.equal(staleResponse.status, 409);
+  assert.equal(stale.code, "STALE_VIEW");
+  assert.deepEqual(await published(root), before);
+  // Актуальное представление пересобирается идемпотентно: публикация не меняется.
+  const freshResponse = await fetch(app.url + "/api/reviews", { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ view: latest.id, path: "child" }) });
+  assert.equal(freshResponse.status, 200);
+  assert.deepEqual(await published(root), before);
 });
 
 test("missing contracts remain visible in automatic structure details", async (t) => {
@@ -197,6 +219,38 @@ test("HTTP separates open findings from resolved findings without changing the s
   assert.equal(child.review.activeFindings, 2);
   const detail = await (await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: "child" }))).json();
   assert.deepEqual(detail.reviews[0].report.findings.map((finding) => finding.lifecycle), ["introduced", "persisting", "resolved"]);
+  const saved = parse(await readFile(path.resolve(root, detail.reviews[0].reviewFile), "utf8"));
+  assert.match(detail.reviews[0].reviewFile, /^\.archiview\/work\/[a-f0-9]{64}\.review\.yaml$/);
+  assert.deepEqual(saved.entries.find((entry) => entry.review_id === detail.reviews[0].report.id).report,
+    detail.reviews[0].report);
+});
+
+test("HTTP excludes legacy contract changes from remark counts while preserving saved history", async (t) => {
+  const root = await fixture(t);
+  const app = await serve(t, root);
+  const current = await captureWorkingTree(root);
+  const originals = new Map();
+  for (const id of ["root", "child"]) {
+    const review = fixtureReview(app, current, id);
+    const legacy = { id: "contract-change", kind: "contract_change", certainty: "confirmed", severity: "info",
+      lifecycle: "introduced", summary: "Изменился принятый контракт модуля.", clauses: [],
+      evidence: review.report.checks[0].evidence };
+    review.report.findings = [legacy];
+    if (id === "child") review.report.findings.push({ ...legacy, id: "real-gap", kind: "responsibility_gap",
+      severity: "warning", clauses: [review.report.checks[0].contract] });
+    originals.set(id, structuredClone(review.report));
+    await app.reports.saveReview(review);
+  }
+  const view = await (await fetch(app.url + "/api/comparison?baseline=initial")).json();
+  for (const [id, count] of [["root", 0], ["child", 1]]) {
+    const module = view.modules.find((item) => item.moduleId === id);
+    assert.equal(module.review.findings, count);
+    assert.equal(module.review.activeFindings, count);
+    const detail = await (await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: module.directory }))).json();
+    assert.deepEqual(detail.reviews[0].report, originals.get(id));
+    const saved = parse(await readFile(path.resolve(root, detail.reviews[0].reviewFile), "utf8"));
+    assert.deepEqual(saved.entries.find((entry) => entry.review_id === detail.review.id).report, originals.get(id));
+  }
 });
 
 test("HTTP preserves conflicting attempts and reports both conflict and subtree coverage", async (t) => {
@@ -215,6 +269,23 @@ test("HTTP preserves conflicting attempts and reports both conflict and subtree 
   assert.equal(parent.reviewStatus.subtree.current.status, "not_reviewed");
   const detail = await (await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: "." }))).json();
   assert.deepEqual(detail.reviews.map((entry) => entry.report.id), [second.report.id, first.report.id]);
+  assert.equal(detail.reviews[0].reviewFile, detail.reviews[1].reviewFile);
   assert.equal(detail.review.id, second.report.id);
   assert.equal(detail.reviewStatus.self.conflict, true);
+});
+
+test("module detail points to the actual review file in an explicitly selected external store", async (t) => {
+  const root = await fixture(t);
+  const stateDirectory = await mkdtemp(path.join(os.tmpdir(), "archiview-review-location-"));
+  t.after(() => rm(stateDirectory, { recursive: true, force: true }));
+  const session = await createArchiViewSession({ root, stateDirectory });
+  const review = fixtureReview(session, await captureWorkingTree(root), "child");
+  await session.reports.saveReview(review);
+  const view = await session.getComparison({ baseline: "initial" });
+  const detail = await session.getModule({ view: view.id, path: "child" });
+  const file = path.resolve(root, detail.reviews[0].reviewFile);
+  assert.equal(path.dirname(file), path.join(stateDirectory, "work"));
+  assert.ok(!detail.reviews[0].reviewFile.includes("\\"));
+  const saved = parse(await readFile(file, "utf8"));
+  assert.deepEqual(saved.entries.find((entry) => entry.review_id === review.report.id).report, review.report);
 });

@@ -88,7 +88,9 @@ test("reviews retain old evidence and own clauses, remain immutable and become s
   const after = await captureWorkingTree(root);
   const module = compareSnapshots(before, after).modules.find((m) => m.moduleId === "child");
   const bundle = createStructuralReview(before, after, module);
-  assert.equal(bundle.report.assessment.change.verdict, "needs_review");
+  assert.equal(bundle.report.assessment.change.verdict, "inconclusive");
+  assert.deepEqual(bundle.report.findings, [], "a contract diff does not create a finding");
+  assert.equal(module.documentChanged, true);
   assert.equal(bundle.manifest.contract_scope, "own");
   assert.ok(bundle.report.checks.length);
   assert.ok(bundle.report.checks.every((c) => c.contract.module_id === bundle.report.module.id));
@@ -102,7 +104,7 @@ test("reviews retain old evidence and own clauses, remain immutable and become s
   assert.equal(reviewIsStale(loaded, before, await captureWorkingTree(root)), true);
   assert.ok(loaded.current.facts.some((f) => f.text.includes("() => 1")));
   const broken = structuredClone(loaded);
-  broken.report.findings[0].evidence[0].fact_id = "missing";
+  broken.report.checks[0].evidence = [{ snapshot: "current", fact_id: "missing" }];
   assert.throws(() => validateReviewBundle(broken), /Unresolved evidence/);
   const missingCheck = structuredClone(loaded);
   missingCheck.report.checks.pop();

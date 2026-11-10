@@ -262,9 +262,10 @@ args = ["D:/projects/dsh.plugins/plugin-architecture-change-view/src/server.mjs"
 npm run build:dsh
 ~~~
 
-Сборка создаёт `lib/index.js` (хост-половина), `lib/client.js` (вкладка правой
-панели в формате загрузчика dsh) и `dist/dsh` — самостоятельный пакет для
-установки в профиль через Settings → Plugins (или `plugin_manager`). Устройство,
+Сборка создаёт `dist/dsh/lib/index.js` (хост-половина) и `dist/dsh/lib/client.js`
+(вкладка правой панели в формате загрузчика dsh). Все результаты находятся в
+`dist/dsh` — самостоятельном пакете для установки в профиль через
+Settings → Plugins (или `plugin_manager`). Устройство,
 установка и оставшиеся шаги описаны в [документе плагина dsh](docs/dsh-plugin.md).
 
 ## Проверка

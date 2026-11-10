@@ -5,7 +5,7 @@
  */
 import { createArchiViewClient as createSharedClient } from "../../web/archiview/client.mjs";
 
-/** Ограничивает ожидание первой загрузки: зависший хост тоже позволяет указать папку вручную. */
+/** Ограничивает только определение папки: чтение снимков не означает недоступность контекста. */
 async function initialResponse(operation, timeoutMs) {
   let timer;
   try {
@@ -50,16 +50,23 @@ export function createArchiViewClient(options, { document = globalThis.document,
     observer.observe(panel, { childList: true, subtree: true });
   }
   return { ...client, async getComparison(args) {
-    try {
-      const operation = client.getComparison(args);
-      const result = initialized ? await operation : await initialResponse(operation, timeoutMs);
-      if (typeof result?.root !== "string" || result.root.trim() === "") throw Object.assign(new Error("Не удалось определить папку проекта"), { code: "CODEX_CONTEXT_UNAVAILABLE" });
-      initialized = true;
-      return result;
-    } catch (error) {
-      if (error.code !== "CODEX_CONTEXT_UNAVAILABLE") throw error;
-      manualFallback = true;
-      throw Object.assign(new Error(error.message), { code: "PROJECT_REQUIRED" });
+    if (!initialized) {
+      try {
+        const operation = Promise.resolve(options.connection).then((connection) => {
+          if (!connection?.call) throw new Error("Хост не поддерживает вызовы MCP из панели");
+          return connection.call("archiview_ui_get_project", {});
+        });
+        const result = await initialResponse(operation, timeoutMs);
+        if (typeof result?.root !== "string" || result.root.trim() === "") throw Object.assign(new Error("Не удалось определить папку проекта"), { code: "CODEX_CONTEXT_UNAVAILABLE" });
+        initialized = true;
+      } catch (error) {
+        if (error.code !== "CODEX_CONTEXT_UNAVAILABLE") throw error;
+        manualFallback = true;
+        throw Object.assign(new Error(error.message), { code: "PROJECT_REQUIRED" });
+      }
     }
+    // После подтверждения корня ждём данные обычным запросом MCP. Медленная
+    // подготовка проекта и ошибки снимков не открывают форму выбора папки.
+    return client.getComparison(args);
   } };
 }

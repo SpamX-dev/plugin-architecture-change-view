@@ -1,11 +1,12 @@
 /** Прикладная сессия проекта: снимки и операции просмотра без зависимости от транспорта. */
 import { realpath } from "node:fs/promises";
+import path from "node:path";
 import { ApplicationError } from "./errors.mjs";
 import { diffLines } from "diff";
 import { captureGitHead, captureWorkingTree, compareSnapshots, listGitRevisions, readGitHeadRevision, snapshotDigest } from "../snapshots.mjs";
 import { SnapshotStore } from "../snapshot-store.mjs";
 import { ReviewStore } from "../review-store.mjs";
-import { ReportStore } from "../report-store.mjs";
+import { ReportStore, moduleReportName } from "../report-store.mjs";
 import { createReportModel } from "../report-model.mjs";
 import { ChangeHistory } from "../change-history.mjs";
 import { digest } from "../formats.mjs";
@@ -27,6 +28,13 @@ function evidenceForReport(bundle) {
     const ids = new Set(references.filter((r) => r.snapshot === side).map((r) => r.fact_id));
     return [side, (bundle[side]?.facts ?? []).filter((f) => ids.has(f.id))];
   }));
+}
+
+/** Пара считается опубликованной, только если совпадают обе стороны и их содержимое. */
+function samePublication(published, baseline, current) {
+  const identity = (snapshot) => digest(snapshot ?
+    { id: snapshot.id, digest: snapshot.digest ?? snapshotDigest(snapshot) } : null);
+  return identity(published?.baseline) === identity(baseline) && identity(published?.current) === identity(current);
 }
 
 /** Контракт зависимости задаёт предпосылку; он не подтверждает проверенность поставщика. */
@@ -221,9 +229,11 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
         const freshness = model.reviewFreshness(bundle);
         return freshness.current.status === "fresh" && freshness.change.status === "fresh";
       }) ?? matching.find((bundle) => model.reviewFreshness(bundle).current.status === "fresh") ?? matching[0];
+      // Прежние записи об изменении контракта сохраняются в истории, но не считаются замечаниями.
+      const findings = latest?.report.findings.filter((finding) => finding.kind !== "contract_change") ?? [];
       module.review = latest ? { id: latest.report.id, stale: model.reviewFreshness(latest).current.status !== "fresh",
-        assessment: latest.report.assessment, findings: latest.report.findings.length,
-        activeFindings: latest.report.findings.length ? latest.report.findings.filter((finding) => finding.lifecycle !== "resolved").length :
+        assessment: latest.report.assessment, findings: findings.length,
+        activeFindings: findings.length ? findings.filter((finding) => finding.lifecycle !== "resolved").length :
           Number(latest.report.assessment.current.verdict === "violation"),
         createdAt: latest.report.analysis.created_at } : null;
       const moduleId = module.moduleId ?? "directory:" + module.directory;
@@ -262,6 +272,10 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       (bundle.report.module.current_path ?? bundle.report.module.baseline_path) === module.directory);
     return { ...module, reviews: matching.map((bundle) => ({
       report: bundle.report, stale: view.reportModel.reviewFreshness(bundle).current.status !== "fresh",
+      // Путь берётся из фактического хранилища, включая явно заданное внешнее.
+      // ID попытки и замечания выбирают запись внутри общей истории модуля.
+      reviewFile: path.relative(root, path.join(reports.work,
+        moduleReportName(bundle.module_id) + ".review.yaml")).split(path.sep).join("/"),
       freshness: view.reportModel.reviewFreshness(bundle),
       dependencies: dependencyAssumptions(bundle, view),
       facts: evidenceForReport(bundle),
@@ -293,11 +307,19 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     return analysis.status(args.id);
   }
 
-  /** Перестраивает технический отчёт только для текущего полного представления. */
+  /** Перестраивает технический отчёт только для пары, опубликованной как текущая. */
   async function buildReview(args) {
     const { view, module } = selectedModule(args);
     if (!view.complete) throw new ApplicationError("INCOMPLETE_VIEW", "Неполный обход не позволяет сохранить проверку");
-    if (view.target?.id === "current") await reports.rebuild(view.baselineSnapshot, view.currentSnapshot, view.modules);
+    if (view.target?.id === "current") {
+      // Кеш хранит прежние current-view после новых сравнений, и их метка
+      // target.id остаётся current. Публикация такой пары вернула бы work к
+      // устаревшему снимку, поэтому пересборка сверяется с самим work.
+      const published = await reports.publishedComparison();
+      if (published && !samePublication(published, view.baselineSnapshot, view.currentSnapshot))
+        throw new ApplicationError("STALE_VIEW", "Сравнение устарело: обновите его перед пересборкой отчёта");
+      await reports.rebuild(view.baselineSnapshot, view.currentSnapshot, view.modules);
+    }
     return { automatic: true, module_id: module.moduleId };
   }
 
