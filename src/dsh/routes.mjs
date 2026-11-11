@@ -57,17 +57,24 @@ export const PANEL_ASSETS = new Map([
 const assetCache = new Map();
 
 /**
- * Приводит префикс к виду `/archiview`: без хвостового слэша и служебных символов.
+ * Приводит префикс к виду `/archiview`: локальный путь без хвостового слэша и
+ * служебных символов.
+ *
+ * Сетевые ссылки вида `//host/path` и обратные слэши отклоняются той же
+ * проверкой, которой пользуется клиент: префикс обязан оставаться путём на
+ * origin хоста.
  *
  * @param {unknown} value - значение конфигурации.
  * @returns {string} нормализованный префикс.
- * @throws {Error} если значение не является допустимым путём.
+ * @throws {Error} если значение не является допустимым локальным путём.
  */
 export function normalizePrefix(value) {
   const prefix = typeof value === "string" ? value.trim() : "";
   if (prefix === "") return DEFAULT_PREFIX;
   if (asPrefix(prefix) === null) {
-    throw new Error("Префикс плагина ArchiView должен начинаться с / и не заканчиваться им");
+    throw new Error(
+      "Префикс плагина ArchiView должен быть локальным путём: /путь без хвостового слэша, обратных слэшей, ? и #",
+    );
   }
   return prefix;
 }

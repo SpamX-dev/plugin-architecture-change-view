@@ -183,6 +183,15 @@ test("routes: префикс нормализуется", () => {
   assert.throws(() => normalizePrefix("archiview"), /префикс/i);
 });
 
+test("routes: сетевая ссылка и обратный слэш не принимаются как префикс", () => {
+  // `//host/path` — network-path reference: браузер оставит себе схему, но
+  // возьмёт чужой origin. `/\host/path` он разберёт точно так же.
+  for (const value of ["//outside.invalid/archiview", "/\\outside.invalid/archiview", "///archiview"]) {
+    assert.throws(() => normalizePrefix(value), /префикс/i);
+  }
+  assert.throws(() => normalizePrefix("/archi\\view"), /префикс/i);
+});
+
 test("контракт: хост передаёт клиенту тот же префикс, что зарегистрировал", () => {
   for (const configured of ["", "/custom-architecture"]) {
     const prefix = normalizePrefix(configured);
@@ -197,6 +206,24 @@ test("контракт: без внедрения и при порче знач�
   assert.equal(resolveClientPrefix({ [CLIENT_GLOBAL]: { prefix: "custom" } }), DEFAULT_PREFIX);
   assert.equal(resolveClientPrefix({ [CLIENT_GLOBAL]: { prefix: "/custom/" } }), DEFAULT_PREFIX);
   assert.equal(resolveClientPrefix({ [CLIENT_GLOBAL]: { prefix: "/custom?x" } }), DEFAULT_PREFIX);
+  for (const value of ["//outside.invalid/archiview", "/\\outside.invalid/archiview", "///archiview"]) {
+    assert.equal(resolveClientPrefix({ [CLIENT_GLOBAL]: { prefix: value } }), DEFAULT_PREFIX);
+  }
+});
+
+test("контракт: адрес страницы остаётся на origin хоста", () => {
+  const base = "https://dsh.example.invalid/chat";
+  for (const prefix of [DEFAULT_PREFIX, "/custom-architecture"]) {
+    const url = new URL(panelPageUrl(prefix, "s 1"), base);
+    assert.equal(url.origin, "https://dsh.example.invalid");
+    assert.equal(url.pathname, prefix + "/");
+    assert.equal(url.searchParams.get("session"), "s 1");
+  }
+  // Порча внедрённого значения не уводит iframe на другой origin.
+  for (const value of ["//outside.invalid/archiview", "/\\outside.invalid/archiview"]) {
+    const prefix = resolveClientPrefix({ [CLIENT_GLOBAL]: { prefix: value } });
+    assert.equal(new URL(panelPageUrl(prefix, "s1"), base).origin, "https://dsh.example.invalid");
+  }
 });
 
 test("контракт: адрес страницы несёт идентификатор чата", () => {
@@ -204,6 +231,7 @@ test("контракт: адрес страницы несёт идентифи�
   assert.equal(panelPageUrl(DEFAULT_PREFIX, ""), "/archiview/");
   assert.equal(panelPageUrl(DEFAULT_PREFIX, "s 1"), "/archiview/?session=s%201");
   assert.equal(panelPageUrl("bad", "s1"), "/archiview/?session=s1");
+  assert.equal(panelPageUrl("//outside.invalid/archiview", "s1"), "/archiview/?session=s1");
 });
 
 test("chat-root: живой чат, сохранённый заголовок и отказ", async () => {

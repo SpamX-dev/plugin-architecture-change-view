@@ -130,7 +130,22 @@ function reasonText(reason) {
   return (typeof reason === "object" && (reason.message ?? reason.description)) || labels[code] || code;
 }
 
-
+/**
+ * Актуальность собственной проверки и оценки изменения независимы: устаревшая
+ * база не отменяет совпадения проверенных current-входов, поэтому обе оценки
+ * возвращаются раздельно со своими причинами и конфликтом выводов.
+ */
+export function reviewFreshnessStates(bundle) {
+  const freshness = bundle?.freshness ?? {};
+  const state = (side, title, fallback) => {
+    const value = freshness[side];
+    return { key: side, title, status: value?.status ?? fallback,
+      conflict: Boolean(value?.conflict),
+      reasons: [...new Set((value?.reasons ?? []).map(reasonText))] };
+  };
+  return [state("current", "Проверка модуля", bundle?.stale ? "stale" : "unknown"),
+    state("change", "Оценка изменения", "unknown")];
+}
 
 /** Создаёт элементы без интерпретации HTML из контрактов, выводов или исходников. */
 function el(tag, className, text) {
@@ -430,12 +445,16 @@ export function renderContract(panel, document, options = {}) {
 
 
 
-/** Происхождение доступно по раскрытию; дата указана в общей строке. */
+/** Происхождение доступно по раскрытию; сохранённая оценка изменения не скрывается. */
 function reviewOrigin(bundle) {
   const versions = reviewVersions(bundle);
   const origin = el("details", "review-origin");
   origin.append(el("summary", "", "Версии анализа"), el("p", "", "Проверено: " + versions.current));
-  if (versions.showChange) origin.append(el("p", "", "Сравнение: " + versions.baseline));
+  if (versions.showChange) {
+    origin.append(el("p", "", "Сравнение: " + versions.baseline));
+    const verdict = bundle.report.assessment?.change?.verdict;
+    if (verdict) origin.append(el("p", "", "Оценка изменения: " + (verdicts[verdict] ?? verdict)));
+  }
   return origin;
 }
 
@@ -566,19 +585,26 @@ export function renderReview(panel, detail, mode, options = {}) {
   /** Выбор попытки сохраняет её исходные доказательства и вычисленный статус. */
   function draw(bundle) {
     overview.replaceChildren(); body.replaceChildren();
-    const report = bundle.report, freshness = bundle.freshness?.current;
+    const report = bundle.report;
     body.dataset.reviewId = report.id;
-    const status = freshness?.status ?? (bundle.stale ? "stale" : "unknown");
-    const strip = el("div", "review-state " + status);
-    strip.append(el("span", "", "Анализ · " + reviewDate(bundle)),
-      el("strong", "", { fresh: "Входы без изменений", stale: "Нужна перепроверка",
-        unknown: "Входы не сопоставлены", not_reviewed: "Нет проверки" }[status]));
-    const reasons = [...new Set((freshness?.reasons ?? []).map(reasonText))];
-    if (reasons.length) {
-      const why = el("details", "review-reasons"), list = el("ul");
-      why.append(el("summary", "", "Причины · " + reasons.length));
-      for (const reason of reasons) list.append(el("li", "", reason));
-      why.append(list); strip.append(why);
+    // Совпадение проверенных входов и актуальность оценки изменения показываются
+    // раздельно: частичное покрытие или другая база не подменяют fresh. Первый
+    // анализ без базы не имеет оценки изменения, поэтому второй статус не нужен.
+    const states = reviewFreshnessStates(bundle);
+    const visible = report.comparison?.baseline ? states : states.slice(0, 1);
+    const strip = el("div", "review-state " + visible[0].status);
+    strip.append(el("span", "", "Анализ · " + reviewDate(bundle)));
+    for (const state of visible) {
+      const group = el("div", "review-state-group " + state.status);
+      group.append(el("span", "review-state-label", state.title),
+        el("strong", "", freshnessLabel(state, { compact: true })));
+      if (state.reasons.length) {
+        const why = el("details", "review-reasons"), list = el("ul");
+        why.append(el("summary", "", "Причины · " + state.reasons.length));
+        for (const reason of state.reasons) list.append(el("li", "", reason));
+        why.append(list); group.append(why);
+      }
+      strip.append(group);
     }
     overview.append(strip);
     const checkedCoverage = reviewCoverage(bundle), coverage = el("details", "coverage-note compact-note"), list = el("ul");
@@ -622,7 +648,9 @@ export function renderReview(panel, detail, mode, options = {}) {
         for (const reference of finding.clauses) {
           const button = el("button", "finding-clause", reference.module_id + " / " + reference.id);
           button.title = clauseDescription(bundle, reference);
-          button.onclick = () => options.openClause?.(reference);
+          // Попытка передаётся вместе со ссылкой: сохранённый пункт и сторона
+          // снимка известны только её неизменяемому пакету.
+          button.onclick = () => options.openClause?.(reference, bundle);
           button.disabled = !options.openClause; clauses.append(button);
         }
         card.append(clauses, evidenceLinks(bundle, finding.evidence));
@@ -661,10 +689,27 @@ export function renderReview(panel, detail, mode, options = {}) {
   }
 }
 
+/**
+ * Пункт разрешается по сохранённому контракту выбранной попытки и указанной в
+ * ссылке стороне снимка. Активное сравнение могло уже не содержать этот пункт,
+ * поэтому сохранённый текст остаётся доступен отдельно от текущего документа.
+ */
+export function savedClauseText(bundle, ref) {
+  const items = ref?.snapshot ? bundle?.contracts?.[ref.snapshot] : null;
+  if (!Array.isArray(items)) return null;
+  const saved = items.find((item) => item.reference?.module_id === ref.module_id &&
+    item.reference?.section === ref.section && item.reference?.id === ref.id);
+  return typeof saved?.text === "string" && saved.text.trim() ? saved.text : null;
+}
+
+/** Подпись раздела нужна переходам и историческим карточкам, а не только дифу. */
+export function clauseSectionLabel(section) {
+  return sections[section] ?? section;
+}
+
 /** Пункт разрешается по сохранённому контракту с явным владельцем. */
 function clauseDescription(bundle, ref) {
-  return bundle.contracts[ref.snapshot].find((item) => item.reference.module_id === ref.module_id &&
-    item.reference.section === ref.section && item.reference.id === ref.id)?.text ?? "Пункт вне сохранённого контракта";
+  return savedClauseText(bundle, ref) ?? "Пункт вне сохранённого контракта";
 }
 
 /** В собственном чеклисте достаточно номера и текста. */

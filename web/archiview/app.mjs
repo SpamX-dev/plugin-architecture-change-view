@@ -4,7 +4,7 @@
  * Сравнение остаётся привязанным к неизменяемому view, включая удалённые модули.
  */
 import { renderContract, renderContractHeading, renderReview, freshnessLabel,
-  findingBug, moduleFindingCount, treeFindingCounts } from "./review.mjs";
+  findingBug, moduleFindingCount, treeFindingCounts, savedClauseText, clauseSectionLabel } from "./review.mjs";
 import { connectPanel } from "./panel-bridge.mjs";
 import { createArchiViewClient } from "./client.mjs";
 
@@ -400,10 +400,17 @@ function renderTree() {
       row.append(count);
     }
     if (module.reviewStatus) {
-      const status = module.reviewStatus.subtree.current;
-      const review = el("span", "review-marker " + status.status,
-        status.conflict || status.current_violation ? "!" : status.status === "fresh" ? "◉" : "◷");
-      review.title = "Поддерево: " + freshnessLabel(status); row.append(review);
+      // Проверка и оценка изменения независимы: значок предупреждает, если
+      // перепроверки требует хотя бы одна из двух оценок поддерева.
+      const subtree = module.reviewStatus.subtree;
+      const values = [subtree.current, subtree.change].filter(Boolean);
+      const tone = values.find((value) => value.status === "stale") ? "stale" :
+        values.find((value) => value.status !== "fresh")?.status ?? "fresh";
+      const review = el("span", "review-marker " + tone,
+        values.some((value) => value.conflict || value.current_violation) ? "!" : tone === "fresh" ? "◉" : "◷");
+      review.title = "Поддерево · проверка: " + freshnessLabel(subtree.current, { compact: true }) +
+        " · оценка изменения: " + freshnessLabel(subtree.change, { compact: true });
+      row.append(review);
     }
     row.append(badge(module.status, true, module.descendantChanges));
     row.addEventListener("click", (event) => {
@@ -469,9 +476,14 @@ function renderHeading(module) {
     meta.append(item);
   }
   byId("copy-path").disabled = false;
-  byId("review-status").textContent = module.reviewStatus ?
-    "Модуль: " + freshnessLabel(module.reviewStatus.self.current, { compact: true }) + " · Поддерево: " +
-      freshnessLabel(module.reviewStatus.subtree.current, { compact: true }) : "Содержательной проверки нет";
+  // Собственная проверка и оценка изменения, затем то же для поддерева.
+  // Статусы объединяются только подписью: актуальность входов не подменяется.
+  const reviewStatuses = module.reviewStatus ? "Модуль · проверка: " +
+    freshnessLabel(module.reviewStatus.self.current, { compact: true }) + " · оценка изменения: " +
+    freshnessLabel(module.reviewStatus.self.change, { compact: true }) + " · Поддерево · проверка: " +
+    freshnessLabel(module.reviewStatus.subtree.current, { compact: true }) + " · оценка изменения: " +
+    freshnessLabel(module.reviewStatus.subtree.change, { compact: true }) : "Содержательной проверки нет";
+  byId("review-status").textContent = reviewStatuses;
   byId("files-count").textContent = module.filesChanged;
   byId("files-count").hidden = module.filesChanged === 0;
   const findings = module.review?.findings ?? 0;
@@ -596,11 +608,23 @@ function openDocumentDiff(detail) {
   dialog.showModal();
 }
 
-/** Переходит из замечания к конкретному пункту контракта его владельца. */
-async function openReviewClause(reference) {
+/**
+ * Переходит из замечания к конкретному пункту контракта его владельца. Сохранённая
+ * попытка и сторона снимка задают ожидаемый пункт: если активное сравнение его уже
+ * не содержит, вместо молчаливого перехода показывается явная историческая карточка.
+ */
+async function openReviewClause(reference, review) {
+  byId("document-panel").querySelectorAll("[data-historical-clause]").forEach((node) => node.remove());
   const module = state.view.modules.find((item) => item.moduleId === reference.module_id);
-  if (!module) return;
   state.tab = "document";
+  if (!module) {
+    // Владельца нет в сравнении: документ остаётся прежним, но карточка
+    // сохранённого пункта явно объясняет причину перехода.
+    renderPanel();
+    renderHistoricalClause(reference, review,
+      "Модуль не входит в активное сравнение, поэтому показан только сохранённый пункт проверки.");
+    return;
+  }
   await selectModule(module.key);
   const row = [...document.querySelectorAll("[data-contract-clause]")].find((item) =>
     item.dataset.clauseSection === reference.section && item.dataset.clauseId === reference.id);
@@ -609,7 +633,36 @@ async function openReviewClause(reference) {
     row.classList.add("clause-target");
     row.tabIndex = -1;
     row.focus({ preventScroll: true });
+    return;
   }
+  renderHistoricalClause(reference, review,
+    "В активном сравнении этого пункта нет: контракт изменился после сохранённой проверки.");
+}
+
+/**
+ * Показывает сохранённую версию пункта, когда текущий контракт его не содержит.
+ * Текст и сторона снимка берутся из неизменяемого пакета проверки, а не из
+ * рабочего документа; карточка ставится перед контрактом и получает фокус.
+ */
+function renderHistoricalClause(reference, review, explanation) {
+  const panel = byId("document-panel");
+  const saved = savedClauseText(review, reference);
+  const created = review?.report?.analysis?.created_at;
+  const card = el("div", "notice missing-notice historical-clause");
+  card.dataset.historicalClause = "";
+  card.append(el("strong", "", "Пункт сохранённой проверки · " +
+    reference.module_id + " / " + reference.id));
+  const origin = [clauseSectionLabel(reference.section),
+    reference.snapshot === "baseline" ? "версия для сравнения" : "проверенная версия",
+    created && timelineDate(created) ? "анализ от " + timelineDate(created) : null].filter(Boolean).join(" · ");
+  card.append(el("p", "historical-clause-origin", origin),
+    saved ? el("p", "historical-clause-text", saved) :
+      el("p", "historical-clause-missing", "Пункт не входит в сохранённый контракт этой проверки."),
+    el("p", "historical-clause-note", explanation));
+  panel.prepend(card);
+  card.scrollIntoView({ block: "center" });
+  card.tabIndex = -1;
+  card.focus({ preventScroll: true });
 }
 
 /** Жук открывает конкретное замечание той попытки, из которой он был показан. */

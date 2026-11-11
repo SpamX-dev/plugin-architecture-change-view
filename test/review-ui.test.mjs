@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ownClauseGroups, reviewVersions, observedVersionGroups, contractChanges, contractHeadingChange, evidenceLabel,
   reviewFindingItems, freshnessLabel, clauseFindingTargets, moduleFindingCount, treeFindingCounts,
-  findingFixPrompt } from "../web/archiview/review.mjs";
+  findingFixPrompt, savedClauseText, clauseSectionLabel, reviewFreshnessStates } from "../web/archiview/review.mjs";
 
 /** Фикстура старого отчёта содержит локальные, родительские и исторические проверки. */
 function historicalReview() {
@@ -179,6 +179,45 @@ test("a finding replaces the duplicate assessment without losing its owning clau
   assert.equal(freshnessLabel({ status: "fresh", current_violation: true }), "проверенные входы не изменились");
 });
 
+test("current inputs and the change assessment keep independent freshness, reasons and conflict", () => {
+  const { bundle } = clauseReviewFixture();
+  bundle.freshness = {
+    current: { status: "fresh", reasons: [], coverage: { status: "complete", limitations: [] } },
+    change: { status: "stale", reasons: [{ code: "baseline_identity" }, { code: "own_contract" }],
+      coverage: { status: "partial", limitations: [] } },
+  };
+  const original = structuredClone(bundle);
+  const [current, change] = reviewFreshnessStates(bundle);
+  assert.equal(current.title, "Проверка модуля");
+  assert.equal(current.status, "fresh");
+  assert.equal(current.conflict, false);
+  assert.deepEqual(current.reasons, []);
+  assert.equal(change.title, "Оценка изменения");
+  assert.equal(change.status, "stale");
+  assert.deepEqual(change.reasons, ["Изменилась база сравнения", "Изменился собственный контракт"]);
+  // Совпадение проверенных входов не заменяет устаревшую оценку изменения.
+  assert.equal(freshnessLabel(current, { compact: true }), "входы без изменений");
+  assert.equal(freshnessLabel(change, { compact: true }), "требует перепроверки");
+  change.conflict = true;
+  assert.equal(freshnessLabel(change, { compact: true }), "расхождение выводов");
+  assert.deepEqual(bundle, original);
+});
+
+test("a review without saved inputs does not invent a matching change assessment", () => {
+  const { bundle } = clauseReviewFixture();
+  delete bundle.freshness;
+  bundle.stale = true;
+  const [current, change] = reviewFreshnessStates(bundle);
+  assert.equal(current.status, "stale");
+  assert.equal(change.status, "unknown");
+  bundle.freshness = { current: { status: "stale", reasons: [{ code: "own_code" }, { code: "own_code" }] } };
+  assert.deepEqual(reviewFreshnessStates(bundle)[0].reasons, ["Изменились собственные файлы"]);
+  assert.deepEqual(reviewFreshnessStates({}), [
+    { key: "current", title: "Проверка модуля", status: "unknown", conflict: false, reasons: [] },
+    { key: "change", title: "Оценка изменения", status: "unknown", conflict: false, reasons: [] },
+  ]);
+});
+
 test("an old violation without a detailed finding remains one explicit remark", () => {
   const bundle = observedReview();
   bundle.report.findings = [];
@@ -283,6 +322,39 @@ function findingTree() {
   return [[".", 0], ["src", 0], ["src/domain", 2], ["src/domain/leaf", 1], ["other", 0]]
     .map(([directory, activeFindings]) => ({ directory, key: directory, status: "unchanged", review: { activeFindings } }));
 }
+
+test("a historical clause keeps the saved version of its own snapshot side", () => {
+  const { bundle } = clauseReviewFixture();
+  bundle.contracts.baseline = [{ reference: { snapshot: "baseline", module_id: "child",
+    section: "responsibilities", id: "R4" }, text: "Прежняя обязанность." }];
+  bundle.contracts.current.push({ reference: { snapshot: "current", module_id: "child",
+    section: "responsibilities", id: "R4" }, text: "Текущая обязанность." });
+  const original = structuredClone(bundle.contracts);
+  // Пункт R4 отсутствует в активном контракте модуля, но сохранён в обеих сторонах попытки.
+  assert.equal(savedClauseText(bundle, { snapshot: "baseline", module_id: "child",
+    section: "responsibilities", id: "R4" }), "Прежняя обязанность.");
+  assert.equal(savedClauseText(bundle, { snapshot: "current", module_id: "child",
+    section: "responsibilities", id: "R4" }), "Текущая обязанность.");
+  // Пункт другой стороны и чужой владелец не подменяют сохранённую версию.
+  assert.equal(savedClauseText(bundle, { snapshot: "current", module_id: "parent",
+    section: "responsibilities", id: "R4" }), null);
+  assert.equal(savedClauseText(bundle, { snapshot: "baseline", module_id: "child",
+    section: "responsibilities", id: "R1" }), null);
+  assert.equal(savedClauseText(bundle, { snapshot: "current", module_id: "child",
+    section: "invariants", id: "R4" }), null);
+  assert.equal(savedClauseText(bundle, { snapshot: "unknown", module_id: "child",
+    section: "responsibilities", id: "R4" }), null);
+  assert.equal(savedClauseText(null, { snapshot: "current", module_id: "child",
+    section: "responsibilities", id: "R4" }), null);
+  assert.deepEqual(bundle.contracts, original, "saved contracts are not rewritten by navigation");
+});
+
+test("clause navigation labels sections in user terms", () => {
+  assert.equal(clauseSectionLabel("responsibilities"), "Ответственность");
+  assert.equal(clauseSectionLabel("boundaries"), "Границы");
+  assert.equal(clauseSectionLabel("invariants"), "Инварианты");
+  assert.equal(clauseSectionLabel("extensions"), "extensions");
+});
 
 test("finding bugs move up through collapsed ancestors and return to their modules on expansion", () => {
   const modules = findingTree();

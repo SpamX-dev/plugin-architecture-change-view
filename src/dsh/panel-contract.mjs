@@ -21,14 +21,35 @@ export const DEFAULT_PREFIX = "/archiview";
 export const CLIENT_GLOBAL = "__DSH_ARCHIVIEW__";
 
 /**
+ * Начало локального пути: ровно один прямой слэш.
+ *
+ * Второй символ не может быть ещё одним слэшем или обратным слэшем. `//host/path`
+ * — сетевая ссылка (network-path reference): браузер сохраняет схему документа,
+ * но берёт чужой origin. `/\host/path` приводится к той же ссылке при разборе
+ * URL, потому что для специальных схем обратный слэш считается разделителем.
+ */
+const LOCAL_PATH_START = /^\/(?![/\\])/;
+
+/**
+ * Символы, которых не может быть в локальном пути маршрута: пробельные,
+ * обратный слэш (меняет разбор URL), строка запроса и фрагмент.
+ */
+const FORBIDDEN_IN_PATH = /[\s\\?#]/;
+
+/**
  * Проверяет префикс, пришедший из конфигурации или документа.
+ *
+ * Допускается только локальный абсолютный путь. Сетевые ссылки и обратные
+ * слэши отклоняются: иначе адрес iframe увёл бы вкладку на чужой origin вместо
+ * маршрута панели хоста (см. `src/dsh/client/body.mjs`). Тот же префикс служит
+ * путём регистрации маршрутов, поэтому проверка общая для обеих половин.
  *
  * @param {unknown} value - проверяемое значение.
  * @returns {string | null} префикс без хвостового слэша либо `null`.
  */
 export function asPrefix(value) {
-  if (typeof value !== "string" || !value.startsWith("/") || value.endsWith("/")) return null;
-  if (value.includes("?") || value.includes("#") || /\s/.test(value)) return null;
+  if (typeof value !== "string" || value.endsWith("/")) return null;
+  if (!LOCAL_PATH_START.test(value) || FORBIDDEN_IN_PATH.test(value)) return null;
   return value;
 }
 
