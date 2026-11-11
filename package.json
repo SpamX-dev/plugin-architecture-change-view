@@ -34,10 +34,11 @@
     "node": ">=22"
   },
   "bin": {
-    "plugin-architecture-change-view": "src/server.mjs",
-    "archiview": "src/cli.mjs"
+    "plugin-architecture-change-view": "dist/codex/src/server.mjs",
+    "archiview": "dist/dsh/src/cli.mjs"
   },
   "files": [
+    "dist/codex",
     "dist/dsh",
     "src",
     "skills",
@@ -51,14 +52,23 @@
     "README.md"
   ],
   "scripts": {
-    "start": "node src/server.mjs",
-    "build:plugin": "node scripts/build-plugin.mjs",
-    "build:portable": "node scripts/build-portable.mjs",
-    "install:codex": "node scripts/install-plugin.mjs",
-    "build:dsh": "node scripts/build-dsh.mjs",
-    "pretest": "npm run build:plugin",
-    "archiview": "node src/archiview/cli.mjs",
-    "test": "node --test"
+    "start": "node --import tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "build:web": "node --import tsx scripts/build-web.ts",
+    "build:plugin": "node --import tsx scripts/build-plugin.ts",
+    "build:dsh": "node --import tsx scripts/build-dsh.ts",
+    "build": "npm run typecheck && node --import tsx scripts/build-plugin.ts && node --import tsx scripts/build-dsh.ts",
+    "build:portable": "node --import tsx scripts/build-portable.ts",
+    "install:codex": "node --import tsx scripts/install-plugin.ts",
+    "pretest": "npm run build",
+    "archiview": "node --import tsx src/cli.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "test:web": "node --import tsx scripts/test-web.ts",
+    "prebuild:web": "npm run typecheck",
+    "prebuild:plugin": "npm run typecheck",
+    "prebuild:dsh": "npm run typecheck",
+    "prebuild:portable": "npm run typecheck",
+    "pretest:web": "npm run build:web"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^2.0.4",
@@ -67,7 +77,16 @@
     "yaml": "^2.8.2"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "@deepseek-ai/cordis": "~4.0.4",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
+    "@deepseek-ai/schemastery": "~3.18.4",
+    "@types/diff": "^7.0.2",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.65.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",

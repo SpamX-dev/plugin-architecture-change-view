@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: dsh-client-panel
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 7d3c11bf8bfcc83137ff6b57fcb08dd8dcf1eddf0c6389012b7d042b9f927597
+check_hash: bb7eb5ca9ea191b09b207ab7d9b870d0470a06caf7c70297e14142a7364d5c1b
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,382 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 6847df523576dacb534e624b64bc1f91f23053f6
+      id: 9ab002ef4338d2eee779929426d26586387525e0
     state:
       exists: true
       directory: src/dsh/client
-      self_digest: sha256:9078fc7c84810e5d1db59e8ff2993b4200ec263c3d64b0e75cced7239a6740a8
-      subtree_digest: sha256:4aefd4e8eb69947960f88564403f0162cebcdbe670fabd7c8b873ad1054915c7
+      self_digest: sha256:1ab92b6f4e283107b4c657abbe6fa75c1aff5f1342f1dff4d0afa247601bbb19
+      subtree_digest: sha256:2315a6b32b9c773aae10f0183e498767deda7382df674675a632f34158789b5e
   current:
     exists: true
     directory: src/dsh/client
-    self_digest: sha256:1ab92b6f4e283107b4c657abbe6fa75c1aff5f1342f1dff4d0afa247601bbb19
-    subtree_digest: sha256:2315a6b32b9c773aae10f0183e498767deda7382df674675a632f34158789b5e
+    self_digest: sha256:a51aa56aac1c76d18014c95a0a788c8a07a5180e5f3c42b99d9c66415f272101
+    subtree_digest: sha256:24a5cc1972b72c7771d95c9f9caef7af63a3cb209a19e9fb0b2a9c246f1dffa8
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
-  module_id: dsh-client-panel
-  directory: src/dsh/client
-  parent_id: dsh-adapter
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: dsh-client-panel
-    directory: src/dsh/client
-    own_files:
-      - path: src/dsh/client/body.mjs
-        digest: sha256:bcffdc992e5ada1cde9ecf03c68ddd3524d15cdd85f94e57c13731e65ccaee90
-        normalization: text-lf/v1
-      - path: src/dsh/client/index.mjs
-        digest: sha256:eafa1a657d6c4ed7726ac992231685c5996d9c5b4b4f34aeaede2117e6e47f77
-        normalization: text-lf/v1
-      - path: src/dsh/client/prompt.mjs
-        digest: sha256:80ea5f34801aa0cb56702179e31973c5df513bfe680a5bc9ee975af086f78363
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: dsh-client-panel
-      title: Вкладка ArchiView в веб-клиенте dsh
-      kind: module
-      purpose: Регистрировать в правой панели веб-клиента dsh страницу ArchiView и
-        показывать её во вкладке, не дублируя интерфейс и операции просмотра.
-      responsibilities:
-        R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
-          записью в справочнике панели.
-        R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
-          панели.
-        R3: Показывать страницу по адресу, который сообщает хост, передавать хосту
-          идентификатор чата вкладки и сохранять транспорт и разметку страницы
-          внутри iframe.
-        R4: Передавать явные поручения анализа и исправления замечания из панели в чат
-          вкладки по сообщению моста, не создавая ходов при обычной навигации.
-      boundaries:
-        B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
-        B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции
-          повторно.
-        B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет
-          корень проекта и не задаёт маршрут собственной константой. Без
-          внедрения действует стандартный префикс, совпадающий с настройкой
-          хоста по умолчанию.
-      invariants:
-        I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
-        I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
-          скрытым обходом или прямым чтением проекта.
-        I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
-          вкладок.
-        I4: Мост принимает только сообщения родительского окна с тем же origin и только
-          от собственного iframe; отказ передачи виден панели, а не выдаётся за
-          успех.
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
-          адаптерам. Извлечение символов, разрешение зависимостей и индексация
-          AST принадлежат ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено настроенным корнем проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
-          текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Прикладные операции находятся в application; HTTP и CLI в archiview
-          являются адаптерами, отображение принадлежит web.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B3
-        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
-          от модели инструменты UI без HTTP-сервера.
-      - module_id: architecture-core
-        section: boundaries
-        id: B4
-        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
-          скилл хоста, получая прикладные операции из application.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-      - module_id: dsh-adapter
-        section: boundaries
-        id: B1
-        text: Прикладные операции принадлежат application; адаптер не дублирует
-          сравнение, снимки, проверки и анализ.
-      - module_id: dsh-adapter
-        section: boundaries
-        id: B2
-        text: Отображение модулей принадлежит web, а браузерная регистрация вкладки —
-          client.
-      - module_id: dsh-adapter
-        section: boundaries
-        id: B3
-        text: MCP-сервер и панель Codex принадлежат codex; этот модуль их не импортирует
-          и не заменяет.
-      - module_id: dsh-adapter
-        section: boundaries
-        id: B4
-        text: Генерация проекта, Git-история и хранилище отчётов остаются в существующих
-          модулях ядра; адаптер только передаёт им корень и аргументы запроса.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I1
-        text: Маршрут панели не запускает модель и не возвращает данные просмотра в
-          контекст агента.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I2
-        text: До проверки политики соединения запрос не читает проект и не создаёт
-          сессию.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I3
-        text: Корень проекта берётся из конфигурации плагина или рабочего каталога
-          процесса и никогда из URL запроса.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I4
-        text: Публикация скилла не создаёт второго источника текста — используется файл
-          пакета.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I5
-        text: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий)
-          читаются только при наличии и не блокируют активацию плагина.
-  technical_digest: sha256:9078fc7c84810e5d1db59e8ff2993b4200ec263c3d64b0e75cced7239a6740a8
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: dsh-client-panel
-    directory: src/dsh/client
-    own_files:
-      - path: src/dsh/client/body.mjs
-        digest: sha256:bcffdc992e5ada1cde9ecf03c68ddd3524d15cdd85f94e57c13731e65ccaee90
-        normalization: text-lf/v1
-      - path: src/dsh/client/index.mjs
-        digest: sha256:eafa1a657d6c4ed7726ac992231685c5996d9c5b4b4f34aeaede2117e6e47f77
-        normalization: text-lf/v1
-      - path: src/dsh/client/prompt.mjs
-        digest: sha256:80ea5f34801aa0cb56702179e31973c5df513bfe680a5bc9ee975af086f78363
-        normalization: text-lf/v1
-    contract:
-      id: dsh-client-panel
-      kind: module
-      purpose: Регистрировать в правой панели веб-клиента dsh страницу ArchiView и
-        показывать её во вкладке, не дублируя интерфейс и операции просмотра.
-      responsibilities:
-        R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
-          записью в справочнике панели.
-        R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
-          панели.
-        R3: Показывать страницу по адресу, который сообщает хост, передавать хосту
-          идентификатор чата вкладки и сохранять транспорт и разметку страницы
-          внутри iframe.
-        R4: Передавать явные поручения анализа и исправления замечания из панели в чат
-          вкладки по сообщению моста, не создавая ходов при обычной навигации.
-      boundaries:
-        B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
-        B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции
-          повторно.
-        B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет
-          корень проекта и не задаёт маршрут собственной константой. Без
-          внедрения действует стандартный префикс, совпадающий с настройкой
-          хоста по умолчанию.
-      invariants:
-        I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
-        I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
-          скрытым обходом или прямым чтением проекта.
-        I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
-          вкладок.
-        I4: Мост принимает только сообщения родительского окна с тем же origin и только
-          от собственного iframe; отказ передачи виден панели, а не выдаётся за
-          успех.
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
-          адаптерам. Извлечение символов, разрешение зависимостей и индексация
-          AST принадлежат ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено настроенным корнем проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
-          текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Прикладные операции находятся в application; HTTP и CLI в archiview
-          являются адаптерами, отображение принадлежит web.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B3
-        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
-          от модели инструменты UI без HTTP-сервера.
-      - module_id: architecture-core
-        section: boundaries
-        id: B4
-        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
-          скилл хоста, получая прикладные операции из application.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-      - module_id: dsh-adapter
-        section: boundaries
-        id: B1
-        text: Прикладные операции принадлежат application; адаптер не дублирует
-          сравнение, снимки, проверки и анализ.
-      - module_id: dsh-adapter
-        section: boundaries
-        id: B2
-        text: Отображение модулей принадлежит web, а браузерная регистрация вкладки —
-          client.
-      - module_id: dsh-adapter
-        section: boundaries
-        id: B3
-        text: MCP-сервер и панель Codex принадлежат codex; этот модуль их не импортирует
-          и не заменяет.
-      - module_id: dsh-adapter
-        section: boundaries
-        id: B4
-        text: Генерация проекта, Git-история и хранилище отчётов остаются в существующих
-          модулях ядра; адаптер только передаёт им корень и аргументы запроса.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I1
-        text: Маршрут панели не запускает модель и не возвращает данные просмотра в
-          контекст агента.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I2
-        text: До проверки политики соединения запрос не читает проект и не создаёт
-          сессию.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I3
-        text: Корень проекта берётся из конфигурации плагина или рабочего каталога
-          процесса и никогда из URL запроса.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I4
-        text: Публикация скилла не создаёт второго источника текста — используется файл
-          пакета.
-      - module_id: dsh-adapter
-        section: invariants
-        id: I5
-        text: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий)
-          читаются только при наличии и не блокируют активацию плагина.
-    children: []
-  self_digest: sha256:783fe14c7bc5db915d987f9dd45c3b15fbc2a52b159e18b85952b62ef60fddbc
-  subtree:
-    self: sha256:9078fc7c84810e5d1db59e8ff2993b4200ec263c3d64b0e75cced7239a6740a8
-    children: []
-  subtree_digest: sha256:4aefd4e8eb69947960f88564403f0162cebcdbe670fabd7c8b873ad1054915c7
-  semantic_subtree:
-    self: sha256:783fe14c7bc5db915d987f9dd45c3b15fbc2a52b159e18b85952b62ef60fddbc
-    children: []
-  semantic_subtree_digest: sha256:649d0d4e840ef8b0c8f6aac161f9f2a06054b50301e3e3bdd570cb15c076a950
-current:
   module_id: dsh-client-panel
   directory: src/dsh/client
   parent_id: dsh-adapter
@@ -745,12 +385,388 @@ current:
     self: sha256:ac8fbf4d0dd5a52117438092e9a307f1877e711975d1551ffb2155600917b459
     children: []
   semantic_subtree_digest: sha256:66b9985241e8d3717b5398d7af9ddf6ba62dedb84596d3945f448f10607f4e08
+current:
+  module_id: dsh-client-panel
+  directory: src/dsh/client
+  parent_id: dsh-adapter
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: dsh-client-panel
+    directory: src/dsh/client
+    own_files:
+      - path: src/dsh/client/body.ts
+        digest: sha256:c894f0a3488e45e02852eb6660ac59d0e8f6612ca82249330a7a167574854a03
+        normalization: text-lf/v1
+      - path: src/dsh/client/index.ts
+        digest: sha256:7283125b3d3aa9f2493f50c7de0fdb2a984a6b14dbd8223c710b54d58a7e5de3
+        normalization: text-lf/v1
+      - path: src/dsh/client/prompt.ts
+        digest: sha256:683a277c49f85be181aa4d778ab56f2eb0dfd33caeee5a7657cce95ff56aa064
+        normalization: text-lf/v1
+      - path: src/dsh/client/types.ts
+        digest: sha256:87dd714543b9cea97879f025a0e42fea34fb16203eb34f68565b03ecf35ab89c
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: dsh-client-panel
+      title: Вкладка ArchiView в веб-клиенте dsh
+      kind: module
+      purpose: Регистрировать в правой панели веб-клиента dsh страницу ArchiView и
+        показывать её во вкладке, не дублируя интерфейс и операции просмотра.
+      responsibilities:
+        R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
+          записью в справочнике панели.
+        R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
+          панели.
+        R3: Показывать страницу по адресу, который сообщает хост, передавать хосту
+          идентификатор чата вкладки и сохранять транспорт и разметку страницы
+          внутри iframe.
+        R4: Передавать явные поручения анализа и исправления замечания из панели в чат
+          вкладки по сообщению моста, не создавая ходов при обычной навигации.
+      boundaries:
+        B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+        B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции
+          повторно.
+        B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет
+          корень проекта и не задаёт маршрут собственной константой. Без
+          внедрения действует стандартный префикс, совпадающий с настройкой
+          хоста по умолчанию.
+      invariants:
+        I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+        I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
+          скрытым обходом или прямым чтением проекта.
+        I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
+          вкладок.
+        I4: Тело вкладки принимает сообщения только от собственного iframe с тем же
+          origin; отказ передачи виден панели, а не выдаётся за успех.
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
+          адаптерам. Извлечение символов, разрешение зависимостей и индексация
+          AST принадлежат ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено настроенным корнем проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-core
+        section: boundaries
+        id: B1
+        text: Прикладные операции находятся в application; HTTP и CLI в archiview
+          являются адаптерами, отображение принадлежит web.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: Семантический вывод ответственности выполняет агент или внешний
+          анализатор. Наличие контракта не доказывает его выполнения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B3
+        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
+          от модели инструменты UI без HTTP-сервера.
+      - module_id: architecture-core
+        section: boundaries
+        id: B4
+        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
+          скилл хоста, получая прикладные операции из application.
+      - module_id: architecture-core
+        section: invariants
+        id: I1
+        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+          сборка и папки .archiview не расширяют анализ. Запись данных
+          допускается в .archiview корня проекта либо явно выбранном внешнем
+          хранилище; ссылки не меняют эту область.
+      - module_id: architecture-core
+        section: invariants
+        id: I2
+        text: Неполнота обхода и доказательств сообщается явно.
+      - module_id: architecture-core
+        section: invariants
+        id: I3
+        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
+          ответственность.
+      - module_id: architecture-core
+        section: invariants
+        id: I4
+        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+          файлах.
+      - module_id: architecture-core
+        section: invariants
+        id: I5
+        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
+          требует отдельного анализа.
+      - module_id: dsh-adapter
+        section: boundaries
+        id: B1
+        text: Прикладные операции принадлежат application; адаптер не дублирует
+          сравнение, снимки, проверки и анализ.
+      - module_id: dsh-adapter
+        section: boundaries
+        id: B2
+        text: Отображение модулей принадлежит web, а браузерная регистрация вкладки —
+          client.
+      - module_id: dsh-adapter
+        section: boundaries
+        id: B3
+        text: MCP-сервер и панель Codex принадлежат codex; этот модуль их не импортирует
+          и не заменяет.
+      - module_id: dsh-adapter
+        section: boundaries
+        id: B4
+        text: Генерация проекта, Git-история и хранилище отчётов остаются в существующих
+          модулях ядра; адаптер только передаёт им корень и аргументы запроса.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I1
+        text: Маршрут панели не запускает модель и не возвращает данные просмотра в
+          контекст агента.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I2
+        text: До проверки политики соединения запрос не читает проект и не создаёт
+          сессию.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I3
+        text: Корень проекта берётся из конфигурации плагина или рабочего каталога
+          процесса и никогда из URL запроса.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I4
+        text: Публикация скилла не создаёт второго источника текста — используется файл
+          пакета.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I5
+        text: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий)
+          читаются только при наличии и не блокируют активацию плагина.
+  technical_digest: sha256:a51aa56aac1c76d18014c95a0a788c8a07a5180e5f3c42b99d9c66415f272101
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: dsh-client-panel
+    directory: src/dsh/client
+    own_files:
+      - path: src/dsh/client/body.ts
+        digest: sha256:c894f0a3488e45e02852eb6660ac59d0e8f6612ca82249330a7a167574854a03
+        normalization: text-lf/v1
+      - path: src/dsh/client/index.ts
+        digest: sha256:7283125b3d3aa9f2493f50c7de0fdb2a984a6b14dbd8223c710b54d58a7e5de3
+        normalization: text-lf/v1
+      - path: src/dsh/client/prompt.ts
+        digest: sha256:683a277c49f85be181aa4d778ab56f2eb0dfd33caeee5a7657cce95ff56aa064
+        normalization: text-lf/v1
+      - path: src/dsh/client/types.ts
+        digest: sha256:87dd714543b9cea97879f025a0e42fea34fb16203eb34f68565b03ecf35ab89c
+        normalization: text-lf/v1
+    contract:
+      id: dsh-client-panel
+      kind: module
+      purpose: Регистрировать в правой панели веб-клиента dsh страницу ArchiView и
+        показывать её во вкладке, не дублируя интерфейс и операции просмотра.
+      responsibilities:
+        R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
+          записью в справочнике панели.
+        R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
+          панели.
+        R3: Показывать страницу по адресу, который сообщает хост, передавать хосту
+          идентификатор чата вкладки и сохранять транспорт и разметку страницы
+          внутри iframe.
+        R4: Передавать явные поручения анализа и исправления замечания из панели в чат
+          вкладки по сообщению моста, не создавая ходов при обычной навигации.
+      boundaries:
+        B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+        B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции
+          повторно.
+        B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет
+          корень проекта и не задаёт маршрут собственной константой. Без
+          внедрения действует стандартный префикс, совпадающий с настройкой
+          хоста по умолчанию.
+      invariants:
+        I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+        I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
+          скрытым обходом или прямым чтением проекта.
+        I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
+          вкладок.
+        I4: Тело вкладки принимает сообщения только от собственного iframe с тем же
+          origin; отказ передачи виден панели, а не выдаётся за успех.
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
+          адаптерам. Извлечение символов, разрешение зависимостей и индексация
+          AST принадлежат ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено настроенным корнем проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-core
+        section: boundaries
+        id: B1
+        text: Прикладные операции находятся в application; HTTP и CLI в archiview
+          являются адаптерами, отображение принадлежит web.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: Семантический вывод ответственности выполняет агент или внешний
+          анализатор. Наличие контракта не доказывает его выполнения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B3
+        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
+          от модели инструменты UI без HTTP-сервера.
+      - module_id: architecture-core
+        section: boundaries
+        id: B4
+        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
+          скилл хоста, получая прикладные операции из application.
+      - module_id: architecture-core
+        section: invariants
+        id: I1
+        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+          сборка и папки .archiview не расширяют анализ. Запись данных
+          допускается в .archiview корня проекта либо явно выбранном внешнем
+          хранилище; ссылки не меняют эту область.
+      - module_id: architecture-core
+        section: invariants
+        id: I2
+        text: Неполнота обхода и доказательств сообщается явно.
+      - module_id: architecture-core
+        section: invariants
+        id: I3
+        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
+          ответственность.
+      - module_id: architecture-core
+        section: invariants
+        id: I4
+        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+          файлах.
+      - module_id: architecture-core
+        section: invariants
+        id: I5
+        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
+          требует отдельного анализа.
+      - module_id: dsh-adapter
+        section: boundaries
+        id: B1
+        text: Прикладные операции принадлежат application; адаптер не дублирует
+          сравнение, снимки, проверки и анализ.
+      - module_id: dsh-adapter
+        section: boundaries
+        id: B2
+        text: Отображение модулей принадлежит web, а браузерная регистрация вкладки —
+          client.
+      - module_id: dsh-adapter
+        section: boundaries
+        id: B3
+        text: MCP-сервер и панель Codex принадлежат codex; этот модуль их не импортирует
+          и не заменяет.
+      - module_id: dsh-adapter
+        section: boundaries
+        id: B4
+        text: Генерация проекта, Git-история и хранилище отчётов остаются в существующих
+          модулях ядра; адаптер только передаёт им корень и аргументы запроса.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I1
+        text: Маршрут панели не запускает модель и не возвращает данные просмотра в
+          контекст агента.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I2
+        text: До проверки политики соединения запрос не читает проект и не создаёт
+          сессию.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I3
+        text: Корень проекта берётся из конфигурации плагина или рабочего каталога
+          процесса и никогда из URL запроса.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I4
+        text: Публикация скилла не создаёт второго источника текста — используется файл
+          пакета.
+      - module_id: dsh-adapter
+        section: invariants
+        id: I5
+        text: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий)
+          читаются только при наличии и не блокируют активацию плагина.
+    children: []
+  self_digest: sha256:a1bd2ec18ab97770b4d5c8572f3bbe83c88209acd026410aa4e74cf72c55f682
+  subtree:
+    self: sha256:a51aa56aac1c76d18014c95a0a788c8a07a5180e5f3c42b99d9c66415f272101
+    children: []
+  subtree_digest: sha256:24a5cc1972b72c7771d95c9f9caef7af63a3cb209a19e9fb0b2a9c246f1dffa8
+  semantic_subtree:
+    self: sha256:a1bd2ec18ab97770b4d5c8572f3bbe83c88209acd026410aa4e74cf72c55f682
+    children: []
+  semantic_subtree_digest: sha256:2b97241d74fc0e2be208e22cabc221b46abb92d53bff278e0f9e54b407cb98a5
 change:
   existence: retained
   own: true
   own_code: true
-  own_contract: false
-  inherited_constraints: false
+  own_contract: true
+  inherited_constraints: true
   descendants: false
   child_composition: false
   moved: false
@@ -759,22 +775,22 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 134
-  comparison_key: sha256:5fd8a0bcef9d1f158c7912a820f95d436fd2a446559132b60151f7ad45bb37cc
+  generation: 155
+  comparison_key: sha256:a4aaa735e7c9b1089bca4cce4ce4579cfc7dd971e03372c9f8c12a867312aeed
   baseline:
     metadata:
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-10T18:14:02.893Z
+      capturedAt: 2026-11-11T12:11:30.969Z
       kind: git
-      revision: 6847df523576dacb534e624b64bc1f91f23053f6
+      revision: 9ab002ef4338d2eee779929426d26586387525e0
       label: HEAD
-      fingerprint: 404f7c569be73a840bf7e7877f33be2eaa26d436209f3fe426afb1bbdaa30261
+      fingerprint: fec539813fc607c48975ac12b57f573bd0daa655379c7a373e7bd9a9139afa6e
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      digest: sha256:70858c7c1b1f1cf727e35c8a349cf1c25ff5313bfe75cf31509233de1cf6f51d
-      id: git-6847df523576dacb534e624b64bc1f91f23053f6
+      digest: sha256:f29e174f6c0028d0dafa70a6d3e40d8b38d2f17c4518548fbd5a61baaa0000d4
+      id: git-9ab002ef4338d2eee779929426d26586387525e0
       isHead: true
     module_index: 7
     module:
@@ -856,13 +872,13 @@ publication:
         - path: src/dsh/client/arch.yaml
           hash: 617cde44476af2b6b703bc45d9c20647ee695a43
         - path: src/dsh/client/body.mjs
-          hash: 51a0f4cc43a139436b42803966b911c8494fdb8d
+          hash: 74bf2a13b26589a9ff31b31d792bce62566e8183
         - path: src/dsh/client/index.mjs
           hash: 3d1ed23584ad7ed2d882fcc6d7930bf0289dec67
         - path: src/dsh/client/prompt.mjs
           hash: 4b4ec13249178b8978199f695f1258a36a1af871
       sourceFiles: 3
-      fingerprint: e7cf777a2f581507793a5f631bff4de0cc50b542694145f951d44a06743e6266
+      fingerprint: c8f0e285e557f52432831a3b5fc92f50a0e85df9d2392789efafa7c8d73d2dd2
     facts:
       - index: 45
         fact:
@@ -906,11 +922,11 @@ publication:
                 собственного iframe; отказ передачи виден панели, а не выдаётся за успех.
       - index: 46
         fact:
-          id: sha256:c2ed6e18775e7b7bafcda31ff49086b37e93baee02211c05dc26f64c4f0df961
+          id: sha256:1085c2da3afca13f57e02da9e43ffafb36c0593f1cb5012199d5f666d92f0d2a
           kind: file
           path: src/dsh/client/body.mjs
           start_line: 1
-          end_line: 109
+          end_line: 112
           text: >
             /**
              * Тело вкладки ArchiView в правой панели dsh.
@@ -922,7 +938,10 @@ publication:
              *
              * Адрес страницы не хранится здесь константой: префикс маршрутов сообщает хост
              * через внедрение в документ (см. `panel-contract.mjs`), поэтому настройка
-             * `config.prefix` меняет и адрес iframe. Без внедрения действует стандартный
+             * `config.prefix` меняет и адрес iframe. Значение из документа принимается
+             * только как локальный путь: сетевая ссылка (`//host/path`), обратный слэш и
+             * служебные символы откатываются к стандартному префиксу, поэтому iframe не
+             * может уйти на чужой origin. Без внедрения действует тот же стандартный
              * префикс — вкладка остаётся рабочей, а не падает.
              *
              * Через тот же iframe идёт и явное поручение анализа: страница присылает
@@ -1185,18 +1204,18 @@ publication:
           text: '{"contract":"documented","format":"arch.yaml","sources":["src/dsh/client/body.mjs","src/dsh/client/index.mjs","src/dsh/client/prompt.mjs"]}'
   current:
     metadata:
+      id: launch-7f81775f6ea4920a0c343f486579545fa3e0bce04cb6480aa2309edc3ac2eb0e
+      digest: sha256:e8ab8c4d4ded6477bbffa25327570d98c7ebba6b2429b751629d9a08a2707cac
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-11T09:31:54.844Z
-      kind: working
-      label: Рабочее дерево
-      fingerprint: 53d4bf8dd2ba5d16b2eca79c3402a7c132bb551bef009e124c4a5fe3168000f2
+      capturedAt: 2026-11-11T12:14:59.773Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 7f81775f6ea4920a0c343f486579545fa3e0bce04cb6480aa2309edc3ac2eb0e
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      digest: sha256:e416488d4b7cafd378751deadb2fd271faf7e73b54685bd03dd613b03af5a953
-      id: working-e416488d4b7cafd378751deadb2fd271faf7e73b54685bd03dd613b03af5a953
-    module_index: 7
+    module_index: 8
     module:
       directory: src/dsh/client
       documentPath: src/dsh/client/arch.yaml
@@ -1233,8 +1252,8 @@ publication:
             I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её скрытым
               обходом или прямым чтением проекта.
             I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных вкладок.
-            I4: Мост принимает только сообщения родительского окна с тем же origin и только от
-              собственного iframe; отказ передачи виден панели, а не выдаётся за успех.
+            I4: Тело вкладки принимает сообщения только от собственного iframe с тем же origin;
+              отказ передачи виден панели, а не выдаётся за успех.
         format: arch.yaml
         contract:
           schema_version: 1
@@ -1269,24 +1288,25 @@ publication:
               скрытым обходом или прямым чтением проекта.
             I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
               вкладок.
-            I4: Мост принимает только сообщения родительского окна с тем же origin и только
-              от собственного iframe; отказ передачи виден панели, а не выдаётся
-              за успех.
+            I4: Тело вкладки принимает сообщения только от собственного iframe с тем же
+              origin; отказ передачи виден панели, а не выдаётся за успех.
       files:
         - path: src/dsh/client/arch.yaml
-          hash: 617cde44476af2b6b703bc45d9c20647ee695a43
-        - path: src/dsh/client/body.mjs
-          hash: 74bf2a13b26589a9ff31b31d792bce62566e8183
-        - path: src/dsh/client/index.mjs
-          hash: 3d1ed23584ad7ed2d882fcc6d7930bf0289dec67
-        - path: src/dsh/client/prompt.mjs
-          hash: 4b4ec13249178b8978199f695f1258a36a1af871
-      sourceFiles: 3
-      fingerprint: c8f0e285e557f52432831a3b5fc92f50a0e85df9d2392789efafa7c8d73d2dd2
+          hash: 29551ddbccf237205a5c5ac4f6d62a4bdccee9d5
+        - path: src/dsh/client/body.ts
+          hash: 0f32c44be5d71cdec9b46db0532450343fdf423e
+        - path: src/dsh/client/index.ts
+          hash: 0a6530cde7840fa7736f9f7df1a60c7b61b4af6d
+        - path: src/dsh/client/prompt.ts
+          hash: 25bc163817b4db41369ca1d63140e94a69ad6b79
+        - path: src/dsh/client/types.ts
+          hash: 2d045cf802dace66ae03948a4682081f65aa8135
+      sourceFiles: 4
+      fingerprint: 2bf1aa1b42e3a6a6d99606778c2e7f4bff2ef35bcca8621a85e8232cff2ded97
     facts:
-      - index: 49
+      - index: 58
         fact:
-          id: sha256:ab2b0cda274a705526970cddb1ad68fad1d064df8eec7f60a19af4113776889a
+          id: sha256:fa4855b673d05ebc9d68df9b5592b39067e82982ff2957803ff72f691965dd81
           kind: file
           path: src/dsh/client/arch.yaml
           start_line: 1
@@ -1322,26 +1342,26 @@ publication:
               I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её скрытым
                 обходом или прямым чтением проекта.
               I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных вкладок.
-              I4: Мост принимает только сообщения родительского окна с тем же origin и только от
-                собственного iframe; отказ передачи виден панели, а не выдаётся за успех.
-      - index: 50
+              I4: Тело вкладки принимает сообщения только от собственного iframe с тем же origin;
+                отказ передачи виден панели, а не выдаётся за успех.
+      - index: 59
         fact:
-          id: sha256:1085c2da3afca13f57e02da9e43ffafb36c0593f1cb5012199d5f666d92f0d2a
+          id: sha256:e57f5f6f4f37f1fff9a0f02beca93c39f6ceccfabefa96e6cc361fc6611d1bc8
           kind: file
-          path: src/dsh/client/body.mjs
+          path: src/dsh/client/body.ts
           start_line: 1
-          end_line: 112
+          end_line: 114
           text: >
             /**
              * Тело вкладки ArchiView в правой панели dsh.
              *
-             * Показывает страницу, которую отдают маршруты плагина (`src/dsh/routes.mjs`),
+             * Показывает страницу, которую отдают маршруты плагина (`src/dsh/routes.ts`),
              * в обычном iframe. Такой способ не требует переписывать интерфейс: страница
              * остаётся тем же `web/archiview`, что и в браузере, и получает базу API из
              * метатега, который вставляет маршрут.
              *
              * Адрес страницы не хранится здесь константой: префикс маршрутов сообщает хост
-             * через внедрение в документ (см. `panel-contract.mjs`), поэтому настройка
+             * через внедрение в документ (см. `panel-contract.ts`), поэтому настройка
              * `config.prefix` меняет и адрес iframe. Значение из документа принимается
              * только как локальный путь: сетевая ссылка (`//host/path`), обратный слэш и
              * служебные символы откатываются к стандартному префиксу, поэтому iframe не
@@ -1359,7 +1379,7 @@ publication:
             import { createElement, useEffect, useRef } from "react";
 
             import { panelPageUrl, resolveClientPrefix } from
-            "../panel-contract.mjs";
+            "../panel-contract.js";
 
 
             /** Приветствие страницы: сообщает, что родитель — хост ArchiView.
@@ -1398,15 +1418,16 @@ publication:
              *   отправка поручения в чат.
              * @returns {import("react").ReactElement} iframe со страницей ArchiView.
              */
-            export function PanelBody({ sessionId, sendPrompt } = {}) {
-              const frameRef = useRef(null);
+            export function PanelBody({ sessionId, sendPrompt }:
+            import("./types.js").PanelProps = {}) {
+              const frameRef = useRef<HTMLIFrameElement>(null);
 
               useEffect(() => {
                 const frame = frameRef.current;
                 if (frame === null) return undefined;
                 const origin = window.location.origin;
                 const windowOf = () => frame.contentWindow;
-                const post = (message) => {
+                const post = (message: Record<string, unknown>) => {
                   const target = windowOf();
                   if (target !== null) target.postMessage(message, origin);
                 };
@@ -1414,22 +1435,24 @@ publication:
                 const hostMessage = () => ({ type: HOST, protocol: 1, capabilities: { send: canSend() } });
 
                 /** Отвечает на приветствие и выполняет ровно одно поручение анализа. */
-                const onMessage = async (event) => {
+                const onMessage = async (event: MessageEvent<unknown>) => {
                   if (event.source !== windowOf()) return;
                   if (event.origin !== origin) return;
-                  const data = event.data;
+                  const value = event.data;
+                  if (!value || typeof value !== "object") return;
+                  const data = value as Record<string, unknown>;
                   if (data === null || typeof data !== "object") return;
-                  if (data.type === HELLO) {
+                  if ((data as Record<string, unknown>).type === HELLO) {
                     post(hostMessage());
                     return;
                   }
                   if (data.type !== SEND || typeof data.id !== "string") return;
                   try {
-                    if (!canSend()) throw new Error("Хост не умеет передавать поручения");
+                    if (!canSend() || !sendPrompt || !sessionId || typeof data.prompt !== "string") throw new Error("Хост не умеет передавать поручения");
                     await sendPrompt(sessionId, data.prompt);
                     post({ type: SENT, id: data.id });
                   } catch (error) {
-                    post({ type: FAILED, id: data.id, error: error?.message ?? "Не удалось передать поручение" });
+                    post({ type: FAILED, id: data.id, error: error instanceof Error ? error.message : "Не удалось передать поручение" });
                   }
                 };
 
@@ -1457,11 +1480,11 @@ publication:
                 style: { display: "block", width: "100%", height: "100%", border: "0" },
               });
             }
-      - index: 51
+      - index: 60
         fact:
-          id: sha256:f268ec5a4a06abb7cc81e618b9c8c82f4e57f43e766f48ca9a0d3a3a15ff696e
+          id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
           kind: file
-          path: src/dsh/client/index.mjs
+          path: src/dsh/client/index.ts
           start_line: 1
           end_line: 65
           text: >
@@ -1482,9 +1505,9 @@ publication:
 
             import { createElement } from "react";
 
-            import { PanelBody } from "./body.mjs";
+            import { PanelBody } from "./body.js";
 
-            import { createPromptSender } from "./prompt.mjs";
+            import { createPromptSender } from "./prompt.js";
 
 
             /**
@@ -1514,11 +1537,11 @@ publication:
              * @param {import("@deepseek-ai/cordis").Context} ctx - контекст клиента.
              * @returns {void}
              */
-            export function apply(ctx) {
+            export function apply(ctx: import("./types.js").ClientContext) {
               // Отправитель замыкается на контекст плагина: тело вкладки получает только
               // функцию, поэтому не ищет сервисы само и не знает их имён.
               const sendPrompt = createPromptSender(ctx);
-              const Body = (props) => createElement(PanelBody, { ...props, sendPrompt });
+              const Body = (props: import("./types.js").PanelProps) => createElement<import("./types.js").PanelProps>(PanelBody, { ...props, sendPrompt });
 
               ctx.effect(() => ctx.sidebarRightTabs.register({
                 id: TAB_ID,
@@ -1538,11 +1561,11 @@ publication:
                 key: TAB_ID,
               }, Body)), "ui-archiview: тело вкладки");
             }
-      - index: 52
+      - index: 61
         fact:
-          id: sha256:fed6b51ae0edd843d25d6df705bbab975d57e880c83880eba2e111a524ff4b4a
+          id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
           kind: file
-          path: src/dsh/client/prompt.mjs
+          path: src/dsh/client/prompt.ts
           start_line: 1
           end_line: 55
           text: >
@@ -1567,7 +1590,8 @@ publication:
              * @param {import("@deepseek-ai/cordis").Context} ctx - контекст клиента dsh.
              * @returns {(sessionId: string, text: string) => Promise<void>} отправка поручения в чат.
              */
-            export function createPromptSender(ctx) {
+            export function createPromptSender(ctx:
+            import("./types.js").PromptContext) {
               /**
                * Отправляет текст в очередь хода указанного чата.
                *
@@ -1576,7 +1600,7 @@ publication:
                * @returns {Promise<void>} завершение после принятия хостом.
                * @throws {Error} если чат неизвестен, поручение пустое или хост его отклонил.
                */
-              return async function sendPrompt(sessionId, text) {
+              return async function sendPrompt(sessionId: string, text: string) {
                 if (typeof sessionId !== "string" || sessionId === "") {
                   throw new Error("Чат вкладки неизвестен");
                 }
@@ -1600,12 +1624,48 @@ publication:
                 }
               };
             }
-      - index: 110
+      - index: 62
         fact:
-          id: sha256:aac1d6daf791d1e408214d7d462448ecd5594f0015d705ab80796f5bed189d49
+          id: sha256:665efafaf0b01610d4c35aa71fcb29d81a3e9fc94168f66b1345cb2789369fcb
+          kind: file
+          path: src/dsh/client/types.ts
+          start_line: 1
+          end_line: 22
+          text: >
+            import type { ComponentType } from "react";
+
+
+            export type SendPrompt = (sessionId: string, text: string) =>
+            Promise<void>;
+
+            export interface PanelProps { sessionId?: string; sendPrompt?:
+            SendPrompt }
+
+            type Dispose = () => void;
+
+            export interface PromptContext {
+              get(name: "sessions"): {
+                retain(id: string, options: { source: string }): {
+                  ready: Promise<{ session: { prompt(content: { type: "text"; text: string }[], mode: "queue"): Promise<{ ok: boolean; error?: { message?: string } }> } }>;
+                  release(): void;
+                };
+              } | undefined;
+            }
+
+            export interface ClientContext extends PromptContext {
+              effect(register: () => Dispose, label: string): unknown;
+              sidebarRightTabs: { register(definition: { id: string; kind: string; priority: string; title(): string; guide: { id: string; order: number; title(): string; description(): string }[] }): Dispose };
+              slots: {
+                inject(name: string, register: () => Dispose): Dispose;
+                register(slot: { name: string; key: string }, body: ComponentType<PanelProps>): Dispose;
+              };
+            }
+      - index: 170
+        fact:
+          id: sha256:6a815b8e6f3bc1a275019b3e8b89e2e4bfe954e4d67d616df051746c0992934c
           kind: module
           path: src/dsh/client
-          text: '{"contract":"documented","format":"arch.yaml","sources":["src/dsh/client/body.mjs","src/dsh/client/index.mjs","src/dsh/client/prompt.mjs"]}'
+          text: '{"contract":"documented","format":"arch.yaml","sources":["src/dsh/client/body.ts","src/dsh/client/index.ts","src/dsh/client/prompt.ts","src/dsh/client/types.ts"]}'
 review_status:
   self:
     current:
@@ -1615,27 +1675,17 @@ review_status:
       verdicts:
         - consistent
       review_ids:
-        - review-267aee98-07bc-45a2-af8d-2633d339ea4d
+        - review-3f387728-6264-4564-a644-e2fdd5c52a11
       conflict: false
       coverage:
         status: partial
         limitations:
-          - "Собственные I1 и I3 остаются not_checked: в сохранённой области нет
-            API Cordis Context.effect, dsh slots.inject/register и
-            sidebarRightTabs.register, реестра встроенных kind и проверки
-            unload/reload."
-          - "Полнота внешних зависимостей не подтверждена:
-            dependency_coverage.status=unknown, явно включены только
-            src/dsh/panel-contract.mjs и src/dsh/routes.mjs как file-селекторы."
-          - Базовая сторона проверена по сохранённым фактам снимка HEAD, текущая
-            — по снимку рабочего дерева; React-рендер, живой dsh-хост и браузер
-            не запускались.
-          - Воспроизведение адреса iframe выполнено через WHATWG URL с базой
-            https://dsh.example.invalid/chat; сетевых запросов и проверки CSP не
-            было.
-          - Модель обозначена как DeepSeek deepseek-flash; точный backend
-            model_id/revision в сессии недоступен, prompt_digest — SHA-256
-            текста archiview-recheck-prompt.txt рядом с результатом.
+          - 36 dsh tests покрывают prompt accept/reject/release, prefix/session
+            URL и оба bridge outcomes; реальные host slots не открывались.
+          - Историческая JS-реализация не проверялась содержательно; прежние
+            проверки помечены not_checked.
+          - GUI установленных Codex/dsh плагинов не открывался; полнота внешних
+            зависимостей не подтверждена.
           - Полнота зависимостей не подтверждена.
         reasons:
           - code: dependency_coverage_unknown
@@ -1645,31 +1695,21 @@ review_status:
     change:
       status: fresh
       reasons: []
-      verdict: consistent
+      verdict: inconclusive
       verdicts:
-        - consistent
+        - inconclusive
       review_ids:
-        - review-267aee98-07bc-45a2-af8d-2633d339ea4d
+        - review-3f387728-6264-4564-a644-e2fdd5c52a11
       conflict: false
       coverage:
         status: partial
         limitations:
-          - "Собственные I1 и I3 остаются not_checked: в сохранённой области нет
-            API Cordis Context.effect, dsh slots.inject/register и
-            sidebarRightTabs.register, реестра встроенных kind и проверки
-            unload/reload."
-          - "Полнота внешних зависимостей не подтверждена:
-            dependency_coverage.status=unknown, явно включены только
-            src/dsh/panel-contract.mjs и src/dsh/routes.mjs как file-селекторы."
-          - Базовая сторона проверена по сохранённым фактам снимка HEAD, текущая
-            — по снимку рабочего дерева; React-рендер, живой dsh-хост и браузер
-            не запускались.
-          - Воспроизведение адреса iframe выполнено через WHATWG URL с базой
-            https://dsh.example.invalid/chat; сетевых запросов и проверки CSP не
-            было.
-          - Модель обозначена как DeepSeek deepseek-flash; точный backend
-            model_id/revision в сессии недоступен, prompt_digest — SHA-256
-            текста archiview-recheck-prompt.txt рядом с результатом.
+          - 36 dsh tests покрывают prompt accept/reject/release, prefix/session
+            URL и оба bridge outcomes; реальные host slots не открывались.
+          - Историческая JS-реализация не проверялась содержательно; прежние
+            проверки помечены not_checked.
+          - GUI установленных Codex/dsh плагинов не открывался; полнота внешних
+            зависимостей не подтверждена.
           - Полнота зависимостей не подтверждена.
         reasons:
           - code: dependency_coverage_unknown
@@ -1681,22 +1721,12 @@ review_status:
       current:
         status: partial
         limitations:
-          - "Собственные I1 и I3 остаются not_checked: в сохранённой области нет
-            API Cordis Context.effect, dsh slots.inject/register и
-            sidebarRightTabs.register, реестра встроенных kind и проверки
-            unload/reload."
-          - "Полнота внешних зависимостей не подтверждена:
-            dependency_coverage.status=unknown, явно включены только
-            src/dsh/panel-contract.mjs и src/dsh/routes.mjs как file-селекторы."
-          - Базовая сторона проверена по сохранённым фактам снимка HEAD, текущая
-            — по снимку рабочего дерева; React-рендер, живой dsh-хост и браузер
-            не запускались.
-          - Воспроизведение адреса iframe выполнено через WHATWG URL с базой
-            https://dsh.example.invalid/chat; сетевых запросов и проверки CSP не
-            было.
-          - Модель обозначена как DeepSeek deepseek-flash; точный backend
-            model_id/revision в сессии недоступен, prompt_digest — SHA-256
-            текста archiview-recheck-prompt.txt рядом с результатом.
+          - 36 dsh tests покрывают prompt accept/reject/release, prefix/session
+            URL и оба bridge outcomes; реальные host slots не открывались.
+          - Историческая JS-реализация не проверялась содержательно; прежние
+            проверки помечены not_checked.
+          - GUI установленных Codex/dsh плагинов не открывался; полнота внешних
+            зависимостей не подтверждена.
           - Полнота зависимостей не подтверждена.
         reasons:
           - code: dependency_coverage_unknown
@@ -1705,22 +1735,12 @@ review_status:
       change:
         status: partial
         limitations:
-          - "Собственные I1 и I3 остаются not_checked: в сохранённой области нет
-            API Cordis Context.effect, dsh slots.inject/register и
-            sidebarRightTabs.register, реестра встроенных kind и проверки
-            unload/reload."
-          - "Полнота внешних зависимостей не подтверждена:
-            dependency_coverage.status=unknown, явно включены только
-            src/dsh/panel-contract.mjs и src/dsh/routes.mjs как file-селекторы."
-          - Базовая сторона проверена по сохранённым фактам снимка HEAD, текущая
-            — по снимку рабочего дерева; React-рендер, живой dsh-хост и браузер
-            не запускались.
-          - Воспроизведение адреса iframe выполнено через WHATWG URL с базой
-            https://dsh.example.invalid/chat; сетевых запросов и проверки CSP не
-            было.
-          - Модель обозначена как DeepSeek deepseek-flash; точный backend
-            model_id/revision в сессии недоступен, prompt_digest — SHA-256
-            текста archiview-recheck-prompt.txt рядом с результатом.
+          - 36 dsh tests покрывают prompt accept/reject/release, prefix/session
+            URL и оба bridge outcomes; реальные host slots не открывались.
+          - Историческая JS-реализация не проверялась содержательно; прежние
+            проверки помечены not_checked.
+          - GUI установленных Codex/dsh плагинов не открывался; полнота внешних
+            зависимостей не подтверждена.
           - Полнота зависимостей не подтверждена.
         reasons:
           - code: dependency_coverage_unknown
@@ -1739,22 +1759,12 @@ review_status:
       coverage:
         status: partial
         limitations:
-          - "Собственные I1 и I3 остаются not_checked: в сохранённой области нет
-            API Cordis Context.effect, dsh slots.inject/register и
-            sidebarRightTabs.register, реестра встроенных kind и проверки
-            unload/reload."
-          - "Полнота внешних зависимостей не подтверждена:
-            dependency_coverage.status=unknown, явно включены только
-            src/dsh/panel-contract.mjs и src/dsh/routes.mjs как file-селекторы."
-          - Базовая сторона проверена по сохранённым фактам снимка HEAD, текущая
-            — по снимку рабочего дерева; React-рендер, живой dsh-хост и браузер
-            не запускались.
-          - Воспроизведение адреса iframe выполнено через WHATWG URL с базой
-            https://dsh.example.invalid/chat; сетевых запросов и проверки CSP не
-            было.
-          - Модель обозначена как DeepSeek deepseek-flash; точный backend
-            model_id/revision в сессии недоступен, prompt_digest — SHA-256
-            текста archiview-recheck-prompt.txt рядом с результатом.
+          - 36 dsh tests покрывают prompt accept/reject/release, prefix/session
+            URL и оба bridge outcomes; реальные host slots не открывались.
+          - Историческая JS-реализация не проверялась содержательно; прежние
+            проверки помечены not_checked.
+          - GUI установленных Codex/dsh плагинов не открывался; полнота внешних
+            зависимостей не подтверждена.
           - Полнота зависимостей не подтверждена.
         reasons:
           - code: dependency_coverage_unknown
@@ -1772,22 +1782,12 @@ review_status:
       coverage:
         status: partial
         limitations:
-          - "Собственные I1 и I3 остаются not_checked: в сохранённой области нет
-            API Cordis Context.effect, dsh slots.inject/register и
-            sidebarRightTabs.register, реестра встроенных kind и проверки
-            unload/reload."
-          - "Полнота внешних зависимостей не подтверждена:
-            dependency_coverage.status=unknown, явно включены только
-            src/dsh/panel-contract.mjs и src/dsh/routes.mjs как file-селекторы."
-          - Базовая сторона проверена по сохранённым фактам снимка HEAD, текущая
-            — по снимку рабочего дерева; React-рендер, живой dsh-хост и браузер
-            не запускались.
-          - Воспроизведение адреса iframe выполнено через WHATWG URL с базой
-            https://dsh.example.invalid/chat; сетевых запросов и проверки CSP не
-            было.
-          - Модель обозначена как DeepSeek deepseek-flash; точный backend
-            model_id/revision в сессии недоступен, prompt_digest — SHA-256
-            текста archiview-recheck-prompt.txt рядом с результатом.
+          - 36 dsh tests покрывают prompt accept/reject/release, prefix/session
+            URL и оба bridge outcomes; реальные host slots не открывались.
+          - Историческая JS-реализация не проверялась содержательно; прежние
+            проверки помечены not_checked.
+          - GUI установленных Codex/dsh плагинов не открывался; полнота внешних
+            зависимостей не подтверждена.
           - Полнота зависимостей не подтверждена.
         reasons:
           - code: dependency_coverage_unknown
@@ -1795,6 +1795,7 @@ review_status:
               - scope: project
   explicit_subtree:
     current:
+      current_violation: false
       status: not_reviewed
       reasons: []
       verdict: null
@@ -1805,6 +1806,7 @@ review_status:
         limitations:
           - Содержательная проверка отсутствует.
     change:
+      current_violation: false
       status: not_reviewed
       reasons: []
       verdict: null

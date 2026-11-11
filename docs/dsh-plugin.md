@@ -15,7 +15,7 @@
 | Домен проекта | Что делает плагин |
 | --- | --- |
 | `src/application` | не меняется: сессии, сравнения, снимки и проверки |
-| `src/inventory.mjs` | читается инструментами модели `archiview_inventory` и `archiview_context` |
+| `src/contracts/inventory.ts` | читается инструментами модели `archiview_inventory` и `archiview_context` |
 | `src/archiview` | остаётся standalone-адаптером HTTP и CLI |
 | `src/codex` | остаётся адаптером Codex (MCP Apps) |
 | `web/archiview` | отдаётся маршрутами плагина и показывается во вкладке правой панели |
@@ -25,17 +25,17 @@
 
 ```text
 src/dsh/
-  host.mjs        cordis-плагин: инструменты, маршруты, скилл
-  sessions.mjs    сессии прикладного сервиса по корню проекта
-  tools.mjs       описания и операции инструментов модели
-  routes.mjs      маршруты панели под префиксом
-  skill.mjs       разбор и публикация module-boundaries
+  host.ts        cordis-плагин: инструменты, маршруты, скилл
+  sessions.ts    сессии прикладного сервиса по корню проекта
+  tools.ts       описания и операции инструментов модели
+  routes.ts      маршруты панели под префиксом
+  skill.ts       разбор и публикация module-boundaries
   arch.yaml       контракт модуля
   client/
-    index.mjs     регистрация типа вкладки и её тела
-    body.mjs      страница панели в iframe
+    index.ts     регистрация типа вкладки и её тела
+    body.ts      страница панели в iframe
     arch.yaml     контракт клиентской половины
-scripts/build-dsh.mjs
+scripts/build-dsh.ts
 ```
 
 ## Сборка и установка
@@ -72,7 +72,7 @@ dsh plugin --profile <profile> add <путь к dist/dsh>
   соединения хоста: без cookie — 401, а не 404.
 - Скилл `module-boundaries` публикуется из единственного файла пакета.
 - Интерфейс получает базу API из метатега `archiview-base`, поэтому работает
-  не только из корня сервера (правка `web/archiview/client.mjs`).
+  не только из корня сервера (правка `web/archiview/client.ts`).
 - Префикс маршрутов доходит до вкладки через `webserver/index-inject`: строка
   `kind: "global"` присваивает `globalThis.__DSH_ARCHIVIEW__`, и клиент строит
   адрес iframe из него, а не из собственной константы.

@@ -2,7 +2,7 @@
 
 ## Устройство
 
-`src/server.mjs --panel` дополняет stdio MCP-сервер ресурсом
+`src/server.ts --panel` дополняет stdio MCP-сервер ресурсом
 `ui://archiview/panel-v6.html` и инструментом `archiview_open`. Метаданные
 `openai/ui.entrypoints` содержит только `thread`: панель открывается в боковой
 вкладке чата, без глобальной точки открытия отдельного окна.
@@ -17,7 +17,7 @@
 | `src/application` | Сессия проекта, сравнения, детали, снимки и подготовка анализа; без зависимости от HTTP, MCP и DOM |
 | `src/codex` | Ресурс панели, валидация MCP-операций и упаковка ответов для UI |
 | `src/archiview` | Самостоятельный HTTP-адаптер и CLI поверх того же сервиса |
-| `web/archiview` | Общий интерфейс; `client.mjs` выбирает MCP или HTTP при запуске |
+| `web/archiview` | Общий интерфейс; `client.ts` выбирает MCP или HTTP при запуске |
 
 ```text
 Панель → MCP Apps bridge → хост Codex → stdio MCP → application → модель и хранилища
@@ -167,7 +167,7 @@ npm run install:codex
 
 `dist/codex` содержит автономные Node-бандлы сервера и CLI, web UI, самодостаточный
 MCP Apps SDK, спецификации и скилл. `node_modules` в кеше не требуется. Сборка
-также создаёт `dist/panel.html` для запуска `src/server.mjs --panel` из исходников.
+также создаёт `dist/panel.html` для запуска `node --import tsx src/server.ts --panel` из исходников.
 Перед запуском панели из исходников или протокольного стенда выполните сборку. Она
 не регистрирует marketplace и не меняет конфигурацию Codex; установка выполняется
 отдельной явной командой. После изменения исходников повторите сборку и установку.
@@ -223,9 +223,9 @@ Node относительно кеша на целевой машине. Пос�
 Для ручной проверки web UI и bridge предусмотрен:
 
 ```powershell
-node scripts/preview-panel.mjs
-node scripts/preview-panel.mjs --select-project
-node scripts/preview-panel.mjs --unknown-context
+node --import tsx scripts/preview-panel.ts
+node --import tsx scripts/preview-panel.ts --select-project
+node --import tsx scripts/preview-panel.ts --unknown-context
 ```
 
 Он создаёт временный проект и явно обозначенный тестовый хост MCP Apps. В нём

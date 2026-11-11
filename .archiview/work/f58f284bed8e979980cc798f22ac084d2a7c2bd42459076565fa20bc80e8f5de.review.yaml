@@ -1,0 +1,2653 @@
+schema_version: 2
+kind: review_history
+module_id: archiview-codex
+entries:
+  - schema_version: 2
+    kind: review
+    module_id: archiview-codex
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-d1aee4bd-4f0c-4eae-a083-538737c09ee2
+    check_hash: 2cddced7d2aafcd2150597a995d4c6cf57ede888b6af7d0f194869ee6d5fd8bd
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-codex
+      baseline:
+        identity:
+          kind: git
+          id: 6847df523576dacb534e624b64bc1f91f23053f6
+        state:
+          exists: true
+          directory: src/codex
+          self_digest: sha256:3fd3054a34da3d67585d50081b7db6e6704edbe4e97d423e47dcc26793ac21e7
+          subtree_digest: sha256:8d37d654d90f8babfcebdae69ab8afee7fdc01cac39820148bc82a3d4941f6c0
+      current:
+        exists: true
+        directory: src/codex
+        self_digest: sha256:dc019b39a04d71099c3229d61be080a9080f5191f37ad8dd889f1ffe4aa040b5
+        subtree_digest: sha256:3ec873973e5b619992effd0252a801a0380e768bf5f2c23c4ac508f3fe88d2ca
+      analyzer:
+        name: archiview-structure
+        version: 1.0.2
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-codex
+          directory: src/codex
+          own_files:
+            - path: src/codex/directory-picker.ts
+              digest: sha256:e3b84331c5410e8cb0d1140619c111a901ec01d4d24d7e5e5b107e160576d470
+              normalization: text-lf/v1
+            - path: src/codex/host-context.ts
+              digest: sha256:31d9ef767d67cc5b78e258b8c0a33ec90fa21f319cf0c64850a3f7aa53d1a8e1
+              normalization: text-lf/v1
+            - path: src/codex/panel-client.ts
+              digest: sha256:fd3b309f47fced417cd1962c0b2564d34248b88118eb29241a821c52029259d6
+              normalization: text-lf/v1
+            - path: src/codex/panel.ts
+              digest: sha256:16b771587afb2237062d732daea04e0099cf53b14228624e8b3c9fba7ba1e352
+              normalization: text-lf/v1
+            - path: src/codex/project-context.ts
+              digest: sha256:f3355d18918ab99e8547aa0aa4f00b787454e419cfc731114b6196f893cd4612
+              normalization: text-lf/v1
+            - path: src/codex/ui-tools.ts
+              digest: sha256:d85457b05d2966f9e63591a54d995105db0bd0b768d992c26e5a428529da9622
+              normalization: text-lf/v1
+          contract:
+            id: archiview-codex
+            kind: module
+            purpose: Открывать существующее веб-приложение ArchiView как локальное MCP App в
+              Codex.
+            responsibilities:
+              R1: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные
+                операции прикладного сервиса для UI; не добавлять глобальную
+                точку открытия отдельного окна.
+              R2: Скрывать операции UI от модели через visibility app; передавать данные и
+                ошибки просмотра только в метаданных результата.
+              R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex;
+                отличать отсутствие папки от недоступности контекста и запрещать
+                просмотр вне проектов.
+            boundaries:
+              B1: Вычисления и подготовка анализа принадлежат application; MCP-адаптер
+                проверяет аргументы и вызывает сервис напрямую.
+              B2: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex App
+                Tools только для чтения метаданных текущего чата и рабочих
+                папок; не читает внутренние базы и файлы стенограмм Codex.
+            invariants:
+              I1: Один процесс обслуживает один фиксированный корень; адаптер не открывает
+                HTTP-порт и не требует сертификатов.
+              I2: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+              I3: UI подключается к хосту до чтения дерева проекта; навигация не отправляет
+                сообщения агенту и не обновляет контекст модели.
+              I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки
+                ArchiView не означает отсутствие рабочей папки чата; неизвестный
+                контекст не выдаётся за отсутствие проекта.
+              I5: Отсутствие истории чата или временная недоступность его контекста не
+                блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку
+                чата и проверяется по каталогу папок хоста.
+              I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный
+                диалог открывается только явной кнопкой пользователя.
+                Подтверждённое отсутствие проекта не обходится этой формой.
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: unknown
+          potential_influence:
+            - scope: project
+      baseline:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-codex
+          directory: src/codex
+          own_files:
+            - path: src/codex/directory-picker.mjs
+              digest: sha256:9b540f39aac3a65c6f6fbde379d901f6616c0811496e5862743848db05ceb4a4
+              normalization: text-lf/v1
+            - path: src/codex/host-context.mjs
+              digest: sha256:a095d16bd48a6a606475af779e752a8f91c88d2e8cf59caa3c536dd36de243de
+              normalization: text-lf/v1
+            - path: src/codex/panel-client.mjs
+              digest: sha256:79720b8437eab2c5ce45a404b327aee93d971e1c3c5815bfa84c63908db725bb
+              normalization: text-lf/v1
+            - path: src/codex/panel.mjs
+              digest: sha256:df0727a75e3a66f51087e80870ef00290345b898f99d0fe78a2874641ec5c7d8
+              normalization: text-lf/v1
+            - path: src/codex/project-context.mjs
+              digest: sha256:33f9b65cb3dc02d85ba96cc7cf36eaf699b06cd4537aeea515433eb07c5205c7
+              normalization: text-lf/v1
+            - path: src/codex/ui-tools.mjs
+              digest: sha256:e8cf5dc61e4eefc344a181c8a16cf8f44e7d1bd10bdc581521dd406ff1350e12
+              normalization: text-lf/v1
+          contract:
+            id: archiview-codex
+            kind: module
+            purpose: Открывать существующее веб-приложение ArchiView как локальное MCP App в
+              Codex.
+            responsibilities:
+              R1: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные
+                операции прикладного сервиса для UI; не добавлять глобальную
+                точку открытия отдельного окна.
+              R2: Скрывать операции UI от модели через visibility app; передавать данные и
+                ошибки просмотра только в метаданных результата.
+              R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex;
+                отличать отсутствие папки от недоступности контекста и запрещать
+                просмотр вне проектов.
+            boundaries:
+              B1: Вычисления и подготовка анализа принадлежат application; MCP-адаптер
+                проверяет аргументы и вызывает сервис напрямую.
+              B2: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex App
+                Tools только для чтения метаданных текущего чата и рабочих
+                папок; не читает внутренние базы и файлы стенограмм Codex.
+            invariants:
+              I1: Один процесс обслуживает один фиксированный корень; адаптер не открывает
+                HTTP-порт и не требует сертификатов.
+              I2: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+              I3: UI подключается к хосту до чтения дерева проекта; навигация не отправляет
+                сообщения агенту и не обновляет контекст модели.
+              I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки
+                ArchiView не означает отсутствие рабочей папки чата; неизвестный
+                контекст не выдаётся за отсутствие проекта.
+              I5: Отсутствие истории чата или временная недоступность его контекста не
+                блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку
+                чата и проверяется по каталогу папок хоста.
+              I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный
+                диалог открывается только явной кнопкой пользователя.
+                Подтверждённое отсутствие проекта не обходится этой формой.
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: unknown
+          potential_influence:
+            - scope: project
+      baseline_identity:
+        kind: git
+        id: 6847df523576dacb534e624b64bc1f91f23053f6
+      current_digest: sha256:0936e23257aa557df08ea4d785e9c3b93b0072c936132427255ec68d9873197f
+      change_digest: sha256:08d9cad5182296e8fcdf76f532517fa66e6301382746a3790460c51d1270bbaf
+    report:
+      schema_version: 1
+      id: review-d1aee4bd-4f0c-4eae-a083-538737c09ee2
+      module:
+        id: archiview-codex
+        baseline_path: src/codex
+        current_path: src/codex
+      comparison:
+        baseline:
+          id: git-6847df523576dacb534e624b64bc1f91f23053f6
+          digest: sha256:70858c7c1b1f1cf727e35c8a349cf1c25ff5313bfe75cf31509233de1cf6f51d
+        current:
+          id: launch-0c17d906022bd459d22344151aff11a096a871151e20f3939bcd08fd8714fb4e
+          digest: sha256:d110eb6a3c9380e9914f9c591358b4ebfa3be0a7ba73dbba880eb4fa4e26c705
+      analysis:
+        created_at: 2026-11-11T10:02:34.383Z
+        analyzer:
+          name: agent-review
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:02518fa43d3c5838a4c9988f97bd0f0f9ab8cb3919007e2448af4b2d5f70f867
+        scope: module
+        coverage:
+          status: partial
+          limitations:
+            - 12 codex-project tests и тесты panel; нативный GUI клиента/выбор
+              папки не открывались.
+            - Историческая JS-реализация не проверялась содержательно; прежние
+              проверки помечены not_checked.
+            - GUI установленных Codex/dsh плагинов не открывался; полнота
+              внешних зависимостей не подтверждена.
+        model:
+          provider: openai
+          id: codex (runtime model identifier not exposed)
+        prompt_digest: sha256:517bb0b6aba6b59c2b10bac2492fc0d16881b325bebf8f7b084361e6ddc9fca4
+      observed:
+        baseline:
+          summary: "Обнаружено собственных исходных файлов: 6. Ответственность из кода не
+            выводилась."
+          responsibilities: []
+        current:
+          summary: Адаптер Codex разделяет транспорт MCP Apps, каталог скрытых операций
+            UI, привязку рабочей папки и короткоживущий read-only канал
+            метаданных хоста.
+          responsibilities:
+            - text: Адаптер Codex разделяет транспорт MCP Apps, каталог скрытых операций UI,
+                привязку рабочей папки и короткоживущий read-only канал
+                метаданных хоста.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:9e043d6d40367940bd79db1d3ff3794a409b2f04dccfe9014183b64308c2122c
+                - snapshot: current
+                  fact_id: sha256:8effb362a8d8d3f8412c4d5bd55871722843707cedbcad230f79662efdf2fc15
+      checks:
+        - id: check-1
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: responsibilities
+            id: R1
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-2
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: responsibilities
+            id: R2
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-3
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: responsibilities
+            id: R3
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-4
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: boundaries
+            id: B1
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-5
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: boundaries
+            id: B2
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-6
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: invariants
+            id: I1
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-7
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: invariants
+            id: I2
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-8
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: invariants
+            id: I3
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-9
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: invariants
+            id: I4
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-10
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: invariants
+            id: I5
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-11
+          contract:
+            snapshot: baseline
+            module_id: archiview-codex
+            section: invariants
+            id: I6
+          subject: baseline
+          verdict: not_checked
+          explanation: Историческая реализация не входит в этот анализ миграции; её
+            смысловое соответствие не утверждается.
+          evidence: []
+        - id: check-12
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: responsibilities
+            id: R1
+          subject: current
+          verdict: consistent
+          explanation: PANEL_TOOL задаёт thread entrypoint, resource возвращает встроенный
+            HTML, callUi вызывает явный каталог операций без HTTP.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:9e043d6d40367940bd79db1d3ff3794a409b2f04dccfe9014183b64308c2122c
+        - id: check-13
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: responsibilities
+            id: R2
+          subject: current
+          verdict: consistent
+          explanation: UI_TOOLS имеет visibility app; panel.callUi возвращает read models
+            исключительно в _meta.result.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:58923d2aa965612a640b15cdc7d142ace58a023c0fc17af107a82540f6937bad
+        - id: check-14
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: responsibilities
+            id: R3
+          subject: current
+          verdict: consistent
+          explanation: createCodexProjectBinding сериализует выбор и отличает
+            unknown/unavailable; createHostContextReader сверяет cwd с каталогом
+            проектов нужного hostId.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:11de9985c5882bc0c640719290aa3699fdf73b6528698902a2626de99ddcd407
+        - id: check-15
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: boundaries
+            id: B1
+          subject: current
+          verdict: consistent
+          explanation: callUi проверяет schema и делегирует application; собственной
+            модели снимков нет.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:9e043d6d40367940bd79db1d3ff3794a409b2f04dccfe9014183b64308c2122c
+        - id: check-16
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: Читаются только tools/list, read_thread metadata и list_projects
+            через предоставленный pipe; файлы стенограмм и базы не читаются.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:8effb362a8d8d3f8412c4d5bd55871722843707cedbcad230f79662efdf2fc15
+        - id: check-17
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: invariants
+            id: I1
+          subject: current
+          verdict: consistent
+          explanation: ProjectBinding и один session фиксируют root; адаптер не создаёт
+            HTTP сервер.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:9e043d6d40367940bd79db1d3ff3794a409b2f04dccfe9014183b64308c2122c
+        - id: check-18
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: invariants
+            id: I2
+          subject: current
+          verdict: consistent
+          explanation: close выставляет closed, ожидает queue и запрещает новые операции
+            через checkOpen.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:9e043d6d40367940bd79db1d3ff3794a409b2f04dccfe9014183b64308c2122c
+        - id: check-19
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: invariants
+            id: I3
+          subject: current
+          verdict: consistent
+          explanation: getComparison ждёт connection и get_project; клиентские вызовы
+            используют скрытые UI tools, send доступен отдельно и явно.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:8b8b1dc1fe5dde0055e94dede60ec5e800884095723abdb4a13fcc318ec96890
+        - id: check-20
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: invariants
+            id: I4
+          subject: current
+          verdict: consistent
+          explanation: HostProjectContext имеет отдельные ready/unknown/unavailable;
+            чтение контекста не отправляет сообщение модели.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:8effb362a8d8d3f8412c4d5bd55871722843707cedbcad230f79662efdf2fc15
+        - id: check-21
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: invariants
+            id: I5
+          subject: current
+          verdict: consistent
+          explanation: Startup cwd проверяется по projects, каталог установки исключён;
+            отсутствие истории не отменяет разрешённый startup cwd.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:8effb362a8d8d3f8412c4d5bd55871722843707cedbcad230f79662efdf2fc15
+        - id: check-22
+          contract:
+            snapshot: current
+            module_id: archiview-codex
+            section: invariants
+            id: I6
+          subject: current
+          verdict: consistent
+          explanation: PROJECT_REQUIRED форма появляется только для unknown context;
+            choose_project вызывается кнопкой, PROJECT_UNAVAILABLE сохраняется.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:8b8b1dc1fe5dde0055e94dede60ec5e800884095723abdb4a13fcc318ec96890
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Проверенные пункты текущего TypeScript-кода согласуются с контрактом в
+            указанной области. 12 codex-project tests и тесты panel; нативный
+            GUI клиента/выбор папки не открывались.
+        change:
+          verdict: inconclusive
+          summary: Текущий TS-код проверен; историческая JS-реализация не анализировалась
+            полностью, поэтому общий вердикт изменения не подтверждается.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline:
+          id: git-6847df523576dacb534e624b64bc1f91f23053f6
+          digest: sha256:70858c7c1b1f1cf727e35c8a349cf1c25ff5313bfe75cf31509233de1cf6f51d
+        current:
+          id: launch-0c17d906022bd459d22344151aff11a096a871151e20f3939bcd08fd8714fb4e
+          digest: sha256:d110eb6a3c9380e9914f9c591358b4ebfa3be0a7ba73dbba880eb4fa4e26c705
+      module:
+        id: archiview-codex
+        baseline_path: src/codex
+        current_path: src/codex
+      analyzer:
+        name: agent-review
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      contract_scope: own
+      contracts:
+        baseline:
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: responsibilities
+              id: R1
+            text: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные
+              операции прикладного сервиса для UI; не добавлять глобальную точку
+              открытия отдельного окна.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: responsibilities
+              id: R2
+            text: Скрывать операции UI от модели через visibility app; передавать данные и
+              ошибки просмотра только в метаданных результата.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: responsibilities
+              id: R3
+            text: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex;
+              отличать отсутствие папки от недоступности контекста и запрещать
+              просмотр вне проектов.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: boundaries
+              id: B1
+            text: Вычисления и подготовка анализа принадлежат application; MCP-адаптер
+              проверяет аргументы и вызывает сервис напрямую.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: boundaries
+              id: B2
+            text: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex
+              App Tools только для чтения метаданных текущего чата и рабочих
+              папок; не читает внутренние базы и файлы стенограмм Codex.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: invariants
+              id: I1
+            text: Один процесс обслуживает один фиксированный корень; адаптер не открывает
+              HTTP-порт и не требует сертификатов.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: invariants
+              id: I2
+            text: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: invariants
+              id: I3
+            text: UI подключается к хосту до чтения дерева проекта; навигация не отправляет
+              сообщения агенту и не обновляет контекст модели.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: invariants
+              id: I4
+            text: Автоматическое получение папки не вызывает модель. Отсутствие привязки
+              ArchiView не означает отсутствие рабочей папки чата; неизвестный
+              контекст не выдаётся за отсутствие проекта.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: invariants
+              id: I5
+            text: Отсутствие истории чата или временная недоступность его контекста не
+              блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку
+              чата и проверяется по каталогу папок хоста.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-codex
+              section: invariants
+              id: I6
+            text: При неизвестной папке панель предлагает ручной ввод; в Windows нативный
+              диалог открывается только явной кнопкой пользователя.
+              Подтверждённое отсутствие проекта не обходится этой формой.
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: responsibilities
+              id: R1
+            text: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные
+              операции прикладного сервиса для UI; не добавлять глобальную точку
+              открытия отдельного окна.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: responsibilities
+              id: R2
+            text: Скрывать операции UI от модели через visibility app; передавать данные и
+              ошибки просмотра только в метаданных результата.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: responsibilities
+              id: R3
+            text: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex;
+              отличать отсутствие папки от недоступности контекста и запрещать
+              просмотр вне проектов.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: boundaries
+              id: B1
+            text: Вычисления и подготовка анализа принадлежат application; MCP-адаптер
+              проверяет аргументы и вызывает сервис напрямую.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: boundaries
+              id: B2
+            text: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex
+              App Tools только для чтения метаданных текущего чата и рабочих
+              папок; не читает внутренние базы и файлы стенограмм Codex.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: invariants
+              id: I1
+            text: Один процесс обслуживает один фиксированный корень; адаптер не открывает
+              HTTP-порт и не требует сертификатов.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: invariants
+              id: I2
+            text: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: invariants
+              id: I3
+            text: UI подключается к хосту до чтения дерева проекта; навигация не отправляет
+              сообщения агенту и не обновляет контекст модели.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: invariants
+              id: I4
+            text: Автоматическое получение папки не вызывает модель. Отсутствие привязки
+              ArchiView не означает отсутствие рабочей папки чата; неизвестный
+              контекст не выдаётся за отсутствие проекта.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: invariants
+              id: I5
+            text: Отсутствие истории чата или временная недоступность его контекста не
+              блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку
+              чата и проверяется по каталогу папок хоста.
+          - reference:
+              snapshot: current
+              module_id: archiview-codex
+              section: invariants
+              id: I6
+            text: При неизвестной папке панель предлагает ручной ввод; в Windows нативный
+              диалог открывается только явной кнопкой пользователя.
+              Подтверждённое отсутствие проекта не обходится этой формой.
+      instructions: Проверить только собственную ответственность, границы, инварианты
+        и свою композицию. Контракты предков служат контекстом и не добавляют
+        пункты в чеклист. Зависимости задавать по реально использованному
+        контракту/API, не по расположению каталога. Заполнить модель, prompt и
+        результаты.
+      context: {}
+      review_scope: self
+      model:
+        provider: openai
+        id: codex (runtime model identifier not exposed)
+      prompt_digest: sha256:517bb0b6aba6b59c2b10bac2492fc0d16881b325bebf8f7b084361e6ddc9fca4
+    baseline:
+      schema_version: 2
+      id: git-6847df523576dacb534e624b64bc1f91f23053f6
+      digest: sha256:70858c7c1b1f1cf727e35c8a349cf1c25ff5313bfe75cf31509233de1cf6f51d
+      kind: git
+      revision: 6847df523576dacb534e624b64bc1f91f23053f6
+      complete: true
+      modules:
+        - directory: .
+          documentPath: arch.yaml
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-change-view
+
+              title: Контракты и просмотр архитектуры
+
+              kind: module
+
+              purpose: Задавать локальные контракты ответственности каталогов и
+              предоставлять агентам правила их
+                ведения, а пользователю — ArchiView для просмотра архитектуры и изменений.
+              responsibilities:
+                R1: Публиковать канонический скилл module-boundaries и MCP-инструменты чтения контрактов.
+                R2: Проверять покрытие всех каталогов исходного кода контрактами arch.yaml и направлять агента на
+                  немедленный перенос старых описаний либо анализ и создание отсутствующих.
+                R3: Формировать снимки структуры, контрактов и доказательств; сохранять и отображать неизменяемые
+                  review.yaml для выбранного сравнения.
+                R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю содержательных
+                  проверок и отдельно определяя актуальность модуля и его поддерева.
+                R5: Поставлять локальный плагин Codex с веб-панелью, явным запуском анализа выбранного модуля
+                  и передачей агенту поручения исправить выбранное замечание.
+                R6: Поставлять плагин dsh — инструменты чтения, маршруты панели и публикацию скилла в хосте
+                  DeepSeek Harness без запуска модели самим просмотром.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                  Просмотр не изменяет исходники проекта.
+                B2: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным адаптерам.
+                  Извлечение символов, разрешение зависимостей и индексация AST принадлежат ast-index.
+              invariants:
+                I1: Чтение ограничено настроенным корнем проекта.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                  внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                  факты и отчёты не переписываются при переносе проекта.
+                I3: arch.yaml содержит устойчивую ответственность; эвристические оценки и текущий код не разрешают
+                  её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+            format: arch.yaml
+            contract:
+              schema_version: 1
+              id: architecture-change-view
+              title: Контракты и просмотр архитектуры
+              kind: module
+              purpose: Задавать локальные контракты ответственности каталогов и предоставлять
+                агентам правила их ведения, а пользователю — ArchiView для
+                просмотра архитектуры и изменений.
+              responsibilities:
+                R1: Публиковать канонический скилл module-boundaries и MCP-инструменты чтения
+                  контрактов.
+                R2: Проверять покрытие всех каталогов исходного кода контрактами arch.yaml и
+                  направлять агента на немедленный перенос старых описаний либо
+                  анализ и создание отсутствующих.
+                R3: Формировать снимки структуры, контрактов и доказательств; сохранять и
+                  отображать неизменяемые review.yaml для выбранного сравнения.
+                R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю
+                  содержательных проверок и отдельно определяя актуальность
+                  модуля и его поддерева.
+                R5: Поставлять локальный плагин Codex с веб-панелью, явным запуском анализа
+                  выбранного модуля и передачей агенту поручения исправить
+                  выбранное замечание.
+                R6: Поставлять плагин dsh — инструменты чтения, маршруты панели и публикацию
+                  скилла в хосте DeepSeek Harness без запуска модели самим
+                  просмотром.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+                  инструментами. Просмотр не изменяет исходники проекта.
+                B2: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
+                  адаптерам. Извлечение символов, разрешение зависимостей и
+                  индексация AST принадлежат ast-index.
+              invariants:
+                I1: Чтение ограничено настроенным корнем проекта.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+                  .archiview внутри корня проекта. Эта папка исключена из
+                  анализа исходников; прежние сохранённые факты и отчёты не
+                  переписываются при переносе проекта.
+                I3: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+                  текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+          files:
+            - path: arch.yaml
+              hash: c216f9794672b10099c95c8e739b5dd35b49dfaa
+          sourceFiles: 0
+          fingerprint: 16e202d5847e7c0953d8deca1b40b9d9b6642f4dfb0c01fcfc9388655f1f8390
+        - directory: src
+          documentPath: src/arch.yaml
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-core
+
+              title: Модель архитектуры и MCP
+
+              kind: module
+
+              purpose: Обслуживать MCP, читать и проверять контракты,
+              формировать и сравнивать снимки архитектуры
+                и хранить результаты проверок.
+              responsibilities:
+                R1: Обходить дерево исходников с учётом ограничений и предоставлять цепочки родительских контрактов.
+                R2: Проверять схемы arch.yaml и review.yaml, идентичность модулей, отпечатки входов и разрешимость
+                  доказательств.
+                R3: Собирать снимки файлов и контрактов; вычислять изменения, перемещения и устаревание отчётов.
+                R4: Сохранять неизменяемые пакеты результатов и выполнять структурные проверки с явным указанием
+                  непроверенных пунктов.
+                R5: Сохранять происхождение истории отдельно от фактического пути исходников и переносить прежнее
+                  внешнее хранилище в локальную папку данных без изменения сохранённых пакетов.
+                R6: Автоматически уплотнять YAML-отчёты по модулям, сохраняя содержательные проверки и доказательства;
+                  вычислять собственную и агрегированную актуальность по явным входам, включая зависимости,
+                  отдельно от полноты проверки и подтверждённости перечня зависимостей.
+                  Собственная проверка содержит только локальный контракт; совместимость размещения
+                  подмодулей оценивается в композиции родителя, без переноса его пунктов в чеклист детей.
+                R7: Проверять согласованность переносимых отчётов с подготовленным индексом Git.
+                R8: Сохранять наблюдённые состояния между коммитами с временем и привязкой к ревизии;
+                  предоставлять последовательность коммитов и точные снимки истории без изменения исходников.
+              boundaries:
+                B3: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые от модели инструменты UI без HTTP-сервера.
+                B4: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и скилл хоста,
+                  получая прикладные операции из application.
+                B1: Прикладные операции находятся в application; HTTP и CLI в archiview являются адаптерами, отображение принадлежит web.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                  доказывает его выполнения.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                  .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                  либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют arch.yaml и не согласуют новую ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+            format: arch.yaml
+            contract:
+              schema_version: 1
+              id: architecture-core
+              title: Модель архитектуры и MCP
+              kind: module
+              purpose: Обслуживать MCP, читать и проверять контракты, формировать и сравнивать
+                снимки архитектуры и хранить результаты проверок.
+              responsibilities:
+                R1: Обходить дерево исходников с учётом ограничений и предоставлять цепочки
+                  родительских контрактов.
+                R2: Проверять схемы arch.yaml и review.yaml, идентичность модулей, отпечатки
+                  входов и разрешимость доказательств.
+                R3: Собирать снимки файлов и контрактов; вычислять изменения, перемещения и
+                  устаревание отчётов.
+                R4: Сохранять неизменяемые пакеты результатов и выполнять структурные проверки с
+                  явным указанием непроверенных пунктов.
+                R5: Сохранять происхождение истории отдельно от фактического пути исходников и
+                  переносить прежнее внешнее хранилище в локальную папку данных
+                  без изменения сохранённых пакетов.
+                R6: Автоматически уплотнять YAML-отчёты по модулям, сохраняя содержательные
+                  проверки и доказательства; вычислять собственную и
+                  агрегированную актуальность по явным входам, включая
+                  зависимости, отдельно от полноты проверки и подтверждённости
+                  перечня зависимостей. Собственная проверка содержит только
+                  локальный контракт; совместимость размещения подмодулей
+                  оценивается в композиции родителя, без переноса его пунктов в
+                  чеклист детей.
+                R7: Проверять согласованность переносимых отчётов с подготовленным индексом Git.
+                R8: Сохранять наблюдённые состояния между коммитами с временем и привязкой к
+                  ревизии; предоставлять последовательность коммитов и точные
+                  снимки истории без изменения исходников.
+              boundaries:
+                B3: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые от
+                  модели инструменты UI без HTTP-сервера.
+                B4: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
+                  скилл хоста, получая прикладные операции из application.
+                B1: Прикладные операции находятся в application; HTTP и CLI в archiview являются
+                  адаптерами, отображение принадлежит web.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор.
+                  Наличие контракта не доказывает его выполнения.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+                  сборка и папки .archiview не расширяют анализ. Запись данных
+                  допускается в .archiview корня проекта либо явно выбранном
+                  внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют arch.yaml и не согласуют новую ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+                  файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения
+                  требует отдельного анализа.
+          files:
+            - path: src/arch.yaml
+              hash: 06e788d4475b3c89ed3b9e38d13f3e436ad3fbfb
+          sourceFiles: 14
+          fingerprint: 49dc77ed7c10fa188be9627bc34df2574cb45076ce932fa0ea082348a11f94a2
+        - directory: src/codex
+          documentPath: src/codex/arch.yaml
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-codex
+
+              title: Адаптер панели Codex
+
+              kind: module
+
+              purpose: Открывать существующее веб-приложение ArchiView как
+              локальное MCP App в Codex.
+
+              responsibilities:
+                R1: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные операции прикладного сервиса для UI; не добавлять глобальную точку открытия отдельного окна.
+                R2: Скрывать операции UI от модели через visibility app; передавать данные и ошибки просмотра только в метаданных результата.
+                R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex; отличать отсутствие папки от недоступности контекста и запрещать просмотр вне проектов.
+              boundaries:
+                B1: Вычисления и подготовка анализа принадлежат application; MCP-адаптер проверяет аргументы и вызывает сервис напрямую.
+                B2: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex App Tools только для чтения метаданных текущего чата и рабочих папок; не читает внутренние базы и файлы стенограмм Codex.
+              invariants:
+                I1: Один процесс обслуживает один фиксированный корень; адаптер не открывает HTTP-порт и не требует сертификатов.
+                I2: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+                I3: UI подключается к хосту до чтения дерева проекта; навигация не отправляет сообщения агенту и не обновляет контекст модели.
+                I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки ArchiView не означает отсутствие рабочей папки чата; неизвестный контекст не выдаётся за отсутствие проекта.
+                I5: Отсутствие истории чата или временная недоступность его контекста не блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку чата и проверяется по каталогу папок хоста.
+                I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный диалог открывается только явной кнопкой пользователя. Подтверждённое отсутствие проекта не обходится этой формой.
+            format: arch.yaml
+            contract:
+              schema_version: 1
+              id: archiview-codex
+              title: Адаптер панели Codex
+              kind: module
+              purpose: Открывать существующее веб-приложение ArchiView как локальное MCP App в
+                Codex.
+              responsibilities:
+                R1: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные
+                  операции прикладного сервиса для UI; не добавлять глобальную
+                  точку открытия отдельного окна.
+                R2: Скрывать операции UI от модели через visibility app; передавать данные и
+                  ошибки просмотра только в метаданных результата.
+                R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex;
+                  отличать отсутствие папки от недоступности контекста и
+                  запрещать просмотр вне проектов.
+              boundaries:
+                B1: Вычисления и подготовка анализа принадлежат application; MCP-адаптер
+                  проверяет аргументы и вызывает сервис напрямую.
+                B2: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex App
+                  Tools только для чтения метаданных текущего чата и рабочих
+                  папок; не читает внутренние базы и файлы стенограмм Codex.
+              invariants:
+                I1: Один процесс обслуживает один фиксированный корень; адаптер не открывает
+                  HTTP-порт и не требует сертификатов.
+                I2: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+                I3: UI подключается к хосту до чтения дерева проекта; навигация не отправляет
+                  сообщения агенту и не обновляет контекст модели.
+                I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки
+                  ArchiView не означает отсутствие рабочей папки чата;
+                  неизвестный контекст не выдаётся за отсутствие проекта.
+                I5: Отсутствие истории чата или временная недоступность его контекста не
+                  блокируют загрузку UI; исходный cwd MCP сохраняет рабочую
+                  папку чата и проверяется по каталогу папок хоста.
+                I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный
+                  диалог открывается только явной кнопкой пользователя.
+                  Подтверждённое отсутствие проекта не обходится этой формой.
+          files:
+            - path: src/codex/arch.yaml
+              hash: 1e4c50cf5ef5eadc519d0c25a2e64f0975db17db
+            - path: src/codex/directory-picker.mjs
+              hash: 018ab1a90ca4bef6089826dd81d52ce38301c1f4
+            - path: src/codex/host-context.mjs
+              hash: 3de0e00f6e02b9e939ee586bbcc4903936b8e802
+            - path: src/codex/panel-client.mjs
+              hash: 6a364306a912272424ac6db6ea87beba50816f43
+            - path: src/codex/panel.mjs
+              hash: 494847f9693e1bf0caf4d9288f423da83110e46f
+            - path: src/codex/project-context.mjs
+              hash: 7f77d3a2ae825dcdfdc1e800d609735f8d6d20ed
+            - path: src/codex/ui-tools.mjs
+              hash: 31bfcb956f8075c3303989a5648d8abbcde6a41d
+          sourceFiles: 6
+          fingerprint: eb875fce8e40730c50240c9c5fd264dcdea800b39c8248396832d43f9101e69a
+      facts:
+        - id: sha256:c6015b73bee43a62bce8f2ec776d264acc4441fb1b4a7a80c4f744a17afd7845
+          kind: file
+          path: arch.yaml
+          start_line: 1
+          end_line: 32
+          text: >
+            schema_version: 1
+
+            id: architecture-change-view
+
+            title: Контракты и просмотр архитектуры
+
+            kind: module
+
+            purpose: Задавать локальные контракты ответственности каталогов и
+            предоставлять агентам правила их
+              ведения, а пользователю — ArchiView для просмотра архитектуры и изменений.
+            responsibilities:
+              R1: Публиковать канонический скилл module-boundaries и MCP-инструменты чтения контрактов.
+              R2: Проверять покрытие всех каталогов исходного кода контрактами arch.yaml и направлять агента на
+                немедленный перенос старых описаний либо анализ и создание отсутствующих.
+              R3: Формировать снимки структуры, контрактов и доказательств; сохранять и отображать неизменяемые
+                review.yaml для выбранного сравнения.
+              R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю содержательных
+                проверок и отдельно определяя актуальность модуля и его поддерева.
+              R5: Поставлять локальный плагин Codex с веб-панелью, явным запуском анализа выбранного модуля
+                и передачей агенту поручения исправить выбранное замечание.
+              R6: Поставлять плагин dsh — инструменты чтения, маршруты панели и публикацию скилла в хосте
+                DeepSeek Harness без запуска модели самим просмотром.
+            boundaries:
+              B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                Просмотр не изменяет исходники проекта.
+              B2: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным адаптерам.
+                Извлечение символов, разрешение зависимостей и индексация AST принадлежат ast-index.
+            invariants:
+              I1: Чтение ограничено настроенным корнем проекта.
+              I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                факты и отчёты не переписываются при переносе проекта.
+              I3: arch.yaml содержит устойчивую ответственность; эвристические оценки и текущий код не разрешают
+                её расширять.
+              I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+        - id: sha256:988753e1d93fa6ecb79d45deed627c48316aa0be93778d53e83257cb2957b38d
+          kind: file
+          path: src/arch.yaml
+          start_line: 1
+          end_line: 39
+          text: >
+            schema_version: 1
+
+            id: architecture-core
+
+            title: Модель архитектуры и MCP
+
+            kind: module
+
+            purpose: Обслуживать MCP, читать и проверять контракты, формировать
+            и сравнивать снимки архитектуры
+              и хранить результаты проверок.
+            responsibilities:
+              R1: Обходить дерево исходников с учётом ограничений и предоставлять цепочки родительских контрактов.
+              R2: Проверять схемы arch.yaml и review.yaml, идентичность модулей, отпечатки входов и разрешимость
+                доказательств.
+              R3: Собирать снимки файлов и контрактов; вычислять изменения, перемещения и устаревание отчётов.
+              R4: Сохранять неизменяемые пакеты результатов и выполнять структурные проверки с явным указанием
+                непроверенных пунктов.
+              R5: Сохранять происхождение истории отдельно от фактического пути исходников и переносить прежнее
+                внешнее хранилище в локальную папку данных без изменения сохранённых пакетов.
+              R6: Автоматически уплотнять YAML-отчёты по модулям, сохраняя содержательные проверки и доказательства;
+                вычислять собственную и агрегированную актуальность по явным входам, включая зависимости,
+                отдельно от полноты проверки и подтверждённости перечня зависимостей.
+                Собственная проверка содержит только локальный контракт; совместимость размещения
+                подмодулей оценивается в композиции родителя, без переноса его пунктов в чеклист детей.
+              R7: Проверять согласованность переносимых отчётов с подготовленным индексом Git.
+              R8: Сохранять наблюдённые состояния между коммитами с временем и привязкой к ревизии;
+                предоставлять последовательность коммитов и точные снимки истории без изменения исходников.
+            boundaries:
+              B3: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые от модели инструменты UI без HTTP-сервера.
+              B4: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и скилл хоста,
+                получая прикладные операции из application.
+              B1: Прикладные операции находятся в application; HTTP и CLI в archiview являются адаптерами, отображение принадлежит web.
+              B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                доказывает его выполнения.
+            invariants:
+              I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+              I2: Неполнота обхода и доказательств сообщается явно.
+              I3: Снимки и отчёты не заменяют arch.yaml и не согласуют новую ответственность.
+              I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+              I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+        - id: sha256:5ba8e39dcd926f5d30b0a4c29288cddd2cefc14ffeeae2cb3f6a6ebc7ad196e2
+          kind: file
+          path: src/codex/arch.yaml
+          start_line: 1
+          end_line: 20
+          text: >
+            schema_version: 1
+
+            id: archiview-codex
+
+            title: Адаптер панели Codex
+
+            kind: module
+
+            purpose: Открывать существующее веб-приложение ArchiView как
+            локальное MCP App в Codex.
+
+            responsibilities:
+              R1: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные операции прикладного сервиса для UI; не добавлять глобальную точку открытия отдельного окна.
+              R2: Скрывать операции UI от модели через visibility app; передавать данные и ошибки просмотра только в метаданных результата.
+              R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex; отличать отсутствие папки от недоступности контекста и запрещать просмотр вне проектов.
+            boundaries:
+              B1: Вычисления и подготовка анализа принадлежат application; MCP-адаптер проверяет аргументы и вызывает сервис напрямую.
+              B2: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex App Tools только для чтения метаданных текущего чата и рабочих папок; не читает внутренние базы и файлы стенограмм Codex.
+            invariants:
+              I1: Один процесс обслуживает один фиксированный корень; адаптер не открывает HTTP-порт и не требует сертификатов.
+              I2: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+              I3: UI подключается к хосту до чтения дерева проекта; навигация не отправляет сообщения агенту и не обновляет контекст модели.
+              I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки ArchiView не означает отсутствие рабочей папки чата; неизвестный контекст не выдаётся за отсутствие проекта.
+              I5: Отсутствие истории чата или временная недоступность его контекста не блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку чата и проверяется по каталогу папок хоста.
+              I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный диалог открывается только явной кнопкой пользователя. Подтверждённое отсутствие проекта не обходится этой формой.
+        - id: sha256:23be365372e94adeb423f926358ca5494ee44fda7413f3531249aa03a3a9f7ac
+          kind: file
+          path: src/codex/directory-picker.mjs
+          start_line: 1
+          end_line: 40
+          text: >
+            /** Нативный выбор папки Windows вызывается только явной кнопкой
+            панели, без модели и HTTP. */
+
+            import { execFile } from "node:child_process";
+
+            import path from "node:path";
+
+            import { promisify } from "node:util";
+
+            import { ApplicationError } from "../application/errors.mjs";
+
+
+            /** Скрипт постоянный: пользовательский путь не подставляется в
+            исполняемый код. */
+
+            const PICK_DIRECTORY_SCRIPT = `
+
+            $ErrorActionPreference = 'Stop'
+
+            [Console]::OutputEncoding = New-Object
+            System.Text.UTF8Encoding($false)
+
+            Add-Type -AssemblyName System.Windows.Forms
+
+            [System.Windows.Forms.Application]::EnableVisualStyles()
+
+            $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+
+            $dialog.Description = 'Выберите папку проекта ArchiView'
+
+            $dialog.ShowNewFolderButton = $false
+
+            try {
+              $selected = $null
+              if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $selected = $dialog.SelectedPath }
+              @{ projectRoot = $selected } | ConvertTo-Json -Compress
+            } finally { $dialog.Dispose() }
+
+            `;
+
+
+            /**
+             * Скрывает консоль вспомогательного процесса, оставляя видимым только диалог.
+             * Отмена возвращает null и не меняет проект. Ограничение времени закрывает
+             * забытый диалог до стандартного таймаута MCP-вызова; ручной ввод остаётся доступен.
+             */
+            export async function chooseProjectDirectory({ platform =
+            process.platform, run = promisify(execFile) } = {}) {
+              if (platform !== "win32") throw new ApplicationError("DIRECTORY_PICKER_UNAVAILABLE", "Укажите путь к папке вручную: диалог выбора доступен в Windows.");
+              try {
+                const { stdout } = await run("powershell.exe", ["-NoLogo", "-NoProfile", "-NonInteractive", "-STA", "-EncodedCommand",
+                  Buffer.from(PICK_DIRECTORY_SCRIPT, "utf16le").toString("base64")], { windowsHide: true, timeout: 45000, maxBuffer: 65536, encoding: "utf8" });
+                const result = JSON.parse(stdout.trim());
+                if (result.projectRoot !== null && (typeof result.projectRoot !== "string" || !path.win32.isAbsolute(result.projectRoot))) throw new Error("Invalid directory selection");
+                return { projectRoot: result.projectRoot };
+              } catch {
+                throw new ApplicationError("DIRECTORY_PICKER_UNAVAILABLE", "Не удалось выбрать папку. Повторите попытку или введите путь вручную.");
+              }
+            }
+        - id: sha256:d58c5b7e4f2037c3b4d521f66e0edf22a3dafba0ccd3c9aa64a20968402573da
+          kind: file
+          path: src/codex/host-context.mjs
+          start_line: 1
+          end_line: 124
+          text: >
+            /**
+             * Чтение контекста через канал, который Codex предоставляет собственному App Tools.
+             * Допустимы только операции чтения метаданных текущего чата и рабочих папок.
+             * Универсальный прокси для UI здесь не публикуется.
+             */
+            import net from "node:net";
+
+            import path from "node:path";
+
+            import { randomUUID } from "node:crypto";
+
+
+            /** Тот же предел кадра, что у поставляемого Codex App Tools. */
+
+            const MAX_FRAME_BYTES = 8 * 1024 * 1024;
+
+
+            /**
+             * Один короткоживущий сеанс JSON-RPC поверх именованного pipe/Unix socket хоста.
+             * При таймауте или разрыве закрывает соединение и отклоняет ожидающие ответы.
+             */
+            export function createHostConnection(pipePath, { timeoutMs = 5000 }
+            = {}) {
+              let socket, connecting, serial = 0, buffer = Buffer.alloc(0);
+              const pending = new Map();
+              function close(error = new Error("Codex context channel closed")) {
+                socket?.destroy();
+                for (const request of pending.values()) { clearTimeout(request.timer); request.reject(error); }
+                pending.clear();
+              }
+              function connect() {
+                if (connecting) return connecting;
+                connecting = new Promise((resolve, reject) => {
+                  socket = net.createConnection(pipePath);
+                  const timer = setTimeout(() => { const error = new Error("Codex context connection timed out"); reject(error); close(error); }, timeoutMs);
+                  socket.once("connect", () => { clearTimeout(timer); resolve(); });
+                  socket.on("error", (error) => { clearTimeout(timer); reject(error); close(error); });
+                  socket.once("close", () => { clearTimeout(timer); reject(new Error("Codex context channel closed")); close(); });
+                  socket.on("data", (chunk) => {
+                    buffer = Buffer.concat([buffer, chunk]);
+                    try {
+                      while (buffer.length >= 4) {
+                        const length = buffer.readUInt32LE(0);
+                        if (length > MAX_FRAME_BYTES) throw new Error("Codex context response was too large");
+                        if (buffer.length < 4 + length) return;
+                        const response = JSON.parse(buffer.subarray(4, 4 + length).toString("utf8"));
+                        buffer = buffer.subarray(4 + length);
+                        const request = pending.get(response.id);
+                        if (!request) continue;
+                        pending.delete(response.id); clearTimeout(request.timer);
+                        if (response.error) request.reject(new Error(response.error.message));
+                        else request.resolve(response.result);
+                      }
+                    } catch (error) { close(error); }
+                  });
+                });
+                return connecting;
+              }
+              return {
+                async request(method, params) {
+                  await connect();
+                  const id = ++serial;
+                  const payload = Buffer.from(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+                  if (payload.length > MAX_FRAME_BYTES) throw new Error("Codex context request was too large");
+                  const frame = Buffer.alloc(4 + payload.length); frame.writeUInt32LE(payload.length); payload.copy(frame, 4);
+                  return new Promise((resolve, reject) => {
+                    const timer = setTimeout(() => close(new Error("Codex context request timed out")), timeoutMs);
+                    pending.set(id, { resolve, reject, timer });
+                    socket.write(frame);
+                  });
+                },
+                close,
+              };
+            }
+
+
+            /** Из результата App Tools используются только метаданные чата и
+            каталог папок. */
+
+            function toolData(result) {
+              if (result.success !== true) throw new Error("Codex could not read project context");
+              for (const item of result.contentItems ?? []) {
+                if (item.type === "inputText") return JSON.parse(item.text);
+              }
+              throw new Error("Codex did not return project context");
+            }
+
+
+            /** Рабочая папка может быть вложена в зарегистрированную папку
+            проекта; projectId для этого не требуется. */
+
+            function within(root, directory) {
+              const relative = path.relative(root, directory);
+              return relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(".." + path.sep));
+            }
+
+
+            /**
+             * Использует метаданные чата, а до появления истории — рабочую папку, с которой
+             * хост запустил MCP-процесс. Оба пути проверяются по каталогу папок того же хоста.
+             * Каталог установки не является резервным проектом; неизвестный контекст
+             * не выдаётся за отсутствие проекта. После привязки резервный cwd отключается.
+             */
+            export function createHostContextReader({ pipePath =
+            process.env.CODEX_APP_TOOLS_PIPE_PATH,
+              callerHostId = process.env.CODEX_APP_TOOLS_CALLER_HOST_ID, connection = createHostConnection,
+              startupDirectory = process.cwd(), installedRoot = process.env.PLUGIN_ROOT } = {}) {
+              return async (threadId, { allowStartupDirectory = true } = {}) => {
+                if (!pipePath) return { status: "unknown" };
+                const host = connection(pipePath);
+                try {
+                  const catalogue = await host.request("tools/list", { threadStartKind: "all" });
+                  async function read(toolName, args) {
+                    const tool = catalogue.tools?.find((candidate) => candidate.name === toolName && candidate.namespace === "codex_app");
+                    if (!tool) throw new Error("Codex context tool unavailable");
+                    return toolData(await host.request("tools/call", { arguments: args, callerSource: "codex", namespace: tool.namespace,
+                      ...(callerHostId ? { hostId: callerHostId } : {}), threadId, tool: toolName, callId: randomUUID(), turnId: "mcp-ui-" + randomUUID() }));
+                  }
+                  const [chatResult, projectsResult] = await Promise.allSettled([
+                    read("read_thread", { threadId, turnLimit: 1, includeOutputs: false, maxOutputCharsPerItem: 0 }), read("list_projects", {}),
+                  ]);
+                  if (projectsResult.status !== "fulfilled" || !Array.isArray(projectsResult.value.projects)) return { status: "unknown" };
+                  const catalogueProjects = projectsResult.value;
+                  const thread = chatResult.status === "fulfilled" ? chatResult.value.thread : undefined;
+                  if (thread && (thread.id !== threadId || typeof thread.cwd !== "string" || !path.isAbsolute(thread.cwd))) return { status: "unknown" };
+                  const validStartup = allowStartupDirectory && typeof startupDirectory === "string" && path.isAbsolute(startupDirectory) &&
+                    !(typeof installedRoot === "string" && path.isAbsolute(installedRoot) && within(installedRoot, startupDirectory));
+                  const root = thread?.cwd ?? (validStartup ? startupDirectory : undefined);
+                  if (!root) return { status: "unknown" };
+                  const hostId = thread?.hostId ?? callerHostId ?? "local";
+                  const folders = catalogueProjects.projects.filter((project) => project.projectKind === "local" &&
+                    project.hostId === hostId && typeof project.path === "string" && path.isAbsolute(project.path));
+                  return folders.some((project) => within(project.path, root)) ? { status: "ready", root } : { status: "unavailable" };
+                } catch { return { status: "unknown" }; }
+                finally { host.close(); }
+              };
+            }
+        - id: sha256:71f8dd8ff15656c6ec29448d41169132507ead58d4a5c46806ef08881008eacc
+          kind: file
+          path: src/codex/panel-client.mjs
+          start_line: 1
+          end_line: 73
+          text: >
+            /**
+             * Дополнение клиента только для сборки Codex: при неизвестном контексте открывает
+             * существующую форму общего UI и добавляет нативный выбор папки, если он доступен.
+             * Общие исходники web и клиент dsh не меняются.
+             */
+            import { createArchiViewClient as createSharedClient } from
+            "../../web/archiview/client.mjs";
+
+
+            /** Ограничивает только определение папки: чтение снимков не
+            означает недоступность контекста. */
+
+            async function initialResponse(operation, timeoutMs) {
+              let timer;
+              try {
+                return await Promise.race([operation, new Promise((_, reject) => {
+                  timer = setTimeout(() => reject(Object.assign(new Error("Не удалось автоматически определить папку проекта"),
+                    { code: "CODEX_CONTEXT_UNAVAILABLE" })), timeoutMs);
+                })]);
+              } finally { clearTimeout(timer); }
+            }
+
+
+            /**
+             * Адаптирует неизвестный root к старому PROJECT_REQUIRED. Явное отсутствие
+             * проекта сохраняет PROJECT_UNAVAILABLE. Ввод и диалог проходят ту же проверку
+             * абсолютного существующего каталога; повторная смена привязанного корня запрещена.
+             */
+            export function createArchiViewClient(options, { document =
+            globalThis.document, timeoutMs = 15000 } = {}) {
+              const client = createSharedClient(options);
+              let initialized = false, manualFallback = false, bridge;
+              Promise.resolve(options.connection).then((value) => { bridge = value; }).catch(() => {});
+              const panel = document?.getElementById("document-panel");
+              if (panel) {
+                const observer = new MutationObserver(() => {
+                  const form = panel.querySelector(".project-form");
+                  if (!form || form.dataset.codexFallback) return;
+                  form.dataset.codexFallback = "true";
+                  const description = form.parentElement.querySelector("p");
+                  if (manualFallback && description) description.textContent = "Не удалось автоматически определить папку проекта. Укажите абсолютный путь к папке.";
+                  if (document.querySelector('meta[name="archiview-directory-picker"]')?.content !== "true" || !bridge?.call) return;
+                  const browse = document.createElement("button");
+                  browse.type = "button"; browse.className = "button button-quiet"; browse.textContent = "Выбрать папку…";
+                  const input = form.querySelector("input"), error = form.querySelector('[role="alert"]');
+                  form.insertBefore(browse, form.querySelector('button[type="submit"]'));
+                  browse.addEventListener("click", async () => {
+                    browse.disabled = true; error.textContent = "";
+                    try {
+                      const result = await bridge.call("archiview_ui_choose_project", {});
+                      if (result.projectRoot) { input.value = result.projectRoot; form.requestSubmit(); }
+                    } catch (cause) { error.textContent = cause.message; }
+                    finally { browse.disabled = false; }
+                  });
+                });
+                observer.observe(panel, { childList: true, subtree: true });
+              }
+              return { ...client, async getComparison(args) {
+                if (!initialized) {
+                  try {
+                    const operation = Promise.resolve(options.connection).then((connection) => {
+                      if (!connection?.call) throw new Error("Хост не поддерживает вызовы MCP из панели");
+                      return connection.call("archiview_ui_get_project", {});
+                    });
+                    const result = await initialResponse(operation, timeoutMs);
+                    if (typeof result?.root !== "string" || result.root.trim() === "") throw Object.assign(new Error("Не удалось определить папку проекта"), { code: "CODEX_CONTEXT_UNAVAILABLE" });
+                    initialized = true;
+                  } catch (error) {
+                    if (error.code !== "CODEX_CONTEXT_UNAVAILABLE") throw error;
+                    manualFallback = true;
+                    throw Object.assign(new Error(error.message), { code: "PROJECT_REQUIRED" });
+                  }
+                }
+                // После подтверждения корня ждём данные обычным запросом MCP. Медленная
+                // подготовка проекта и ошибки снимков не открывают форму выбора папки.
+                return client.getComparison(args);
+              } };
+            }
+        - id: sha256:1194a306924189bd4ae3034ebf21df39d88f886bb0721099688c69785fe9186b
+          kind: file
+          path: src/codex/panel.mjs
+          start_line: 1
+          end_line: 85
+          text: >
+            /** Адаптер MCP Apps: собранный UI и скрытые операции прикладного
+            сервиса, без HTTP-сервера. */
+
+            import { readFile } from "node:fs/promises";
+
+            import { createArchiViewSession } from "../application/session.mjs";
+
+            import { createProjectBinding } from "../application/project.mjs";
+
+            import { applicationError, ApplicationError } from
+            "../application/errors.mjs";
+
+            import { packageUrl } from "../package-paths.mjs";
+
+            import { UI_TOOL_METHODS, validateUiArguments } from
+            "./ui-tools.mjs";
+
+            import { chooseProjectDirectory } from "./directory-picker.mjs";
+
+
+            export const PANEL_URI = "ui://archiview/panel-v6.html";
+
+            export const PROJECT_INPUT = { type: "string", description:
+            "Absolute project directory of the current chat, not the plugin
+            installation. Normally selected automatically from the working
+            folder supplied by Codex." };
+
+            export const PANEL_TOOL = {
+              name: "archiview_open", title: "ArchiView",
+              description: "Open the local architecture panel for this project. Browsing stays in the UI; only an explicit Analyze action sends a request to the agent.",
+              inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT }, additionalProperties: false },
+              annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+              _meta: { ui: { resourceUri: PANEL_URI }, "openai/ui": { entrypoints: [{ type: "thread" }] } },
+            };
+
+
+            /** Одна панель владеет одной сессией; загрузка HTML не читает
+            проект и не открывает сокеты. */
+
+            export function createCodexPanel(rootOrBinding, { stateDirectory,
+            chooseDirectory = chooseProjectDirectory } = {}) {
+              const binding = rootOrBinding && typeof rootOrBinding.select === "function" ? Promise.resolve(rootOrBinding) : createProjectBinding(rootOrBinding);
+              let session;
+              let closed = false;
+              let queue = Promise.resolve();
+              const checkOpen = () => { if (closed) throw new ApplicationError("SESSION_CLOSED", "Сессия панели закрыта"); };
+              async function service(metadata) {
+                const project = await binding;
+                const root = await project.select(undefined, metadata);
+                if (!session) session = createArchiViewSession({ root, stateDirectory }).catch((error) => { session = null; throw error; });
+                return session;
+              }
+              return {
+                /** Открытие UI не зависит от готовности контекста пустого чата; ошибки папки затем показывает сама панель. */
+                async open(projectRoot, metadata) {
+                  checkOpen();
+                  const project = await binding;
+                  try { await project.select(projectRoot, metadata); }
+                  catch (error) {
+                    if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE", "PROJECT_UNAVAILABLE"].includes(error.code)) throw error;
+                    const unavailable = error.code === "PROJECT_UNAVAILABLE";
+                    return { content: [{ type: "text", text: unavailable ? error.message : "ArchiView: подготовка рабочей папки проекта." }],
+                      structuredContent: { projectRequired: !unavailable, projectStatus: unavailable ? "unavailable" : "initializing" },
+                      _meta: { bootstrap: applicationError(error) } };
+                  }
+                  const root = project.root;
+                  return { content: [{ type: "text", text: "ArchiView: " + root }], structuredContent: { root } };
+                },
+                /** Сериализация операций сохраняет согласованность view и публикации; ошибки тоже доставляются только UI. */
+                callUi(name, args, metadata) {
+                  const operation = queue.then(async () => {
+                    checkOpen();
+                    validateUiArguments(name, args);
+                    const method = UI_TOOL_METHODS.get(name);
+                    if (method === "chooseProject") {
+                      try { await (await binding).select(undefined, metadata); }
+                      catch (error) { if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE"].includes(error.code)) throw error; }
+                      return { content: [], _meta: { result: await chooseDirectory() } };
+                    }
+                    // Проверка папки не создаёт сессию и не ждёт обхода исходников или истории.
+                    const result = ["getProject", "setProject"].includes(method) ?
+                      { root: await (await binding).select(method === "setProject" ? args.projectRoot : undefined, metadata) } :
+                      await (await service(metadata))[method](args);
+                    // Ни content, ни structuredContent не содержат данные просмотра.
+                    return { content: [], _meta: { result } };
+                  }).catch((error) => ({ isError: true, content: [], _meta: { error: applicationError(error) } }));
+                  queue = operation.then(() => {});
+                  return operation;
+                },
+                /** Полностью встроенный HTML подключается к хосту даже при запрете любых сетевых соединений UI. */
+                async resource() {
+                  checkOpen();
+                  const html = (await readFile(new URL("dist/panel.html", packageUrl), "utf8"))
+                    .replace("<head>", '<head><meta name="archiview-transport" content="mcp"><meta name="archiview-directory-picker" content="' + (process.platform === "win32") + '">')
+                    .replace('href="/" aria-label="ArchiView"', 'href="#" aria-label="ArchiView"');
+                  return { contents: [{ uri: PANEL_URI, mimeType: "text/html;profile=mcp-app", text: html,
+                    _meta: { ui: { csp: { connectDomains: [], resourceDomains: [] } },
+                      "openai/widgetCSP": { connect_domains: [], resource_domains: [] },
+                      "openai/ui": { availableDisplayModes: ["inline", "fullscreen"] } } }] };
+                },
+                /** После отключения хоста новые операции отклоняются; уже начатая запись безопасно завершается. */
+                async close() { closed = true; await queue; session = null; },
+              };
+            }
+        - id: sha256:40ca97a4816d3428ba3c0213748dfd21f56c7f4d1cca6c395b87c4292ea6a3b2
+          kind: file
+          path: src/codex/project-context.mjs
+          start_line: 1
+          end_line: 54
+          text: >
+            /** Привязка панели к рабочей папке чата Codex, независимо от
+            projectId и наличия сообщений. */
+
+            import { createProjectBinding } from "../application/project.mjs";
+
+            import { ApplicationError } from "../application/errors.mjs";
+
+            import { createHostContextReader } from "./host-context.mjs";
+
+
+            /** Идентификатор берётся только из метаданных хоста, а не из
+            аргументов инструмента модели. */
+
+            export function threadIdFromMetadata(metadata) {
+              for (const key of ["threadId", "openai/threadId", "openai/thread_id", "codexThreadId", "codex_thread_id", "thread_id"]) {
+                const value = metadata?.[key];
+                if (typeof value === "string" && value.trim() !== "") return value;
+              }
+              return undefined;
+            }
+
+
+            /**
+             * Общая прикладная привязка остаётся неизменяемой. Codex-адаптер получает папку
+             * до создания сессии; сериализация первых обращений исключает конкурирующие корни.
+             * Когда хост не сообщает контекст, разрешён явный выбор существующей папки.
+             * Подтверждённое отсутствие проекта не обходится ручным вводом.
+             */
+            export async function createCodexProjectBinding(initialRoot, {
+            readContext = createHostContextReader() } = {}) {
+              const project = await createProjectBinding(initialRoot);
+              let boundThread;
+              let queue = Promise.resolve();
+              return {
+                get root() { return project.root; },
+                select(requested, metadata) {
+                  const operation = queue.then(async () => {
+                    const threadId = threadIdFromMetadata(metadata);
+                    if (threadId === undefined && requested === undefined && project.root === undefined) {
+                      throw new ApplicationError("CODEX_CONTEXT_UNAVAILABLE", "Не удалось получить рабочую папку чата от Codex. Повторите попытку.");
+                    }
+                    if (threadId !== undefined && threadId !== boundThread) {
+                      const context = await readContext(threadId, { allowStartupDirectory: boundThread === undefined });
+                      if (context.status === "unavailable") throw new ApplicationError("PROJECT_UNAVAILABLE", "Плагин доступен только в проектах");
+                      if (context.status !== "ready") {
+                        if (requested !== undefined && project.root === undefined) {
+                          const root = await project.select(requested);
+                          boundThread = threadId;
+                          return root;
+                        }
+                        throw new ApplicationError("CODEX_CONTEXT_UNAVAILABLE", "Не удалось получить рабочую папку чата от Codex. Укажите папку проекта вручную.");
+                      }
+                      if (initialRoot === undefined) await project.select(context.root);
+                      boundThread = threadId;
+                    }
+                    return project.select(requested);
+                  });
+                  queue = operation.catch(() => {});
+                  return operation;
+                },
+              };
+            }
+        - id: sha256:722ce1d0f60337c57c7a28eff5836d9bae8d3d90f3c98b04e48c90f34d3ac9f9
+          kind: file
+          path: src/codex/ui-tools.mjs
+          start_line: 1
+          end_line: 41
+          text: >
+            /** Каталог операций панели. Хост видит схемы, но visibility=app
+            исключает их из инструментов модели. */
+
+            import { ApplicationError } from "../application/errors.mjs";
+
+
+            const string = { type: "string", maxLength: 4096 };
+
+            const selectedModule = { view: string, path: string };
+
+            /** Явный набор операций сервиса, без произвольного URL, имени
+            функции или доступа к файлам. */
+
+            const operations = [
+              ["get_project", "getProject", "Resolve this panel's project directory without loading snapshots or history.", {}, [], true],
+              ["choose_project", "chooseProject", "Show a native folder chooser after an explicit user click. Cancellation keeps the current input.", {}, [], false],
+              ["set_project", "setProject", "Bind this panel to a project directory.", { projectRoot: string }, ["projectRoot"], false],
+              ["get_comparison", "getComparison", "Load the selected comparison and timeline for the panel.", { target: string, baseline: string, historyLimit: { type: "integer", minimum: 1, maximum: 10000 } }, [], false],
+              ["get_module", "getModule", "Load module details from an existing comparison.", selectedModule, ["view", "path"], true],
+              ["prepare_analysis", "prepareAnalysis", "Prepare immutable inputs for an explicit module analysis.", selectedModule, ["view", "path"], false],
+              ["get_analysis", "getAnalysis", "Read the saved status of a prepared analysis.", { id: string }, ["id"], true],
+              ["build_review", "buildReview", "Refresh a structural report for a selected module.", selectedModule, ["view", "path"], false],
+              ["save_snapshot", "saveSnapshot", "Save the selected complete snapshot.", { view: string, label: { type: "string", maxLength: 120 } }, ["view"], false],
+            ];
+
+
+            export const UI_TOOL_METHODS = new Map(operations.map(([name,
+            method]) => ["archiview_ui_" + name, method]));
+
+            export const UI_TOOLS = operations.map(([name, , description,
+            properties, required, readOnlyHint]) => ({
+              name: "archiview_ui_" + name, description,
+              inputSchema: { type: "object", properties, required, additionalProperties: false },
+              annotations: { readOnlyHint, destructiveHint: false, openWorldHint: false },
+              _meta: { ui: { visibility: ["app"] } },
+            }));
+
+
+            /** SDK низкого уровня не валидирует inputSchema; проверяем тот же
+            контракт перед вызовом сервиса. */
+
+            export function validateUiArguments(name, args) {
+              const schema = UI_TOOLS.find((tool) => tool.name === name)?.inputSchema;
+              const invalid = () => { throw new ApplicationError("INVALID_ARGUMENT", "Некорректные параметры операции панели"); };
+              if (!schema || !args || typeof args !== "object" || Array.isArray(args)) invalid();
+              if (Object.keys(args).some((key) => !Object.hasOwn(schema.properties, key)) ||
+                  schema.required.some((key) => !Object.hasOwn(args, key))) invalid();
+              for (const [key, value] of Object.entries(args)) {
+                const rule = schema.properties[key];
+                if (rule.type === "string" && (typeof value !== "string" || value.length > rule.maxLength)) invalid();
+                if (rule.type === "integer" && (!Number.isSafeInteger(value) || value < rule.minimum || value > rule.maximum)) invalid();
+              }
+              return args;
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      scope_digest: sha256:24657e8037c209088acc0aad1f740c9e197a294ef19aaf1ce7007ab5e3382a49
+    current:
+      schema_version: 2
+      id: launch-0c17d906022bd459d22344151aff11a096a871151e20f3939bcd08fd8714fb4e
+      digest: sha256:d110eb6a3c9380e9914f9c591358b4ebfa3be0a7ba73dbba880eb4fa4e26c705
+      kind: launch
+      complete: true
+      modules:
+        - directory: .
+          documentPath: arch.yaml
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-change-view
+
+              title: Контракты и просмотр архитектуры
+
+              kind: module
+
+              purpose: Задавать локальные контракты ответственности каталогов и
+              предоставлять агентам правила их
+                ведения, а пользователю — ArchiView для просмотра архитектуры и изменений.
+              responsibilities:
+                R1: Публиковать канонический скилл module-boundaries и MCP-инструменты чтения контрактов.
+                R2: Проверять покрытие всех каталогов исходного кода контрактами arch.yaml и направлять агента на
+                  немедленный перенос старых описаний либо анализ и создание отсутствующих.
+                R3: Формировать снимки структуры, контрактов и доказательств; сохранять и отображать неизменяемые
+                  review.yaml для выбранного сравнения.
+                R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю содержательных
+                  проверок и отдельно определяя актуальность модуля и его поддерева.
+                R5: Поставлять локальный плагин Codex с веб-панелью, явным запуском анализа выбранного модуля
+                  и передачей агенту поручения исправить выбранное замечание.
+                R6: Поставлять плагин dsh — инструменты чтения, маршруты панели и публикацию скилла в хосте
+                  DeepSeek Harness без запуска модели самим просмотром.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                  Просмотр не изменяет исходники проекта.
+                B2: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным адаптерам.
+                  Извлечение символов, разрешение зависимостей и индексация AST принадлежат ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено настроенным корнем проекта.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                  внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                  факты и отчёты не переписываются при переносе проекта.
+                I3: arch.yaml содержит устойчивую ответственность; эвристические оценки и текущий код не разрешают
+                  её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+            format: arch.yaml
+            contract:
+              schema_version: 1
+              id: architecture-change-view
+              title: Контракты и просмотр архитектуры
+              kind: module
+              purpose: Задавать локальные контракты ответственности каталогов и предоставлять
+                агентам правила их ведения, а пользователю — ArchiView для
+                просмотра архитектуры и изменений.
+              responsibilities:
+                R1: Публиковать канонический скилл module-boundaries и MCP-инструменты чтения
+                  контрактов.
+                R2: Проверять покрытие всех каталогов исходного кода контрактами arch.yaml и
+                  направлять агента на немедленный перенос старых описаний либо
+                  анализ и создание отсутствующих.
+                R3: Формировать снимки структуры, контрактов и доказательств; сохранять и
+                  отображать неизменяемые review.yaml для выбранного сравнения.
+                R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю
+                  содержательных проверок и отдельно определяя актуальность
+                  модуля и его поддерева.
+                R5: Поставлять локальный плагин Codex с веб-панелью, явным запуском анализа
+                  выбранного модуля и передачей агенту поручения исправить
+                  выбранное замечание.
+                R6: Поставлять плагин dsh — инструменты чтения, маршруты панели и публикацию
+                  скилла в хосте DeepSeek Harness без запуска модели самим
+                  просмотром.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+                  инструментами. Просмотр не изменяет исходники проекта.
+                B2: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
+                  адаптерам. Извлечение символов, разрешение зависимостей и
+                  индексация AST принадлежат ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+                  строгим TypeScript перед сборкой; классы сохраняют
+                  единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено настроенным корнем проекта.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+                  .archiview внутри корня проекта. Эта папка исключена из
+                  анализа исходников; прежние сохранённые факты и отчёты не
+                  переписываются при переносе проекта.
+                I3: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+                  текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+          files:
+            - path: arch.yaml
+              hash: cafee16854ff74b5258f95b7fe747f78e2f8f98e
+          sourceFiles: 0
+          fingerprint: 11386a8dcd0ea280c1f697031757266cef74be04a6e237a3cf840888fcee866d
+        - directory: src
+          documentPath: src/arch.yaml
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-core
+
+              title: Модель архитектуры и MCP
+
+              kind: module
+
+              purpose: Обслуживать MCP, читать и проверять контракты,
+              формировать и сравнивать снимки архитектуры
+                и хранить результаты проверок.
+              responsibilities:
+                R1: Обходить дерево исходников с учётом ограничений и предоставлять цепочки родительских контрактов.
+                R2: Проверять схемы arch.yaml и review.yaml, идентичность модулей, отпечатки входов и разрешимость
+                  доказательств.
+                R3: Собирать снимки файлов и контрактов; вычислять изменения, перемещения и устаревание отчётов.
+                R4: Сохранять неизменяемые пакеты результатов и выполнять структурные проверки с явным указанием
+                  непроверенных пунктов.
+                R5: Сохранять происхождение истории отдельно от фактического пути исходников и переносить прежнее
+                  внешнее хранилище в локальную папку данных без изменения сохранённых пакетов.
+                R6: Автоматически уплотнять YAML-отчёты по модулям, сохраняя содержательные проверки и доказательства;
+                  вычислять собственную и агрегированную актуальность по явным входам, включая зависимости,
+                  отдельно от полноты проверки и подтверждённости перечня зависимостей.
+                  Собственная проверка содержит только локальный контракт; совместимость размещения
+                  подмодулей оценивается в композиции родителя, без переноса его пунктов в чеклист детей.
+                R7: Проверять согласованность переносимых отчётов с подготовленным индексом Git.
+                R8: Сохранять наблюдённые состояния между коммитами с временем и привязкой к ревизии;
+                  предоставлять последовательность коммитов и точные снимки истории без изменения исходников.
+              boundaries:
+                B3: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые от модели инструменты UI без HTTP-сервера.
+                B4: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и скилл хоста,
+                  получая прикладные операции из application.
+                B1: Прикладные операции находятся в application; HTTP и CLI в archiview являются адаптерами, отображение принадлежит web.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                  доказывает его выполнения.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                  .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                  либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют arch.yaml и не согласуют новую ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+            format: arch.yaml
+            contract:
+              schema_version: 1
+              id: architecture-core
+              title: Модель архитектуры и MCP
+              kind: module
+              purpose: Обслуживать MCP, читать и проверять контракты, формировать и сравнивать
+                снимки архитектуры и хранить результаты проверок.
+              responsibilities:
+                R1: Обходить дерево исходников с учётом ограничений и предоставлять цепочки
+                  родительских контрактов.
+                R2: Проверять схемы arch.yaml и review.yaml, идентичность модулей, отпечатки
+                  входов и разрешимость доказательств.
+                R3: Собирать снимки файлов и контрактов; вычислять изменения, перемещения и
+                  устаревание отчётов.
+                R4: Сохранять неизменяемые пакеты результатов и выполнять структурные проверки с
+                  явным указанием непроверенных пунктов.
+                R5: Сохранять происхождение истории отдельно от фактического пути исходников и
+                  переносить прежнее внешнее хранилище в локальную папку данных
+                  без изменения сохранённых пакетов.
+                R6: Автоматически уплотнять YAML-отчёты по модулям, сохраняя содержательные
+                  проверки и доказательства; вычислять собственную и
+                  агрегированную актуальность по явным входам, включая
+                  зависимости, отдельно от полноты проверки и подтверждённости
+                  перечня зависимостей. Собственная проверка содержит только
+                  локальный контракт; совместимость размещения подмодулей
+                  оценивается в композиции родителя, без переноса его пунктов в
+                  чеклист детей.
+                R7: Проверять согласованность переносимых отчётов с подготовленным индексом Git.
+                R8: Сохранять наблюдённые состояния между коммитами с временем и привязкой к
+                  ревизии; предоставлять последовательность коммитов и точные
+                  снимки истории без изменения исходников.
+              boundaries:
+                B3: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые от
+                  модели инструменты UI без HTTP-сервера.
+                B4: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
+                  скилл хоста, получая прикладные операции из application.
+                B1: Прикладные операции находятся в application; HTTP и CLI в archiview являются
+                  адаптерами, отображение принадлежит web.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор.
+                  Наличие контракта не доказывает его выполнения.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+                  сборка и папки .archiview не расширяют анализ. Запись данных
+                  допускается в .archiview корня проекта либо явно выбранном
+                  внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют arch.yaml и не согласуют новую ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+                  файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения
+                  требует отдельного анализа.
+          files:
+            - path: src/arch.yaml
+              hash: 06e788d4475b3c89ed3b9e38d13f3e436ad3fbfb
+          sourceFiles: 15
+          fingerprint: c33b19b79fbfc17b2d85727f49617f5a208881ca25f2964818289ff2081e1029
+        - directory: src/codex
+          documentPath: src/codex/arch.yaml
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-codex
+
+              title: Адаптер панели Codex
+
+              kind: module
+
+              purpose: Открывать существующее веб-приложение ArchiView как
+              локальное MCP App в Codex.
+
+              responsibilities:
+                R1: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные операции прикладного сервиса для UI; не добавлять глобальную точку открытия отдельного окна.
+                R2: Скрывать операции UI от модели через visibility app; передавать данные и ошибки просмотра только в метаданных результата.
+                R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex; отличать отсутствие папки от недоступности контекста и запрещать просмотр вне проектов.
+              boundaries:
+                B1: Вычисления и подготовка анализа принадлежат application; MCP-адаптер проверяет аргументы и вызывает сервис напрямую.
+                B2: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex App Tools только для чтения метаданных текущего чата и рабочих папок; не читает внутренние базы и файлы стенограмм Codex.
+              invariants:
+                I1: Один процесс обслуживает один фиксированный корень; адаптер не открывает HTTP-порт и не требует сертификатов.
+                I2: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+                I3: UI подключается к хосту до чтения дерева проекта; навигация не отправляет сообщения агенту и не обновляет контекст модели.
+                I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки ArchiView не означает отсутствие рабочей папки чата; неизвестный контекст не выдаётся за отсутствие проекта.
+                I5: Отсутствие истории чата или временная недоступность его контекста не блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку чата и проверяется по каталогу папок хоста.
+                I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный диалог открывается только явной кнопкой пользователя. Подтверждённое отсутствие проекта не обходится этой формой.
+            format: arch.yaml
+            contract:
+              schema_version: 1
+              id: archiview-codex
+              title: Адаптер панели Codex
+              kind: module
+              purpose: Открывать существующее веб-приложение ArchiView как локальное MCP App в
+                Codex.
+              responsibilities:
+                R1: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные
+                  операции прикладного сервиса для UI; не добавлять глобальную
+                  точку открытия отдельного окна.
+                R2: Скрывать операции UI от модели через visibility app; передавать данные и
+                  ошибки просмотра только в метаданных результата.
+                R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex;
+                  отличать отсутствие папки от недоступности контекста и
+                  запрещать просмотр вне проектов.
+              boundaries:
+                B1: Вычисления и подготовка анализа принадлежат application; MCP-адаптер
+                  проверяет аргументы и вызывает сервис напрямую.
+                B2: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex App
+                  Tools только для чтения метаданных текущего чата и рабочих
+                  папок; не читает внутренние базы и файлы стенограмм Codex.
+              invariants:
+                I1: Один процесс обслуживает один фиксированный корень; адаптер не открывает
+                  HTTP-порт и не требует сертификатов.
+                I2: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+                I3: UI подключается к хосту до чтения дерева проекта; навигация не отправляет
+                  сообщения агенту и не обновляет контекст модели.
+                I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки
+                  ArchiView не означает отсутствие рабочей папки чата;
+                  неизвестный контекст не выдаётся за отсутствие проекта.
+                I5: Отсутствие истории чата или временная недоступность его контекста не
+                  блокируют загрузку UI; исходный cwd MCP сохраняет рабочую
+                  папку чата и проверяется по каталогу папок хоста.
+                I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный
+                  диалог открывается только явной кнопкой пользователя.
+                  Подтверждённое отсутствие проекта не обходится этой формой.
+          files:
+            - path: src/codex/arch.yaml
+              hash: 1e4c50cf5ef5eadc519d0c25a2e64f0975db17db
+            - path: src/codex/directory-picker.ts
+              hash: 44c5faed4efff45701bc14e31fbc5d268b06aec4
+            - path: src/codex/host-context.ts
+              hash: 10fa30a4f93a11b8df0b1f0d8c842d44338d0665
+            - path: src/codex/panel-client.ts
+              hash: 9316ed20893c25d8a8f0937a27f84e6137739bbf
+            - path: src/codex/panel.ts
+              hash: 1d53f422d37d56f46047bfc92c635329b1c6ef36
+            - path: src/codex/project-context.ts
+              hash: a8151794c7e9abcd69bac6c86b59d48af70d6d43
+            - path: src/codex/ui-tools.ts
+              hash: bd80ec23118caa5f1d93b7b9299bf397b99492c0
+          sourceFiles: 6
+          fingerprint: 0032469e95e43d7283a325b8f582628eca22f0912652f9b2d372de88a93e5db1
+      facts:
+        - id: sha256:4c9f54f1fff33bce9010adc24b365c3f3e14d4fa0eb697e090c0a19d601fdb73
+          kind: file
+          path: arch.yaml
+          start_line: 1
+          end_line: 33
+          text: >
+            schema_version: 1
+
+            id: architecture-change-view
+
+            title: Контракты и просмотр архитектуры
+
+            kind: module
+
+            purpose: Задавать локальные контракты ответственности каталогов и
+            предоставлять агентам правила их
+              ведения, а пользователю — ArchiView для просмотра архитектуры и изменений.
+            responsibilities:
+              R1: Публиковать канонический скилл module-boundaries и MCP-инструменты чтения контрактов.
+              R2: Проверять покрытие всех каталогов исходного кода контрактами arch.yaml и направлять агента на
+                немедленный перенос старых описаний либо анализ и создание отсутствующих.
+              R3: Формировать снимки структуры, контрактов и доказательств; сохранять и отображать неизменяемые
+                review.yaml для выбранного сравнения.
+              R4: Автоматически строить и уплотнять переносимые YAML-отчёты, сохраняя историю содержательных
+                проверок и отдельно определяя актуальность модуля и его поддерева.
+              R5: Поставлять локальный плагин Codex с веб-панелью, явным запуском анализа выбранного модуля
+                и передачей агенту поручения исправить выбранное замечание.
+              R6: Поставлять плагин dsh — инструменты чтения, маршруты панели и публикацию скилла в хосте
+                DeepSeek Harness без запуска модели самим просмотром.
+            boundaries:
+              B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                Просмотр не изменяет исходники проекта.
+              B2: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным адаптерам.
+                Извлечение символов, разрешение зависимостей и индексация AST принадлежат ast-index.
+            invariants:
+              I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+              I1: Чтение ограничено настроенным корнем проекта.
+              I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                факты и отчёты не переписываются при переносе проекта.
+              I3: arch.yaml содержит устойчивую ответственность; эвристические оценки и текущий код не разрешают
+                её расширять.
+              I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+        - id: sha256:988753e1d93fa6ecb79d45deed627c48316aa0be93778d53e83257cb2957b38d
+          kind: file
+          path: src/arch.yaml
+          start_line: 1
+          end_line: 39
+          text: >
+            schema_version: 1
+
+            id: architecture-core
+
+            title: Модель архитектуры и MCP
+
+            kind: module
+
+            purpose: Обслуживать MCP, читать и проверять контракты, формировать
+            и сравнивать снимки архитектуры
+              и хранить результаты проверок.
+            responsibilities:
+              R1: Обходить дерево исходников с учётом ограничений и предоставлять цепочки родительских контрактов.
+              R2: Проверять схемы arch.yaml и review.yaml, идентичность модулей, отпечатки входов и разрешимость
+                доказательств.
+              R3: Собирать снимки файлов и контрактов; вычислять изменения, перемещения и устаревание отчётов.
+              R4: Сохранять неизменяемые пакеты результатов и выполнять структурные проверки с явным указанием
+                непроверенных пунктов.
+              R5: Сохранять происхождение истории отдельно от фактического пути исходников и переносить прежнее
+                внешнее хранилище в локальную папку данных без изменения сохранённых пакетов.
+              R6: Автоматически уплотнять YAML-отчёты по модулям, сохраняя содержательные проверки и доказательства;
+                вычислять собственную и агрегированную актуальность по явным входам, включая зависимости,
+                отдельно от полноты проверки и подтверждённости перечня зависимостей.
+                Собственная проверка содержит только локальный контракт; совместимость размещения
+                подмодулей оценивается в композиции родителя, без переноса его пунктов в чеклист детей.
+              R7: Проверять согласованность переносимых отчётов с подготовленным индексом Git.
+              R8: Сохранять наблюдённые состояния между коммитами с временем и привязкой к ревизии;
+                предоставлять последовательность коммитов и точные снимки истории без изменения исходников.
+            boundaries:
+              B3: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые от модели инструменты UI без HTTP-сервера.
+              B4: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и скилл хоста,
+                получая прикладные операции из application.
+              B1: Прикладные операции находятся в application; HTTP и CLI в archiview являются адаптерами, отображение принадлежит web.
+              B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                доказывает его выполнения.
+            invariants:
+              I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+              I2: Неполнота обхода и доказательств сообщается явно.
+              I3: Снимки и отчёты не заменяют arch.yaml и не согласуют новую ответственность.
+              I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+              I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+        - id: sha256:5ba8e39dcd926f5d30b0a4c29288cddd2cefc14ffeeae2cb3f6a6ebc7ad196e2
+          kind: file
+          path: src/codex/arch.yaml
+          start_line: 1
+          end_line: 20
+          text: >
+            schema_version: 1
+
+            id: archiview-codex
+
+            title: Адаптер панели Codex
+
+            kind: module
+
+            purpose: Открывать существующее веб-приложение ArchiView как
+            локальное MCP App в Codex.
+
+            responsibilities:
+              R1: Регистрировать UI-ресурс, открытие панели в боковой вкладке чата и явные операции прикладного сервиса для UI; не добавлять глобальную точку открытия отдельного окна.
+              R2: Скрывать операции UI от модели через visibility app; передавать данные и ошибки просмотра только в метаданных результата.
+              R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex; отличать отсутствие папки от недоступности контекста и запрещать просмотр вне проектов.
+            boundaries:
+              B1: Вычисления и подготовка анализа принадлежат application; MCP-адаптер проверяет аргументы и вызывает сервис напрямую.
+              B2: Адаптер использует MCP Apps для UI и предоставленный хостом канал Codex App Tools только для чтения метаданных текущего чата и рабочих папок; не читает внутренние базы и файлы стенограмм Codex.
+            invariants:
+              I1: Один процесс обслуживает один фиксированный корень; адаптер не открывает HTTP-порт и не требует сертификатов.
+              I2: Отключение MCP-клиента завершает сессию и запрещает новые операции.
+              I3: UI подключается к хосту до чтения дерева проекта; навигация не отправляет сообщения агенту и не обновляет контекст модели.
+              I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки ArchiView не означает отсутствие рабочей папки чата; неизвестный контекст не выдаётся за отсутствие проекта.
+              I5: Отсутствие истории чата или временная недоступность его контекста не блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку чата и проверяется по каталогу папок хоста.
+              I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный диалог открывается только явной кнопкой пользователя. Подтверждённое отсутствие проекта не обходится этой формой.
+        - id: sha256:be363f0302ad5c8d51d01073af75fe4a09b7bd9615400b8eb3b8f89e28ffce4c
+          kind: file
+          path: src/codex/directory-picker.ts
+          start_line: 1
+          end_line: 42
+          text: >
+            /** Нативный выбор папки Windows вызывается только явной кнопкой
+            панели, без модели и HTTP. */
+
+            import { execFile } from "node:child_process";
+
+            import path from "node:path";
+
+            import { promisify } from "node:util";
+
+            import { ApplicationError } from "../application/errors.js";
+
+
+            /** Скрипт постоянный: пользовательский путь не подставляется в
+            исполняемый код. */
+
+            const PICK_DIRECTORY_SCRIPT = `
+
+            $ErrorActionPreference = 'Stop'
+
+            [Console]::OutputEncoding = New-Object
+            System.Text.UTF8Encoding($false)
+
+            Add-Type -AssemblyName System.Windows.Forms
+
+            [System.Windows.Forms.Application]::EnableVisualStyles()
+
+            $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+
+            $dialog.Description = 'Выберите папку проекта ArchiView'
+
+            $dialog.ShowNewFolderButton = $false
+
+            try {
+              $selected = $null
+              if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { $selected = $dialog.SelectedPath }
+              @{ projectRoot = $selected } | ConvertTo-Json -Compress
+            } finally { $dialog.Dispose() }
+
+            `;
+
+
+            /**
+             * Скрывает консоль вспомогательного процесса, оставляя видимым только диалог.
+             * Отмена возвращает null и не меняет проект. Ограничение времени закрывает
+             * забытый диалог до стандартного таймаута MCP-вызова; ручной ввод остаётся доступен.
+             */
+            type DirectoryRunner = (file: string, args: string[], options:
+            import("node:child_process").ExecFileOptions) => Promise<{ stdout:
+            string }>;
+
+            export async function chooseProjectDirectory({ platform =
+            process.platform, run = promisify(execFile) }: { platform?: string;
+            run?: DirectoryRunner } = {}) {
+              if (platform !== "win32") throw new ApplicationError("DIRECTORY_PICKER_UNAVAILABLE", "Укажите путь к папке вручную: диалог выбора доступен в Windows.");
+              try {
+                const { stdout } = await run("powershell.exe", ["-NoLogo", "-NoProfile", "-NonInteractive", "-STA", "-EncodedCommand",
+                  Buffer.from(PICK_DIRECTORY_SCRIPT, "utf16le").toString("base64")], { windowsHide: true, timeout: 45000, maxBuffer: 65536, encoding: "utf8" });
+                const result: unknown = JSON.parse(stdout.trim());
+                if (!result || typeof result !== "object" || !("projectRoot" in result)) throw new Error("Invalid directory selection");
+                if (result.projectRoot !== null && (typeof result.projectRoot !== "string" || !path.win32.isAbsolute(result.projectRoot))) throw new Error("Invalid directory selection");
+                return { projectRoot: result.projectRoot };
+              } catch {
+                throw new ApplicationError("DIRECTORY_PICKER_UNAVAILABLE", "Не удалось выбрать папку. Повторите попытку или введите путь вручную.");
+              }
+            }
+        - id: sha256:8effb362a8d8d3f8412c4d5bd55871722843707cedbcad230f79662efdf2fc15
+          kind: file
+          path: src/codex/host-context.ts
+          start_line: 1
+          end_line: 138
+          text: >
+            /**
+             * Чтение контекста через канал, который Codex предоставляет собственному App Tools.
+             * Допустимы только операции чтения метаданных текущего чата и рабочих папок.
+             * Универсальный прокси для UI здесь не публикуется.
+             */
+            import net from "node:net";
+
+            import path from "node:path";
+
+            import { randomUUID } from "node:crypto";
+
+
+            /** Тот же предел кадра, что у поставляемого Codex App Tools. */
+
+            const MAX_FRAME_BYTES = 8 * 1024 * 1024;
+
+
+            /**
+             * Один короткоживущий сеанс JSON-RPC поверх именованного pipe/Unix socket хоста.
+             * При таймауте или разрыве закрывает соединение и отклоняет ожидающие ответы.
+             */
+            export function createHostConnection(pipePath: string, { timeoutMs =
+            5000 } = {}) {
+              let socket: net.Socket | undefined;
+              let connecting: Promise<void> | undefined;
+              let serial = 0, buffer: Buffer = Buffer.alloc(0);
+              const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: unknown) => void; timer: ReturnType<typeof setTimeout> }>();
+              function close(error: unknown = new Error("Codex context channel closed")) {
+                socket?.destroy();
+                for (const request of pending.values()) { clearTimeout(request.timer); request.reject(error); }
+                pending.clear();
+              }
+              function connect() {
+                if (connecting) return connecting;
+                connecting = new Promise<void>((resolve, reject) => {
+                  socket = net.createConnection(pipePath);
+                  const timer = setTimeout(() => { const error = new Error("Codex context connection timed out"); reject(error); close(error); }, timeoutMs);
+                  socket.once("connect", () => { clearTimeout(timer); resolve(); });
+                  socket.on("error", (error) => { clearTimeout(timer); reject(error); close(error); });
+                  socket.once("close", () => { clearTimeout(timer); reject(new Error("Codex context channel closed")); close(); });
+                  socket.on("data", (chunk) => {
+                    buffer = Buffer.concat([buffer, typeof chunk === "string" ? Buffer.from(chunk) : chunk]);
+                    try {
+                      while (buffer.length >= 4) {
+                        const length = buffer.readUInt32LE(0);
+                        if (length > MAX_FRAME_BYTES) throw new Error("Codex context response was too large");
+                        if (buffer.length < 4 + length) return;
+                        const response = record(JSON.parse(buffer.subarray(4, 4 + length).toString("utf8")));
+                        if (typeof response.id !== "number") throw new Error("Invalid Codex context response identifier");
+                        buffer = buffer.subarray(4 + length);
+                        const request = pending.get(response.id);
+                        if (!request) continue;
+                        pending.delete(response.id); clearTimeout(request.timer);
+                        if (response.error) {
+                          const error = record(response.error);
+                          request.reject(new Error(typeof error.message === "string" ? error.message : "Codex context request failed"));
+                        }
+                        else request.resolve(response.result);
+                      }
+                    } catch (error) { close(error); }
+                  });
+                });
+                return connecting;
+              }
+              return {
+                async request(method: string, params: Record<string, unknown>): Promise<unknown> {
+                  await connect();
+                  const id = ++serial;
+                  const payload = Buffer.from(JSON.stringify({ jsonrpc: "2.0", id, method, params }));
+                  if (payload.length > MAX_FRAME_BYTES) throw new Error("Codex context request was too large");
+                  const frame = Buffer.alloc(4 + payload.length); frame.writeUInt32LE(payload.length); payload.copy(frame, 4);
+                  return new Promise<unknown>((resolve, reject) => {
+                    const timer = setTimeout(() => close(new Error("Codex context request timed out")), timeoutMs);
+                    pending.set(id, { resolve, reject, timer });
+                    socket!.write(frame);
+                  });
+                },
+                close,
+              };
+            }
+
+
+            /** Из результата App Tools используются только метаданные чата и
+            каталог папок. */
+
+            function record(value: unknown): Record<string, unknown> {
+              if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid Codex context object");
+              return value as Record<string, unknown>;
+            }
+
+            function toolData(value: unknown): Record<string, unknown> {
+              const result = record(value);
+              if (result.success !== true) throw new Error("Codex could not read project context");
+              for (const value of Array.isArray(result.contentItems) ? result.contentItems : []) {
+                const item = record(value);
+                if (item.type === "inputText" && typeof item.text === "string") return record(JSON.parse(item.text));
+              }
+              throw new Error("Codex did not return project context");
+            }
+
+
+            /** Рабочая папка может быть вложена в зарегистрированную папку
+            проекта; projectId для этого не требуется. */
+
+            function within(root: string, directory: string) {
+              const relative = path.relative(root, directory);
+              return relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(".." + path.sep));
+            }
+
+
+            /**
+             * Использует метаданные чата, а до появления истории — рабочую папку, с которой
+             * хост запустил MCP-процесс. Оба пути проверяются по каталогу папок того же хоста.
+             * Каталог установки не является резервным проектом; неизвестный контекст
+             * не выдаётся за отсутствие проекта. После привязки резервный cwd отключается.
+             */
+            export function createHostContextReader({ pipePath =
+            process.env.CODEX_APP_TOOLS_PIPE_PATH,
+              callerHostId = process.env.CODEX_APP_TOOLS_CALLER_HOST_ID, connection = createHostConnection,
+              startupDirectory = process.cwd(), installedRoot = process.env.PLUGIN_ROOT } = {}) {
+              return async (threadId: string, { allowStartupDirectory = true } = {}): Promise<HostProjectContext> => {
+                if (!pipePath) return { status: "unknown" };
+                const host = connection(pipePath);
+                try {
+                  const catalogue = record(await host.request("tools/list", { threadStartKind: "all" }));
+                  async function read(toolName: string, args: Record<string, unknown>) {
+                    const tool = (Array.isArray(catalogue.tools) ? catalogue.tools : []).map(record).find((candidate) => candidate.name === toolName && candidate.namespace === "codex_app");
+                    if (!tool) throw new Error("Codex context tool unavailable");
+                    return toolData(await host.request("tools/call", { arguments: args, callerSource: "codex", namespace: tool.namespace,
+                      ...(callerHostId ? { hostId: callerHostId } : {}), threadId, tool: toolName, callId: randomUUID(), turnId: "mcp-ui-" + randomUUID() }));
+                  }
+                  const [chatResult, projectsResult] = await Promise.allSettled([
+                    read("read_thread", { threadId, turnLimit: 1, includeOutputs: false, maxOutputCharsPerItem: 0 }), read("list_projects", {}),
+                  ]);
+                  if (projectsResult.status !== "fulfilled" || !Array.isArray(projectsResult.value.projects)) return { status: "unknown" };
+                  const catalogueProjects = projectsResult.value;
+                  const thread = chatResult.status === "fulfilled" && chatResult.value.thread ? record(chatResult.value.thread) : undefined;
+                  if (thread && (thread.id !== threadId || typeof thread.cwd !== "string" || !path.isAbsolute(thread.cwd))) return { status: "unknown" };
+                  const validStartup = allowStartupDirectory && typeof startupDirectory === "string" && path.isAbsolute(startupDirectory) &&
+                    !(typeof installedRoot === "string" && path.isAbsolute(installedRoot) && within(installedRoot, startupDirectory));
+                  const root = typeof thread?.cwd === "string" ? thread.cwd : (validStartup ? startupDirectory : undefined);
+                  if (!root) return { status: "unknown" };
+                  const hostId = thread?.hostId ?? callerHostId ?? "local";
+                  const folders = (catalogueProjects.projects as unknown[]).map(record).filter((project) => project.projectKind === "local" &&
+                    project.hostId === hostId && typeof project.path === "string" && path.isAbsolute(project.path));
+                  return folders.some((project) => typeof project.path === "string" && within(project.path, root)) ? { status: "ready", root } : { status: "unavailable" };
+                } catch { return { status: "unknown" }; }
+                finally { host.close(); }
+              };
+            }
+
+
+            export type HostProjectContext = { status: "ready"; root: string } |
+            { status: "unknown" | "unavailable" };
+        - id: sha256:8b8b1dc1fe5dde0055e94dede60ec5e800884095723abdb4a13fcc318ec96890
+          kind: file
+          path: src/codex/panel-client.ts
+          start_line: 1
+          end_line: 77
+          text: >
+            import type { ClientOptions, ComparisonArgs, PanelBridge } from
+            "../../web/archiview/types.js";
+
+            import { errorCode, errorMessage, isRecord } from
+            "../../web/archiview/types.js";
+
+            /**
+             * Дополнение клиента только для сборки Codex: при неизвестном контексте открывает
+             * существующую форму общего UI и добавляет нативный выбор папки, если он доступен.
+             * Общие исходники web и клиент dsh не меняются.
+             */
+            import { createArchiViewClient as createSharedClient } from
+            "../../web/archiview/client.js";
+
+
+            /** Ограничивает только определение папки: чтение снимков не
+            означает недоступность контекста. */
+
+            async function initialResponse<T>(operation: Promise<T>, timeoutMs:
+            number): Promise<T> {
+              let timer: ReturnType<typeof setTimeout> | undefined;
+              try {
+                return await Promise.race([operation, new Promise<never>((_, reject) => {
+                  timer = setTimeout(() => reject(Object.assign(new Error("Не удалось автоматически определить папку проекта"),
+                    { code: "CODEX_CONTEXT_UNAVAILABLE" })), timeoutMs);
+                })]);
+              } finally { clearTimeout(timer); }
+            }
+
+
+            /**
+             * Адаптирует неизвестный root к старому PROJECT_REQUIRED. Явное отсутствие
+             * проекта сохраняет PROJECT_UNAVAILABLE. Ввод и диалог проходят ту же проверку
+             * абсолютного существующего каталога; повторная смена привязанного корня запрещена.
+             */
+            export function createArchiViewClient(options: ClientOptions, {
+            document = globalThis.document, timeoutMs = 15000 }: { document?:
+            Document | null; timeoutMs?: number } = {}) {
+              const client = createSharedClient(options);
+              let initialized = false, manualFallback = false;
+              let bridge: PanelBridge | null | undefined;
+              Promise.resolve(options.connection).then((value) => { bridge = value; }).catch(() => {});
+              const panel = document?.getElementById("document-panel");
+              if (panel && document) {
+                const observer = new MutationObserver(() => {
+                  const form = panel.querySelector<HTMLFormElement>(".project-form");
+                  if (!form || form.dataset.codexFallback) return;
+                  form.dataset.codexFallback = "true";
+                  const description = form.parentElement?.querySelector("p");
+                  if (manualFallback && description) description.textContent = "Не удалось автоматически определить папку проекта. Укажите абсолютный путь к папке.";
+                  if (document.querySelector<HTMLMetaElement>('meta[name="archiview-directory-picker"]')?.content !== "true" || !bridge?.call) return;
+                  const browse = document.createElement("button");
+                  browse.type = "button"; browse.className = "button button-quiet"; browse.textContent = "Выбрать папку…";
+                  const input = form.querySelector("input"), error = form.querySelector<HTMLElement>('[role="alert"]');
+                  if (!input || !error) return;
+                  form.insertBefore(browse, form.querySelector('button[type="submit"]'));
+                  browse.addEventListener("click", async () => {
+                    browse.disabled = true; error.textContent = "";
+                    try {
+                      const result = await bridge?.call?.("archiview_ui_choose_project", {});
+                      if (isRecord(result) && typeof result.projectRoot === "string" && result.projectRoot) { input.value = result.projectRoot; form.requestSubmit(); }
+                    } catch (cause) { error.textContent = errorMessage(cause); }
+                    finally { browse.disabled = false; }
+                  });
+                });
+                observer.observe(panel, { childList: true, subtree: true });
+              }
+              return { ...client, async getComparison(args?: ComparisonArgs) {
+                if (!initialized) {
+                  try {
+                    const operation = Promise.resolve(options.connection).then((connection) => {
+                      if (!connection?.call) throw new Error("Хост не поддерживает вызовы MCP из панели");
+                      return connection.call("archiview_ui_get_project", {});
+                    });
+                    const result = await initialResponse(operation, timeoutMs);
+                    if (!isRecord(result) || typeof result.root !== "string" || result.root.trim() === "") throw Object.assign(new Error("Не удалось определить папку проекта"), { code: "CODEX_CONTEXT_UNAVAILABLE" });
+                    initialized = true;
+                  } catch (error) {
+                    if (errorCode(error) !== "CODEX_CONTEXT_UNAVAILABLE") throw error;
+                    manualFallback = true;
+                    throw Object.assign(new Error(errorMessage(error)), { code: "PROJECT_REQUIRED" });
+                  }
+                }
+                // После подтверждения корня ждём данные обычным запросом MCP. Медленная
+                // подготовка проекта и ошибки снимков не открывают форму выбора папки.
+                return client.getComparison(args);
+              } };
+            }
+        - id: sha256:9e043d6d40367940bd79db1d3ff3794a409b2f04dccfe9014183b64308c2122c
+          kind: file
+          path: src/codex/panel.ts
+          start_line: 1
+          end_line: 87
+          text: >
+            /** Адаптер MCP Apps: собранный UI и скрытые операции прикладного
+            сервиса, без HTTP-сервера. */
+
+            import { readFile } from "node:fs/promises";
+
+            import { createArchiViewSession } from "../application/session.js";
+
+            import { createProjectBinding } from "../application/project.js";
+
+            import { applicationError, ApplicationError } from
+            "../application/errors.js";
+
+            import { packageUrl } from "../package-paths.js";
+
+            import { UI_TOOL_METHODS, validateUiArguments } from
+            "./ui-tools.js";
+
+            import { chooseProjectDirectory } from "./directory-picker.js";
+
+
+            export const PANEL_URI = "ui://archiview/panel-v6.html";
+
+            export const PROJECT_INPUT = { type: "string", description:
+            "Absolute project directory of the current chat, not the plugin
+            installation. Normally selected automatically from the working
+            folder supplied by Codex." };
+
+            export const PANEL_TOOL:
+            import("@modelcontextprotocol/sdk/types.js").Tool = {
+              name: "archiview_open", title: "ArchiView",
+              description: "Open the local architecture panel for this project. Browsing stays in the UI; only an explicit Analyze action sends a request to the agent.",
+              inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT }, additionalProperties: false },
+              annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+              _meta: { ui: { resourceUri: PANEL_URI }, "openai/ui": { entrypoints: [{ type: "thread" }] } },
+            };
+
+
+            /** Одна панель владеет одной сессией; загрузка HTML не читает
+            проект и не открывает сокеты. */
+
+            interface ProjectBinding { readonly root: string | undefined;
+            select(requested?: string, metadata?: Record<string, unknown>):
+            Promise<string> }
+
+            export function createCodexPanel(rootOrBinding?: string |
+            ProjectBinding, { stateDirectory, chooseDirectory =
+            chooseProjectDirectory }: { stateDirectory?: string;
+            chooseDirectory?: () => Promise<{ projectRoot: string | null }> } =
+            {}) {
+              const binding = rootOrBinding && typeof rootOrBinding === "object" ? Promise.resolve(rootOrBinding) : createProjectBinding(rootOrBinding);
+              let session: ReturnType<typeof createArchiViewSession> | null | undefined;
+              let closed = false;
+              let queue = Promise.resolve();
+              const checkOpen = () => { if (closed) throw new ApplicationError("SESSION_CLOSED", "Сессия панели закрыта"); };
+              async function service(metadata?: Record<string, unknown>) {
+                const project = await binding;
+                const root = await project.select(undefined, metadata);
+                if (!session) session = createArchiViewSession({ root, stateDirectory }).catch((error) => { session = null; throw error; });
+                return session;
+              }
+              return {
+                /** Открытие UI не зависит от готовности контекста пустого чата; ошибки папки затем показывает сама панель. */
+                async open(projectRoot?: string, metadata?: Record<string, unknown>) {
+                  checkOpen();
+                  const project = await binding;
+                  try { await project.select(projectRoot, metadata); }
+                  catch (error) {
+                    if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE", "PROJECT_UNAVAILABLE"].includes(applicationError(error).code)) throw error;
+                    const unavailable = applicationError(error).code === "PROJECT_UNAVAILABLE";
+                    return { content: [{ type: "text" as const, text: unavailable ? applicationError(error).message : "ArchiView: подготовка рабочей папки проекта." }],
+                      structuredContent: { projectRequired: !unavailable, projectStatus: unavailable ? "unavailable" : "initializing" },
+                      _meta: { bootstrap: applicationError(error) } };
+                  }
+                  const root = project.root;
+                  return { content: [{ type: "text" as const, text: "ArchiView: " + root }], structuredContent: { root } };
+                },
+                /** Сериализация операций сохраняет согласованность view и публикации; ошибки тоже доставляются только UI. */
+                callUi(name: string, args: unknown, metadata?: Record<string, unknown>) {
+                  const operation = queue.then(async () => {
+                    checkOpen();
+                    validateUiArguments(name, args);
+                    const method = UI_TOOL_METHODS.get(name);
+                    if (!method) throw new ApplicationError("INVALID_ARGUMENT", "Неизвестная операция панели");
+                    if (method === "chooseProject") {
+                      try { await (await binding).select(undefined, metadata); }
+                      catch (error) { if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE"].includes(applicationError(error).code)) throw error; }
+                      return { content: [], _meta: { result: await chooseDirectory() } };
+                    }
+                    // Проверка папки не создаёт сессию и не ждёт обхода исходников или истории.
+                    const result = (method === "getProject" || method === "setProject") ?
+                      { root: await (await binding).select(method === "setProject" ? args.projectRoot as string : undefined, metadata) } :
+                      await (await service(metadata))[method as Exclude<typeof method, "getProject" | "setProject" | "chooseProject">](args);
+                    // Ни content, ни structuredContent не содержат данные просмотра.
+                    return { content: [], _meta: { result } };
+                  }).catch((error) => ({ isError: true, content: [], _meta: { error: applicationError(error) } }));
+                  queue = operation.then(() => {});
+                  return operation;
+                },
+                /** Полностью встроенный HTML подключается к хосту даже при запрете любых сетевых соединений UI. */
+                async resource() {
+                  checkOpen();
+                  const html = (await readFile(new URL("dist/panel.html", packageUrl), "utf8"))
+                    .replace("<head>", '<head><meta name="archiview-transport" content="mcp"><meta name="archiview-directory-picker" content="' + (process.platform === "win32") + '">')
+                    .replace('href="/" aria-label="ArchiView"', 'href="#" aria-label="ArchiView"');
+                  return { contents: [{ uri: PANEL_URI, mimeType: "text/html;profile=mcp-app", text: html,
+                    _meta: { ui: { csp: { connectDomains: [], resourceDomains: [] } },
+                      "openai/widgetCSP": { connect_domains: [], resource_domains: [] },
+                      "openai/ui": { availableDisplayModes: ["inline", "fullscreen"] } } }] };
+                },
+                /** После отключения хоста новые операции отклоняются; уже начатая запись безопасно завершается. */
+                async close() { closed = true; await queue; session = null; },
+              };
+            }
+        - id: sha256:11de9985c5882bc0c640719290aa3699fdf73b6528698902a2626de99ddcd407
+          kind: file
+          path: src/codex/project-context.ts
+          start_line: 1
+          end_line: 55
+          text: >+
+            /** Привязка панели к рабочей папке чата Codex, независимо от
+            projectId и наличия сообщений. */
+
+            import { createProjectBinding } from "../application/project.js";
+
+            import { ApplicationError } from "../application/errors.js";
+
+            import { createHostContextReader } from "./host-context.js";
+
+
+            /** Идентификатор берётся только из метаданных хоста, а не из
+            аргументов инструмента модели. */
+
+            export function threadIdFromMetadata(metadata?: Record<string,
+            unknown>) {
+              for (const key of ["threadId", "openai/threadId", "openai/thread_id", "codexThreadId", "codex_thread_id", "thread_id"]) {
+                const value = metadata?.[key];
+                if (typeof value === "string" && value.trim() !== "") return value;
+              }
+              return undefined;
+            }
+
+
+            /**
+             * Общая прикладная привязка остаётся неизменяемой. Codex-адаптер получает папку
+             * до создания сессии; сериализация первых обращений исключает конкурирующие корни.
+             * Когда хост не сообщает контекст, разрешён явный выбор существующей папки.
+             * Подтверждённое отсутствие проекта не обходится ручным вводом.
+             */
+            export async function createCodexProjectBinding(initialRoot?:
+            string, { readContext = createHostContextReader() } = {}) {
+              const project = await createProjectBinding(initialRoot);
+              let boundThread: string | undefined;
+              let queue = Promise.resolve();
+              return {
+                get root() { return project.root; },
+                select(requested?: string, metadata?: Record<string, unknown>) {
+                  const operation = queue.then(async () => {
+                    const threadId = threadIdFromMetadata(metadata);
+                    if (threadId === undefined && requested === undefined && project.root === undefined) {
+                      throw new ApplicationError("CODEX_CONTEXT_UNAVAILABLE", "Не удалось получить рабочую папку чата от Codex. Повторите попытку.");
+                    }
+                    if (threadId !== undefined && threadId !== boundThread) {
+                      const context = await readContext(threadId, { allowStartupDirectory: boundThread === undefined });
+                      if (context.status === "unavailable") throw new ApplicationError("PROJECT_UNAVAILABLE", "Плагин доступен только в проектах");
+                      if (context.status !== "ready") {
+                        if (requested !== undefined && project.root === undefined) {
+                          const root = await project.select(requested);
+                          boundThread = threadId;
+                          return root;
+                        }
+                        throw new ApplicationError("CODEX_CONTEXT_UNAVAILABLE", "Не удалось получить рабочую папку чата от Codex. Укажите папку проекта вручную.");
+                      }
+                      if (initialRoot === undefined) await project.select(context.root);
+                      boundThread = threadId;
+                    }
+                    return project.select(requested);
+                  });
+                  queue = operation.then(() => {}, () => {});
+                  return operation;
+                },
+              };
+            }
+
+        - id: sha256:58923d2aa965612a640b15cdc7d142ace58a023c0fc17af107a82540f6937bad
+          kind: file
+          path: src/codex/ui-tools.ts
+          start_line: 1
+          end_line: 45
+          text: >
+            /** Каталог операций панели. Хост видит схемы, но visibility=app
+            исключает их из инструментов модели. */
+
+            import { ApplicationError } from "../application/errors.js";
+
+            import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+
+
+            type Rule = { type: "string"; maxLength: number } | { type:
+            "integer"; minimum: number; maximum: number };
+
+            type Method = "getProject" | "chooseProject" | "setProject" |
+            "getComparison" | "getModule" | "prepareAnalysis" | "getAnalysis" |
+            "buildReview" | "saveSnapshot";
+
+            type Operation = [string, Method, string, Record<string, Rule>,
+            string[], boolean];
+
+
+            const string: Rule = { type: "string", maxLength: 4096 };
+
+            const selectedModule = { view: string, path: string };
+
+            /** Явный набор операций сервиса, без произвольного URL, имени
+            функции или доступа к файлам. */
+
+            const operations: Operation[] = [
+              ["get_project", "getProject", "Resolve this panel's project directory without loading snapshots or history.", {}, [], true],
+              ["choose_project", "chooseProject", "Show a native folder chooser after an explicit user click. Cancellation keeps the current input.", {}, [], false],
+              ["set_project", "setProject", "Bind this panel to a project directory.", { projectRoot: string }, ["projectRoot"], false],
+              ["get_comparison", "getComparison", "Load the selected comparison and timeline for the panel.", { target: string, baseline: string, historyLimit: { type: "integer", minimum: 1, maximum: 10000 } }, [], false],
+              ["get_module", "getModule", "Load module details from an existing comparison.", selectedModule, ["view", "path"], true],
+              ["prepare_analysis", "prepareAnalysis", "Prepare immutable inputs for an explicit module analysis.", selectedModule, ["view", "path"], false],
+              ["get_analysis", "getAnalysis", "Read the saved status of a prepared analysis.", { id: string }, ["id"], true],
+              ["build_review", "buildReview", "Refresh a structural report for a selected module.", selectedModule, ["view", "path"], false],
+              ["save_snapshot", "saveSnapshot", "Save the selected complete snapshot.", { view: string, label: { type: "string", maxLength: 120 } }, ["view"], false],
+            ];
+
+
+            export const UI_TOOL_METHODS = new Map(operations.map(([name,
+            method]) => ["archiview_ui_" + name, method]));
+
+            export const UI_TOOLS = operations.map(([name, , description,
+            properties, required, readOnlyHint]) => ({
+              name: "archiview_ui_" + name, description,
+              inputSchema: { type: "object" as const, properties, required, additionalProperties: false },
+              annotations: { readOnlyHint, destructiveHint: false, openWorldHint: false },
+              _meta: { ui: { visibility: ["app"] } },
+            })) satisfies Tool[];
+
+
+            /** SDK низкого уровня не валидирует inputSchema; проверяем тот же
+            контракт перед вызовом сервиса. */
+
+            export function validateUiArguments(name: string, args: unknown):
+            asserts args is Record<string, unknown> {
+              const schema = UI_TOOLS.find((tool) => tool.name === name)?.inputSchema;
+              const invalid = () => { throw new ApplicationError("INVALID_ARGUMENT", "Некорректные параметры операции панели"); };
+              if (!schema || !args || typeof args !== "object" || Array.isArray(args)) return invalid();
+              if (Object.keys(args).some((key) => !Object.hasOwn(schema.properties, key)) ||
+                  schema.required.some((key) => !Object.hasOwn(args, key))) invalid();
+              for (const [key, value] of Object.entries(args)) {
+                const rule = schema.properties[key];
+                if (rule.type === "string" && (typeof value !== "string" || value.length > rule.maxLength)) invalid();
+                if (rule.type === "integer" && (typeof value !== "number" || !Number.isSafeInteger(value) || value < rule.minimum || value > rule.maximum)) invalid();
+              }
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      scope_digest: sha256:c8ba064ea26eb767075dae11a32c866fc774dd941fb1af035ff4d2d25f5b4a63
+    input_digest: sha256:9af5e45f5a054f4453fc082b1537c0b9fc494ba1637be19e83127663d9301d81
+    result_digest: sha256:99d3d80ad992016fbf80e30a979c4f59b01e7655c89b4e37e690b40d38fb81dd
+    content_digest: sha256:5c722fe507e5a9a6c20714e5b0b19f89636c54300890d951763c2a81330124c8
+    registration_order: 23

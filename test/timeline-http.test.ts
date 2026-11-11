@@ -1,0 +1,101 @@
+import type { ComparisonResponse } from "./support.js";
+import type { AddressInfo } from "node:net";
+/** Реальная хронология Git, локальных изменений и независимого исторического просмотра. */
+import assert from "node:assert/strict";
+import {execFileSync} from "node:child_process";
+import {once} from "node:events";
+import {mkdtemp,readFile,readdir,rm,writeFile} from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+import {stringify} from "yaml";
+import {createArchiView} from "../src/archiview/http.js";
+const git=(root: string,args: string[])=>execFileSync("git",args,{cwd:root,windowsHide:true,encoding:"utf8"}).trim();
+const contract={schema_version:1,id:"root",title:"Пример",kind:"module",purpose:"Возвращать значение.",responsibilities:{R1:"Возвращать значение."},boundaries:{},invariants:{}};
+async function workBytes(app: { reports: { work: string } }){
+ const names=(await readdir(app.reports.work)).sort();
+ return Promise.all(names.map(async f=>[f,await readFile(path.join(app.reports.work,f),"utf8")]));
+}
+test("timeline shows revisions, live HEAD, two immutable changes and compacted current; browsing cannot replace work",async t=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),"archiview-timeline-"));
+ t.after(()=>rm(root,{recursive:true,force:true}));
+ await writeFile(path.join(root,"arch.yaml"),stringify(contract));
+ git(root,["init","-q"]);git(root,["config","user.name","Timeline Test"]);git(root,["config","user.email","timeline@example.invalid"]);git(root,["config","core.autocrlf","false"]);
+ const revisions: string[]=[];
+ for(let i=1;i<=3;i++){
+  await writeFile(path.join(root,"code.js"),"export const value = "+i+";\n");
+  git(root,["add","."]);git(root,["commit","-qm","Revision "+i]);
+  revisions.push(git(root,["rev-parse","HEAD"]));
+ }
+ const app=await createArchiView({root});
+ app.server.listen(0,"127.0.0.1");await once(app.server,"listening");
+ t.after(()=>new Promise<void>(resolve=>{app.server.closeAllConnections();app.server.close(() => resolve());}));
+ const url="http://127.0.0.1:"+(app.server.address() as AddressInfo).port;
+ const get=async(query="")=>{const response=await fetch(url+"/api/comparison"+query);const value=await (response.json() as Promise<ComparisonResponse>);assert.equal(response.status,200,JSON.stringify(value));return value;};
+ const initial=await get("?historyLimit=2");
+ assert.equal(initial.historyHasMore,true);
+ assert.deepEqual(initial.timeline.map(s=>s.kind),["git","git","current"]);
+ assert.equal(initial.timeline.at(-2)!.label,"HEAD");
+ assert.equal(initial.target!.id,"current");
+ assert.ok(initial.baselines.every(s=>!["working","launch"].includes(s.kind)));
+ const full=await get("?historyLimit=50");
+ assert.deepEqual(full.timeline.filter(s=>s.kind==="git").map(s=>s.revision),revisions);
+ await writeFile(path.join(root,"code.js"),"export const value = 4;\n");
+ const w1=await get();const change1=w1.timeline.find(s=>s.kind==="change");
+ assert.ok(change1);
+ await writeFile(path.join(root,"code.js"),"export const value = 5;\n");
+ const w2=await get();const changes=w2.timeline.filter(s=>s.kind==="change");
+ assert.equal(changes.length,2);assert.equal(changes[0].id,change1.id);
+ assert.ok(changes.every(s=>s.capturedAt&&s.baseRevision===revisions[2]));
+ assert.equal((await get()).timeline.filter(s=>s.kind==="change").length,2);
+ // Прежняя явная база остаётся доступной через API, но компактный UI выбирает HEAD.
+ const explicit=await get("?baseline="+changes.at(-1)!.id);
+ assert.equal(explicit.before.id,changes.at(-1)!.id);
+ assert.equal(explicit.counts.changed,0);
+ assert.equal((await get()).before.id,changes.at(-1)!.id);
+ const automatic=await get("?baseline=auto");
+ assert.equal(automatic.before.id,"git-"+revisions[2]);
+ assert.equal(automatic.counts.changed,1);
+ const before=await workBytes(app);
+ const historical=await get("?target="+change1.id+"&baseline=auto");
+ assert.equal(historical.target!.id,change1.id);
+ assert.equal(historical.after.digest,(await app.changes.get(change1.id))!.digest);
+ assert.equal(historical.before.id,"git-"+revisions[2]);
+ assert.deepEqual(await workBytes(app),before);
+ const revision=await get("?target=git-"+revisions[1]);
+ assert.equal(revision.after.id,"git-"+revisions[1]);
+ assert.equal(revision.before.id,"git-"+revisions[0]);
+ assert.deepEqual(await workBytes(app),before);
+ const first=await get("?target=git-"+revisions[0]+"&baseline=auto");
+ assert.equal(first.before.id,"initial");
+ const manual=await fetch(url+"/api/reviews",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({view:first.id,path:"."})});
+ assert.equal(manual.status,200);assert.deepEqual(await workBytes(app),before);
+ git(root,["add","code.js"]);git(root,["commit","-qm","Commit accumulated changes"]);
+ const head=git(root,["rev-parse","HEAD"]);
+ const advanced=await get();
+ assert.equal(advanced.timeline.filter(s=>s.isHead).length,1);
+ assert.equal(advanced.timeline.find(s=>s.isHead)!.revision,head);
+ assert.equal(advanced.timeline.filter(s=>s.kind==="change").length,0);
+ assert.equal(advanced.before.id,"git-"+head);
+ assert.equal(advanced.counts.changed,0);
+});
+
+test("a complete working tree with an incomplete HEAD opens without replacing published work",async t=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),"archiview-incomplete-head-"));
+ t.after(()=>rm(root,{recursive:true,force:true}));
+ await writeFile(path.join(root,"arch.yaml"),stringify({...contract,purpose:"X".repeat(140*1024)}));
+ await writeFile(path.join(root,"code.js"),"export const value = 1;\n");
+ git(root,["init","-q"]);git(root,["config","user.name","Timeline Test"]);git(root,["config","user.email","timeline@example.invalid"]);
+ git(root,["add","arch.yaml","code.js"]);git(root,["commit","-qm","Oversized historical contract"]);
+ await writeFile(path.join(root,"arch.yaml"),stringify(contract));
+ const app=await createArchiView({root});
+ app.server.listen(0,"127.0.0.1");await once(app.server,"listening");
+ t.after(()=>new Promise<void>(resolve=>{app.server.closeAllConnections();app.server.close(() => resolve());}));
+ const response=await fetch("http://127.0.0.1:"+(app.server.address() as AddressInfo).port+"/api/comparison");
+ const value=await (response.json() as Promise<ComparisonResponse>);
+ assert.equal(response.status,200,JSON.stringify(value));
+ assert.equal(value.complete,false);
+ assert.ok(value.diagnostics.length);
+ assert.equal((await app.reports.list()).reports.length,0);
+ assert.equal((await app.changes.list()).changes.length,0);
+});

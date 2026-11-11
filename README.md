@@ -4,6 +4,29 @@
 контракты arch.yaml, изменения между снимками и результаты проверок review.yaml.
 Пакет также предоставляет MCP-инструменты и скилл module-boundaries.
 
+## Разработка на TypeScript
+
+Приложение, адаптеры, браузерный интерфейс, скрипты и тесты написаны на TypeScript.
+`npm run typecheck` проверяет весь исходный код с `strict: true`.
+Классы хранилищ отвечают за свои данные и жизненный цикл; прикладной сервис
+координирует операции, а адаптеры преобразуют аргументы и ответы транспорта.
+
+```powershell
+npm ci
+npm run build
+npm test
+```
+
+Сборка проверяет типы и создаёт автономные пакеты `dist/codex` и `dist/dsh`.
+Браузерный JavaScript формируется в `dist/web`; установленные пакеты содержат
+готовый JavaScript и не требуют TypeScript или tsx. При запуске исходников
+используется `node --import tsx`, например `npm run archiview -- --root D:/project`.
+
+`npm run test:web` запускает Chromium без окна: проверяет навигацию, историю,
+копирование промпта и мобильную раскладку. Для первого запуска установите браузер
+командой `npx playwright install chromium` либо задайте `ARCHIVIEW_CHROMIUM_PATH`.
+Снимки экрана сохраняются в `dist/verification`.
+
 ## Панель Codex
 
 ArchiView поставляется как локальный плагин Codex. Сборка не требует npm-зависимостей
@@ -56,6 +79,8 @@ npm ci
 npm run archiview -- --root D:/path/to/project
 ~~~
 
+При запуске из исходников CLI собирает веб-интерфейс в `dist/web` перед открытием сервера.
+Пакетные команды экспорта и проверки запускаются без сборки интерфейса.
 Адрес по умолчанию — http://127.0.0.1:4317. --port 0 выбирает свободный порт.
 Сервер слушает только loopback; облачный сервис для просмотра не нужен.
 
@@ -210,7 +235,7 @@ archiview --root D:\projects\MyProject --check-index
 ## MCP и скилл
 
 ~~~powershell
-node src/server.mjs --root D:/path/to/project
+node --import tsx src/server.ts --root D:/path/to/project
 ~~~
 
 Корень задаётся --root, PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT или cwd процесса.
@@ -246,7 +271,7 @@ codex-skill-over-mcp в .agents/skills проекта; подключение и
 ~~~toml
 [mcp_servers.plugin-architecture-change-view]
 command = "node"
-args = ["D:/projects/dsh.plugins/plugin-architecture-change-view/src/server.mjs", "--root", "D:/path/to/project"]
+args = ["D:/projects/dsh.plugins/plugin-architecture-change-view/dist/codex/src/server.mjs", "--root", "D:/path/to/project"]
 ~~~
 
 В AGENTS.md закрепите обязательное применение скилла при работе с кодом и
