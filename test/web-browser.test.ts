@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
 import { createServer, type Server } from "node:http";
-import { cp, mkdir, mkdtemp, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
@@ -157,23 +157,39 @@ test("a reused directory retains its exact module under search and status filter
   const child = path.join(root, "src/undocumented");
   await mkdir(child);
   await writeFile(path.join(child, "child.ts"), "export const child = 1;");
+  await writeFile(path.join(root, "src/arch.yaml"), "\nextensions:\n  archiview.roles: [queue-consumer, queue-producer]\n", { flag: "a" });
+  const rootDocument = path.join(root, "arch.yaml");
+  const rootText = await readFile(rootDocument, "utf8");
+  const setRootRoles = (ids: string[]) => writeFile(rootDocument, rootText + stringify({ extensions: { "archiview.roles": ids } }));
+  await setRootRoles(["domain", "storage"]);
   const git = (args: string[]) => promisify(execFile)("git", args, { cwd: root, windowsHide: true });
-  await git(["add", "src/undocumented"]);
+  await git(["add", "arch.yaml", "src/undocumented", "src/arch.yaml"]);
   await git(["-c", "user.name=Browser Test", "-c", "user.email=browser@example.test", "commit", "-qm", "Add child before replacement"]);
   await rm(child, { recursive: true });
+  await setRootRoles(["ui", "domain"]);
   await writeFile(path.join(root, "src/arch.yaml"), stringify({ schema_version: 1, id: "replacement", title: "Новая функция",
-    kind: "module", purpose: "Заменить прежнюю функцию", responsibilities: { R1: "Показать замену" }, boundaries: {}, invariants: {} }));
+    kind: "module", purpose: "Заменить прежнюю функцию", responsibilities: { R1: "Показать замену" }, boundaries: {}, invariants: {},
+    extensions: { "archiview.roles": ["http-client"], "example.owner": "team" } }));
   const origin = await listen(defer, (await createArchiView({ root })).server);
   const page = await (await browserContext(defer)).newPage();
   await page.goto(origin);
   const rows = page.locator('.tree-row[data-directory="src"]');
   await rows.last().waitFor();
   assert.equal(await rows.count(), 2);
+  const rootRow = page.locator('.tree-row[data-directory="."]');
+  const badges = (selector: string) => page.locator(selector + " .role-badge").evaluateAll(nodes =>
+    nodes.map(node => [node.textContent, (node as HTMLElement).dataset.changeStatus]));
+  assert.deepEqual(await badges('.tree-row[data-directory="."]'), [["ui", "added"], ["domain", "unchanged"]]);
+  await rootRow.click();
+  await page.getByRole("heading", { name: "Роли по контракту" }).waitFor();
+  assert.deepEqual(await badges(".contract-roles"), [["ui", "added"], ["domain", "unchanged"], ["storage", "removed"]]);
   await page.locator(".filter-chip.removed").click();
   assert.deepEqual(await rows.evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.key)), ["src::removed"]);
+  assert.equal(await rows.locator(".tree-roles").count(), 0);
   await rows.click();
   await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
   await page.locator('.clause-row[data-change-status="removed"]').waitFor();
+  assert.deepEqual(await badges(".contract-roles"), [["queue-consumer", "removed"], ["queue-producer", "removed"]]);
   const removedChild = page.locator('.tree-row[data-directory="src/undocumented"]');
   await removedChild.click();
   await page.getByRole("button", { name: "Открыть описание родителя" }).click();
@@ -184,9 +200,12 @@ test("a reused directory retains its exact module under search and status filter
   await page.locator(".filter-chip.all").click();
   await page.locator("#search").fill("replacement");
   assert.deepEqual(await rows.evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.key)), ["src::new"]);
+  assert.equal(await rows.locator('.role-badge[data-change-status="added"]').innerText(), "http-client");
   await rows.click();
   await page.getByRole("heading", { name: "Новая функция", exact: true }).waitFor();
   await page.locator('.clause-row[data-change-status="added"]').waitFor();
+  assert.deepEqual(await page.locator(".contract-roles li").allTextContents(), ["http-client"]);
+  assert.match(await page.locator(".contract-extra").first().innerText(), /example\.owner/);
 });
 
 test("dsh browser ties delivery and navigation to the active host and comparison", browserOptions, async (t) => {

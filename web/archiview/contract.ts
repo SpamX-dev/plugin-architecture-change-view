@@ -1,5 +1,7 @@
 import type { Section, Contract, ClauseReference, ReviewBundle, ContractDocument, ContractRenderOptions } from "./types.js";
 import { el } from "./dom.js";
+import { ROLE_EXTENSION } from "../../src/contracts/roles.js";
+import { roleBadge } from "./role-badge.js";
 import { clauseFindingTargets, findingBug } from "./findings.js";
 
 const sections: Record<Section, string> = { responsibilities: "Ответственность", boundaries: "Границы", invariants: "Инварианты" };
@@ -65,6 +67,24 @@ export function renderContractHeading(panel: HTMLElement, document: ContractDocu
     options.contractDiff.heading, "Описание модуля");
 }
 
+/** Роли сохраняют собственную окраску, даже если другие дополнения контракта менялись. */
+export function renderContractRoles(panel: HTMLElement, diff: ContractRenderOptions["contractDiff"], extensions?: Contract["extensions"]) {
+  if (!diff.roles.length) return;
+  const block = el("section", "clause-section contract-role-section");
+  block.append(el("h3", "", "Роли по контракту"));
+  const list = el("ul", "contract-roles");
+  for (const role of diff.roles) {
+    const item = el("li");
+    item.append(roleBadge(role));
+    list.append(item);
+  }
+  block.append(list);
+  const other = Object.entries(extensions ?? {}).filter(([key]) => key !== ROLE_EXTENSION);
+  if (other.length) block.append(el("p", "contract-extra", "Дополнения: " + JSON.stringify(Object.fromEntries(other))));
+  panel.append(decorateContractChange(block, diff.fields.find(field => field.key === "extensions"),
+    other.length ? "Дополнения" : "Роли по контракту"));
+}
+
 /** Контракт выделяет изменённые поля; удалённые пункты остаются в своих разделах. */
 export function renderContract(panel: HTMLElement, document: ContractDocument, options: ContractRenderOptions) {
   const contract = document.contract;
@@ -74,6 +94,7 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
   const decorate = (node: HTMLElement, key: string, label: string) => decorateContractChange(node, byKey.get(key), label);
   const paper = el("article", "contract-paper");
   if (!options.hideHeading) renderContractHeading(paper, document, options);
+  renderContractRoles(paper, options.contractDiff, contract.extensions);
   for (const [section, title] of (Object.entries(sections) as [Section, string][])) {
     const block = el("section", "clause-section");
     block.append(el("h3", "", title));
@@ -110,6 +131,7 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
     paper.append(block);
   }
   for (const [key, label] of [["rationale", "Обоснование"], ["owners", "Владельцы"], ["tags", "Метки"], ["extensions", "Дополнения"]]) {
+    if (key === "extensions" && options.contractDiff.roles.length) continue;
     const change = byKey.get(key);
     if (!change) continue;
     const value = change.after ?? change.before;

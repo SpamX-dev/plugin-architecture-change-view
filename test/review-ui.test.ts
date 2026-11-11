@@ -138,6 +138,16 @@ test("contract fields distinguish new, removed and changed clauses while preserv
   assert.deepEqual({ before, after }, original);
 });
 
+test("role comparison ignores order and treats a first snapshot as neutral", () => {
+  const roles = (...ids: string[]) => ({ extensions: { "archiview.roles": ids } });
+  const previous = roles("cli", "ui");
+  const current = roles("ui", "cli");
+  const neutral = [{ id: "ui", status: "unchanged" }, { id: "cli", status: "unchanged" }];
+  assert.deepEqual(compareContracts(previous, current).roles, neutral);
+  assert.deepEqual(compareContracts(null, current, false).roles, neutral);
+  assert.deepEqual(compareContracts(previous, {}).roles, [{ id: "cli", status: "removed" }, { id: "ui", status: "removed" }]);
+});
+
 test("heading uses the strictest field change and retains both versions in one diff", () => {
   const before = { title: "Прежнее название", kind: "module", id: "one", responsibilities: { R1: "Прежний пункт" } };
   const after = { ...before, title: "Новое название", purpose: "Добавленное назначение", responsibilities: {} };

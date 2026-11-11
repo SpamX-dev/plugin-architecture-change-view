@@ -1,7 +1,7 @@
 import type { ModuleDetail, ComparisonView, ClauseReference, ReviewBundle, FindingTarget } from "./types.js";
 import { byId, el, icon, notice } from "./dom.js";
 import { badge } from "./change-status.js";
-import { renderContract, savedClauseText, clauseSectionLabel } from "./contract.js";
+import { renderContract, renderContractRoles, savedClauseText, clauseSectionLabel } from "./contract.js";
 import { moduleTrail } from "./module-path.js";
 import { timelineDate, timelineLabel } from "./timeline.js";
 
@@ -31,6 +31,7 @@ export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: C
       box.append(button);
     }
     panel.append(box);
+    if (selected.document.state === "missing") renderContractRoles(panel, detail.contractDiff);
     return;
   }
   panel.append(notice("Исторический документ", "Содержимое сохранено в прежнем снимке."),

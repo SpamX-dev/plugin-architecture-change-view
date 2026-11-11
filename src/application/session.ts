@@ -1,6 +1,6 @@
 import type { ComparisonView, ModuleDetail, DocumentDiffLine, SessionOperations, ComparisonArgs, ModuleArgs, SnapshotArgs } from "./api.js";
 import type { Snapshot, GitRevision } from "../snapshots/types.js";
-import { compareContracts } from "../snapshots/contract-diff.js";
+import { compareContracts, compareRoles } from "../snapshots/contract-diff.js";
 import type { ReviewBundle } from "../reviews/types.js";
 import type { PublishedComparison, ReviewEntry } from "../reports/types.js";
 import type { SessionView } from "./session-view.js";
@@ -273,7 +273,11 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       before: view.before, after: view.after, counts: view.counts, diagnostics: view.diagnostics, reviewDiagnostics: view.reviewDiagnostics,
       timeline, target, historyHasMore: gitHistory.hasMore,
       baselines: [{ id: "initial", label: "Первый анализ · без базы", kind: "initial" }, ...new Map(bases.map((entry) => [entry.id, entry])).values()],
-      modules: view.modules.map(({ before, after, files, ...module }) => module) } satisfies ComparisonView);
+      modules: view.modules.map(({ before, after, files, ...module }) => {
+        const roles = compareRoles(before?.document.contract, after?.document.contract, module.status !== "initial")
+          .filter(role => role.status !== "removed");
+        return roles.length ? { ...module, roles } : module;
+      }) } satisfies ComparisonView);
   }
 
   /** Возвращает детали и доказательства из выбранного неизменяемого представления. */

@@ -3,6 +3,7 @@ import { byId, el, icon } from "./dom.js";
 import { badge, labels } from "./change-status.js";
 import { findingBug, moduleFindingCount, treeFindingCounts } from "./findings.js";
 import { freshnessLabel } from "./review-status.js";
+import { roleBadge } from "./role-badge.js";
 
 import { treeParents } from "./module-path.js";
 
@@ -188,6 +189,12 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
       const label = el("span", "tree-label");
       label.append(el("span", "tree-name", title));
       if (title !== module.name) label.append(el("span", "tree-path", module.name));
+      if (module.roles?.length) {
+        const roles = el("span", "tree-roles");
+        roles.append(...module.roles.map(roleBadge));
+        label.append(roles);
+        row.title += "\nРоли по контракту: " + module.roles.map(role => role.id).join(" · ");
+      }
       row.append(caret, icon("folder"), label);
       const findings = findingCounts.get(module.key) ?? 0;
       if (findings) {

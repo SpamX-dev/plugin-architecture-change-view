@@ -4,7 +4,7 @@ import type { AnalysisStatus, PreparedAnalysis } from "./analysis-record.js";
 export type { AnalysisStatus, PreparedAnalysis } from "./analysis-record.js";
 import type { ClauseInput, ReviewReport, Side } from "../reviews/types.js";
 import type { Comparison, ComparisonModule, Fact, Snapshot } from "../snapshots/types.js";
-import type { compareContracts } from "../snapshots/contract-diff.js";
+import type { compareContracts, RoleChange } from "../snapshots/contract-diff.js";
 
 export type ComparisonArgs = { target?: string; baseline?: string; historyLimit?: number };
 export type ModuleArgs = { view: string; path: string };
@@ -30,7 +30,7 @@ export interface ModuleReviewState {
   reviewStatus?: TreeReviewStatus | null;
 }
 
-export type ModuleSummary = Omit<ComparisonModule, "before" | "after" | "files"> & ModuleReviewState;
+export type ModuleSummary = Omit<ComparisonModule, "before" | "after" | "files"> & ModuleReviewState & { roles?: RoleChange[] };
 export interface ComparisonView extends Pick<Comparison, "schema_version" | "id" | "root" | "complete" | "diagnostics" | "counts" | "before" | "after"> {
   reviewDiagnostics: string[];
   modules: ModuleSummary[];

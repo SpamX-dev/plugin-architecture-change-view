@@ -1,4 +1,5 @@
 import type { Contract } from "../contracts/types.js";
+import { declaredRoles } from "../contracts/roles.js";
 import { canonical } from "../serialization/digest.js";
 
 export interface ContractFieldChange {
@@ -6,6 +7,20 @@ export interface ContractFieldChange {
   before: unknown;
   after: unknown;
   status: "unchanged" | "added" | "modified" | "removed";
+}
+
+export interface RoleChange {
+  id: string;
+  status: "added" | "unchanged" | "removed";
+}
+
+/** Сначала роли выбранного снимка в порядке YAML, затем исчезнувшие роли в порядке базы. */
+export function compareRoles(before: Partial<Contract> | null | undefined, after: Partial<Contract> | null | undefined, compare: boolean): RoleChange[] {
+  const previous = new Set(declaredRoles(before));
+  const current = new Set(declaredRoles(after));
+  const changes: RoleChange[] = Array.from(current, id => ({ id, status: !compare || previous.has(id) ? "unchanged" : "added" }));
+  if (compare) for (const id of previous) if (!current.has(id)) changes.push({ id, status: "removed" });
+  return changes;
 }
 
 /** Compare the saved pair once, including removed clauses and the four-field heading. */
@@ -30,5 +45,5 @@ export function compareContracts(before: Partial<Contract> | null | undefined, a
   for (const field of fields) {
     if (headingKeys.some((key) => key === field.key) && rank[field.status] > rank[heading.status]) heading.status = field.status;
   }
-  return { fields, heading };
+  return { fields, heading, roles: compareRoles(before, after, compare) };
 }
