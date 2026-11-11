@@ -3,38 +3,7 @@ import { el } from "./dom.js";
 import { clauseFindingTargets, findingBug } from "./findings.js";
 
 const sections: Record<Section, string> = { responsibilities: "Ответственность", boundaries: "Границы", invariants: "Инварианты" };
-type FieldChange = { key: string; before: unknown; after: unknown; status: "unchanged" | "added" | "modified" | "removed" };
-
-/** Сравнивает значения полей двух показанных контрактов, не вычисляя архитектурный вердикт. */
-export function contractChanges(before: Partial<Contract> | null | undefined, after: Partial<Contract> | null | undefined, compare = true) {
-  const stable = (value: unknown) => JSON.stringify(value, (_, item) => item && typeof item === "object" && !Array.isArray(item) ?
-    Object.fromEntries(Object.keys(item).sort().map((key) => [key, item[key]])) : item);
-  const fields: FieldChange[] = [];
-  const add = (key: string, oldValue: unknown, newValue: unknown) => fields.push({ key, before: oldValue, after: newValue,
-    status: !compare || stable(oldValue) === stable(newValue) ? "unchanged" :
-      oldValue === undefined ? "added" : newValue === undefined ? "removed" : "modified" });
-  for (const key of ["id", "title", "kind", "purpose", "rationale", "owners", "tags", "references", "extensions"] as const)
-    if (before?.[key] !== undefined || after?.[key] !== undefined) add(key, before?.[key], after?.[key]);
-  for (const section of (Object.keys(sections) as Section[])) for (const id of new Set([
-    ...Object.keys(after?.[section] ?? {}), ...Object.keys(before?.[section] ?? {}),
-  ])) add(section + "." + id, before?.[section]?.[id], after?.[section]?.[id]);
-  return fields;
-}
-
-/**
- * Шапка — один блок из названия, типа, id и назначения. Удаление строже изменения,
- * изменение строже добавления; диф сохраняет все четыре поля обеих версий.
- * Пункты контракта и прочие метаданные не меняют статус этой группы.
- */
-export function contractHeadingChange(before: Partial<Contract> | null | undefined, after: Partial<Contract> | null | undefined, compare = true) {
-  const keys = ["title", "kind", "id", "purpose"] as const;
-  const rank = { unchanged: 0, added: 1, modified: 2, removed: 3 };
-  const fields = contractChanges(before, after, compare).filter((change) => (keys as readonly string[]).includes(change.key));
-  const pick = (contract: Partial<Contract> | null | undefined) => contract == null ? undefined :
-    Object.fromEntries(keys.filter((key) => contract[key] !== undefined).map((key) => [key, contract[key]]));
-  return { key: "heading", before: pick(before), after: pick(after),
-    status: fields.reduce<FieldChange["status"]>((status, change) => rank[change.status] > rank[status] ? change.status : status, "unchanged") };
-}
+type FieldChange = ContractRenderOptions["contractDiff"]["fields"][number];
 
 /** Диф выбранного поля показывает обе сохранённые версии без чтения рабочих файлов. */
 function showContractChange(change: FieldChange, label: string) {
@@ -78,10 +47,8 @@ function decorateContractChange(node: HTMLElement, change: FieldChange | undefin
 }
 
 /** Единый заголовок модуля содержит метаданные контракта без повторного названия. */
-export function renderContractHeading(panel: HTMLElement, document: ContractDocument, options: ContractRenderOptions = {}) {
-  const before = options.before === undefined ? document.contract : options.before;
-  const after = options.after === undefined ? document.contract : options.after;
-  const contract = after ?? before;
+export function renderContractHeading(panel: HTMLElement, document: ContractDocument, options: ContractRenderOptions) {
+  const contract = document.contract;
   if (!contract) return;
   const header = el("div", "contract-header");
   const title = options.titleElement ?? el("h2", "", contract.title);
@@ -95,16 +62,14 @@ export function renderContractHeading(panel: HTMLElement, document: ContractDocu
   header.append(el("p", "contract-purpose", contract.purpose));
   panel.append(header);
   decorateContractChange(options.groupElement ?? header,
-    contractHeadingChange(before, after, options.compare ?? true), "Описание модуля");
+    options.contractDiff.heading, "Описание модуля");
 }
 
 /** Контракт выделяет изменённые поля; удалённые пункты остаются в своих разделах. */
-export function renderContract(panel: HTMLElement, document: ContractDocument, options: ContractRenderOptions = {}) {
-  const before = options.before === undefined ? document.contract : options.before;
-  const after = options.after === undefined ? document.contract : options.after;
-  const contract = after ?? before;
+export function renderContract(panel: HTMLElement, document: ContractDocument, options: ContractRenderOptions) {
+  const contract = document.contract;
   if (!contract) return;
-  const changes = contractChanges(before, after, options.compare ?? true);
+  const changes = options.contractDiff.fields;
   const byKey = new Map(changes.map((item) => [item.key, item]));
   const decorate = (node: HTMLElement, key: string, label: string) => decorateContractChange(node, byKey.get(key), label);
   const paper = el("article", "contract-paper");
@@ -152,7 +117,7 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
     paper.append(decorate(el("p", "contract-extra", label + ": " + text), key, label));
   }
   const references = el("div", "");
-  for (const reference of contract.references ?? before?.references ?? []) {
+  for (const reference of contract.references ?? options.previousReferences ?? []) {
     const row = el("p", "contract-extra");
     if (/^https?:\/\//i.test(reference.uri)) {
       const link = el("a", "", reference.title);

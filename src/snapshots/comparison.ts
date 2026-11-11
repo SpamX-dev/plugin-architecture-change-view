@@ -57,15 +57,21 @@ export function compareSnapshots(before: Snapshot | null, after: Snapshot, { pro
   const pathCounts = new Map();
   for (const module of modules) pathCounts.set(module.directory, (pathCounts.get(module.directory) ?? 0) + 1);
   for (const module of modules) module.key = module.directory + (pathCounts.get(module.directory) > 1 ? "::" + module.status : "");
-  const indexed = new Map(modules.map((module) => [module.directory, module]));
+  const oldPaths = new Map(modules.map((module) => [module.baselinePath, module]));
+  const newPaths = new Map(modules.map((module) => [module.currentPath, module]));
   for (const module of modules) {
-    if (["unchanged", "initial"].includes(module.status) || module.directory === ".") continue;
-    let parent = path.posix.dirname(module.directory);
-    while (true) {
-      if (indexed.has(parent)) indexed.get(parent)!.descendantChanges += 1;
-      if (parent === ".") break;
-      parent = path.posix.dirname(parent);
+    if (module.status === "initial" || module.status === "unchanged" && !module.moved) continue;
+    const ancestors = new Set<ComparisonModule>();
+    for (const [directory, paths] of [[module.baselinePath, oldPaths], [module.currentPath, newPaths]] as const) {
+      if (directory === null) continue;
+      let parent = directory;
+      while (parent !== ".") {
+        parent = path.posix.dirname(parent);
+        const ancestor = paths.get(parent);
+        if (ancestor) ancestors.add(ancestor);
+      }
     }
+    for (const ancestor of ancestors) ancestor.descendantChanges++;
   }
   return { schema_version: 2, id: structureHash((before?.id ?? "initial") + after.digest).slice(0, 24),
     root: projectRoot, before: before ? { id: before.id, label: before.label, kind: before.kind,

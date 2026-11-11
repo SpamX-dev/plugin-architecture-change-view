@@ -4,7 +4,7 @@ import { isRecord } from "./types.js";
 declare global { interface Window { openai?: { sendFollowUpMessage?: (request: { prompt: string }) => Promise<unknown> } } }
 
 /** Версия протокола postMessage между страницей и телом вкладки dsh. */
-const PROTOCOL = 1;
+const PROTOCOL = 2;
 /** Приветствие страницы: хост отвечает своими возможностями. */
 const HELLO = "archiview:hello";
 /** Ответ хоста на приветствие. */
@@ -41,10 +41,12 @@ export async function connectPanel(host: "web" | "dsh" = window.parent !== windo
 async function connectDshBridge(): Promise<PanelBridge | null> {
   const origin = window.location.origin;
   if (origin === "null") return null;
-  const host = await waitForHost(origin);
+  const sessionId = document.querySelector<HTMLMetaElement>('meta[name="archiview-session"]')?.content;
+  if (!sessionId) return {};
+  const host = await waitForHost(origin, sessionId);
   if (host === null) return null;
   if (!isRecord(host.capabilities) || host.capabilities.send !== true) return {};
-  return { send: (prompt) => sendThroughHost(prompt, origin) };
+  return { send: (prompt) => sendThroughHost(prompt, origin, sessionId) };
 }
 
 /**
@@ -53,7 +55,7 @@ async function connectDshBridge(): Promise<PanelBridge | null> {
  * @param {string} origin - ожидаемый origin родительского окна.
  * @returns {Promise<object | null>} сообщение хоста или `null`.
  */
-function waitForHost(origin: string): Promise<Record<string, unknown> | null> {
+function waitForHost(origin: string, sessionId: string): Promise<Record<string, unknown> | null> {
   const timeoutMs = 3000;
   const intervalMs = 350;
   return new Promise<Record<string, unknown> | null>((resolve) => {
@@ -71,11 +73,11 @@ function waitForHost(origin: string): Promise<Record<string, unknown> | null> {
     const onMessage = (event: MessageEvent<unknown>) => {
       if (event.source !== window.parent || event.origin !== origin) return;
       const data = event.data;
-      if (!isRecord(data) || data.type !== HOST) return;
+      if (!isRecord(data) || data.type !== HOST || data.protocol !== PROTOCOL || data.sessionId !== sessionId) return;
       finish(data);
     };
     const hello = () => {
-      try { window.parent.postMessage({ type: HELLO, protocol: PROTOCOL }, origin); }
+      try { window.parent.postMessage({ type: HELLO, protocol: PROTOCOL, sessionId }, origin); }
       catch { finish(null); }
     };
     window.addEventListener("message", onMessage);
@@ -94,7 +96,7 @@ function waitForHost(origin: string): Promise<Record<string, unknown> | null> {
  * @param {string} origin - origin родительского окна.
  * @returns {Promise<void>} завершение после принятия хостом.
  */
-function sendThroughHost(prompt: string, origin: string): Promise<void> {
+function sendThroughHost(prompt: string, origin: string, sessionId: string): Promise<void> {
   if (typeof prompt !== "string" || prompt === "") {
     return Promise.reject(new Error("Пустое поручение"));
   }
@@ -107,7 +109,7 @@ function sendThroughHost(prompt: string, origin: string): Promise<void> {
     const onMessage = (event: MessageEvent<unknown>) => {
       if (event.source !== window.parent || event.origin !== origin) return;
       const data = event.data;
-      if (!isRecord(data) || data.id !== id) return;
+      if (!isRecord(data) || data.id !== id || data.sessionId !== sessionId || data.protocol !== PROTOCOL) return;
       if (data.type === SENT) {
         cleanup();
         resolve();
@@ -121,7 +123,7 @@ function sendThroughHost(prompt: string, origin: string): Promise<void> {
       reject(new Error("Хост не подтвердил передачу поручения"));
     }, 15000);
     window.addEventListener("message", onMessage);
-    window.parent.postMessage({ type: SEND, id, prompt, protocol: PROTOCOL }, origin);
+    window.parent.postMessage({ type: SEND, id, prompt, protocol: PROTOCOL, sessionId }, origin);
   });
 }
 

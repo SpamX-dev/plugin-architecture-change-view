@@ -24,17 +24,7 @@
 
 import { createElement, useEffect, useRef } from "react";
 import { panelPageUrl, resolveClientPrefix } from "../panel-contract.js";
-
-/** Приветствие страницы: сообщает, что родитель — хост ArchiView. */
-const HELLO = "archiview:hello";
-/** Ответ хоста: какие возможности доступны странице. */
-const HOST = "archiview:host";
-/** Поручение анализа из страницы в чат. */
-const SEND = "archiview:send";
-/** Подтверждение принятия поручения хостом. */
-const SENT = "archiview:sent";
-/** Отказ или ошибка передачи. */
-const FAILED = "archiview:send-failed";
+import { listenToFrame } from "./frame-bridge.js";
 
 /**
  * Тело вкладки: страница панели во всю площадь вкладки.
@@ -55,59 +45,13 @@ export function PanelBody({ sessionId, sendPrompt }: import("./types.js").PanelP
 
   useEffect(() => {
     const frame = frameRef.current;
-    if (frame === null) return undefined;
-    const origin = window.location.origin;
-    const windowOf = () => frame.contentWindow;
-    const post = (message: Record<string, unknown>) => {
-      const target = windowOf();
-      if (target !== null) target.postMessage(message, origin);
-    };
-    const canSend = () => typeof sendPrompt === "function" && typeof sessionId === "string" && sessionId !== "";
-    const hostMessage = () => ({ type: HOST, protocol: 1, capabilities: { send: canSend() } });
-
-    /** Отвечает на приветствие и выполняет ровно одно поручение анализа. */
-    const onMessage = async (event: MessageEvent<unknown>) => {
-      if (event.source !== windowOf()) return;
-      if (event.origin !== origin) return;
-      const value = event.data;
-      if (!value || typeof value !== "object") return;
-      const data = value as Record<string, unknown>;
-      if (data === null || typeof data !== "object") return;
-      if ((data as Record<string, unknown>).type === HELLO) {
-        post(hostMessage());
-        return;
-      }
-      if (data.type !== SEND || typeof data.id !== "string") return;
-      try {
-        if (!canSend() || !sendPrompt || !sessionId || typeof data.prompt !== "string") throw new Error("Хост не умеет передавать поручения");
-        await sendPrompt(sessionId, data.prompt);
-        post({ type: SENT, id: data.id });
-      } catch (error) {
-        post({ type: FAILED, id: data.id, error: error instanceof Error ? error.message : "Не удалось передать поручение" });
-      }
-    };
-
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
+    if (frame) return listenToFrame(frame, { sessionId, sendPrompt });
   }, [sendPrompt, sessionId]);
-
-  // Страница могла отправить приветствие до подписки: объявляем хост после
-  // загрузки iframe. Повторный ответ безвреден — страница принимает первый.
-  const announce = () => {
-    const target = frameRef.current?.contentWindow;
-    if (target === null || target === undefined) return;
-    target.postMessage({
-      type: HOST,
-      protocol: 1,
-      capabilities: { send: typeof sendPrompt === "function" && typeof sessionId === "string" && sessionId !== "" },
-    }, window.location.origin);
-  };
 
   return createElement("iframe", {
     ref: frameRef,
     src: panelPageUrl(resolveClientPrefix(), sessionId),
     title: "ArchiView",
-    onLoad: announce,
     style: { display: "block", width: "100%", height: "100%", border: "0" },
   });
 }

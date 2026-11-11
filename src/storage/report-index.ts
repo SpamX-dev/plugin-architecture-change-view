@@ -1,5 +1,5 @@
 import type { Snapshot } from "../snapshots/types.js";
-import type { ReviewHistory } from "../reports/types.js";
+import type { ReviewEntry, ReviewHistory } from "../reports/types.js";
 /**
  * Проверяет опубликованные отчёты именно из индекса Git. Временная копия содержит
  * только staged-данные ArchiView; рабочее дерево и индекс пользователя не меняются.
@@ -15,6 +15,7 @@ import { ReportStore } from "./report-store.js";
 import { validateStoredReport } from "./publication.js";
 import { buildModuleStates } from "../reports/module-state.js";
 import { validateReviewEntry } from "../reports/review-validation.js";
+import { validateReviewRelations } from "../reports/review-identity.js";
 import { REPORT_SCHEMA_VERSION } from "../reports/types.js";
 import { digest } from "../serialization/digest.js";
 import { parseYaml } from "../serialization/yaml.js";
@@ -55,21 +56,22 @@ export async function checkPreparedIndex(root: string) {
     const actual = await captureGitIndex(root, { snapshotRoot: store.snapshotRoot });
     if (!actual || !actual.complete) throw new Error("Incomplete staged source capture");
     const technical = [];
-    let attempts = 0;
+    const attempts: ReviewEntry[] = [];
     for (const entry of published) {
       if (entry.file.endsWith(".archi.yaml")) technical.push(parseYaml(await readFile(path.join(temporary, entry.file), "utf8"), validateStoredReport));
       if (entry.file.endsWith(".review.yaml")) {
         const history = parseYaml(await readFile(path.join(temporary, entry.file), "utf8"), (value) => value as ReviewHistory);
         if (history.schema_version !== REPORT_SCHEMA_VERSION || history.kind !== "review_history" || !Array.isArray(history.entries)) throw new Error("Invalid staged review history");
-        for (const review of history.entries) { validateReviewEntry(review); attempts++; }
+        for (const review of history.entries) attempts.push(validateReviewEntry(review));
       }
     }
+    validateReviewRelations(attempts);
     // Сравниваем состояния модулей, а не время захвата, тип снимка или абсолютный корень.
     const stateDigest = (snapshot: Snapshot) => digest([...buildModuleStates(snapshot)].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
     const actualDigest = stateDigest(actual);
     if (!comparison?.current || stateDigest(comparison.current) !== actualDigest)
       throw new Error("Prepared source code and ArchiView reports describe different states");
-    return { modules: actual.modules.length, reviews: attempts, reports: technical.length };
+    return { modules: actual.modules.length, reviews: attempts.length, reports: technical.length };
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }

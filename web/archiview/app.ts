@@ -6,7 +6,7 @@ import { badge } from "./change-status.js";
 import { freshnessLabel } from "./review-status.js";
 import { renderReview } from "./review.js";
 import { findingBug, moduleFindingCount } from "./findings.js";
-import { ancestors } from "./module-path.js";
+import { moduleTrail } from "./module-path.js";
 import { createModuleTree } from "./module-tree.js";
 import { createAnalysisControls } from "./analysis-controls.js";
 import { renderTimeline, timelineDate, timelineLabel } from "./timeline.js";
@@ -79,12 +79,12 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     byId("module-contract-heading").hidden = true;
     const breadcrumbs = byId("breadcrumbs");
     breadcrumbs.replaceChildren();
-    for (const [index, directory] of ancestors(module.directory).entries()) {
+    for (const [index, { directory, module: ancestor }] of moduleTrail(currentView().modules, module).entries()) {
       if (index) breadcrumbs.append(el("span", "breadcrumb-separator", "/"));
       const button = el("button", "breadcrumb", directory === "." ?
-        currentView().modules[0].name : directory.split("/").at(-1));
+        ancestor.name : directory.split("/").at(-1));
       button.type = "button";
-      button.addEventListener("click", () => selectModule(directory));
+      button.addEventListener("click", () => selectModule(ancestor.key));
       breadcrumbs.append(button);
     }
     const meta = byId("module-meta");
@@ -129,7 +129,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     // запрещают replaceState. Обычная веб-страница сохраняет собственный hash.
     if (host !== "codex") history.replaceState(null, "", "#" + encodeURIComponent(directory));
     renderHeading(module);
-    tree.reveal(module.directory);
+    tree.reveal(module);
     document.body.classList.remove("tree-open");
     byId("document-panel").replaceChildren(el("div", "loading-state", "Читаем документ…"));
     try {
@@ -206,8 +206,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     heading.hidden = !selected.document.contract;
     byId("module-subtitle").hidden = Boolean(selected.document.contract);
     if (selected.document.contract) renderContractHeading(heading, selected.document, {
-      before: state.detail.before?.document.contract ?? null, after: state.detail.after?.document.contract ?? null,
-      compare: state.detail.status !== "initial", titleElement: byId("module-title"), groupElement: byId("module-heading-content"),
+      contractDiff: state.detail.contractDiff, titleElement: byId("module-title"), groupElement: byId("module-heading-content"),
     });
     byId("document-version").textContent = state.detail.status === "removed" ?
       "Из базы сравнения" : timelineLabel(currentView().target ?? { id: "current" });

@@ -14,7 +14,8 @@ import { createArchiView } from "../src/archiview/http.js";
 import { moduleInventory } from "../src/contracts/inventory.js";
 import { readSnapshotRoot } from "../src/project/identity.js";
 import { readReviewBundle, ReviewStore } from "../src/storage/review-store.js";
-import { createStructuralReview, reviewIsStale } from "../src/reviews/bundle.js";
+import { createStructuralReview } from "../src/reviews/bundle.js";
+import { reviewIsStale } from "../src/reports/freshness.js";
 import { defaultSnapshotDirectory, SnapshotStore } from "../src/storage/snapshot-store.js";
 import { captureGitHead, captureWorkingTree } from "../src/snapshots/capture.js";
 import { compareSnapshots } from "../src/snapshots/comparison.js";
@@ -184,4 +185,17 @@ for (const target of ["source", "external"]) test(`local state rejects a directo
   await assert.rejects(store.list(), /directory links/);
   await assert.rejects(store.save(snapshot), /directory links/);
   await assert.rejects(new ReviewStore(store).list(), /directory links/);
+});
+
+test("external state resolves nested pending paths against the selected physical directory", async (t) => {
+  const { root, temporary } = await fixture(t);
+  const state = path.join(temporary, "state"), sibling = path.join(temporary, "sibling");
+  await mkdir(state); await mkdir(sibling);
+  const alias = path.join(temporary, "state-alias");
+  const linkType = process.platform === "win32" ? "junction" : "dir";
+  await symlink(state, alias, linkType);
+  const store = new SnapshotStore(root, alias);
+  await store.assertLocation(path.join(alias, "pending", "file"));
+  await symlink(sibling, path.join(state, "redirected"), linkType);
+  await assert.rejects(store.assertLocation(path.join(alias, "redirected", "pending", "file")), /outside external state storage/);
 });

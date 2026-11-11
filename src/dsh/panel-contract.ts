@@ -34,7 +34,7 @@ const LOCAL_PATH_START = /^\/(?![/\\])/;
  * Символы, которых не может быть в локальном пути маршрута: пробельные,
  * обратный слэш (меняет разбор URL), строка запроса и фрагмент.
  */
-const FORBIDDEN_IN_PATH = /[\s\\?#]/;
+const FORBIDDEN_IN_PATH = /[\s\x00-\x1f\x7f\\?#]/;
 
 /**
  * Проверяет префикс, пришедший из конфигурации или документа.
@@ -50,7 +50,9 @@ const FORBIDDEN_IN_PATH = /[\s\\?#]/;
 export function asPrefix(value: unknown) {
   if (typeof value !== "string" || value.endsWith("/")) return null;
   if (!LOCAL_PATH_START.test(value) || FORBIDDEN_IN_PATH.test(value)) return null;
-  return value;
+  // Use the same serialized pathname as the browser and the host route table.
+  if (value.split("/").some((part) => /^(?:\.|%2e){1,2}$/i.test(part))) return null;
+  return new URL(value, "http://localhost").pathname;
 }
 
 /**

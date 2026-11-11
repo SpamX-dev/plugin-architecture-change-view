@@ -11,7 +11,7 @@ import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { contractDocument } from "./document.js";
-import { STATE_DIRECTORY } from "../project/paths.js";
+import { STATE_DIRECTORY, within } from "../project/paths.js";
 
 /** Каталоги зависимостей и результатов сборки, исключаемые из обоих обходов. */
 const EXCLUDED = new Set([
@@ -32,16 +32,6 @@ const runFile = promisify(execFile);
 /** Максимальный размер одного описания, читаемого в контекст агента. */
 const MAX_DOCUMENT_BYTES = 128 * 1024;
 
-/**
- * Проверяет вложенность уже разрешённых путей; допускает сам корень.
- * Работает с разделителями и регистрами, принятыми платформой Node.js.
- */
-function within(root: string, candidate: string) {
-  const relative = path.relative(root, candidate);
-  return relative === "" || (!path.isAbsolute(relative) &&
-    relative !== ".." && !relative.startsWith(".." + path.sep));
-}
-
 /** Приводит путь к относительному формату ответа MCP независимо от платформы. */
 function portable(value: string) {
   return value.split(path.sep).join("/") || ".";
@@ -57,7 +47,7 @@ export async function regularProjectFile(root: string, relative: string) {
   if (!within(root, candidate)) return false;
   try {
     const resolved = await realpath(candidate);
-    if (!within(root, resolved)) return false;
+    if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) return false;
     const info = await lstat(candidate);
     return info.isFile() && !info.isSymbolicLink();
   } catch (errorCause) { const error = errorDetails(errorCause);
@@ -112,10 +102,12 @@ export async function projectFiles(root: string, maxFiles: number) {
     entries.sort((left, right) => left.name.localeCompare(right.name));
     for (let index = 0; index < entries.length; index += 1) {
       const entry = entries[index];
-      if (entry.isSymbolicLink() || EXCLUDED.has(entry.name)) continue;
+      if (excludedProjectPath(entry.name)) continue;
       const candidate = path.join(directory, entry.name);
       if (entry.isDirectory()) pending.push(candidate);
-      else if (entry.isFile()) files.push(path.relative(root, candidate));
+      else if (entry.isFile() || (entry.isSymbolicLink() && ["arch.yaml", "module.md"].includes(entry.name))) {
+        files.push(path.relative(root, candidate));
+      }
       if (files.length >= maxFiles) {
         if (index < entries.length - 1 || pending.length > 0) {
           diagnostics.push("File limit reached: " + maxFiles);
@@ -130,7 +122,12 @@ export async function projectFiles(root: string, maxFiles: number) {
 
 /** Общая политика исключения путей для рабочего дерева и исторических снимков. */
 export function excludedProjectPath(relative: string) {
-  return relative.split(/[\\/]/).some((part) => EXCLUDED.has(part));
+  return relative.split(/[\\/]/).some((part) => EXCLUDED.has(process.platform === "win32" ? part.toLowerCase() : part));
+}
+
+async function existingEntry(file: string) {
+  try { return await lstat(file); }
+  catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
 }
 
 /**
@@ -139,41 +136,31 @@ export function excludedProjectPath(relative: string) {
  */
 async function documentAt(root: string, directory: string): Promise<InventoryModule> {
   let file = path.join(directory, "arch.yaml");
-  try { await lstat(file); }
-  catch (errorCause) { const error = errorDetails(errorCause);
-    if (error.code !== "ENOENT") throw error;
-    const legacy = path.join(directory, "module.md");
-    try { await lstat(legacy); file = legacy; }
-    catch (legacyErrorCause) { const legacyError = errorDetails(legacyErrorCause); if (legacyError.code !== "ENOENT") throw legacyError; }
-  }
-  try {
-    const resolved = await realpath(file);
-    if (!within(root, resolved)) throw new Error("Contract resolves outside project");
-    const info = await lstat(file);
-    if (!info.isFile() || info.isSymbolicLink()) {
-      throw new Error("Contract must be a regular file");
-    }
-    if (info.size > MAX_DOCUMENT_BYTES) throw new Error("Contract exceeds 128 KiB");
-    const text = await readFile(file, "utf8");
-    let { state, ...parsed } = contractDocument(text, path.basename(file));
-    if (path.basename(file) === "arch.yaml") {
-      try {
-        const legacy = path.join(directory, "module.md");
-        const legacyInfo = await lstat(legacy);
-        if (!legacyInfo.isFile() || legacyInfo.isSymbolicLink() || legacyInfo.size > MAX_DOCUMENT_BYTES) throw new Error("Invalid legacy contract");
-        parsed.migration = { document: portable(path.relative(root, legacy)), text: await readFile(legacy, "utf8") };
-        parsed.action = "Сверьте arch.yaml и module.md, сохраните все принятые ограничения и удалите module.md после проверки.";
-        if (state === "documented") state = "migration_required";
-      } catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "ENOENT") throw error; }
-    }
-    return { directory: portable(path.relative(root, directory)),
-      document: portable(path.relative(root, file)),
-      status: state, ...parsed };
-  } catch (errorCause) { const error = errorDetails(errorCause);
-    if (error.code !== "ENOENT") throw error;
-    return { directory: portable(path.relative(root, directory)),
+  let info = await existingEntry(file);
+  const legacy = path.join(directory, "module.md");
+  if (!info) {
+    info = await existingEntry(legacy);
+    if (!info) return { directory: portable(path.relative(root, directory)),
       document: portable(path.relative(root, file)), status: "missing" };
+    file = legacy;
   }
+  if (!info.isFile()) throw new Error("Contract must be a regular file");
+  if (info.size > MAX_DOCUMENT_BYTES) throw new Error("Contract exceeds 128 KiB");
+  const resolved = await realpath(file);
+  if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) throw new Error("Contract resolves outside project sources");
+  const text = await readFile(file, "utf8");
+  let { state, ...parsed } = contractDocument(text, path.basename(file));
+  if (file !== legacy) {
+    const legacyInfo = await existingEntry(legacy);
+    if (legacyInfo) {
+      if (!legacyInfo.isFile() || legacyInfo.size > MAX_DOCUMENT_BYTES) throw new Error("Invalid legacy contract");
+      parsed.migration = { document: portable(path.relative(root, legacy)), text: await readFile(legacy, "utf8") };
+      parsed.action = "Сверьте arch.yaml и module.md, сохраните все принятые ограничения и удалите module.md после проверки.";
+      if (state === "documented") state = "migration_required";
+    }
+  }
+  return { directory: portable(path.relative(root, directory)), document: portable(path.relative(root, file)),
+    status: state, ...parsed };
 }
 
 /**
@@ -193,7 +180,8 @@ export async function moduleInventory(projectRoot: string, options: {extensions?
     const documented = ["arch.yaml", "module.md"].includes(path.basename(file));
     if (!source && !documented) continue;
     try {
-      if (!await regularProjectFile(root, file)) continue;
+      if (!await regularProjectFile(root, file) &&
+          !(documented && (await existingEntry(path.join(root, file)))?.isSymbolicLink())) continue;
     } catch (errorCause) { const error = errorDetails(errorCause);
       listed.complete = false;
       listed.diagnostics.push(file + ": " + error.message);
@@ -258,12 +246,16 @@ export async function moduleContext(projectRoot: string, directory = ".") {
   if (path.isAbsolute(directory)) throw new Error("directory must be relative");
   const requested = path.resolve(root, directory);
   if (!within(root, requested)) throw new Error("directory is outside project");
+  if (excludedProjectPath(path.relative(root, requested))) throw new Error("directory is excluded from project sources");
   const target = await realpath(requested);
   if (!within(root, target)) throw new Error("directory resolves outside project");
   if (!(await lstat(target)).isDirectory()) throw new Error("directory is not a directory");
   const chain = [];
   let current = requested;
   while (true) {
+    const physical = current === requested ? target : await realpath(current);
+    if (!within(root, physical)) throw new Error("directory resolves outside project");
+    if (excludedProjectPath(path.relative(root, physical))) throw new Error("directory is excluded from project sources");
     chain.push(await documentAt(root, current));
     if (current === root) break;
     current = path.dirname(current);

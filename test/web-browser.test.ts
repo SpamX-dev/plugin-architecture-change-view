@@ -10,6 +10,7 @@ import { createInterface } from "node:readline";
 import test, { type TestContext } from "node:test";
 import { promisify } from "node:util";
 import { chromium } from "playwright";
+import { build } from "esbuild";
 import { stringify } from "yaml";
 import { createArchiView } from "../src/archiview/http.js";
 import { createArchiViewSession } from "../src/application/session.js";
@@ -75,13 +76,19 @@ async function browserContext(defer: DeferCleanup) {
 async function sourceCliOrigin(defer: DeferCleanup, project: string) {
   const checkout = await mkdtemp(path.join(os.tmpdir(), "archiview-source-start-"));
   defer(() => rm(checkout, { recursive: true, force: true, maxRetries: 5 }));
-  for (const name of ["src", "web", "scripts", "package.json"]) {
+  for (const name of ["src", "web", "scripts", "tsconfig.json", "package.json"]) {
     await cp(path.resolve(name), path.join(checkout, name), { recursive: true });
   }
   await symlink(path.resolve("node_modules"), path.join(checkout, "node_modules"), process.platform === "win32" ? "junction" : "dir");
   const args = ["--import", "tsx", "src/cli.ts", "--root", project];
   await promisify(execFile)(process.execPath, [...args, "--build-report", "--port", "unused"], { cwd: checkout, windowsHide: true });
   await assert.rejects(stat(path.join(checkout, "dist")), { code: "ENOENT" });
+  const invalid = path.join(checkout, "web", "invalid.ts");
+  await writeFile(invalid, "export const value: number = 'invalid';\n");
+  await assert.rejects(promisify(execFile)(process.execPath, [...args, "--port", "0"], { cwd: checkout, windowsHide: true, timeout: 15000 }),
+    (error: Error & { stdout?: string }) => /TS2322/.test(error.stdout ?? ""));
+  await assert.rejects(stat(path.join(checkout, "dist", "web")), { code: "ENOENT" });
+  await rm(invalid);
   const child = spawn(process.execPath, [...args, "--port", "0"], { cwd: checkout, windowsHide: true });
   defer(async () => {
     if (child.exitCode !== null || child.signalCode !== null) return;
@@ -108,6 +115,11 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(origin);
   const feature = page.getByRole("treeitem").filter({ hasText: "Функция браузера" });
+  const icon = await page.locator('link[rel="icon"]').evaluate((link: HTMLLinkElement) => link.href);
+  const fallback = await page.request.get(origin + "/favicon.ico");
+  assert.equal(fallback.url(), icon);
+  assert.equal(fallback.status(), 200);
+  assert.match(fallback.headers()["content-type"], /image\/svg\+xml/);
   await feature.waitFor();
   await feature.click();
   await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
@@ -115,12 +127,9 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   await page.locator("#document-panel").getByText("feature.ts", { exact: true }).waitFor();
   await page.getByRole("tab", { name: "Контракт", exact: true }).click();
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
-  const clipboard = await page.waitForFunction(async () => {
-    const value = await navigator.clipboard.readText();
-    return value.includes("browser-feature") ? value : false;
-  });
-  const prompt = await clipboard.jsonValue();
-  assert.ok(typeof prompt === "string");
+  await page.getByText("Промпт скопирован. Вставьте его в чат с агентом.", { exact: false }).waitFor();
+  const prompt = await page.evaluate(() => navigator.clipboard.readText());
+  assert.match(prompt, /browser-feature/);
   assert.match(prompt, /--complete-analysis/);
   const timeline = page.locator("#timeline");
   const revision = await timeline.locator("option").evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value).find((value) => value.startsWith("git-")));
@@ -135,9 +144,49 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   await page.screenshot({ path: path.join(artifacts, "web-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Модули", exact: true }).waitFor();
+  await page.locator("#review-status").waitFor({ state: "visible" });
+  assert.match(await page.locator("#review-status").innerText(), /Модуль.*Поддерево/);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
   await page.screenshot({ path: path.join(artifacts, "web-mobile.png"), fullPage: true });
   assert.deepEqual(errors, []);
+});
+
+test("a reused directory retains its exact module under search and status filters", browserOptions, async (t) => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const child = path.join(root, "src/undocumented");
+  await mkdir(child);
+  await writeFile(path.join(child, "child.ts"), "export const child = 1;");
+  const git = (args: string[]) => promisify(execFile)("git", args, { cwd: root, windowsHide: true });
+  await git(["add", "src/undocumented"]);
+  await git(["-c", "user.name=Browser Test", "-c", "user.email=browser@example.test", "commit", "-qm", "Add child before replacement"]);
+  await rm(child, { recursive: true });
+  await writeFile(path.join(root, "src/arch.yaml"), stringify({ schema_version: 1, id: "replacement", title: "Новая функция",
+    kind: "module", purpose: "Заменить прежнюю функцию", responsibilities: { R1: "Показать замену" }, boundaries: {}, invariants: {} }));
+  const origin = await listen(defer, (await createArchiView({ root })).server);
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(origin);
+  const rows = page.locator('.tree-row[data-directory="src"]');
+  await rows.last().waitFor();
+  assert.equal(await rows.count(), 2);
+  await page.locator(".filter-chip.removed").click();
+  assert.deepEqual(await rows.evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.key)), ["src::removed"]);
+  await rows.click();
+  await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
+  await page.locator('.clause-row[data-change-status="removed"]').waitFor();
+  const removedChild = page.locator('.tree-row[data-directory="src/undocumented"]');
+  await removedChild.click();
+  await page.getByRole("button", { name: "Открыть описание родителя" }).click();
+  await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
+  await removedChild.click();
+  await page.locator("#breadcrumbs").getByRole("button", { name: "src", exact: true }).click();
+  await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
+  await page.locator(".filter-chip.all").click();
+  await page.locator("#search").fill("replacement");
+  assert.deepEqual(await rows.evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.key)), ["src::new"]);
+  await rows.click();
+  await page.getByRole("heading", { name: "Новая функция", exact: true }).waitFor();
+  await page.locator('.clause-row[data-change-status="added"]').waitFor();
 });
 
 test("dsh browser ties delivery and navigation to the active host and comparison", browserOptions, async (t) => {
@@ -146,22 +195,28 @@ test("dsh browser ties delivery and navigation to the active host and comparison
   const session = await createArchiViewSession({ root });
   const routes = createRouteTable({ prefix: "/archiview", guard: () => false, getSession: () => session });
   const route = routes.find((entry) => entry.kind === "prefix")!;
+  const hostBridge = await build({ entryPoints: ["src/dsh/client/frame-bridge.ts"], bundle: true,
+    format: "iife", globalName: "archiviewBridge", write: false });
   const server = createServer((request, response) => {
     if (request.url?.startsWith("/archiview/")) { void route.handler(request, response); return; }
     response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     response.end(`<style>body { margin: 0 } iframe { width: 100vw; height: 100vh; border: 0; display: block }</style>
-    <iframe src="/archiview/?session=fixture"></iframe><script>
-      const active = location.search === "?send";
-      window.addEventListener("message", event => {
-        if (!active || event.source !== document.querySelector("iframe").contentWindow) return;
-        if (event.data.type === "archiview:hello") event.source.postMessage({type:"archiview:host", capabilities:{send:true}}, location.origin);
-        if (event.data.type === "archiview:send") event.source.postMessage({type:"archiview:sent", id:event.data.id}, location.origin);
-      });
+    <button id="switch">Сменить чат</button><iframe src="/archiview/?session=fixture"></iframe><script>
+      ${hostBridge.outputFiles[0].text}
+      const frame = document.querySelector("iframe");
+      const sendPrompt = location.search === "?send" ? window.recordDelivery : undefined;
+      let detach = archiviewBridge.listenToFrame(frame, { sessionId: "fixture", sendPrompt });
+      document.querySelector("#switch").onclick = () => {
+        detach();
+        detach = archiviewBridge.listenToFrame(frame, { sessionId: "next", sendPrompt });
+      };
     </script>`);
   });
   const origin = await listen(defer, server);
   const page = await (await browserContext(defer)).newPage();
   let clipboardWrites = 0;
+  const recipients: string[] = [];
+  await page.exposeFunction("recordDelivery", (sessionId: string) => { recipients.push(sessionId); });
   const requests: { view: string; path: string }[] = [];
   page.on("request", (request) => {
     if (request.method() === "POST" && new URL(request.url()).pathname === "/archiview/api/analysis") requests.push(request.postDataJSON());
@@ -220,6 +275,21 @@ test("dsh browser ties delivery and navigation to the active host and comparison
   assert.equal(await panel.getByText("old comparison failed").count(), 0);
   assert.ok(await panel.locator(".contract-paper").isVisible());
   assert.equal(clipboardWrites, 0);
+
+  // postMessage queues SEND. Rebind the very same iframe before its parent receives it.
+  const delayed = await frame.evaluate(async () => {
+    const { connectPanel } = await import(new URL("panel-bridge.mjs", location.href).href);
+    const bridge = await connectPanel();
+    const pending = bridge.send("Отложенное поручение");
+    parent.document.querySelector<HTMLButtonElement>("#switch")!.click();
+    return pending.then(() => "sent", (error: Error) => error.message);
+  });
+  assert.match(delayed, /Чат поручения не совпадает/);
+  assert.deepEqual(recipients, ["fixture", "fixture"]);
+  await page.locator("iframe").evaluate((element) => element.setAttribute("src", "/archiview/?session=next"));
+  await panel.getByRole("button", { name: "Анализировать модуль", exact: true }).click();
+  await panel.getByText("Поручение передано агенту хоста.", { exact: false }).waitFor();
+  assert.deepEqual(recipients, ["fixture", "fixture", "next"]);
 });
 
 test("navigation cancels an in-flight analysis poll and resumes it only on return", browserOptions, async (t) => {

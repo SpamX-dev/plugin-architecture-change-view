@@ -2,7 +2,8 @@ import type { Check, ClauseReference, Contract, Finding, Observation, ReviewBund
 /** Проверяет состав видимого локального чеклиста без изменения сохранённого отчёта. */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ownClauseGroups, reviewVersions, observedVersionGroups, contractChanges, contractHeadingChange, evidenceLabel,
+import { compareContracts } from "../src/snapshots/contract-diff.js";
+import { ownClauseGroups, reviewVersions, observedVersionGroups, evidenceLabel,
   reviewFindingItems, freshnessLabel, clauseFindingTargets, moduleFindingCount, treeFindingCounts,
   findingFixPrompt, savedClauseText, savedClauseMatchesContract, clauseSectionLabel, reviewFreshnessStates } from "../web/archiview/review.js";
 
@@ -127,7 +128,7 @@ test("contract fields distinguish new, removed and changed clauses while preserv
   const before = { title: "Модуль", responsibilities: { R1: "Было.", R2: "Удалено." }, boundaries: {}, invariants: {} };
   const after = { ...before, purpose: "Новое назначение.", responsibilities: { R1: "Стало.", R3: "Добавлено." } };
   const original = structuredClone({ before, after });
-  const changes = new Map(contractChanges(before, after).map((item) => [item.key, item]));
+  const changes = new Map(compareContracts(before, after).fields.map((item) => [item.key, item]));
   assert.equal(changes.get("title")!.status, "unchanged");
   assert.equal(changes.get("purpose")!.status, "added");
   assert.deepEqual(changes.get("responsibilities.R1"), {
@@ -141,26 +142,26 @@ test("heading uses the strictest field change and retains both versions in one d
   const before = { title: "Прежнее название", kind: "module", id: "one", responsibilities: { R1: "Прежний пункт" } };
   const after = { ...before, title: "Новое название", purpose: "Добавленное назначение", responsibilities: {} };
   const original = structuredClone({ before, after });
-  const change = contractHeadingChange(before, after);
+  const change = compareContracts(before, after).heading;
   assert.equal(change.status, "modified", "a removed clause outside the heading does not affect its status");
   assert.deepEqual(change.before, { title: "Прежнее название", kind: "module", id: "one" });
   assert.deepEqual(change.after, { title: "Новое название", kind: "module", id: "one", purpose: "Добавленное назначение" });
-  assert.equal(contractHeadingChange(after, before).status, "removed", "a removed heading field outranks a changed title");
-  assert.equal(contractHeadingChange(null, after).status, "added");
-  assert.equal(contractHeadingChange(after, null).status, "removed");
-  assert.equal(contractHeadingChange(null, after, false).status, "unchanged", "initial comparison has no invented additions");
-  assert.equal(contractHeadingChange(before, { ...before, responsibilities: {} }).status, "unchanged");
+  assert.equal(compareContracts(after, before).heading.status, "removed", "a removed heading field outranks a changed title");
+  assert.equal(compareContracts(null, after).heading.status, "added");
+  assert.equal(compareContracts(after, null).heading.status, "removed");
+  assert.equal(compareContracts(null, after, false).heading.status, "unchanged", "initial comparison has no invented additions");
+  assert.equal(compareContracts(before, { ...before, responsibilities: {} }).heading.status, "unchanged");
   assert.deepEqual({ before, after }, original);
 });
 
 test("initial contracts and key reordering do not invent changes; whole module removal stays visible", () => {
   const contract = { title: "Модуль", responsibilities: { R1: "Один.", R2: "Два." },
     boundaries: {}, invariants: {}, extensions: { "test.one": { a: 1, b: 2 } } };
-  assert.ok(contractChanges(null, contract, false).every((item) => item.status === "unchanged"));
+  assert.ok(compareContracts(null, contract, false).fields.every((item) => item.status === "unchanged"));
   const reordered = { ...contract, responsibilities: { R2: "Два.", R1: "Один." },
     extensions: { "test.one": { b: 2, a: 1 } } };
-  assert.ok(contractChanges(contract, reordered).every((item) => item.status === "unchanged"));
-  assert.ok(contractChanges(contract, null).every((item) => item.status === "removed"));
+  assert.ok(compareContracts(contract, reordered).fields.every((item) => item.status === "unchanged"));
+  assert.ok(compareContracts(contract, null).fields.every((item) => item.status === "removed"));
 });
 
 test("evidence names are short while tooltips retain distinct full paths and snapshot origins", () => {
@@ -245,7 +246,7 @@ test("legacy contract changes stay in contract diffs without remarks, clause bug
   assert.equal(findingFixPrompt("/project", bundle, legacy), null);
   assert.equal(findingFixPrompt("/project", bundle, { id: legacy.id }), null);
   const changed = { ...contract, responsibilities: { R1: "Изменённый текст." } };
-  assert.equal(contractChanges(contract, changed).find((item) => item.key === "responsibilities.R1")!.status, "modified");
+  assert.equal(compareContracts(contract, changed).fields.find((item) => item.key === "responsibilities.R1")!.status, "modified");
   assert.deepEqual(bundle, original);
 
   const real = { ...legacy, id: "real-gap", kind: "responsibility_gap", severity: "warning" };
@@ -285,9 +286,9 @@ test("each finding has its own navigation target independently of the clause cha
   assert.deepEqual(targets.map((target) => [target.reviewId, target.findingId]),
     [["review-first", "first-error"], ["review-first", "second-error"]]);
   assert.match(targets[0].label, /Первая ошибка.*нужна перепроверка/);
-  assert.equal(contractChanges(contract, contract).find((item) => item.key === "responsibilities.R1")!.status, "unchanged");
+  assert.equal(compareContracts(contract, contract).fields.find((item) => item.key === "responsibilities.R1")!.status, "unchanged");
   const changed = { ...contract, responsibilities: { R1: "Изменённый текст." } };
-  assert.equal(contractChanges(contract, changed).find((item) => item.key === "responsibilities.R1")!.status, "modified");
+  assert.equal(compareContracts(contract, changed).fields.find((item) => item.key === "responsibilities.R1")!.status, "modified");
   const afterChange = clauseFindingTargets(bundle, changed, "responsibilities", "R1");
   assert.equal(afterChange.length, 2);
   assert.match(afterChange[0].label, /текст пункта изменён после анализа/);

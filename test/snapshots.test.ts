@@ -2,7 +2,8 @@ import type { TestContext } from "node:test";
 /** Проверяет смысл четырёх статусов, исторические документы и базы сравнения. */
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -72,6 +73,39 @@ test("removing only module.md leaves a changed module with a missing document", 
   ]);
   assert.equal(before.modules.find((module) => module.directory === "src")!.document.text,
     "Responsibility");
+});
+
+test("moving a child counts it once for each old, new and shared ancestor", async (t) => {
+  const { root } = await fixture(t, {
+    "left/code.ts": "", "right/code.ts": "",
+    "left/child/arch.yaml": "schema_version: 1\nid: child\ntitle: Child\nkind: module\npurpose: Read\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\n",
+    "left/child/code.ts": "",
+  });
+  const before = await captureWorkingTree(root);
+  await rename(path.join(root, "left/child"), path.join(root, "right/child"));
+  const { modules } = compareSnapshots(before, await captureWorkingTree(root));
+  assert.equal(modules.find((module) => module.moduleId === "child")?.moved, true);
+  for (const directory of ["left", "right", "."]) {
+    assert.equal(modules.find((module) => module.directory === directory)?.descendantChanges, 1, directory);
+  }
+});
+
+test("a working file replaced during Git normalization keeps a matching hash and fact", async (t) => {
+  const before = "export const value = 1;\n", after = "export const value = 2;\n";
+  const { root } = await fixture(t, { ".gitattributes": "source.js filter=capture\n", "source.js": before });
+  await run("git", ["init", "-q"], { cwd: root });
+  await writeFile(path.join(root, "../clean.cjs"), [
+    "require('node:fs').writeFileSync('source.js', " + JSON.stringify(after) + ");",
+    "process.stdin.pipe(process.stdout);",
+  ].join("\n"));
+  await run("git", ["config", "filter.capture.clean", "node ../clean.cjs"], { cwd: root });
+  const working = await captureWorkingTree(root);
+  assert.equal(working.complete, true, working.diagnostics.join("\n"));
+  assert.equal(await readFile(path.join(root, "source.js"), "utf8"), after);
+  const fact = working.facts.find((item) => item.path === "source.js");
+  assert.equal(fact?.text, before);
+  const expected = createHash("sha1").update("blob " + Buffer.byteLength(before) + "\0").update(before).digest("hex");
+  assert.equal(working.modules[0].files.find((file) => file.path === "source.js")?.hash, expected);
 });
 
 test("a new module without module.md does not claim a document change", async (t) => {

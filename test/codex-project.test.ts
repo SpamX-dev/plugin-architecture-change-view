@@ -8,7 +8,7 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -199,8 +199,14 @@ test("folder matching respects path boundaries, host identity and malformed resp
     const read = createHostContextReader({ pipePath: "fixture", connection: contextConnection(data) });
     assert.deepEqual(await read("chat-1"), { status: "unknown" });
   }
-  const nested = createHostContextReader({ pipePath: "fixture", connection: contextConnection(hostData(path.join(roots[0], "child"), [roots[0]])) });
-  assert.deepEqual(await nested("chat-1"), { status: "ready", root: path.join(roots[0], "child") });
+  const child = path.join(roots[0], "child");
+  await mkdir(child);
+  const nested = createHostContextReader({ pipePath: "fixture", connection: contextConnection(hostData(child, [roots[0]])) });
+  assert.deepEqual(await nested("chat-1"), { status: "ready", root: child });
+  const linked = path.join(roots[0], "linked");
+  await symlink(roots[1], linked, process.platform === "win32" ? "junction" : "dir");
+  const linkedContext = createHostContextReader({ pipePath: "fixture", connection: contextConnection(hostData(linked, [roots[0]])) });
+  assert.deepEqual(await linkedContext("chat-1"), { status: "unavailable" });
 });
 
 test("context errors are retryable and another chat cannot silently replace the bound project", async (t) => {

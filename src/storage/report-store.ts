@@ -278,7 +278,11 @@ export class ReportStore {
     state.publishedEntries = digest([...state.entries].sort((a, b) => (a.registration_order ?? 0) - (b.registration_order ?? 0)));
     state.publishedDiagnostics = digest([...new Set(state.diagnostics)]);
     let rawDirectories: import("node:fs").Dirent[] = [];
-    if (includeRaw) try { rawDirectories = await readdir(this.raw, { withFileTypes: true }); } catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "ENOENT") throw error; }
+    if (includeRaw) {
+      await this.snapshotStore.assertLocation(this.raw);
+      try { rawDirectories = await readdir(this.raw, { withFileTypes: true }); }
+      catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
+    }
     for (const directory of rawDirectories.sort((a, b) => a.name.localeCompare(b.name))) {
       if (/^[a-f0-9]{64}$/.test(directory.name) && directory.isDirectory() && !directory.isSymbolicLink()) await readDirectory(path.join(this.raw, directory.name), false);
     }
@@ -399,7 +403,7 @@ export class ReportStore {
       try { await rename(source, destination); return; }
       catch (cause) {
         const error = errorDetails(cause);
-        if (process.platform !== "win32" || !["EPERM", "EBUSY", "EACCES"].includes(error.code ?? "") || attempt >= 19) throw error;
+        if (process.platform !== "win32" || typeof error.code !== "string" || !["EPERM", "EBUSY", "EACCES"].includes(error.code) || attempt >= 19) throw error;
         await new Promise((resolve) => setTimeout(resolve, Math.min(100, (attempt + 1) * 25)));
       }
     }

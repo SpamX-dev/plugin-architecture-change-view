@@ -2,7 +2,7 @@ import { parseDocument, isAlias, isMap, isScalar, isSeq } from "yaml";
 
 /** Парсер запрещает дубликаты, aliases, нестандартные теги и несколько документов. */
 export function parseYaml<T>(text: string, validate: (value: unknown) => T): T {
-  const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2" });
+  const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
   if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
   // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
   // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
@@ -19,7 +19,11 @@ export function parseYaml<T>(text: string, validate: (value: unknown) => T): T {
         inspect(pair.value);
       }
     } else if (isSeq(node)) node.items.forEach(inspect);
-    else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+    else if (isScalar(node) && typeof node.value === "bigint") {
+      const number = Number(node.value);
+      if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
+      node.value = number;
+    } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
       typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
   };
   inspect(doc.contents);

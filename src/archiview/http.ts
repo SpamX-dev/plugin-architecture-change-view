@@ -36,12 +36,14 @@ async function bodyOf(request: IncomingMessage): Promise<Record<string, unknown>
  * сети и может быть синтаксически некорректной; такая ошибка становится
  * прикладной, чтобы обработчик ответил 400, а не завершил процесс отказом Promise.
  */
-function requestUrl(request: IncomingMessage, host: string) {
+function requestUrl(request: IncomingMessage, serverOrigin: string) {
   try {
-    return new URL(request.url ?? "/", "http://" + host);
+    const target = new URL(request.url ?? "/", serverOrigin);
+    if (target.origin === serverOrigin) return target;
   } catch {
-    throw new ApplicationError("INVALID_ARGUMENT", "Некорректная цель запроса");
+    // Report malformed and non-local targets through the same transport error.
   }
+  throw new ApplicationError("INVALID_ARGUMENT", "Некорректная цель запроса");
 }
 
 /** Создаёт самостоятельный веб-сервер; плагин Codex использует сервис напрямую и этот модуль не импортирует. */
@@ -54,6 +56,7 @@ export function createArchiViewHttpServer(session: SessionOperations, panelToken
   const assets = new Map<string, [URL, string]>(([
     ["/", ["index.html", "text/html"]], ["/app.mjs", ["app.mjs", "text/javascript"]],
     ["/client.mjs", ["client.mjs", "text/javascript"]],
+    ["/favicon.svg", ["favicon.svg", "image/svg+xml"]],
     ["/panel-bridge.mjs", ["panel-bridge.mjs", "text/javascript"]],
     ["/review.mjs", ["review.mjs", "text/javascript"]], ["/styles.css", ["styles.css", "text/css"]],
   ] satisfies [string, [string, string]][]).map(([route, [file, type]]) => [route, [new URL(file, webAssetUrl), type]]));
@@ -76,9 +79,10 @@ export function createArchiViewHttpServer(session: SessionOperations, panelToken
       if (!["127.0.0.1:" + request.socket.localPort, "localhost:" + request.socket.localPort].includes(host ?? "")) {
         return json(response, 403, { error: "Недопустимый адрес запроса" });
       }
-      const url = requestUrl(request, host!);
+      const serverOrigin = "http://" + host;
+      const url = requestUrl(request, serverOrigin);
       const origin = request.headers.origin;
-      const crossOrigin = origin && origin !== url.origin;
+      const crossOrigin = origin !== undefined && origin !== serverOrigin;
       if (panelToken && crossOrigin) {
         response.setHeader("Access-Control-Allow-Origin", origin);
         response.setHeader("Vary", "Origin");
@@ -93,10 +97,14 @@ export function createArchiViewHttpServer(session: SessionOperations, panelToken
           !(panelToken && request.headers.authorization === "Bearer " + panelToken)) {
         return json(response, 403, { error: "Запрос должен исходить из ArchiView или авторизованной панели" });
       }
+      if (request.method === "GET" && url.pathname === "/favicon.ico") {
+        response.writeHead(302, { Location: "/favicon.svg" });
+        return response.end();
+      }
       if (request.method === "GET" && assets.has(url.pathname)) {
         const [asset, contentType] = assets.get(url.pathname)!;
         const content = await readFile(asset);
-        response.writeHead(200, { "Content-Type": contentType + "; charset=utf-8" });
+        response.writeHead(200, { "Content-Type": contentType.startsWith("text/") ? contentType + "; charset=utf-8" : contentType });
         return response.end(content);
       }
       const args: Record<string, unknown> = Object.fromEntries(url.searchParams);

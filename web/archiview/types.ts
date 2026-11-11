@@ -1,4 +1,4 @@
-import type { ModuleReview, SessionOperations } from "../../src/application/api.js";
+import type { ModuleDetail, ModuleReview, SessionOperations } from "../../src/application/api.js";
 import type { ClauseReference, Finding as SavedFinding, FreshnessReason, ReviewReport, Side, Coverage } from "../../src/reviews/types.js";
 import type { Contract } from "../../src/contracts/types.js";
 import type { SnapshotReference, Fact } from "../../src/snapshots/types.js";
@@ -35,7 +35,7 @@ export interface ArchiViewClient extends SessionOperations {
   setProject(args: { projectRoot: string }): Promise<{ root: string }>;
 }
 export interface ContractRenderOptions {
-  before?: Contract | null; after?: Contract | null; compare?: boolean; titleElement?: HTMLElement; groupElement?: HTMLElement;
+  contractDiff: ModuleDetail["contractDiff"]; previousReferences?: Contract["references"]; titleElement?: HTMLElement; groupElement?: HTMLElement;
   hideHeading?: boolean; rawChanged?: boolean; showRawDiff?: () => void; review?: ReviewBundle; openFinding?: (target: FindingTarget) => void;
 }
 export interface ReviewRenderOptions {

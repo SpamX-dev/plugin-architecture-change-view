@@ -7,7 +7,7 @@ import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
 /** Реальные stdio/HTTP-сценарии панели и неизменяемого задания на анализ. */
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, writeFile, rm, cp, symlink, rename, stat } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm, cp, symlink, rename, stat, truncate } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -231,4 +231,43 @@ test("dependency export extends the original snapshot without replacing the firs
   assert.equal(await readFile(path.join(directory, "input.yaml"), "utf8"), original);
   await writeFile(path.join(directory, "result.yaml"), stringify(completedFixture(input), { aliasDuplicateObjects: false }));
   assert.equal((await app.analysis.complete(request.id)).status, "completed");
+});
+
+test("a prepared review accepts a result above 32 MiB within its input-relative byte budget", async (t) => {
+  const root = await panelFixture(t);
+  const app = await serve(t, root);
+  const view = await app.getComparison({ baseline: "initial" });
+  const request = await app.prepareAnalysis({ view: view.id, path: "child" });
+  const exported = await app.analysis.prepare(request.id, [], true);
+  const input = parse(await readFile(exported, "utf8"));
+  const result = path.join(path.dirname(exported), "result.yaml");
+  const inputBytes = (await stat(exported)).size;
+  const allowance = 32 * 1024 * 1024;
+  await writeFile(result, "");
+  await truncate(result, inputBytes + allowance + 1);
+  await assert.rejects(app.analysis.complete(request.id), /Недопустимый файл анализа/);
+  assert.equal((await app.analysis.status(request.id)).status, "prepared");
+
+  // YAML comments affect the transport size without creating a huge persisted review.
+  const yaml = stringify(completedFixture(input), { aliasDuplicateObjects: false });
+  await writeFile(result, yaml + "#" + "a".repeat(inputBytes + allowance - Buffer.byteLength(yaml) - 1));
+  assert.equal((await stat(result)).size, inputBytes + allowance);
+  assert.equal((await app.analysis.complete(request.id)).status, "completed");
+});
+
+test("request metadata keeps its own size limit while saved snapshots have a larger limit", async (t) => {
+  const root = await panelFixture(t);
+  const app = await serve(t, root);
+  const view = await app.getComparison({ baseline: "initial" });
+  const request = await app.prepareAnalysis({ view: view.id, path: "child" });
+  const directory = path.join(root, ".archiview/snapshots/analysis", request.id);
+  const requestFile = path.join(directory, "request.json");
+  const metadata = await readFile(requestFile);
+  await truncate(requestFile, 32 * 1024 * 1024 + 1);
+  await assert.rejects(app.analysis.status(request.id), /Недопустимый файл анализа/);
+  await writeFile(requestFile, metadata);
+  await truncate(path.join(directory, "scope.json"), 32 * 1024 * 1024 + 1);
+  await assert.rejects(app.analysis.complete(request.id), /Недопустимый файл анализа/);
+  await truncate(path.join(directory, "snapshots.json"), 256 * 1024 * 1024 + 1);
+  await assert.rejects(app.analysis.prepare(request.id, [], true), /Недопустимый файл анализа/);
 });

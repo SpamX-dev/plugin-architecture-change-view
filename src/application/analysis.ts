@@ -13,7 +13,7 @@ import { errorDetails } from "../runtime/errors.js";
  * Снимки и область анализа остаются неизменяемыми даже после изменения проекта.
  */
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile, lstat, rename } from "node:fs/promises";
+import { mkdir, readFile, writeFile, lstat, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stringify } from "yaml";
@@ -23,6 +23,15 @@ import { digest } from "../serialization/digest.js";
 import { parseYaml } from "../serialization/yaml.js";
 import { cliArguments, packageUrl } from "../runtime/package-paths.js";
 
+const MAX_SAVED_INPUT_BYTES = 256 * 1024 * 1024;
+const MAX_METADATA_BYTES = 32 * 1024 * 1024;
+const MAX_REVIEW_ADDITION_BYTES = 32 * 1024 * 1024;
+
+function savedInput(text: string) {
+  if (Buffer.byteLength(text) > MAX_SAVED_INPUT_BYTES) throw new Error("Вход анализа превышает допустимый размер");
+  return text;
+}
+
 /** Разрешает только внутренний идентификатор запроса, без произвольного пути. */
 function requestDirectory(store: SnapshotStore, id: string) {
   if (!/^[a-f0-9-]{36}$/.test(id)) throw new Error("Некорректный идентификатор анализа");
@@ -30,7 +39,7 @@ function requestDirectory(store: SnapshotStore, id: string) {
 }
 
 /** Читает обычный файл в области данных; ссылки не расширяют разрешённую область. */
-async function readRequestFile(store: SnapshotStore, directory: string, name: string, maxSize = 32 * 1024 * 1024) {
+async function readRequestFile(store: SnapshotStore, directory: string, name: string, maxSize: number) {
   const file = path.join(directory, name);
   await assertStateLocation(store.root, store.directory, file);
   const info = await lstat(file);
@@ -52,17 +61,25 @@ export class AnalysisRequests {
     const id = randomUUID();
     const directory = requestDirectory(this.store, id);
     await assertStateLocation(this.store.root, this.store.directory, directory);
-    await mkdir(directory, { recursive: true });
     const input = createReviewInput(digest(this.store.snapshotRoot), view.baselineSnapshot,
       view.currentSnapshot, module.moduleId);
     const snapshots = { baseline: view.baselineSnapshot, current: view.currentSnapshot };
     const request = { schema_version: 1, id, moduleId: module.moduleId,
       directory: module.directory, viewId: view.id, reviewId: input.review_id,
       createdAt: new Date().toISOString(), inputDigest: digest(input), snapshotsDigest: digest(snapshots) };
-    await writeFile(path.join(directory, "input.yaml"), stringify(input, { aliasDuplicateObjects: false }), { flag: "wx" });
-    await writeFile(path.join(directory, "request.json"), JSON.stringify(request), { flag: "wx" });
-    await writeFile(path.join(directory, "snapshots.json"), JSON.stringify(snapshots), { flag: "wx" });
-    await writeFile(path.join(directory, "scope.json"), JSON.stringify({ file: "input.yaml", digest: request.inputDigest }), { flag: "wx" });
+    const inputText = savedInput(stringify(input, { aliasDuplicateObjects: false }));
+    const snapshotText = savedInput(JSON.stringify(snapshots));
+    await mkdir(path.dirname(directory), { recursive: true });
+    await mkdir(directory);
+    try {
+      await writeFile(path.join(directory, "input.yaml"), inputText, { flag: "wx" });
+      await writeFile(path.join(directory, "request.json"), JSON.stringify(request), { flag: "wx" });
+      await writeFile(path.join(directory, "snapshots.json"), snapshotText, { flag: "wx" });
+      await writeFile(path.join(directory, "scope.json"), JSON.stringify({ file: "input.yaml", digest: request.inputDigest }), { flag: "wx" });
+    } catch (error) {
+      await rm(directory, { recursive: true, force: true });
+      throw error;
+    }
     return { ...request, status: "prepared", prompt: this.prompt(request, directory) };
   }
 
@@ -93,9 +110,9 @@ export class AnalysisRequests {
   /** Дополняет область из исходных полных снимков, сохраняя прежние экспорты и идентичность запроса. */
   async prepare(id: string, dependencies: DependencySelector[], complete = false) {
     const directory = requestDirectory(this.store, id);
-    const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json")));
+    const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json", MAX_METADATA_BYTES)));
     if ((await this.status(id)).status === "completed") throw new Error("Анализ уже импортирован; создайте новый запрос из панели");
-    const snapshots: {baseline:Snapshot|null;current:Snapshot} = JSON.parse(await readRequestFile(this.store, directory, "snapshots.json", 256 * 1024 * 1024));
+    const snapshots: {baseline:Snapshot|null;current:Snapshot} = JSON.parse(await readRequestFile(this.store, directory, "snapshots.json", MAX_SAVED_INPUT_BYTES));
     if (digest(snapshots) !== request.snapshotsDigest) throw new Error("Исходные снимки анализа изменены");
     if (!Array.isArray(dependencies)) throw new Error("Dependencies must be a YAML sequence");
     const input = createReviewInput(digest(this.store.snapshotRoot), snapshots.baseline, snapshots.current,
@@ -105,9 +122,10 @@ export class AnalysisRequests {
     const hash = digest(input);
     const file = "input-" + hash.slice(7) + ".yaml";
     await assertStateLocation(this.store.root, this.store.directory, directory);
-    try { await writeFile(path.join(directory, file), stringify(input, { aliasDuplicateObjects: false }), { flag: "wx" }); }
+    const inputText = savedInput(stringify(input, { aliasDuplicateObjects: false }));
+    try { await writeFile(path.join(directory, file), inputText, { flag: "wx" }); }
     catch (errorCause) { const error = errorDetails(errorCause);
-      if (error.code !== "EEXIST" || digest(parseYaml(await readRequestFile(this.store, directory, file), (value) => value as ReviewEntry)) !== hash) throw error;
+      if (error.code !== "EEXIST" || digest(parseYaml(await readRequestFile(this.store, directory, file, MAX_SAVED_INPUT_BYTES), (value) => value as ReviewEntry)) !== hash) throw error;
     }
     const temporary = path.join(directory, ".scope-" + randomUUID());
     await writeFile(temporary, JSON.stringify({ file, digest: hash }), { flag: "wx" });
@@ -118,7 +136,7 @@ export class AnalysisRequests {
   /** Показывает завершение только после появления настоящей импортированной LLM-попытки. */
   async status(id: string): Promise<AnalysisStatus> {
     const directory = requestDirectory(this.store, id);
-    const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json")));
+    const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json", MAX_METADATA_BYTES)));
     const entry = (await this.reports.list()).entries.find((item) => item.review_id === request.reviewId);
     return { ...request, status: entry ? "completed" : "prepared" };
   }
@@ -126,13 +144,15 @@ export class AnalysisRequests {
   /** Проверяет привязку к исходному экспорту до передачи результата общему валидатору отчётов. */
   async complete(id: string) {
     const directory = requestDirectory(this.store, id);
-    const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json")));
-    const scope: {file:string;digest:string} = JSON.parse(await readRequestFile(this.store, directory, "scope.json"));
+    const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json", MAX_METADATA_BYTES)));
+    const scope: {file:string;digest:string} = JSON.parse(await readRequestFile(this.store, directory, "scope.json", MAX_METADATA_BYTES));
     if (!/^input(?:-[a-f0-9]{64})?\.yaml$/.test(scope.file)) throw new Error("Некорректная область анализа");
-    const input = parseYaml(await readRequestFile(this.store, directory, scope.file), (value) => value as ReviewEntry);
-    const result = parseYaml(await readRequestFile(this.store, directory, "result.yaml"), (value) => value as ReviewEntry);
+    const inputText = await readRequestFile(this.store, directory, scope.file, MAX_SAVED_INPUT_BYTES);
+    const input = parseYaml(inputText, (value) => value as ReviewEntry);
     if (digest(input) !== scope.digest || (scope.file === "input.yaml" && scope.digest !== request.inputDigest))
       throw new Error("Исходный экспорт анализа изменён");
+    const resultLimit = Buffer.byteLength(inputText) + MAX_REVIEW_ADDITION_BYTES;
+    const result = parseYaml(await readRequestFile(this.store, directory, "result.yaml", resultLimit), (value) => value as ReviewEntry);
     for (const field of ["schema_version", "kind", "module_id", "project_id", "review_id", "check_hash", "check_manifest", "inputs", "baseline", "current"] as const)
       if (digest(input[field]) !== digest(result[field])) throw new Error("Изменены входы анализа: " + field);
     const fixedManifest = ({ model, prompt_digest, ...fixed }: ReviewManifest) => fixed;

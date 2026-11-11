@@ -271,6 +271,19 @@ test("legacy semantic bundle keeps every proof and defaults unknown dependency c
   assert.equal(aggregateReviewStatus([structure], null, current, "child").current.status, "not_reviewed");
 });
 
+test("legacy effective checks must refer to a clause selected by the manifest", () => {
+  const current = snapshot();
+  const comparison = compareSnapshots(null, current).modules.find((module) => module.moduleId === "child")!;
+  const bundle = createStructuralReview(null, current, comparison, { contractScope: "effective" });
+  assert.ok(bundle.report.checks.some((check) => check.contract.module_id === "parent"));
+  assert.doesNotThrow(() => createReviewEntry(bundle));
+  const extra = structuredClone(bundle.report.checks.find((check) => check.contract.module_id === "child")!);
+  extra.id = "extra-check";
+  extra.contract.module_id = "provider";
+  bundle.report.checks.push(extra);
+  assert.throws(() => createReviewEntry(bundle), /clause outside the manifest/);
+});
+
 test("unknown dependency coverage is separate from matching and changed checked inputs", () => {
   const definitions = definition();
   const current = snapshot(definitions);
@@ -398,6 +411,9 @@ test("native technical manifest binds hash, project and own state and rejects un
 
 test("native import rejects missing required checks, false complete coverage and manifest mismatches", () => {
   const current = snapshot();
+  const renamed = reviewed(null, current, "child", { draft: true });
+  renamed.report.id = "another-attempt";
+  assert.throws(() => createReviewEntry(renamed), /review entry identity/);
   const missing = reviewed(null, current, "child", { draft: true });
   missing.report.checks.pop();
   assert.throws(() => createReviewEntry(missing), /Missing explicit clause check/);
@@ -462,6 +478,32 @@ test("current aggregation does not conflict because only another-side result cha
   const aggregate = aggregateReviewStatus([first, second], baseline, current, "child");
   assert.equal(aggregate.current.conflict, false);
   assert.equal(aggregate.change.conflict, true);
+});
+
+test("historical finding lifecycle and proofs do not conflict with the same current finding", () => {
+  const current = snapshot();
+  const baseline = snapshot(definition(), { id: "baseline" });
+  const makeAttempt = (persisting: boolean) => {
+    const draft = reviewed(baseline, current, "child", { draft: true });
+    const check = draft.report.checks.find((item) => item.subject === "current" && item.contract.snapshot === "current")!;
+    check.verdict = "violation";
+    const finding = { id: "finding", kind: "responsibility_gap", certainty: "confirmed", severity: "warning",
+      lifecycle: persisting ? "persisting" : "introduced", summary: "Обязанность не выполнена.",
+      clauses: [check.contract], evidence: [...check.evidence] };
+    if (persisting) {
+      const prior = draft.report.checks.find((item) => item.subject === "baseline")!;
+      finding.clauses.push(prior.contract);
+      finding.evidence.push(...prior.evidence);
+      check.evidence.push(...prior.evidence);
+    }
+    draft.report.findings = [finding];
+    draft.report.assessment.current = { verdict: "violation", summary: finding.summary };
+    return createReviewEntry(draft);
+  };
+  const status = aggregateReviewStatus([makeAttempt(false), makeAttempt(true)], baseline, current, "child");
+  assert.equal(status.current.conflict, false);
+  assert.equal(status.current.verdict, "violation");
+  assert.equal(status.change.conflict, true);
 });
 
 test("stale violation remains historical without claiming a present violation or resolution", () => {

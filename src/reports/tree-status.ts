@@ -8,12 +8,18 @@ import { combineCoverage, freshness as assessFreshness } from "./freshness.js";
 
 /** Другая база/оценка изменения не создаёт ложный конфликт current-выводов. */
 function assessmentResultDigest(report: ReviewReport, side: AssessmentSide) {
-  return digest({ assessment: report.assessment[side],
-    observed: side === "current" ? report.observed.current : report.observed,
-    checks: report.checks.filter((check) => side !== "current" ||
-      (check.subject === "current" && check.contract.snapshot === "current")),
-    findings: report.findings.filter((finding) => side !== "current" ||
-      (finding.lifecycle !== "resolved" && finding.evidence.some((reference) => reference.snapshot === "current"))) });
+  const assessment = report.assessment[side];
+  if (side === "change") return digest({ assessment, observed: report.observed, checks: report.checks, findings: report.findings });
+
+  const current = (reference: { snapshot: string }) => reference.snapshot === "current";
+  const observation = report.observed.current;
+  const observed = observation && { ...observation, responsibilities: observation.responsibilities.map((item) =>
+    ({ ...item, evidence: item.evidence.filter(current) })) };
+  const checks = report.checks.filter((check) => check.subject === "current" && current(check.contract))
+    .map(({ id, evidence, ...check }) => ({ ...check, evidence: evidence.filter(current) }));
+  const findings = report.findings.filter((finding) => finding.lifecycle !== "resolved" && finding.evidence.some(current))
+    .map(({ id, lifecycle, clauses, evidence, ...finding }) => ({ ...finding, clauses: clauses.filter(current), evidence: evidence.filter(current) }));
+  return digest({ assessment, observed, checks, findings });
 }
 
 /** Статус сохраняет все применимые попытки, включая несовпадающие выводы. */

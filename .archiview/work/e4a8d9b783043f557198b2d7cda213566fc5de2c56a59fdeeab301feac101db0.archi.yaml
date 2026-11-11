@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-node-runtime
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 8b08e7b644af488d980209578d6ac01227d0f94becaaddd33954d4ce434e393d
+check_hash: d843ee07337ed03064ee0c3bbd985cfadd0f84d3abf2bd278adbd9b78690c145
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,20 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 9ab002ef4338d2eee779929426d26586387525e0
+      id: e6ea999eba06c8ab117de4953bbd46ddbbe117e1
     state:
-      exists: false
+      exists: true
+      directory: src/runtime
+      self_digest: sha256:99a885b5ae543a385a33b762673a422a1ce07cd6ce66b96a1e64047632e29e9d
+      subtree_digest: sha256:f39386f2aa0418688b4cb444baed4c6a8e0c9323cb8933ec5c4b2746b956a727
   current:
     exists: true
     directory: src/runtime
-    self_digest: sha256:99a885b5ae543a385a33b762673a422a1ce07cd6ce66b96a1e64047632e29e9d
-    subtree_digest: sha256:f39386f2aa0418688b4cb444baed4c6a8e0c9323cb8933ec5c4b2746b956a727
+    self_digest: sha256:c2255890bd489995be1320a7857a48cbb484caf5547c37a34fe72bca3562ec98
+    subtree_digest: sha256:21cfaa885b4cdf94857433373746a61df05f53faf83eef7db2e21e9c6a4d34af
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
-baseline: null
-current:
+baseline:
   module_id: archiview-node-runtime
   directory: src/runtime
   parent_id: architecture-core
@@ -265,11 +267,257 @@ current:
     self: sha256:e7c12d4e5cbf180d36aeff129bb247bc8dcee0a11910ded76ab53a78fa17d22c
     children: []
   semantic_subtree_digest: sha256:3eaf1a8daf60b61517f2a85c84056ee203623a5e52d26442a6022058121e707c
+current:
+  module_id: archiview-node-runtime
+  directory: src/runtime
+  parent_id: architecture-core
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-node-runtime
+    directory: src/runtime
+    own_files:
+      - path: src/runtime/errors.ts
+        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
+        normalization: text-lf/v1
+      - path: src/runtime/package-paths.ts
+        digest: sha256:996dffe589b96e3603b49ed463b9d83d60b85344a57e40f3ceeb017a329d85b0
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-node-runtime
+      title: Среда выполнения Node
+      kind: module
+      purpose: Предоставлять общие для модулей Node сведения о среде выполнения
+        ArchiView.
+      responsibilities:
+        R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной
+          и автономной поставке.
+        R2: Представлять ошибки платформы с сохранением диагностических полей файловых и
+          дочерних процессов.
+      boundaries:
+        B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат
+          потребителям.
+      invariants:
+        I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
+          адаптерам. Извлечение символов, разрешение зависимостей и индексация
+          AST принадлежат ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-core
+        section: boundaries
+        id: B1
+        text: Прикладные операции находятся в application; HTTP и CLI в archiview
+          являются адаптерами, отображение принадлежит web.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: Семантический вывод ответственности выполняет агент или внешний
+          анализатор. Наличие контракта не доказывает его выполнения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B3
+        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
+          от модели инструменты UI без HTTP-сервера.
+      - module_id: architecture-core
+        section: boundaries
+        id: B4
+        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
+          скилл хоста, получая прикладные операции из application.
+      - module_id: architecture-core
+        section: invariants
+        id: I1
+        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+          сборка и папки .archiview не расширяют анализ. Запись данных
+          допускается в .archiview корня проекта либо явно выбранном внешнем
+          хранилище; ссылки не меняют эту область.
+      - module_id: architecture-core
+        section: invariants
+        id: I2
+        text: Неполнота обхода и доказательств сообщается явно.
+      - module_id: architecture-core
+        section: invariants
+        id: I3
+        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
+          ответственность.
+      - module_id: architecture-core
+        section: invariants
+        id: I4
+        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+          файлах.
+      - module_id: architecture-core
+        section: invariants
+        id: I5
+        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
+          требует отдельного анализа.
+  technical_digest: sha256:c2255890bd489995be1320a7857a48cbb484caf5547c37a34fe72bca3562ec98
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-node-runtime
+    directory: src/runtime
+    own_files:
+      - path: src/runtime/errors.ts
+        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
+        normalization: text-lf/v1
+      - path: src/runtime/package-paths.ts
+        digest: sha256:996dffe589b96e3603b49ed463b9d83d60b85344a57e40f3ceeb017a329d85b0
+        normalization: text-lf/v1
+    contract:
+      id: archiview-node-runtime
+      kind: module
+      purpose: Предоставлять общие для модулей Node сведения о среде выполнения
+        ArchiView.
+      responsibilities:
+        R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной
+          и автономной поставке.
+        R2: Представлять ошибки платформы с сохранением диагностических полей файловых и
+          дочерних процессов.
+      boundaries:
+        B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат
+          потребителям.
+      invariants:
+        I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
+          адаптерам. Извлечение символов, разрешение зависимостей и индексация
+          AST принадлежат ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-core
+        section: boundaries
+        id: B1
+        text: Прикладные операции находятся в application; HTTP и CLI в archiview
+          являются адаптерами, отображение принадлежит web.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: Семантический вывод ответственности выполняет агент или внешний
+          анализатор. Наличие контракта не доказывает его выполнения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B3
+        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
+          от модели инструменты UI без HTTP-сервера.
+      - module_id: architecture-core
+        section: boundaries
+        id: B4
+        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
+          скилл хоста, получая прикладные операции из application.
+      - module_id: architecture-core
+        section: invariants
+        id: I1
+        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+          сборка и папки .archiview не расширяют анализ. Запись данных
+          допускается в .archiview корня проекта либо явно выбранном внешнем
+          хранилище; ссылки не меняют эту область.
+      - module_id: architecture-core
+        section: invariants
+        id: I2
+        text: Неполнота обхода и доказательств сообщается явно.
+      - module_id: architecture-core
+        section: invariants
+        id: I3
+        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
+          ответственность.
+      - module_id: architecture-core
+        section: invariants
+        id: I4
+        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+          файлах.
+      - module_id: architecture-core
+        section: invariants
+        id: I5
+        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
+          требует отдельного анализа.
+    children: []
+  self_digest: sha256:71af186943ac8a99f2fbef2697126699dd17304ab0ca0b6284cc66db00dcc270
+  subtree:
+    self: sha256:c2255890bd489995be1320a7857a48cbb484caf5547c37a34fe72bca3562ec98
+    children: []
+  subtree_digest: sha256:21cfaa885b4cdf94857433373746a61df05f53faf83eef7db2e21e9c6a4d34af
+  semantic_subtree:
+    self: sha256:71af186943ac8a99f2fbef2697126699dd17304ab0ca0b6284cc66db00dcc270
+    children: []
+  semantic_subtree_digest: sha256:ac34b258a96ed9d284a0c8f42fd6188dc08c07d458fa4e19714d0d53e30bf288
 change:
-  existence: added
+  existence: retained
   own: true
   own_code: true
-  own_contract: true
+  own_contract: false
   inherited_constraints: true
   descendants: false
   child_composition: false
@@ -279,22 +527,23 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 155
-  comparison_key: sha256:a4aaa735e7c9b1089bca4cce4ce4579cfc7dd971e03372c9f8c12a867312aeed
-  baseline: null
-  current:
+  generation: 169
+  comparison_key: sha256:c214f8131dc4e05b6d3f1d5c236d2d1cd3b451b135077aa97eff9938abb9a23c
+  baseline:
     metadata:
-      id: launch-7f81775f6ea4920a0c343f486579545fa3e0bce04cb6480aa2309edc3ac2eb0e
+      id: git-e6ea999eba06c8ab117de4953bbd46ddbbe117e1
       digest: sha256:e8ab8c4d4ded6477bbffa25327570d98c7ebba6b2429b751629d9a08a2707cac
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-11T12:14:59.773Z
-      kind: launch
-      label: Начальное состояние
+      capturedAt: 2026-11-11T16:39:52.101Z
+      kind: git
+      revision: e6ea999eba06c8ab117de4953bbd46ddbbe117e1
+      label: HEAD
       fingerprint: 7f81775f6ea4920a0c343f486579545fa3e0bce04cb6480aa2309edc3ac2eb0e
       complete: true
       diagnostics: []
       evidenceLimitations: []
+      isHead: true
     module_index: 12
     module:
       directory: src/runtime
@@ -445,69 +694,302 @@ publication:
           kind: module
           path: src/runtime
           text: '{"contract":"documented","format":"arch.yaml","sources":["src/runtime/errors.ts","src/runtime/package-paths.ts"]}'
+  current:
+    metadata:
+      id: working-d87f8c9379db5508ecaf9d66c58131944de3103df4c39619e355ada3c61ea5e1
+      digest: sha256:d87f8c9379db5508ecaf9d66c58131944de3103df4c39619e355ada3c61ea5e1
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-11T16:40:21.142Z
+      kind: working
+      label: Рабочее дерево
+      fingerprint: 96185156859f077fae699bc6a4b300a57b6dad7a1d5c358051e176d442f249fe
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+    module_index: 12
+    module:
+      directory: src/runtime
+      documentPath: src/runtime/arch.yaml
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-node-runtime
+
+          title: Среда выполнения Node
+
+          kind: module
+
+          purpose: Предоставлять общие для модулей Node сведения о среде
+          выполнения ArchiView.
+
+          responsibilities:
+            R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной и автономной поставке.
+            R2: Представлять ошибки платформы с сохранением диагностических полей файловых и дочерних процессов.
+          boundaries:
+            B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат потребителям.
+          invariants:
+            I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
+        format: arch.yaml
+        contract:
+          schema_version: 1
+          id: archiview-node-runtime
+          title: Среда выполнения Node
+          kind: module
+          purpose: Предоставлять общие для модулей Node сведения о среде выполнения
+            ArchiView.
+          responsibilities:
+            R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной
+              и автономной поставке.
+            R2: Представлять ошибки платформы с сохранением диагностических полей файловых и
+              дочерних процессов.
+          boundaries:
+            B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат
+              потребителям.
+          invariants:
+            I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
+      files:
+        - path: src/runtime/arch.yaml
+          hash: 0456256e73faa4299897a1e75cb73f3cbdf475bc
+        - path: src/runtime/errors.ts
+          hash: aa925db7c51cef391247aa59d1890d45a210a7c3
+        - path: src/runtime/package-paths.ts
+          hash: b4b2e9569e0296f50df47db5ce7be18f80570cb7
+      sourceFiles: 2
+      fingerprint: 48b270eeb69c20c3c59542e815cac9d4f0185e9ba40584c06e43adffcb44969f
+    facts:
+      - index: 91
+        fact:
+          id: sha256:eb1cb954baa6805e9b5443644e4651245dc003edcbb9259593f98a3fde3dcac6
+          kind: file
+          path: src/runtime/arch.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: archiview-node-runtime
+
+            title: Среда выполнения Node
+
+            kind: module
+
+            purpose: Предоставлять общие для модулей Node сведения о среде
+            выполнения ArchiView.
+
+            responsibilities:
+              R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной и автономной поставке.
+              R2: Представлять ошибки платформы с сохранением диагностических полей файловых и дочерних процессов.
+            boundaries:
+              B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат потребителям.
+            invariants:
+              I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
+      - index: 92
+        fact:
+          id: sha256:7dced7100af4616e7b2739aaeed2f9144590c569513ddc8b4b27730a3cf0fe91
+          kind: file
+          path: src/runtime/errors.ts
+          start_line: 1
+          end_line: 12
+          text: >
+            /** Normalize unknown exceptions while retaining filesystem/process
+            diagnostics. */
+
+            export interface ErrorDetails extends Error { code?: string |
+            number; stderr?: string; exitCode?: number | null; }
+
+            export function errorDetails(error: unknown): ErrorDetails {
+              if (error instanceof Error) return error;
+              const value = error && typeof error === "object" ? error as Record<string, unknown> : {};
+              const result: ErrorDetails = new Error(typeof value.message === "string" ? value.message : String(error));
+              if (typeof value.code === "string" || typeof value.code === "number") result.code = value.code;
+              if (typeof value.stderr === "string") result.stderr = value.stderr;
+              if (typeof value.exitCode === "number" || value.exitCode === null) result.exitCode = value.exitCode;
+              return result;
+            }
+      - index: 93
+        fact:
+          id: sha256:579a014c7e18adc0bc7ed5686f3b20ac915eed3d33b217c291ee6028d99514ea
+          kind: file
+          path: src/runtime/package-paths.ts
+          start_line: 1
+          end_line: 23
+          text: >
+            import { fileURLToPath } from "node:url";
+
+            import { existsSync } from "node:fs";
+
+            /** Use the nearest package manifest both in a source checkout and
+            inside each distribution. */
+
+            function packageDirectory(moduleUrl: string): URL {
+              let directory = new URL("./", moduleUrl);
+              while (!existsSync(new URL("package.json", directory))) {
+                const parent = new URL("../", directory);
+                if (parent.href === directory.href) throw new Error("ArchiView package.json is missing");
+                directory = parent;
+              }
+              return directory;
+            }
+
+
+            export const packageUrl = packageDirectory(import.meta.url);
+
+            const sourceCli = new URL("src/cli.ts", packageUrl);
+
+            const sourceCheckout = existsSync(sourceCli);
+
+            export const webAssetUrl = new URL(sourceCheckout ?
+            "dist/web/archiview/" : "web/archiview/", packageUrl);
+
+
+            /** Runtime argv for source execution and autonomous installed CLI
+            bundles. */
+
+            export function cliArguments(): string[] {
+              return sourceCheckout ? ["--import", import.meta.resolve("tsx"), fileURLToPath(sourceCli)] : [fileURLToPath(new URL("src/cli.mjs", packageUrl))];
+            }
+      - index: 179
+        fact:
+          id: sha256:788dc597a789b0196dcfd399e698e9543841ca39230c5b2a2eb7a71f88ec9746
+          kind: module
+          path: src/runtime
+          text: '{"contract":"documented","format":"arch.yaml","sources":["src/runtime/errors.ts","src/runtime/package-paths.ts"]}'
 review_status:
   self:
     current:
-      current_violation: false
-      status: not_reviewed
-      reasons: []
+      status: stale
+      reasons:
+        - code: own_code
+        - code: dependency_input
+        - code: dependency_input
       verdict: null
-      review_ids: []
+      verdicts: []
+      review_ids:
+        - review-59ffdcc7-b2db-4853-baee-c574761ae067
+        - review-172f0533-1845-42dd-9046-cc7eacf4cd25
       conflict: false
       coverage:
-        status: unavailable
+        status: partial
         limitations:
-          - Содержательная проверка отсутствует.
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Полнота зависимостей не подтверждена.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
+        reasons:
+          - code: dependency_coverage_unknown
+            potential_influence:
+              - scope: project
+      current_violation: false
     change:
-      current_violation: false
-      status: not_reviewed
-      reasons: []
+      status: stale
+      reasons:
+        - code: own_code
+        - code: dependency_input
+        - code: dependency_input
       verdict: null
-      review_ids: []
+      verdicts: []
+      review_ids:
+        - review-59ffdcc7-b2db-4853-baee-c574761ae067
+        - review-172f0533-1845-42dd-9046-cc7eacf4cd25
       conflict: false
       coverage:
-        status: unavailable
+        status: partial
         limitations:
-          - Содержательная проверка отсутствует.
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Полнота зависимостей не подтверждена.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
+        reasons:
+          - code: dependency_coverage_unknown
+            potential_influence:
+              - scope: project
+      current_violation: false
     conflict: false
     coverage:
       current:
-        status: unavailable
+        status: partial
         limitations:
-          - Содержательная проверка отсутствует.
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Полнота зависимостей не подтверждена.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
+        reasons:
+          - code: dependency_coverage_unknown
+            potential_influence:
+              - scope: project
       change:
-        status: unavailable
+        status: partial
         limitations:
-          - Содержательная проверка отсутствует.
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Полнота зависимостей не подтверждена.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
+        reasons:
+          - code: dependency_coverage_unknown
+            potential_influence:
+              - scope: project
   subtree:
     current:
-      status: not_reviewed
+      status: stale
       counts:
         fresh: 0
-        stale: 0
+        stale: 1
         unknown: 0
-        not_reviewed: 1
+        not_reviewed: 0
       conflict: false
       current_violation: false
       coverage:
-        status: unavailable
+        status: partial
         limitations:
-          - Содержательная проверка отсутствует.
-        reasons: []
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Полнота зависимостей не подтверждена.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
+        reasons:
+          - code: dependency_coverage_unknown
+            potential_influence:
+              - scope: project
     change:
-      status: not_reviewed
+      status: stale
       counts:
         fresh: 0
-        stale: 0
+        stale: 1
         unknown: 0
-        not_reviewed: 1
+        not_reviewed: 0
       conflict: false
       current_violation: false
       coverage:
-        status: unavailable
+        status: partial
         limitations:
-          - Содержательная проверка отсутствует.
-        reasons: []
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Полнота зависимостей не подтверждена.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
+        reasons:
+          - code: dependency_coverage_unknown
+            potential_influence:
+              - scope: project
   explicit_subtree:
     current:
       current_violation: false

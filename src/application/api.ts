@@ -4,6 +4,7 @@ import type { AnalysisStatus, PreparedAnalysis } from "./analysis-record.js";
 export type { AnalysisStatus, PreparedAnalysis } from "./analysis-record.js";
 import type { ClauseInput, ReviewReport, Side } from "../reviews/types.js";
 import type { Comparison, ComparisonModule, Fact, Snapshot } from "../snapshots/types.js";
+import type { compareContracts } from "../snapshots/contract-diff.js";
 
 export type ComparisonArgs = { target?: string; baseline?: string; historyLimit?: number };
 export type ModuleArgs = { view: string; path: string };
@@ -62,6 +63,7 @@ export interface DocumentDiffLine {
 export interface ModuleDetail extends ComparisonModule, ModuleReviewState {
   reviews: ModuleReview[];
   diff: DocumentDiffLine[];
+  contractDiff: ReturnType<typeof compareContracts>;
 }
 export interface SessionOperations {
   getComparison(args?: ComparisonArgs): Promise<ComparisonView>;

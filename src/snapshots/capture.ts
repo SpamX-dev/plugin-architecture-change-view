@@ -24,7 +24,7 @@ function portable(value: string) {
 }
 
 /** Запускает только Git без оболочки, ограничивая время и объём ответа. */
-async function git(root: string, args: string[], input = "", maxBytes = 16 * 1024 * 1024): Promise<Buffer> {
+async function git(root: string, args: string[], input: string | Buffer = "", maxBytes = 16 * 1024 * 1024): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const child = spawn("git", args, { cwd: root, windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"] });
@@ -184,38 +184,42 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
     } catch (errorCause) { const error = errorDetails(errorCause); diagnostics.push(file + ": " + error.message); }
   }
   files.sort();
-  let hashes: string[] | undefined;
-  if (info && files.length) {
-    hashes = (await git(root, ["hash-object", "--stdin-paths"],
-      files.map((file: string) => JSON.stringify(file)).join("\n") + "\n"))
-      .toString().trim().split("\n");
-    if (hashes.length !== files.length) throw new Error("Incomplete Git file hashes");
-  }
   const records: FileRecord[] = [];
+  const hashOnly: FileRecord[] = [];
   let evidenceBudget = 16 * 1024 * 1024;
   for (let offset = 0; offset < files.length; offset += 16) {
-    const batch = await Promise.all(files.slice(offset, offset + 16).map(async (file, index) => {
+    const batch = await Promise.all(files.slice(offset, offset + 16).map(async (file) => {
       try {
         const fullPath = path.join(root, file);
-        const hash = hashes?.[offset + index] ?? await fileHash(fullPath);
-        let text;
-        {
-          const size = (await lstat(fullPath)).size;
-          if (isContract(file) && size > 128 * 1024) throw new Error("Contract exceeds 128 KiB");
-          if (size <= 256 * 1024 && size <= evidenceBudget) {
-            evidenceBudget -= size;
-            const bytes = await readFile(fullPath);
-            if (!bytes.includes(0) && Buffer.from(bytes.toString("utf8")).equals(bytes))
-              text = bytes.toString("utf8").replace(/\r\n?/g, "\n");
-          } else if (isContract(file)) throw new Error("Contract evidence budget exceeded");
-        }
-        return { path: file, hash, text };
+        const size = (await lstat(fullPath)).size;
+        if (isContract(file) && size > 128 * 1024) throw new Error("Contract exceeds 128 KiB");
+        if (size <= 256 * 1024 && size <= evidenceBudget) {
+          evidenceBudget -= size;
+          const bytes = await readFile(fullPath);
+          if (bytes.length !== size) throw new Error("File changed while being captured");
+          const decoded = bytes.toString("utf8");
+          if (!bytes.includes(0) && Buffer.from(decoded).equals(bytes)) {
+            // Apply Git's path-specific filters to exactly the bytes retained as evidence.
+            const hash = info ? (await git(root, ["hash-object", "--stdin", "--path", file], bytes)).toString().trim() :
+              createHash("sha1").update("blob " + bytes.length + "\0").update(bytes).digest("hex");
+            return { path: file, hash, text: decoded.replace(/\r\n?/g, "\n") };
+          }
+        } else if (isContract(file)) throw new Error("Contract evidence budget exceeded");
+        const record = { path: file, hash: info ? null : await fileHash(fullPath) };
+        if (info) hashOnly.push(record);
+        return record;
       } catch (errorCause) { const error = errorDetails(errorCause);
         diagnostics.push(file + ": " + error.message);
         return { path: file, hash: null, error: error.message };
       }
     }));
     records.push(...batch);
+  }
+  if (hashOnly.length) {
+    const paths = hashOnly.map((record) => JSON.stringify(record.path)).join("\n") + "\n";
+    const hashes = (await git(root, ["hash-object", "--stdin-paths"], paths)).toString().trim().split("\n");
+    if (hashes.length !== hashOnly.length) throw new Error("Incomplete Git file hashes");
+    hashOnly.forEach((record, i) => { record.hash = hashes[i]; });
   }
   const snapshotRoot = options.snapshotRoot ?? await readSnapshotRoot(root) ?? root;
   const snapshot = assemble(snapshotRoot, records, { kind: "working", label: "Рабочее дерево" },

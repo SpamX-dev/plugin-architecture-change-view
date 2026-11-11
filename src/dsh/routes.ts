@@ -51,6 +51,7 @@ export const PANEL_ASSETS = new Map([
   ["panel-bridge.mjs", { file: "web/archiview/panel-bridge.mjs", type: "text/javascript; charset=utf-8" }],
   ["review.mjs", { file: "web/archiview/review.mjs", type: "text/javascript; charset=utf-8" }],
   ["styles.css", { file: "web/archiview/styles.css", type: "text/css; charset=utf-8" }],
+  ["favicon.svg", { file: "web/archiview/favicon.svg", type: "image/svg+xml" }],
 ]);
 
 /** Кэш прочитанных ресурсов: файлы панели неизменны в пределах установленного пакета. */
@@ -71,12 +72,13 @@ const assetCache = new Map<string, Buffer>();
 export function normalizePrefix(value: unknown) {
   const prefix = typeof value === "string" ? value.trim() : "";
   if (prefix === "") return DEFAULT_PREFIX;
-  if (asPrefix(prefix) === null) {
+  const normalized = asPrefix(prefix);
+  if (normalized === null) {
     throw new Error(
       "Префикс плагина ArchiView должен быть локальным путём: /путь без хвостового слэша, обратных слэшей, ? и #",
     );
   }
-  return prefix;
+  return normalized;
 }
 
 /**
@@ -242,10 +244,11 @@ async function readAsset(name: string) {
  *   сессия прикладного сервиса для запроса.
  * @returns {ReadonlyArray<{ kind: "exact" | "prefix", path: string, handler: Function }>} маршруты.
  */
-export function createRouteTable({ prefix = DEFAULT_PREFIX, guard, getSession }: { prefix?: string; guard: (request: IncomingMessage, response: ServerResponse) => boolean; getSession: (request: IncomingMessage, url: URL) => SessionOperations | Promise<SessionOperations> }) {
+export function createRouteTable({ prefix: configuredPrefix = DEFAULT_PREFIX, guard, getSession }: { prefix?: string; guard: (request: IncomingMessage, response: ServerResponse) => boolean; getSession: (request: IncomingMessage, url: URL) => SessionOperations | Promise<SessionOperations> }) {
   if (typeof guard !== "function" || typeof getSession !== "function") {
     throw new Error("createRouteTable требует guard и getSession");
   }
+  const prefix = normalizePrefix(configuredPrefix);
   const apiBase = prefix + "/api/";
   const assetBase = prefix + "/";
 
@@ -307,7 +310,8 @@ export function createRouteTable({ prefix = DEFAULT_PREFIX, guard, getSession }:
         try {
           if (guard(request, response)) return;
           response.statusCode = 308;
-          response.setHeader("Location", prefix + "/");
+          const url = new URL(request.url ?? "/", "http://localhost");
+          response.setHeader("Location", prefix + "/" + url.search);
           response.end();
         } catch (error) {
           if (response.headersSent) { response.destroy(); return; }

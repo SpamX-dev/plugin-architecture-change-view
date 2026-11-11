@@ -6,6 +6,8 @@
 import net from "node:net";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { realpath } from "node:fs/promises";
+import { within } from "../project/paths.js";
 
 /** Тот же предел кадра, что у поставляемого Codex App Tools. */
 const MAX_FRAME_BYTES = 8 * 1024 * 1024;
@@ -88,12 +90,6 @@ function toolData(value: unknown): Record<string, unknown> {
   throw new Error("Codex did not return project context");
 }
 
-/** Рабочая папка может быть вложена в зарегистрированную папку проекта; projectId для этого не требуется. */
-function within(root: string, directory: string) {
-  const relative = path.relative(root, directory);
-  return relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(".." + path.sep));
-}
-
 /**
  * Использует метаданные чата, а до появления истории — рабочую папку, с которой
  * хост запустил MCP-процесс. Оба пути проверяются по каталогу папок того же хоста.
@@ -128,7 +124,15 @@ export function createHostContextReader({ pipePath = process.env.CODEX_APP_TOOLS
       const hostId = thread?.hostId ?? callerHostId ?? "local";
       const folders = (catalogueProjects.projects as unknown[]).map(record).filter((project) => project.projectKind === "local" &&
         project.hostId === hostId && typeof project.path === "string" && path.isAbsolute(project.path));
-      return folders.some((project) => typeof project.path === "string" && within(project.path, root)) ? { status: "ready", root } : { status: "unavailable" };
+      const candidates = folders.flatMap((project) => typeof project.path === "string" && within(project.path, root) ? [project.path] : []);
+      if (!candidates.length) return { status: "unavailable" };
+      const physicalRoot = await realpath(root);
+      if (!thread && installedRoot && path.isAbsolute(installedRoot) && within(await realpath(installedRoot), physicalRoot)) return { status: "unknown" };
+      const locations = await Promise.allSettled(candidates.map((candidate) => realpath(candidate)));
+      if (locations.some((location) => location.status === "fulfilled" && within(location.value, physicalRoot))) {
+        return { status: "ready", root: physicalRoot };
+      }
+      return { status: locations.some((location) => location.status === "rejected") ? "unknown" : "unavailable" };
     } catch { return { status: "unknown" }; }
     finally { host.close(); }
   };

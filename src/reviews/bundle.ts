@@ -10,7 +10,7 @@ import type {
  */
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { digest } from "../serialization/digest.js";
+import { canonical, digest } from "../serialization/digest.js";
 import { validateReview } from "./schema.js";
 import { snapshotDigest } from "../snapshots/identity.js";
 
@@ -74,6 +74,9 @@ export function validateContractScope(report: ReviewReport, manifest: ReviewMani
   if (!["own", "effective"].includes(scope)) throw new Error("Unsupported contract scope");
   if (scope === "own" && report.checks.some((check) => check.contract.module_id !== report.module.id))
     throw new Error("Own review checks must reference the module contract");
+  const clauses = new Set([...manifest.contracts.baseline, ...manifest.contracts.current].map((item) => canonical(item.reference)));
+  if (report.checks.some((check) => !clauses.has(canonical(check.contract))))
+    throw new Error("Review check references a clause outside the manifest");
   if (scope === "own" && report.findings.some((finding) => finding.clauses.length &&
     !finding.clauses.some((clause) => clause.module_id === report.module.id)))
     throw new Error("Own review finding must reference the module contract");
@@ -171,11 +174,4 @@ export function validateReviewBundle(bundle: ReviewBundle) {
     if (!report.checks.some((c) => c.subject === subject && digest(c.contract) === digest(item.reference))) throw new Error("Missing explicit clause check: " + item.reference.id);
   }
   return bundle;
-}
-
-/** Устаревание вычисляется снаружи отчёта и никогда не записывается в review.yaml. */
-export function reviewIsStale(bundle: ReviewBundle, before: Snapshot | null, after: Snapshot) {
-  return (bundle.report.analysis.analyzer.name === ANALYZER.name && digest(bundle.report.analysis.analyzer) !== digest(ANALYZER)) ||
-    bundle.report.comparison.current?.digest !== snapshotDigest(after) ||
-    (bundle.report.comparison.baseline?.digest ?? null) !== (before ? snapshotDigest(before) : null);
 }

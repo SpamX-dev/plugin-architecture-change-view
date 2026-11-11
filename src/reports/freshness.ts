@@ -1,11 +1,20 @@
-import type { SnapshotData } from "../snapshots/types.js";
-import type { FreshnessReason, Coverage } from "../reviews/types.js";
+import type { Snapshot, SnapshotData } from "../snapshots/types.js";
+import type { FreshnessReason, Coverage, ReviewBundle } from "../reviews/types.js";
+import { ANALYZER } from "../reviews/bundle.js";
+import { snapshotDigest } from "../snapshots/identity.js";
 import type { SelfState, ReviewState, ReviewEntry, Freshness, ReviewFreshness } from "./types.js";
-import { canonical } from "../serialization/digest.js";
+import { canonical, digest } from "../serialization/digest.js";
 import type { ModuleStateContext } from "./module-state.js";
 import { REPORT_SCHEMA_VERSION } from "./types.js";
 import { isSemanticReview } from "./review-identity.js";
 import { createInputs } from "./review-state.js";
+
+/** У прежнего пакета v1 актуальность относится к полной паре снимков. */
+export function reviewIsStale(bundle: ReviewBundle, before: Snapshot | null, after: Snapshot) {
+  return (bundle.report.analysis.analyzer.name === ANALYZER.name && digest(bundle.report.analysis.analyzer) !== digest(ANALYZER)) ||
+    bundle.report.comparison.current?.digest !== snapshotDigest(after) ||
+    (bundle.report.comparison.baseline?.digest ?? null) !== (before ? snapshotDigest(before) : null);
+}
 
 /** Известные причины инвалидации не смешиваются с неизвестной полнотой анализа. */
 function inputDifferences(previous: ReviewState | null, current: ReviewState | null) {

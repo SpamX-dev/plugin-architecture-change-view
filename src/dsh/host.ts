@@ -15,9 +15,9 @@ import type { HostContext, HostConfig, JsonValue } from "./host-types.js";
  *    публичный канал `webserver/index-inject`.
  *
  * Плагин не содержит прикладной логики и не запускает модель: просмотр только
- * читает проект, а анализ выполняет агент хоста по явному поручению. Корень
- * проекта берётся из конфигурации (или рабочего каталога процесса) и никогда
- * из URL запроса.
+ * читает проект, а анализ выполняет агент хоста по явному поручению. Вкладка
+ * получает рабочий каталог своего чата из хоста. Для прямого открытия панели
+ * используются настройка корня и рабочий каталог процесса.
  *
  * @module plugin-architecture-change-view/dsh/host
  */
@@ -85,7 +85,7 @@ export function apply(ctx: HostContext, config: HostConfig) {
     void sessions.dispose();
   }, "archiview: сессии");
 
-  if (config.tools) registerTools(ctx, { extensions, maxFiles: config.maxFiles, fallbackRoot: root });
+  if (config.tools) registerTools(ctx, { extensions, maxFiles: config.maxFiles, configuredRoot: root });
   if (config.skill) registerSkill(ctx);
   if (config.panel) {
     registerClientConfig(ctx, prefix);
@@ -103,10 +103,10 @@ export function apply(ctx: HostContext, config: HostConfig) {
  * @param {object} options - параметры регистрации.
  * @param {Set<string>} options.extensions - расширения исходников.
  * @param {number} options.maxFiles - предел обхода.
- * @param {string} options.fallbackRoot - корень из конфигурации.
+ * @param {string} options.configuredRoot - область чтения инструментов из конфигурации.
  * @returns {void}
  */
-function registerTools(ctx: HostContext, { extensions, maxFiles, fallbackRoot }: { extensions: Set<string>; maxFiles: number; fallbackRoot: string }) {
+function registerTools(ctx: HostContext, { extensions, maxFiles, configuredRoot }: { extensions: Set<string>; maxFiles: number; configuredRoot: string }) {
   for (const definition of TOOL_DEFINITIONS) {
     ctx.tools.register(defineTool({
       name: definition.name,
@@ -117,7 +117,7 @@ function registerTools(ctx: HostContext, { extensions, maxFiles, fallbackRoot }:
         render: (_args, value) => [{ type: "text", text: JSON.stringify(value) }],
       },
       async execute(args: { projectRoot?: string; directory?: string }) {
-        const projectRoot = resolveRoot({ projectRoot: args.projectRoot, fallback: fallbackRoot });
+        const projectRoot = await resolveRoot({ projectRoot: args.projectRoot, configuredRoot });
         const value = definition.name === "archiview_inventory"
           ? await readInventory({ root: projectRoot, extensions, maxFiles })
           : await readContext({ root: projectRoot, directory: args.directory });

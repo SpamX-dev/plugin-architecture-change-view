@@ -39,10 +39,10 @@ test("dsh build stays in dist and produces a relocatable package with working en
     await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
   const source = fileURLToPath(new URL("../", import.meta.url));
-  for (const name of ["src", "web", "skills", "docs", "package.json", "LICENSE", "cordis.patch.yml"])
+  for (const name of ["src", "web", "skills", "docs", "tsconfig.json", "package.json", "LICENSE", "cordis.patch.yml"])
     await cp(path.join(source, name), path.join(root, name), { recursive: true });
   await mkdir(path.join(root, "scripts"));
-  for (const name of ["build-dsh.ts", "build-web.ts"]) await cp(path.join(source, "scripts", name), path.join(root, "scripts", name));
+  for (const name of ["build-dsh.ts", "build-web.ts", "distribution.ts"]) await cp(path.join(source, "scripts", name), path.join(root, "scripts", name));
   await symlink(path.join(source, "node_modules"), path.join(root, "node_modules"), process.platform === "win32" ? "junction" : "dir");
 
   const before = await sourceDigests(root);
@@ -66,7 +66,11 @@ test("dsh build stays in dist and produces a relocatable package with working en
   await mkdir(path.join(root, "lib"));
   await writeFile(path.join(root, "lib", "index.js"), "legacy output owned by the fixture");
   const withLegacy = await sourceDigests(root);
+  await writeFile(path.join(distribution, "docs", "obsolete.md"), "stale package content");
+  await writeFile(path.join(root, "dist/web/obsolete.mjs"), "stale asset");
   await build();
+  await assert.rejects(stat(path.join(distribution, "docs", "obsolete.md")), { code: "ENOENT" });
+  await assert.rejects(stat(path.join(distribution, "web", "obsolete.mjs")), { code: "ENOENT" });
   assert.deepEqual(await sourceDigests(root), withLegacy);
 
   // Перенесённый пакет проверяется отдельно от подключённых зависимостей сборщика.

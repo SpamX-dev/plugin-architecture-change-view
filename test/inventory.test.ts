@@ -108,3 +108,25 @@ test("does not follow directory links outside the project", async (t) => {
   assert.equal(inventory.modules.length, 1);
   await assert.rejects(moduleContext(root, "outside"), /outside project/);
 });
+
+test("context uses the same directory exclusions as source discovery", async (t) => {
+  const root = await project(t, { "src/main.ts": "", "dist/js/main.ts": "", ".archiview/work/data.ts": "" });
+  for (const directory of ["dist/js", ".archiview/work"]) {
+    await assert.rejects(moduleContext(root, directory), /excluded/);
+  }
+  await symlink(path.join(root, "dist"), path.join(root, "generated"), process.platform === "win32" ? "junction" : "dir");
+  await assert.rejects(moduleContext(root, "generated/js"), /excluded/);
+});
+
+test("an unreadable contract entry requires repair even in a planned directory", async (t) => {
+  const root = await project(t, { "main.ts": "" });
+  const directories = [root, path.join(root, "planned")];
+  await mkdir(directories[1]);
+  for (const directory of directories) {
+    await symlink(path.join(root, "absent"), path.join(directory, "arch.yaml"), process.platform === "win32" ? "junction" : "dir");
+  }
+  const inventory = await moduleInventory(root);
+  assert.equal(inventory.complete, false);
+  assert.deepEqual(inventory.modules.map(({ directory, status, preparation }) => [directory, status, preparation]),
+    [[".", "unreadable", "repair"], ["planned", "unreadable", "repair"]]);
+});

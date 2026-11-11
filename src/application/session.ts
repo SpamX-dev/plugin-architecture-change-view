@@ -1,5 +1,6 @@
 import type { ComparisonView, ModuleDetail, DocumentDiffLine, SessionOperations, ComparisonArgs, ModuleArgs, SnapshotArgs } from "./api.js";
 import type { Snapshot, GitRevision } from "../snapshots/types.js";
+import { compareContracts } from "../snapshots/contract-diff.js";
 import type { ReviewBundle } from "../reviews/types.js";
 import type { PublishedComparison, ReviewEntry } from "../reports/types.js";
 import type { SessionView } from "./session-view.js";
@@ -290,7 +291,8 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       dependencies: dependencyAssumptions(bundle, view),
       facts: evidenceForReport(bundle),
       contracts: bundle.manifest.contracts,
-    })), diff: documentDiff(module.before?.document.text, module.after?.document.text) } satisfies ModuleDetail);
+    })), diff: documentDiff(module.before?.document.text, module.after?.document.text),
+    contractDiff: compareContracts(module.before?.document.contract, module.after?.document.contract, module.status !== "initial") } satisfies ModuleDetail);
   }
 
   /** Выбирает точный view; неизвестный id требует обновления клиентом. */

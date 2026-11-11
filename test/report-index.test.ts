@@ -1,4 +1,4 @@
-import type { ReviewInput } from "../src/reports/types.js";
+import type { ReviewHistory, ReviewInput } from "../src/reports/types.js";
 import type { TestContext } from "node:test";
 /** Проверка реального staged-набора, CLI и переносимости без локального накопления. */
 import assert from "node:assert/strict";
@@ -11,6 +11,8 @@ import test from "node:test";
 import { stringify } from "yaml";
 import { createArchiView } from "../src/archiview/http.js";
 import { checkPreparedIndex } from "../src/storage/report-index.js";
+import { entryContentDigest } from "../src/reports/review-identity.js";
+import { moduleReportName } from "../src/storage/report-store.js";
 import { digest } from "../src/serialization/digest.js";
 import { parseYaml } from "../src/serialization/yaml.js";
 const cli = fileURLToPath(new URL("../src/archiview/cli.ts", import.meta.url));
@@ -80,9 +82,28 @@ test("CLI exports scoped YAML, imports a real attempt idempotently, and clone re
   assert.equal(history.entries[0].review_id, input.review_id);
   assert.equal(history.diagnostics.length, 0);
   assert.equal((await checkPreparedIndex(clone)).reviews, 1);
+  const historyFile = path.join(".archiview", "work", moduleReportName("root") + ".review.yaml");
+  const historyText = await readFile(path.join(clone, historyFile), "utf8");
+  const staged = parseYaml(historyText, (value) => value as ReviewHistory);
+  const [entry] = staged.entries;
+  entry.resolution = { review_ids: ["missing-attempt"], reason: "Разрешить прежнее расхождение." };
+  entry.content_digest = entryContentDigest(entry);
+  await writeFile(path.join(clone, historyFile), stringify(staged, { aliasDuplicateObjects: false }));
+  git(clone, ["add", historyFile]);
+  await writeFile(path.join(clone, historyFile), historyText);
+  await assert.rejects(checkPreparedIndex(clone), /Unresolved review resolution: missing-attempt/);
 });
 
 test("strict YAML rejects non-string keys and non-finite values before hashing", () => {
   assert.throws(() => parseYaml("1: value", (value) => value), /keys must be strings/);
   assert.throws(() => parseYaml("value: .nan", (value) => value), /Unsupported YAML/);
+});
+
+test("YAML preserves exactly representable integers and rejects rounding", () => {
+  const parse = (source: string) => parseYaml(source, (value) => value);
+  assert.deepEqual(parse("[42, 9007199254740992, -9007199254740992]"), [42, 2 ** 53, -(2 ** 53)]);
+  for (const number of ["9007199254740993", "-9007199254740993", "0x20000000000001", "0o400000000000000001"]) {
+    assert.throws(() => parse("id: " + number), /cannot be represented exactly/);
+  }
+  assert.equal(parse('"9007199254740993"'), "9007199254740993");
 });

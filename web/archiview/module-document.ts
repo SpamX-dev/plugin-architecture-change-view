@@ -2,7 +2,7 @@ import type { ModuleDetail, ComparisonView, ClauseReference, ReviewBundle, Findi
 import { byId, el, icon, notice } from "./dom.js";
 import { badge } from "./change-status.js";
 import { renderContract, savedClauseText, clauseSectionLabel } from "./contract.js";
-import { ancestors } from "./module-path.js";
+import { moduleTrail } from "./module-path.js";
 import { timelineDate, timelineLabel } from "./timeline.js";
 
 /** Показывает структурированный контракт либо исторический документ удалённого модуля. */
@@ -14,8 +14,7 @@ export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: C
     "Показано описание из выбранной базы сравнения.", "removed-notice"));
   if (selected.document.state === "documented" && selected.document.contract) {
     if (detail.moved) panel.append(notice("Модуль перемещён", detail.baselinePath + " → " + detail.currentPath));
-    renderContract(panel, selected.document, { before: detail.before?.document.contract ?? null,
-      after: detail.after?.document.contract ?? null, compare: detail.status !== "initial",
+    renderContract(panel, selected.document, { contractDiff: detail.contractDiff, previousReferences: detail.before?.document.contract?.references,
       rawChanged: detail.documentChanged, showRawDiff: () => openDocumentDiff(detail, view), hideHeading: true,
       review: detail.reviews.find((bundle) => bundle.report.id === detail.review?.id) ?? detail.reviews[0],
       openFinding }); return;
@@ -24,13 +23,11 @@ export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: C
     const box = notice(selected.document.state === "missing" ? "arch.yaml ещё не создан" :
       selected.document.state === "empty" ? "Описание модуля пустое" : selected.document.state === "migration_required" ? "Нужно перенести module.md в arch.yaml" : "Контракт недоступен или содержит ошибки",
     selected.document.errors?.join("; ") ?? selected.document.action ?? "Нужно проанализировать исходники и родительские контракты, затем записать arch.yaml.", "missing-notice");
-    const parent = ancestors(detail.directory).slice(0, -1).reverse().find((directory) =>
-      view.modules.some((module) => module.directory === directory &&
-        module.documentState === "documented"));
+    const parent = moduleTrail(view.modules, detail).slice(0, -1).findLast(({ module }) => module.documentState === "documented");
     if (parent !== undefined) {
       const button = el("button", "text-button", "Открыть описание родителя →");
       button.type = "button";
-      button.addEventListener("click", () => selectModule(parent));
+      button.addEventListener("click", () => selectModule(parent.module.key));
       box.append(button);
     }
     panel.append(box);

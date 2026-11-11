@@ -13,12 +13,14 @@
  */
 
 import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from "../contracts/inventory.js";
+import { realpath } from "node:fs/promises";
+import path from "node:path";
+import { within } from "../project/paths.js";
 
 /** Описание параметра `projectRoot`, общего для обоих инструментов. */
 const PROJECT_ROOT_PARAMETER = {
   type: "string" as const,
-  description: "Абсолютный корень проекта текущего чата. Необязателен, если корень задан " +
-    "конфигурацией плагина; каталог установки плагина проектом не считается.",
+  description: "Абсолютный корень проекта текущего чата. При настроенном root можно выбрать сам root или вложенный каталог.",
 };
 
 /**
@@ -77,24 +79,28 @@ export function normalizeExtensions(configured: readonly string[] = []) {
 /**
  * Выбирает корень проекта для операции.
  *
- * Приоритет у явного аргумента вызова: агент может работать с проектом,
- * отличным от закреплённого. Корень из URL запроса никогда не принимается —
- * иначе маршрут панели читал бы произвольный каталог.
+ * Настройка хоста ограничивает область каждого модельного вызова.
+ * Без настройки проект задаёт аргумент инструмента.
  *
  * @param {object} options - параметры выбора.
  * @param {unknown} options.projectRoot - значение аргумента инструмента.
- * @param {string} [options.fallback] - корень из конфигурации плагина.
- * @returns {string} абсолютный или относительный корень, переданный сервису.
+ * @param {string} [options.configuredRoot] - корень из конфигурации плагина.
+ * @returns {Promise<string>} путь к разрешённому проекту.
  * @throws {Error} если корень не задан ни одним способом.
  */
-export function resolveRoot({ projectRoot, fallback }: { projectRoot?: unknown; fallback?: string }) {
-  const value = typeof projectRoot === "string" && projectRoot.trim() !== ""
-    ? projectRoot.trim()
-    : fallback;
-  if (typeof value !== "string" || value.trim() === "") {
-    throw new Error("Передайте projectRoot или задайте root в конфигурации плагина ArchiView");
+export async function resolveRoot({ projectRoot, configuredRoot }: { projectRoot?: unknown; configuredRoot?: string }) {
+  const selected = typeof projectRoot === "string" ? projectRoot.trim() : "";
+  if (configuredRoot) {
+    const boundary = await realpath(configuredRoot);
+    const candidate = path.resolve(configuredRoot, selected);
+    if (within(configuredRoot, candidate) || within(boundary, candidate)) {
+      const physical = await realpath(candidate);
+      if (within(boundary, physical)) return physical;
+    }
+    throw new Error("projectRoot находится вне настроенного корня ArchiView");
   }
-  return value.trim();
+  if (selected) return realpath(selected);
+  throw new Error("Передайте projectRoot или задайте root в конфигурации плагина ArchiView");
 }
 
 /**

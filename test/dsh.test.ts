@@ -11,6 +11,9 @@ import type { PromptContext } from "../src/dsh/client/types.js";
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { createSessionRegistry } from "../src/dsh/sessions.js";
 import { normalizeExtensions, resolveRoot, TOOL_DEFINITIONS } from "../src/dsh/tools.js";
 import { loadSkill, parseSkillText } from "../src/dsh/skill.js";
@@ -163,10 +166,17 @@ test("tools: расширения исходников нормализуютс�
   assert.throws(() => normalizeExtensions(["ts"]), /расширение/);
 });
 
-test("tools: корень берётся из аргумента, затем из конфигурации", () => {
-  assert.equal(resolveRoot({ projectRoot: " D:/project ", fallback: "D:/fallback" }), "D:/project");
-  assert.equal(resolveRoot({ fallback: "D:/fallback" }), "D:/fallback");
-  assert.throws(() => resolveRoot({}), /projectRoot/);
+test("tools: выбор проекта ограничен настроенным корнем", async (t) => {
+  const fixture = await mkdtemp(path.join(os.tmpdir(), "dsh-tool-roots-"));
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const configuredRoot = path.join(fixture, "selected");
+  const nested = path.join(configuredRoot, "nested");
+  await mkdir(nested, { recursive: true });
+  assert.equal(await resolveRoot({ configuredRoot }), await realpath(configuredRoot));
+  assert.equal(await resolveRoot({ projectRoot: nested, configuredRoot }), await realpath(nested));
+  assert.equal(await resolveRoot({ projectRoot: fixture }), await realpath(fixture));
+  await assert.rejects(resolveRoot({ projectRoot: fixture, configuredRoot }), /projectRoot/);
+  await assert.rejects(resolveRoot({}), /projectRoot/);
 });
 
 test("skill: разбор frontmatter и тела", () => {
@@ -203,7 +213,7 @@ test("routes: сетевая ссылка и обратный слэш не пр
 });
 
 test("контракт: хост передаёт клиенту тот же префикс, что зарегистрировал", () => {
-  for (const configured of ["", "/custom-architecture"]) {
+  for (const configured of ["", "/custom-architecture", "/панель"]) {
     const prefix = normalizePrefix(configured);
     const row = clientConfigRow(prefix);
     assert.deepEqual(row, { kind: "global", name: CLIENT_GLOBAL, value: { prefix } });
@@ -375,6 +385,23 @@ test("routes: таблица содержит точный и префиксны
   }
 });
 
+test("routes: Unicode-префикс работает на обеих сторонах редиректа и сохраняет чат", async () => {
+  const prefix = "/панель";
+  const table = createRouteTable({ prefix, guard: () => false, getSession: () => fakeSession() });
+  const route = new URL(prefix, "http://localhost").pathname;
+  assert.ok(table.every((entry) => entry.path === route));
+  const query = "?session=chat%201&extra=1";
+  const redirect = fakeResponse();
+  await table[0].handler(fakeRequest({ url: route + query }), redirect);
+  assert.equal(redirect.statusCode, 308);
+  assert.equal(redirect.headers.location, route + "/" + query);
+  const page = fakeResponse();
+  await prefixHandler(table)(fakeRequest({ url: redirect.headers.location }), page);
+  assert.equal(page.statusCode, 200);
+  assert.ok(page.body.includes('name="archiview-session" content="chat 1"'));
+  assert.ok(page.body.includes('name="archiview-base" content="' + route + '"'));
+});
+
 test("routes: сравнение выполняется с приведённым historyLimit", async () => {
   const session = fakeSession();
   const table = createRouteTable({
@@ -504,9 +531,9 @@ test("мост dsh: приветствие, отправка и подтверж
   const parent = {
     postMessage(message: Record<string, unknown>) {
       if (message?.type === "archiview:hello") {
-        queueMicrotask(() => dispatch({ type: "archiview:host", protocol: 1, capabilities: { send: true } }));
+        queueMicrotask(() => dispatch({ type: "archiview:host", protocol: 2, sessionId: message.sessionId, capabilities: { send: true } }));
       } else if (message?.type === "archiview:send") {
-        queueMicrotask(() => dispatch({ type: "archiview:sent", id: message.id }));
+        queueMicrotask(() => dispatch({ type: "archiview:sent", id: message.id, protocol: 2, sessionId: message.sessionId }));
       }
     },
   };
@@ -522,7 +549,8 @@ test("мост dsh: приветствие, отправка и подтверж
     removeEventListener(_type: string, listener: (event: { source: object; origin: string; data: Record<string, unknown> }) => void) { listeners.delete(listener); },
   };
   const documentStub = {
-    querySelector: (selector: string) => (selector === 'meta[name="archiview-base"]' ? { content: "/archiview" } : null),
+    querySelector: (selector: string) => (selector === 'meta[name="archiview-base"]' ? { content: "/archiview" } :
+      selector === 'meta[name="archiview-session"]' ? { content: "chat-1" } : null),
   };
   const saved = { window: globalThis.window, document: globalThis.document, location: globalThis.location };
   Object.assign(globalThis, { window: windowStub, document: documentStub, location: { origin } });
@@ -543,9 +571,9 @@ test("мост dsh: отказ хоста отклоняет отправку", 
   const parent = {
     postMessage(message: Record<string, unknown>) {
       if (message?.type === "archiview:hello") {
-        queueMicrotask(() => dispatch({ type: "archiview:host", protocol: 1, capabilities: { send: true } }));
+        queueMicrotask(() => dispatch({ type: "archiview:host", protocol: 2, sessionId: message.sessionId, capabilities: { send: true } }));
       } else if (message?.type === "archiview:send") {
-        queueMicrotask(() => dispatch({ type: "archiview:send-failed", id: message.id, error: "очередь недоступна" }));
+        queueMicrotask(() => dispatch({ type: "archiview:send-failed", id: message.id, protocol: 2, sessionId: message.sessionId, error: "очередь недоступна" }));
       }
     },
   };
@@ -561,7 +589,8 @@ test("мост dsh: отказ хоста отклоняет отправку", 
     removeEventListener(_type: string, listener: (event: { source: object; origin: string; data: Record<string, unknown> }) => void) { listeners.delete(listener); },
   };
   const documentStub = {
-    querySelector: (selector: string) => (selector === 'meta[name="archiview-base"]' ? { content: "/archiview" } : null),
+    querySelector: (selector: string) => (selector === 'meta[name="archiview-base"]' ? { content: "/archiview" } :
+      selector === 'meta[name="archiview-session"]' ? { content: "chat-1" } : null),
   };
   const saved = { window: globalThis.window, document: globalThis.document, location: globalThis.location };
   Object.assign(globalThis, { window: windowStub, document: documentStub, location: { origin } });
@@ -594,6 +623,11 @@ test("routes: статика и страница панели отдаются �
   assert.ok(page.body.includes('<meta name="archiview-base" content="/archiview">'));
   assert.ok(page.body.includes('content="s1"'));
   assert.ok(page.body.includes('href="/archiview/styles.css"'));
+  assert.ok(page.body.includes('href="./favicon.svg"'));
+  const icon = fakeResponse();
+  await prefixHandler(table)(fakeRequest({ url: "/archiview/favicon.svg" }), icon);
+  assert.equal(icon.statusCode, 200);
+  assert.equal(icon.headers["content-type"], "image/svg+xml");
 });
 
 test("routes: malformed JSON is a client error and UTF-8 survives a chunk boundary", async () => {

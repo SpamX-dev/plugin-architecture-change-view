@@ -18,7 +18,6 @@ export function createReviewEntry(input: unknown, options: ReviewOptions = {}): 
     if (bundle.kind === "review") return validateReviewEntry(structuredClone(bundle));
     const entry = structuredClone(bundle);
     entry.kind = "review";
-    entry.review_id = entry.report?.id ?? entry.review_id;
     entry.analysis_kind = isSemanticReview(entry) ? "semantic" : "structure";
     entry.input_digest = digest({ inputs: entry.inputs, manifest: entry.manifest });
     entry.result_digest = resultDigest(entry.report);

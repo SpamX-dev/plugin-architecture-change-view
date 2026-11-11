@@ -4,7 +4,7 @@ import { badge, labels } from "./change-status.js";
 import { findingBug, moduleFindingCount, treeFindingCounts } from "./findings.js";
 import { freshnessLabel } from "./review-status.js";
 
-import { ancestors } from "./module-path.js";
+import { treeParents } from "./module-path.js";
 
 /**
  * Управляет только шириной навигации: pointer capture удерживает перетаскивание
@@ -134,12 +134,17 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     if (!view) return;
     const visible = new Set<string>();
     const matches = new Set<string>();
+    const parents = treeParents(view.modules);
     for (const module of view.modules) {
       if (filter !== "all" && module.status !== filter) continue;
       if (search && !module.directory.toLowerCase().includes(search) &&
           !module.name.toLowerCase().includes(search) && !module.title?.toLowerCase().includes(search) && !module.moduleId?.toLowerCase().includes(search)) continue;
-      matches.add(module.directory);
-      for (const parent of ancestors(module.directory)) visible.add(parent);
+      matches.add(module.key);
+      let row: ModuleSummary | undefined = module;
+      while (row && !visible.has(row.key)) {
+        visible.add(row.key);
+        row = parents.get(row.key);
+      }
     }
     if (!matches.size) {
       const empty = el("div", "empty-tree");
@@ -149,24 +154,23 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
       return;
     }
     const children = new Map<string, ModuleSummary[]>();
-    for (const module of view.modules) {
-      if (!visible.has(module.directory) || module.directory === ".") continue;
-      const index = module.directory.lastIndexOf("/");
-      const parent = index < 0 ? "." : module.directory.slice(0, index);
-      if (!children.has(parent)) children.set(parent, []);
-      children.get(parent)!.push(module);
+    const visibleModules = view.modules.filter((module) => visible.has(module.key));
+    const roots: ModuleSummary[] = [];
+    for (const module of visibleModules) {
+      const parent = parents.get(module.key);
+      if (!parent) { roots.push(module); continue; }
+      if (!children.has(parent.key)) children.set(parent.key, []);
+      children.get(parent.key)!.push(module);
     }
-    const roots = view.modules.filter((module) => module.directory === ".");
     const searching = search.length > 0 || filter !== "all";
-    const visibleModules = view.modules.filter((module) => visible.has(module.directory));
     const findingCounts = treeFindingCounts(visibleModules,
-      searching ? new Set(visibleModules.map((module) => module.directory)) : expanded);
+      searching ? visible : expanded, parents);
     const render = (module: ModuleSummary): HTMLLIElement => {
       const item = el("li", "tree-item");
       item.setAttribute("role", "none");
       const row = el("button", "tree-row" +
         (getSelection() === module.key ? " selected" : "") +
-        (!matches.has(module.directory) ? " context-row" : "") +
+        (!matches.has(module.key) ? " context-row" : "") +
         (module.status === "removed" ? " removed-row" : ""));
       row.type = "button";
       row.dataset.directory = module.directory;
@@ -175,8 +179,8 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
       row.setAttribute("aria-selected", String(getSelection() === module.key));
       const title = module.title?.trim() || module.name;
       row.title = title + "\n" + module.directory;
-      const nested = module.status === "removed" && view.modules.some((m) => m.directory === module.directory && m !== module) ? [] : children.get(module.directory) ?? [];
-      const isExpanded = searching || expanded.has(module.directory);
+      const nested = children.get(module.key) ?? [];
+      const isExpanded = searching || expanded.has(module.key);
       if (nested.length) row.setAttribute("aria-expanded", String(isExpanded));
       const caret = el("span", "tree-caret", nested.length ? "›" : "");
       caret.dataset.toggle = "true";
@@ -220,8 +224,8 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
       row.append(badge(module.status, true, module.descendantChanges));
       row.addEventListener("click", (event) => {
         if ((event.target instanceof Element ? event.target : null)?.closest("[data-toggle]") && nested.length) {
-          if (expanded.has(module.directory)) expanded.delete(module.directory);
-          else expanded.add(module.directory);
+          if (expanded.has(module.key)) expanded.delete(module.key);
+          else expanded.add(module.key);
           renderTree();
         } else selectModule(module.key);
       });
@@ -243,13 +247,18 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
 
   function showComparison(view: ComparisonView) {
     if (!expanded.size && view.modules.length < 100) {
-      for (const module of view.modules) expanded.add(module.directory);
+      for (const module of view.modules) expanded.add(module.key);
     }
     renderFilters();
   }
 
-  function reveal(directory: string) {
-    for (const parent of ancestors(directory)) expanded.add(parent);
+  function reveal(module: ModuleSummary) {
+    const parents = treeParents(getView()?.modules ?? []);
+    let row: ModuleSummary | undefined = module;
+    while (row) {
+      expanded.add(row.key);
+      row = parents.get(row.key);
+    }
     renderTree();
   }
 
@@ -260,7 +269,7 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
   });
   byId("collapse").addEventListener("click", () => {
     expanded.clear();
-    expanded.add(".");
+    for (const module of getView()?.modules ?? []) if (module.directory === ".") expanded.add(module.key);
     renderTree();
   });
   byId("tree-toggle").addEventListener("click", () => document.body.classList.toggle("tree-open"));
@@ -282,13 +291,13 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
         (event.key === "ArrowDown" ? 1 : -1)))].focus();
     } else if (["ArrowLeft", "ArrowRight"].includes(event.key) && row.hasAttribute("aria-expanded")) {
       event.preventDefault();
-      const directory = row.dataset.directory;
-      if (!directory) return;
-      if (event.key === "ArrowRight") expanded.add(directory);
-      else expanded.delete(directory);
+      const key = row.dataset.key;
+      if (!key) return;
+      if (event.key === "ArrowRight") expanded.add(key);
+      else expanded.delete(key);
       renderTree();
       [...byId("tree").querySelectorAll<HTMLButtonElement>(".tree-row")].find((node) =>
-        node.dataset.directory === directory)?.focus();
+        node.dataset.key === key)?.focus();
     }
   });
   return { showComparison, reveal };

@@ -1,6 +1,7 @@
 import type { ReviewBundle, Finding, ClauseReference, Contract, Section, ModuleSummary, ReviewRenderOptions } from "./types.js";
 import { errorMessage } from "./types.js";
 import { el } from "./dom.js";
+import { treeParents } from "./module-path.js";
 
 /** Дата обозначает выполнение анализа; время сохранения исходников не выдумывается. */
 export function reviewDate(bundle: ReviewBundle) {
@@ -52,24 +53,18 @@ export function moduleFindingCount(module: Pick<CountedModule, "review">) {
 
 /**
  * Счётчики жуков для строк дерева: свои замечания видны всегда, вложенные —
- * только на свёрнутом родителе. Удалённая версия в занятом каталоге не владеет
- * его детьми; поиск передаёт фактически раскрытые каталоги и видимые модули.
+ * только на свёрнутом родителе своей стороны сравнения. Поиск передаёт
+ * фактически раскрытые строки и видимые модули.
  */
-export function treeFindingCounts(modules: CountedModule[], expanded: Set<string>) {
+export function treeFindingCounts(modules: CountedModule[], expanded: Set<string>, parents = treeParents(modules)) {
   const counts = new Map(modules.map((module) => [module.key, moduleFindingCount(module)]));
-  const parents = new Map<string, CountedModule>();
-  for (const module of modules) {
-    if (!parents.has(module.directory) || module.status !== "removed") parents.set(module.directory, module);
-  }
   for (const module of modules) {
     const count = moduleFindingCount(module);
     if (!count || module.directory === ".") continue;
-    let directory = module.directory;
-    while (directory !== ".") {
-      const index = directory.lastIndexOf("/");
-      directory = index < 0 ? "." : directory.slice(0, index);
-      const parent = parents.get(directory);
-      if (parent && !expanded.has(directory)) counts.set(parent.key, (counts.get(parent.key) ?? 0) + count);
+    let parent = parents.get(module.key);
+    while (parent) {
+      if (!expanded.has(parent.key)) counts.set(parent.key, (counts.get(parent.key) ?? 0) + count);
+      parent = parents.get(parent.key);
     }
   }
   return counts;
