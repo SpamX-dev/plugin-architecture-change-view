@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { HostProjectContext } from "../src/codex/host-context.js";
 import { uiData, panelMetadata, processEnvironment } from "./support.js";
 import type { ComparisonView, ModuleDetail, PreparedAnalysis } from "../src/application/api.js";
@@ -26,7 +27,9 @@ async function fixture(t: TestContext) {
   t.after(async () => { await Promise.all(clients.map((client) => client.close())); await rm(temporary, { recursive: true, force: true }); });
   const roots = await Promise.all(["Проект A", "Проект B", "home"].map(async (name, index) => {
     const root = path.join(temporary, name); await mkdir(root);
-    await writeFile(path.join(root, "arch.yaml"), `schema_version: 1\nid: root-${index}\ntitle: ${name}\nkind: module\npurpose: Предоставлять значение.\nresponsibilities:\n  R1: Возвращать значение.\nboundaries: {}\ninvariants: {}\n`);
+    const contractId = "root-" + index;
+    await writeModuleTree(root, { [contractId]: "." });
+    await writeFile(path.join(root, ".archiview/modules", contractId + ".yaml"), `schema_version: 1\nid: root-${index}\ntitle: ${name}\nkind: module\npurpose: Предоставлять значение.\nresponsibilities:\n  R1: Возвращать значение.\nboundaries: {}\ninvariants: {}\n`);
     await writeFile(path.join(root, "main.js"), "export const value = 1;\n");
     return realpath(root);
   }));

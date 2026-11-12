@@ -44,10 +44,10 @@ function snapshot(definitions = definition(), extra: Partial<Snapshot> = {}): Sn
   const facts: Fact[] = [];
   const modules = definitions.map((entry) => {
     const prefix = entry.directory === "." ? "" : entry.directory + "/";
-    const documentPath = prefix + "arch.yaml";
+    const documentPath = ".archiview/modules/" + entry.id + ".yaml";
     const text = entry.documentText ?? stringify(entry.contract);
-    const files = Object.entries({ "arch.yaml": text, ...entry.sources }).map(([name, content]) => {
-      const file = prefix + name;
+    const sources = Object.entries(entry.sources).map(([name, content]) => [prefix + name, content]);
+    const files = [[documentPath, text], ...sources].map(([file, content]) => {
       const fact = { kind: "file", path: file, start_line: 1, end_line: content.split("\n").length, text: content };
       facts.push({ id: digest(fact), ...fact });
       return { path: file, hash: digest(content) };
@@ -363,7 +363,7 @@ test("native export is self contained and excludes unrelated and descendant impl
   const entry = reviewed(null, current, "parent");
   assert.equal("root" in entry.current ? entry.current.root : undefined, undefined);
   assert.ok(entry.current.facts.some((fact) => fact.path === "parent/own.js"));
-  assert.ok(entry.current.facts.some((fact) => fact.path === "parent/child/arch.yaml"));
+  assert.ok(entry.current.facts.some((fact) => fact.path === ".archiview/modules/child.yaml"));
   assert.ok(!entry.current.facts.some((fact) => fact.path === "parent/child/child.js"));
   assert.ok(!entry.current.modules.some((module) => module.directory === "provider"));
   const loaded = parseYaml(stringify(entry, { aliasDuplicateObjects: false }), (value) => validateReviewEntry(value as ReviewEntry));

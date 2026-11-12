@@ -8,18 +8,18 @@ type Method = "getProject" | "chooseProject" | "setProject" | keyof SessionOpera
 type Operation = [string, Method, string, Record<string, Rule>, string[], boolean];
 
 const string: Rule = { type: "string", maxLength: 4096 };
-const selectedModule = { view: string, path: string };
+const selectedModule = { view: string, path: string, repository: string };
 /** Явный набор операций сервиса, без произвольного URL, имени функции или доступа к файлам. */
 const operations: Operation[] = [
   ["get_project", "getProject", "Resolve this panel's project directory without loading snapshots or history.", {}, [], true],
   ["choose_project", "chooseProject", "Show a native folder chooser after an explicit user click. Cancellation keeps the current input.", {}, [], false],
   ["set_project", "setProject", "Bind this panel to a project directory.", { projectRoot: string }, ["projectRoot"], false],
-  ["get_comparison", "getComparison", "Load the selected comparison and timeline for the panel.", { target: string, baseline: string, historyLimit: { type: "integer", minimum: 1, maximum: 10000 } }, [], false],
+  ["get_comparison", "getComparison", "Load the selected repository comparison and timeline for the panel.", { repository: string, target: string, baseline: string, historyLimit: { type: "integer", minimum: 1, maximum: 10000 } }, [], false],
   ["get_module", "getModule", "Load module details from an existing comparison.", selectedModule, ["view", "path"], true],
   ["prepare_analysis", "prepareAnalysis", "Prepare immutable inputs for an explicit module analysis.", selectedModule, ["view", "path"], false],
-  ["get_analysis", "getAnalysis", "Read the saved status of a prepared analysis.", { id: string }, ["id"], true],
+  ["get_analysis", "getAnalysis", "Read the saved status of a prepared analysis.", { id: string, repository: string }, ["id"], true],
   ["build_review", "buildReview", "Refresh a structural report for a selected module.", selectedModule, ["view", "path"], false],
-  ["save_snapshot", "saveSnapshot", "Save the selected complete snapshot.", { view: string, label: { type: "string", maxLength: 120 } }, ["view"], false],
+  ["save_snapshot", "saveSnapshot", "Save the selected complete snapshot.", { view: string, repository: string, label: { type: "string", maxLength: 120 } }, ["view"], false],
 ];
 
 export const UI_TOOL_METHODS = new Map(operations.map(([name, method]) => ["archiview_ui_" + name, method]));

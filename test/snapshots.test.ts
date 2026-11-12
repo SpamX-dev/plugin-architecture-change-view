@@ -1,3 +1,4 @@
+import { contractYaml, writeModuleTree } from "./support.js";
 import type { TestContext } from "node:test";
 /** Проверяет смысл четырёх статусов, исторические документы и базы сравнения. */
 import assert from "node:assert/strict";
@@ -8,7 +9,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import { captureWorkingTree, captureGitHead } from "../src/snapshots/capture.js";
+import { captureWorkingTree, captureGitHead, captureGitIndex } from "../src/snapshots/capture.js";
 import { compareSnapshots } from "../src/snapshots/comparison.js";
 import { SnapshotStore } from "../src/storage/snapshot-store.js";
 
@@ -30,16 +31,19 @@ async function fixture(t: TestContext, files: Record<string, string>) {
 
 test("compares new, changed, removed and old modules without changing parent status", async (t) => {
   const { root } = await fixture(t, {
-    "module.md": "Project", "src/module.md": "Source",
-    "src/keep/module.md": "Keep", "src/keep/code.js": "export const x = 1;",
-    "src/change/module.md": "Change", "src/change/code.js": "export const x = 1;",
-    "src/gone/module.md": "Historical responsibility", "src/gone/code.js": "export const x = 1;",
+    ".archiview/modules.tree": "gone: src/gone\n",
+    ".archiview/modules/gone.yaml": contractYaml("gone", "Historical responsibility"),
+    "src/keep/code.js": "export const x = 1;",
+    "src/change/code.js": "export const x = 1;",
+    "src/gone/code.js": "export const x = 1;",
   });
   const before = await captureWorkingTree(root);
   await writeFile(path.join(root, "src/change/code.js"), "export const x = 2;");
   await rm(path.join(root, "src/gone"), { recursive: true });
   await mkdir(path.join(root, "src/new"));
-  await writeFile(path.join(root, "src/new/module.md"), "New responsibility");
+  await writeModuleTree(root, { added: "src/new" });
+  await rm(path.join(root, ".archiview/modules/gone.yaml"));
+  await writeFile(path.join(root, ".archiview/modules/added.yaml"), contractYaml("added"));
   await writeFile(path.join(root, "src/new/code.js"), "export const x = 1;");
   const comparison = compareSnapshots(before, await captureWorkingTree(root));
   const modules = new Map(comparison.modules.map((module) => [module.directory, module]));
@@ -51,11 +55,11 @@ test("compares new, changed, removed and old modules without changing parent sta
   assert.equal(modules.get("src")!.status, "unchanged");
   assert.equal(modules.get("src")!.descendantChanges, 3);
   assert.equal(modules.get("src/change")!.documentChanged, false);
-  assert.equal(modules.get("src/gone")!.before!.document.text, "Historical responsibility");
+  assert.equal(modules.get("src/gone")!.before!.document.text, contractYaml("gone", "Historical responsibility"));
   assert.equal(modules.get("src/gone")!.after, null);
 });
 
-test("removing only module.md leaves a changed module with a missing document", async (t) => {
+test("removing a colocated description changes the file diff without changing the module contract", async (t) => {
   const { root } = await fixture(t, {
     "src/module.md": "Responsibility", "src/code.ts": "export const code = true;",
     "src/settings.json": "{}",
@@ -67,26 +71,96 @@ test("removing only module.md leaves a changed module with a missing document", 
   const source = view.modules.find((module) => module.directory === "src");
   assert.equal(source!.status, "changed");
   assert.equal(source!.documentState, "missing");
-  assert.equal(source!.documentChanged, true);
+  assert.equal(source!.documentChanged, false);
   assert.deepEqual(source!.files.map((file) => [file.path, file.status]), [
     ["src/module.md", "removed"], ["src/settings.json", "changed"],
   ]);
-  assert.equal(before.modules.find((module) => module.directory === "src")!.document.text,
-    "Responsibility");
+  assert.equal(before.modules.find((module) => module.directory === "src")!.document.text, null);
+});
+
+test("a nested checkout takes ownership of formerly tracked sources without changing the parent's Git history", async (t) => {
+  const { root } = await fixture(t, {
+    "parent.ts": "", "child/src/index.ts": "old source",
+    ".archiview/modules.tree": "app: .\nlibrary: child/src\n",
+    ".archiview/modules/app.yaml": contractYaml("app"),
+    ".archiview/modules/library.yaml": contractYaml("library"),
+  });
+  const git = (cwd: string, args: string[]) => run("git", args, { cwd, windowsHide: true });
+  await git(root, ["init", "-q"]);
+  await git(root, ["add", "."]);
+  await git(root, ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "Parent revision"]);
+  const child = path.join(root, "child");
+  await git(child, ["init", "-q"]);
+  await writeFile(path.join(child, "src/index.ts"), "new child source");
+  await writeModuleTree(child, { library: "src" });
+  await writeFile(path.join(child, ".archiview/modules/library.yaml"), contractYaml("library", "Child's contract"));
+  const staleMap = await captureWorkingTree(root);
+  assert.equal(staleMap.complete, false);
+  assert.ok(staleMap.diagnostics.some(message => message.includes("child/src") && message.includes("modules.tree")));
+  assert.ok(!staleMap.modules.some(module => module.directory.startsWith("child")));
+  assert.ok(!staleMap.facts.some(fact => fact.path.startsWith("child/")));
+  await writeModuleTree(root, { app: "." });
+  await rm(path.join(root, ".archiview/modules/library.yaml"));
+  const parent = await captureWorkingTree(root);
+  assert.equal(parent.complete, true, parent.diagnostics.join("\n"));
+  assert.deepEqual(parent.modules.map(m => m.directory), ["."]);
+  const historical = await captureGitHead(root);
+  assert.equal(historical?.modules.find(m => m.directory === "child/src")?.document.contract?.id, "library");
+  assert.equal(historical?.facts.find(f => f.path === "child/src/index.ts")?.text, "old source");
+  const current = await captureWorkingTree(child);
+  assert.equal(current.modules.find(m => m.directory === "src")?.document.contract?.purpose, "Child's contract");
+  assert.equal(current.facts.find(f => f.path === "src/index.ts")?.text, "new child source");
 });
 
 test("moving a child counts it once for each old, new and shared ancestor", async (t) => {
   const { root } = await fixture(t, {
     "left/code.ts": "", "right/code.ts": "",
-    "left/child/arch.yaml": "schema_version: 1\nid: child\ntitle: Child\nkind: module\npurpose: Read\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\n",
+    ".archiview/modules.tree": "child: left/child\n",
+    ".archiview/modules/child.yaml": "schema_version: 1\nid: child\ntitle: Child\nkind: module\npurpose: Read\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\n",
     "left/child/code.ts": "",
   });
   const before = await captureWorkingTree(root);
   await rename(path.join(root, "left/child"), path.join(root, "right/child"));
+  await writeModuleTree(root, { child: "right/child" });
   const { modules } = compareSnapshots(before, await captureWorkingTree(root));
   assert.equal(modules.find((module) => module.moduleId === "child")?.moved, true);
   for (const directory of ["left", "right", "."]) {
     assert.equal(modules.find((module) => module.directory === directory)?.descendantChanges, 1, directory);
+  }
+});
+
+test("HEAD, staged tree and working tree each resolve contracts from their own layout", async (t) => {
+  const document = "schema_version: 1\nid: child\ntitle: Child\nkind: module\npurpose: Read\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\n";
+  const { root } = await fixture(t, {
+    "original/arch.yaml": document,
+    "original/value.ts": "export const value = 1;",
+  });
+  const git = (args: string[]) => run("git", args, { cwd: root, windowsHide: true });
+  await git(["init", "-q"]);
+  await git(["add", "."]);
+  await git(["-c", "user.name=Snapshot Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "Old layout"]);
+
+  await writeModuleTree(root, { child: "staged" });
+  await rename(path.join(root, "original/arch.yaml"), path.join(root, ".archiview/modules/child.yaml"));
+  await rename(path.join(root, "original"), path.join(root, "staged"));
+  await git(["add", "-A"]);
+  await rename(path.join(root, "staged"), path.join(root, "working"));
+  await writeModuleTree(root, { child: "working" });
+  const centralPath = ".archiview/modules/child.yaml";
+  const historical = await captureGitHead(root);
+  assert.equal(historical?.modules.find((item) => item.directory === "original")?.document.state, "missing");
+  assert.ok(!historical?.modules.some((item) => item.document.contract?.id === "child"));
+  for (const [snapshot, directory, documentPath] of [
+    [await captureGitIndex(root), "staged", centralPath],
+    [await captureWorkingTree(root), "working", centralPath],
+  ] as const) {
+    assert.ok(snapshot);
+    assert.equal(snapshot.complete, true, snapshot.diagnostics.join("\n"));
+    const module = snapshot.modules.find((item) => item.document.contract?.id === "child");
+    assert.equal(module?.directory, directory);
+    assert.equal(module.documentPath, documentPath);
+    assert.equal(module.document.state, "documented");
+    assert.equal(module.document.text, document);
   }
 });
 
@@ -108,8 +182,8 @@ test("a working file replaced during Git normalization keeps a matching hash and
   assert.equal(working.modules[0].files.find((file) => file.path === "source.js")?.hash, expected);
 });
 
-test("a new module without module.md does not claim a document change", async (t) => {
-  const { root } = await fixture(t, { "module.md": "Root" });
+test("a new module without a mapped contract does not claim a document change", async (t) => {
+  const { root } = await fixture(t, { "root.ts": "" });
   const before = await captureWorkingTree(root);
   await mkdir(path.join(root, "undocumented"));
   await writeFile(path.join(root, "undocumented/code.js"), "export const x = 1;");
@@ -122,8 +196,9 @@ test("a new module without module.md does not claim a document change", async (t
 
 test("Git HEAD restores historical modules and respects Git CRLF normalization", async (t) => {
   const { root } = await fixture(t, {
-    ".gitattributes": "* text=auto eol=lf\n", "module.md": "Root\n",
-    "src/module.md": "Source\n", "src/main.js": "export const main = 1;\n",
+    ".gitattributes": "* text=auto eol=lf\n", ".archiview/modules.tree": "root: .\nsrc: src\n",
+    ".archiview/modules/root.yaml": contractYaml("root"), ".archiview/modules/src.yaml": contractYaml("src"),
+    "src/main.js": "export const main = 1;\n",
     "skills/example/SKILL.md": "Version one\n",
   });
   await run("git", ["init", "--quiet", "--initial-branch=main"], { cwd: root, windowsHide: true });
@@ -134,7 +209,7 @@ test("Git HEAD restores historical modules and respects Git CRLF normalization",
     "commit", "--quiet", "-m", "Baseline"], { cwd: root, windowsHide: true });
   const before = await captureGitHead(root);
   await writeFile(path.join(root, "src/main.js"), "export const main = 1;\r\n");
-  await writeFile(path.join(root, "src/module.md"), "Source\r\n");
+  await writeFile(path.join(root, ".archiview/modules/src.yaml"), contractYaml("src").replaceAll("\n", "\r\n"));
   const current = await captureWorkingTree(root);
   assert.ok(compareSnapshots(before, current).modules.every((module) => module.status === "unchanged"));
   for (const snapshot of [before!, current]) {
@@ -142,25 +217,28 @@ test("Git HEAD restores historical modules and respects Git CRLF normalization",
   }
   const nested = await captureGitHead(path.join(root, "src"));
   assert.equal(nested!.modules.length, 1);
-  assert.equal(nested!.modules[0].document.text, "Source\n");
+  assert.equal(nested!.modules[0].document.state, "missing");
   await rm(path.join(root, "src"), { recursive: true });
+  await writeModuleTree(root, { root: "." });
+  await rm(path.join(root, ".archiview/modules/src.yaml"));
   const gone = compareSnapshots(before, await captureWorkingTree(root))
     .modules.find((module) => module.directory === "src");
   assert.equal(gone!.status, "removed");
-  assert.equal(gone!.before!.document.text, "Source\n");
+  assert.equal(gone!.before!.document.text, contractYaml("src"));
 });
 
 test("persists immutable documents outside source and refuses incomplete snapshots", async (t) => {
   const { root, store } = await fixture(t, {
-    "module.md": "Root boundary", "code.js": "export const value = 1;",
+    ".archiview/modules.tree": "root: .\n",
+    ".archiview/modules/root.yaml": contractYaml("root", "Root boundary"), "code.js": "export const value = 1;",
   });
   const storage = new SnapshotStore(root, store);
   const snapshot = await captureWorkingTree(root);
   const saved = await storage.save(snapshot, "Accepted architecture");
-  await writeFile(path.join(root, "module.md"), "Changed boundary");
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), contractYaml("root", "Changed boundary"));
   const [loaded] = await storage.list();
   assert.equal(loaded.id, saved.id);
-  assert.equal(loaded.modules[0].document.text, "Root boundary");
+  assert.equal(loaded.modules[0].document.text, contractYaml("root", "Root boundary"));
   assert.equal(loaded.label, "Accepted architecture");
   assert.throws(() => new SnapshotStore(root, path.join(root, "cache")), /outside/);
   await assert.rejects(storage.save({ ...snapshot, complete: false }), /Invalid/);

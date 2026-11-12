@@ -31,7 +31,7 @@ function validateScopedProof(entry: ReviewEntry) {
         module.files.some((file) => !relative(file.path)))) throw new Error("Invalid scoped module paths");
     if (new Set(snapshot.facts.map((fact) => fact.id)).size !== snapshot.facts.length) throw new Error("Duplicate scoped evidence identity");
     for (const module of snapshot.modules) if (module.document?.state === "documented") {
-      const parsed = contractDocument(module.document.text, module.document.format ?? "arch.yaml");
+      const parsed = contractDocument(module.document.text, module.document.format);
       if (parsed.state !== "documented" || canonical(parsed.contract) !== canonical(module.document.contract)) throw new Error("Saved contract text disagrees with parsed contract");
       const contractFact = snapshot.facts.find((fact) => fact.kind === "file" && fact.path === module.documentPath);
       if (contractFact && normalizeText(contractFact.text) !== normalizeText(module.document.text ?? "")) throw new Error("Saved contract evidence disagrees with document");

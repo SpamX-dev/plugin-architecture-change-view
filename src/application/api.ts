@@ -6,9 +6,10 @@ import type { ClauseInput, ReviewReport, Side } from "../reviews/types.js";
 import type { Comparison, ComparisonModule, Fact, Snapshot } from "../snapshots/types.js";
 import type { compareContracts, RoleChange } from "../snapshots/contract-diff.js";
 
-export type ComparisonArgs = { target?: string; baseline?: string; historyLimit?: number };
-export type ModuleArgs = { view: string; path: string };
-export type SnapshotArgs = { view: string; label?: string };
+export interface RepositoryArgs { repository?: string }
+export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number };
+export type ModuleArgs = RepositoryArgs & { view: string; path: string };
+export type SnapshotArgs = RepositoryArgs & { view: string; label?: string };
 
 export type TimelineEntry = Pick<Snapshot, "id" | "kind" | "label" | "revision" | "isHead" | "subject" | "baseRevision">
   & { capturedAt?: string };
@@ -32,6 +33,7 @@ export interface ModuleReviewState {
 
 export type ModuleSummary = Omit<ComparisonModule, "before" | "after" | "files"> & ModuleReviewState & { roles?: RoleChange[] };
 export interface ComparisonView extends Pick<Comparison, "schema_version" | "id" | "root" | "complete" | "diagnostics" | "counts" | "before" | "after"> {
+  workspace?: { root: string; repositories: string[]; repository: string };
   reviewDiagnostics: string[];
   modules: ModuleSummary[];
   timeline: TimelineEntry[];
@@ -69,7 +71,7 @@ export interface SessionOperations {
   getComparison(args?: ComparisonArgs): Promise<ComparisonView>;
   getModule(args: ModuleArgs): Promise<ModuleDetail>;
   prepareAnalysis(args: ModuleArgs): Promise<PreparedAnalysis>;
-  getAnalysis(args: { id: string }): Promise<AnalysisStatus>;
+  getAnalysis(args: RepositoryArgs & { id: string }): Promise<AnalysisStatus>;
   buildReview(args: ModuleArgs): Promise<{ automatic: boolean; module_id?: string | null }>;
   saveSnapshot(args: SnapshotArgs): Promise<TimelineEntry>;
 }

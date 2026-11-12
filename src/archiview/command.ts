@@ -7,12 +7,29 @@ import type { DependencySelector, ReviewInput } from "../reports/types.js";
 import { parseArgs } from "node:util";
 import { readFile, writeFile, lstat } from "node:fs/promises";
 import { stringify } from "yaml";
-import { createArchiViewSession } from "../application/session.js";
+import { createWorkspaceSession } from "../application/workspace-session.js";
+import type { SessionOperations } from "../application/api.js";
+import type { SnapshotStore } from "../storage/snapshot-store.js";
 import { readReviewBundle } from "../storage/review-store.js";
 import { parseYaml } from "../serialization/yaml.js";
 import { digest } from "../serialization/digest.js";
 import { createReviewInput } from "../reports/review-input.js";
 import { checkPreparedIndex } from "../storage/report-index.js";
+
+async function serve(workspace: SessionOperations & { root: string }, port: number, prepareWeb?: () => Promise<void>, store?: SnapshotStore) {
+  await prepareWeb?.();
+  const { createArchiViewHttpServer } = await import("./http.js");
+  const server = createArchiViewHttpServer(workspace);
+  server.on("error", (error) => { process.stderr.write("ArchiView: " + error.message + "\n"); process.exitCode = 1; });
+  server.listen(port, "127.0.0.1", () => {
+    process.stdout.write("ArchiView Local: http://127.0.0.1:" + (server.address() as import("node:net").AddressInfo).port +
+      "\nProject: " + workspace.root + "\n");
+    if (store) process.stdout.write("State: " + store.directory + "\n");
+    if (store?.migration) process.stdout.write("History copied: " + store.migration.snapshots +
+      " snapshots, " + store.migration.reviews + " reviews\n");
+  });
+  for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => server.close(() => process.exit()));
+}
 
 export async function runCli(prepareWeb?: () => Promise<void>) {
   const { values } = parseArgs({ options: {
@@ -40,10 +57,12 @@ export async function runCli(prepareWeb?: () => Promise<void>) {
     const batch = values["build-report"] || values["export-review-input"] || values["complete-analysis"] || values["prepare-analysis"];
     const port = Number(values.port);
     if (!batch && (!Number.isInteger(port) || port < 0 || port > 65535)) throw new Error("--port must be between 0 and 65535");
-    const session = await createArchiViewSession({
+    const workspace = await createWorkspaceSession({
       root: values.root ?? process.cwd(), stateDirectory: values["state-dir"],
     });
-    const { root, store, reports, analysis } = session;
+    if (workspace.showWorkspace && !batch && !values["import-review"]) return serve(workspace, port, prepareWeb);
+    // Batch commands operate on their explicit --root. A workspace container has no shared history.
+    const { store, reports, analysis } = await workspace.session(".");
     if (values["complete-analysis"]) {
       const result = await analysis.complete(values["complete-analysis"]);
       process.stdout.write("Analysis imported: " + result.reviewId + "\n");
@@ -85,17 +104,7 @@ export async function runCli(prepareWeb?: () => Promise<void>) {
     if (batch) {
       process.stdout.write("Reports prepared: " + store.directory + "\n");
     } else {
-      await prepareWeb?.();
-      const { createArchiViewHttpServer } = await import("./http.js");
-      const server = createArchiViewHttpServer(session);
-      server.on("error", (error) => { process.stderr.write("ArchiView: " + error.message + "\n"); process.exitCode = 1; });
-      server.listen(port, "127.0.0.1", () => {
-        process.stdout.write("ArchiView Local: http://127.0.0.1:" + (server.address() as import("node:net").AddressInfo).port +
-          "\nProject: " + root + "\nState: " + store.directory + "\n");
-        if (store.migration) process.stdout.write("History copied: " + store.migration.snapshots +
-          " snapshots, " + store.migration.reviews + " reviews\n");
-      });
-      for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => server.close(() => process.exit()));
+      await serve(workspace, port, prepareWeb, store);
     }
   }
 }

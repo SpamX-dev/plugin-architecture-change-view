@@ -1,7 +1,7 @@
 import { callSessionOperation } from "../application/arguments.js";
 /** Адаптер MCP Apps: собранный UI и скрытые операции прикладного сервиса, без HTTP-сервера. */
 import { readFile } from "node:fs/promises";
-import { createArchiViewSession } from "../application/session.js";
+import { createWorkspaceSession } from "../application/workspace-session.js";
 import { createProjectBinding } from "../application/project.js";
 import { applicationError, ApplicationError } from "../application/errors.js";
 import { packageUrl } from "../runtime/package-paths.js";
@@ -22,14 +22,14 @@ export const PANEL_TOOL: import("@modelcontextprotocol/sdk/types.js").Tool = {
 interface ProjectBinding { readonly root: string | undefined; select(requested?: string, metadata?: Record<string, unknown>): Promise<string> }
 export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stateDirectory, chooseDirectory = chooseProjectDirectory }: { stateDirectory?: string; chooseDirectory?: () => Promise<{ projectRoot: string | null }> } = {}) {
   const binding = rootOrBinding && typeof rootOrBinding === "object" ? Promise.resolve(rootOrBinding) : createProjectBinding(rootOrBinding);
-  let session: ReturnType<typeof createArchiViewSession> | null | undefined;
+  let session: ReturnType<typeof createWorkspaceSession> | null | undefined;
   let closed = false;
   let queue = Promise.resolve();
   const checkOpen = () => { if (closed) throw new ApplicationError("SESSION_CLOSED", "Сессия панели закрыта"); };
   async function service(metadata?: Record<string, unknown>) {
     const project = await binding;
     const root = await project.select(undefined, metadata);
-    if (!session) session = createArchiViewSession({ root, stateDirectory }).catch((error) => { session = null; throw error; });
+    if (!session) session = createWorkspaceSession({ root, stateDirectory }).catch((error) => { session = null; throw error; });
     return session;
   }
   return {

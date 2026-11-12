@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { ComparisonResponse } from "./support.js";
 import type { AddressInfo } from "node:net";
 /** Реальная хронология Git, локальных изменений и независимого исторического просмотра. */
@@ -19,7 +20,8 @@ async function workBytes(app: { reports: { work: string } }){
 test("timeline shows revisions, live HEAD, two immutable changes and compacted current; browsing cannot replace work",async t=>{
  const root=await mkdtemp(path.join(os.tmpdir(),"archiview-timeline-"));
  t.after(()=>rm(root,{recursive:true,force:true}));
- await writeFile(path.join(root,"arch.yaml"),stringify(contract));
+ await writeModuleTree(root, { root: "." });
+ await writeFile(path.join(root,".archiview/modules/root.yaml"),stringify(contract));
  git(root,["init","-q"]);git(root,["config","user.name","Timeline Test"]);git(root,["config","user.email","timeline@example.invalid"]);git(root,["config","core.autocrlf","false"]);
  const revisions: string[]=[];
  for(let i=1;i<=3;i++){
@@ -83,11 +85,12 @@ test("timeline shows revisions, live HEAD, two immutable changes and compacted c
 test("a complete working tree with an incomplete HEAD opens without replacing published work",async t=>{
  const root=await mkdtemp(path.join(os.tmpdir(),"archiview-incomplete-head-"));
  t.after(()=>rm(root,{recursive:true,force:true}));
- await writeFile(path.join(root,"arch.yaml"),stringify({...contract,purpose:"X".repeat(140*1024)}));
+ await writeModuleTree(root, { root: "." });
+ await writeFile(path.join(root,".archiview/modules/root.yaml"),stringify({...contract,purpose:"X".repeat(140*1024)}));
  await writeFile(path.join(root,"code.js"),"export const value = 1;\n");
  git(root,["init","-q"]);git(root,["config","user.name","Timeline Test"]);git(root,["config","user.email","timeline@example.invalid"]);
- git(root,["add","arch.yaml","code.js"]);git(root,["commit","-qm","Oversized historical contract"]);
- await writeFile(path.join(root,"arch.yaml"),stringify(contract));
+ git(root,["add",".archiview/modules.tree", ".archiview/modules/root.yaml","code.js"]);git(root,["commit","-qm","Oversized historical contract"]);
+ await writeFile(path.join(root,".archiview/modules/root.yaml"),stringify(contract));
  const app=await createArchiView({root});
  app.server.listen(0,"127.0.0.1");await once(app.server,"listening");
  t.after(()=>new Promise<void>(resolve=>{app.server.closeAllConnections();app.server.close(() => resolve());}));

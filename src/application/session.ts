@@ -232,7 +232,8 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     }
     const model = createReportModel(baseline, current);
     const view: SessionView = { ...compareSnapshots(baseline, current, { projectRoot: root }), currentSnapshot: current, baselineSnapshot: baseline, reviews: [], reviewDiagnostics: [], reportModel: model };
-    view.id = digest({ comparison: view.id, target: targetId }).slice(7, 31);
+    // Two checkouts can have identical portable snapshots but own different live views.
+    view.id = digest({ project: root, comparison: view.id, target: targetId }).slice(7, 31);
     view.reviewDiagnostics = [...history.diagnostics, ...localHistory.diagnostics ?? []];
     view.reviews = [...history.entries].sort((a, b) => (b.registration_order ?? 0) - (a.registration_order ?? 0));
     const statuses = model.aggregateTreeStatuses(history.entries);
@@ -312,7 +313,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   async function prepareAnalysis(args: ModuleArgs) {
     const { view, module } = selectedModule(args);
     if (!view.complete || !(module.after ?? module.before)?.document.contract || !module.moduleId)
-      throw new ApplicationError("INCOMPLETE_VIEW", "Нужны полный снимок и корректный arch.yaml модуля");
+      throw new ApplicationError("INCOMPLETE_VIEW", "Нужны полный снимок и корректный контракт модуля");
     return analysis.create(view, module);
   }
 

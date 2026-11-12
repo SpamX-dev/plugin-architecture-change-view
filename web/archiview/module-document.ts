@@ -20,9 +20,9 @@ export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: C
       openFinding }); return;
   }
   if (selected.document.state !== "documented") {
-    const box = notice(selected.document.state === "missing" ? "arch.yaml ещё не создан" :
-      selected.document.state === "empty" ? "Описание модуля пустое" : selected.document.state === "migration_required" ? "Нужно перенести module.md в arch.yaml" : "Контракт недоступен или содержит ошибки",
-    selected.document.errors?.join("; ") ?? selected.document.action ?? "Нужно проанализировать исходники и родительские контракты, затем записать arch.yaml.", "missing-notice");
+    const box = notice(selected.document.state === "missing" ? "Контракт модуля ещё не создан" :
+      selected.document.state === "empty" ? "Описание модуля пустое" : "Контракт недоступен или содержит ошибки",
+    selected.document.errors?.join("; ") ?? selected.document.action ?? "Проверьте запись в .archiview/modules.tree и YAML-контракт модуля.", "missing-notice");
     const parent = moduleTrail(view.modules, detail).slice(0, -1).findLast(({ module }) => module.documentState === "documented");
     if (parent !== undefined) {
       const button = el("button", "text-button", "Открыть описание родителя →");
@@ -80,7 +80,7 @@ function openDocumentDiff(detail: ModuleDetail, view: ComparisonView) {
   const heading = el("div", "evidence-heading");
   const close = el("button", "button button-quiet", "Закрыть");
   close.onclick = () => dialog.close();
-  heading.append(el("strong", "", "arch.yaml · изменения"), close);
+  heading.append(el("strong", "", "Изменения контракта"), close);
   dialog.append(heading);
   renderDiff(dialog, detail, view);
   dialog.addEventListener("close", () => dialog.remove());

@@ -9,7 +9,6 @@ export const SEMANTIC_FIELDS = ["id", "kind", "purpose", "responsibilities", "bo
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 export const sorted = <T>(values: Iterable<T>, key: (value:T) => string = (v) => canonical(v)) => [...values].sort((a, b) => compare(key(a), key(b)));
 
-export const contractFile = (file: string) => ["arch.yaml", "module.md"].includes(path.posix.basename(file));
 export const normalizeText = (text: string) => text.replace(/\r\n?/g, "\n");
 export const moduleId = (module: SnapshotModule) => module?.document?.state === "documented" && module.document.contract?.id || "directory:" + module.directory;
 
@@ -72,7 +71,7 @@ export function buildModuleStates(snapshot: SnapshotData | null): Map<string, Mo
     while (parentDirectory !== null && !byDirectory.has(parentDirectory)) {
       parentDirectory = parentDirectory === "." ? null : path.posix.dirname(parentDirectory);
     }
-    const ownFiles = sorted((module.files ?? []).filter((file) => !contractFile(file.path))
+    const ownFiles = sorted((module.files ?? []).filter((file) => file.path !== module.documentPath)
       .map((file) => fileInput(snapshot, file)), (file) => file.path);
     const inherited = inheritedInputs(modules, module.directory);
     const contract = module.document?.contract ?? null;

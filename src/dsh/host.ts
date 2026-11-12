@@ -1,4 +1,5 @@
 import type { SessionOperations } from "../application/api.js";
+import { createWorkspaceSession } from "../application/workspace-session.js";
 import type { SessionRegistry } from "./sessions.js";
 import type { HostContext, HostConfig, JsonValue } from "./host-types.js";
 /**
@@ -78,6 +79,7 @@ export function apply(ctx: HostContext, config: HostConfig) {
   const extensions = normalizeExtensions(config.extensions);
   const root = config.root === "" ? "" : path.resolve(config.root);
   const sessions = createSessionRegistry({
+    createSession: (options: { root: string; stateDirectory?: string }) => createWorkspaceSession({ ...options, sharedStateDirectory: true }),
     stateDirectory: config.stateDirectory === "" ? undefined : config.stateDirectory,
   });
 
@@ -116,11 +118,12 @@ function registerTools(ctx: HostContext, { extensions, maxFiles, configuredRoot 
         schema: { type: "json" },
         render: (_args, value) => [{ type: "text", text: JSON.stringify(value) }],
       },
-      async execute(args: { projectRoot?: string; directory?: string }) {
-        const projectRoot = await resolveRoot({ projectRoot: args.projectRoot, configuredRoot });
+      async execute(args: { projectRoot?: string; path?: string; directory?: string }, exec) {
+        const requested = args.projectRoot ?? (configuredRoot ? undefined : exec.agent?.session.header.cwd);
+        const projectRoot = await resolveRoot({ projectRoot: requested, configuredRoot });
         const value = definition.name === "archiview_inventory"
           ? await readInventory({ root: projectRoot, extensions, maxFiles })
-          : await readContext({ root: projectRoot, directory: args.directory });
+          : await readContext({ root: projectRoot, path: args.path, directory: args.directory });
         return JSON.parse(JSON.stringify(value)) as JsonValue;
       },
     }));

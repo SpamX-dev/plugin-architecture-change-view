@@ -1,5 +1,5 @@
 import type { SessionOperations } from "../application/api.js";
-import { callSessionOperation } from "../application/arguments.js";
+import { callSessionOperation, repositoryArguments } from "../application/arguments.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 /**
  * HTTP-маршруты панели ArchiView для веб-сервера dsh.
@@ -30,6 +30,7 @@ const MAX_BODY_BYTES = 4096;
 /** Прикладной код ошибки в HTTP-статус; незнакомый код считается внутренним. */
 const ERROR_STATUS: Record<string, number> = {
   INVALID_ARGUMENT: 400,
+  REPOSITORY_UNAVAILABLE: 400,
   NOT_FOUND: 404,
   STALE_VIEW: 409,
   REQUEST_TOO_LARGE: 413,
@@ -189,6 +190,7 @@ async function runApiOperation(request: IncomingMessage, response: ServerRespons
   const method = request.method ?? "GET";
   const match = /^analysis\/([a-f0-9-]{36})$/.exec(relative);
   const query: Record<string, unknown> = Object.fromEntries(url.searchParams);
+  const repository = url.searchParams.get("repository");
 
   if (method === "GET" && relative === "comparison") {
     if (query.historyLimit !== undefined) query.historyLimit = Number(query.historyLimit);
@@ -198,16 +200,16 @@ async function runApiOperation(request: IncomingMessage, response: ServerRespons
     return sendJson(response, 200, await callSessionOperation(session, "getModule", query));
   }
   if (method === "GET" && match !== null) {
-    return sendJson(response, 200, await callSessionOperation(session, "getAnalysis", { id: match[1] }));
+    return sendJson(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: match[1] })));
   }
   if (method === "POST" && relative === "analysis") {
-    return sendJson(response, 201, await callSessionOperation(session, "prepareAnalysis", await readJson(request)));
+    return sendJson(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await readJson(request))));
   }
   if (method === "POST" && relative === "reviews") {
-    return sendJson(response, 200, await callSessionOperation(session, "buildReview", await readJson(request)));
+    return sendJson(response, 200, await callSessionOperation(session, "buildReview", repositoryArguments(repository, await readJson(request))));
   }
   if (method === "POST" && relative === "snapshots") {
-    return sendJson(response, 201, await callSessionOperation(session, "saveSnapshot", await readJson(request)));
+    return sendJson(response, 201, await callSessionOperation(session, "saveSnapshot", repositoryArguments(repository, await readJson(request))));
   }
   throw new ApplicationError("NOT_FOUND", "Операция панели не найдена");
 }

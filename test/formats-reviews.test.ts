@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
 import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
@@ -33,8 +34,9 @@ async function fixture(t: TestContext) {
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const root = path.join(temporary, "source");
   await mkdir(path.join(root, "child"), { recursive: true });
-  await writeFile(path.join(root, "arch.yaml"), stringify(contract("root")));
-  await writeFile(path.join(root, "child/arch.yaml"), stringify(contract("child")));
+  await writeModuleTree(root, { root: ".", child: "child" });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract("root")));
+  await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify(contract("child")));
   await writeFile(path.join(root, "child/code.js"), "export const read = () => 1;\n");
   return { root, state: path.join(temporary, "state") };
 }
@@ -50,21 +52,21 @@ test("rejects unknown fields, duplicate YAML keys, tags, aliases and invalid cla
   assert.equal(digest({ b: 1, a: 2, empty: undefined }), digest({ a: 2, b: 1 }));
 });
 
-test("inventory requires migration, analyzes missing contracts, and detects duplicate ids", async (t) => {
+test("inventory identifies missing contracts and diagnoses a contract id that differs from its mapped id", async (t) => {
   const { root } = await fixture(t);
   await mkdir(path.join(root, "legacy"));
   await writeFile(path.join(root, "legacy/module.md"), "# Назначение\nЧитать историю.");
   await mkdir(path.join(root, "missing"));
   await writeFile(path.join(root, "missing/code.js"), "export const value = 1;");
   let inventory = await moduleInventory(root);
-  assert.equal(inventory.modules.find((m) => m.directory === "legacy")!.status, "migration_required");
+  assert.ok(!inventory.modules.some((m) => m.directory === "legacy"));
   assert.equal(inventory.modules.find((m) => m.directory === "missing")!.preparation, "analyze_and_write");
   assert.deepEqual(inventory.modules.find((m) => m.directory === "missing")!.files, ["missing/code.js"]);
-  await writeFile(path.join(root, "child/arch.yaml"), stringify(contract("root")));
+  await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify(contract("root")));
   inventory = await moduleInventory(root);
-  assert.equal(inventory.modules.filter((m) => m.status === "invalid").length, 2);
+  assert.equal(inventory.modules.find((m) => m.directory === "child")?.status, "invalid");
   await writeFile(path.join(root, "child/module.md"), "Do not fall back to this text");
-  await writeFile(path.join(root, "child/arch.yaml"), "invalid: true");
+  await writeFile(path.join(root, ".archiview/modules/child.yaml"), "invalid: true");
   const context = await moduleContext(root, "child");
   assert.equal(context.contracts.at(-1)!.status, "invalid");
   assert.equal(context.contracts[0].contract!.id, "root");
@@ -74,6 +76,7 @@ test("stable ids preserve module identity across moves and initial analysis has 
   const { root } = await fixture(t);
   const before = await captureWorkingTree(root);
   await rename(path.join(root, "child"), path.join(root, "moved"));
+  await writeModuleTree(root, { root: ".", child: "moved" });
   const after = await captureWorkingTree(root);
   const view = compareSnapshots(before, after);
   const moved = view.modules.find((m) => m.moduleId === "child");
@@ -92,7 +95,7 @@ test("stable ids preserve module identity across moves and initial analysis has 
 test("reviews retain old evidence and own clauses, remain immutable and become stale", async (t) => {
   const { root, state } = await fixture(t);
   const before = await captureWorkingTree(root);
-  await writeFile(path.join(root, "child/arch.yaml"), stringify({ ...contract("child"), boundaries: { B1: "Не выполнять запись." } }));
+  await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify({ ...contract("child"), boundaries: { B1: "Не выполнять запись." } }));
   const after = await captureWorkingTree(root);
   const module = compareSnapshots(before, after).modules.find((m) => m.moduleId === "child");
   const bundle = createStructuralReview(before, after, module!);
@@ -152,7 +155,9 @@ test("HTTP automatically checks structure without inventing a semantic review", 
 test("replacing an id at the same path yields distinct new and removed modules", async (t) => {
   const { root } = await fixture(t);
   const before = await captureWorkingTree(root);
-  await writeFile(path.join(root, "child/arch.yaml"), stringify(contract("replacement")));
+  await rm(path.join(root, ".archiview/modules/child.yaml"));
+  await writeModuleTree(root, { root: ".", replacement: "child" });
+  await writeFile(path.join(root, ".archiview/modules/replacement.yaml"), stringify(contract("replacement")));
   const after = await captureWorkingTree(root);
   const replacements = compareSnapshots(before, after).modules.filter((m) => m.directory === "child");
   assert.deepEqual(replacements.map((m) => m.status).sort(), ["new", "removed"]);

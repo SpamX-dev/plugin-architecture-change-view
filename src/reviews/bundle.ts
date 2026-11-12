@@ -102,9 +102,9 @@ export function createStructuralReview(before: Snapshot | null, after: Snapshot,
         kind: entry.document.state === "invalid" ? "contract_conflict" : "missing_contract",
         certainty: "confirmed", severity: migrated ? "info" : "warning", lifecycle: migrated ? "resolved" : "unknown",
         summary: (side === "baseline" ? "В базовом снимке: " : "") + (entry.document.state === "invalid" ? "контракт не соответствует схеме v1." :
-          entry.document.format === "module.md" ? "контракт хранится в module.md." : "нет действующего arch.yaml."),
-        details: migrated ? "В текущем снимке arch.yaml уже создан. Базовый снимок сохраняется неизменным; наличие нового контракта не подтверждает соответствие кода его смыслу." :
-          entry.document.errors?.join("\n") ?? "Для проверки пунктов нужен arch.yaml. Подготовьте текущий контракт согласно скиллу; исторические снимки не переписываются.",
+          "нет действующего контракта модуля."),
+        details: migrated ? "В текущем снимке появился контракт модуля. Соответствие кода его пунктам требует проверки." :
+          entry.document.errors?.join("\n") ?? "Проверьте запись модуля в .archiview/modules.tree и его YAML-контракт.",
         clauses: [], evidence });
       else limitations.push(side + ": снимок прежнего формата не содержит фактов о модуле.");
     }

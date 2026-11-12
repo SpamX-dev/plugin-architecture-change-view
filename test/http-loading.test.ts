@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { SnapshotStore } from "../src/storage/snapshot-store.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
 import type { AddressInfo } from "node:net";
@@ -21,7 +22,8 @@ async function fixture(t: TestContext) {
   t.after(() => rm(root, { recursive: true, force: true }));
   const contract = { schema_version: 1, id: "root", title: "Пример", kind: "module",
     purpose: "Возвращать значение.", responsibilities: { R1: "Возвращать значение." }, boundaries: {}, invariants: {} };
-  await writeFile(path.join(root, "arch.yaml"), stringify(contract));
+  await writeModuleTree(root, { root: "." });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract));
   await writeFile(path.join(root, "code.js"), "export const value = 1;\n");
   const app = await createArchiView({ root });
   app.server.listen(0, "127.0.0.1");
@@ -80,7 +82,7 @@ test("incomplete working capture reads existing diagnostics and leaves the publi
   const app = await fixture(t);
   await app.get();
   const before = await workBytes(app);
-  await writeFile(path.join(app.root, "arch.yaml"), stringify({ ...app.contract, purpose: "X".repeat(140 * 1024) }));
+  await writeFile(path.join(app.root, ".archiview/modules/root.yaml"), stringify({ ...app.contract, purpose: "X".repeat(140 * 1024) }));
   t.mock.method(app.reports, "rebuild", () => { throw new Error("Incomplete capture must not publish"); });
   const list = app.reports.list;
   const reader = t.mock.method(app.reports, "list", async function (this: ReportStore) {

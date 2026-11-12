@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { TestContext } from "node:test";
 /** Реальные Git revision и неизменяемые наблюдения рабочего дерева между коммитами. */
 import assert from "node:assert/strict";
@@ -21,12 +22,13 @@ async function fixture(t: TestContext, useGit = true) {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const root = path.join(directory, "source");
   await mkdir(root);
-  await writeFile(path.join(root, "arch.yaml"), stringify({ schema_version: 1, id: "root", title: "Root", kind: "module",
+  await writeModuleTree(root, { root: "." });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify({ schema_version: 1, id: "root", title: "Root", kind: "module",
     purpose: "Читать записи.", responsibilities: { R1: "Читать записи." }, boundaries: {}, invariants: {} }));
   await writeFile(path.join(root, "code.js"), "export const read = () => 0;\n");
   const git = async (...args: string[]) => (await run("git", args, { cwd: root, windowsHide: true })).stdout.trim();
   const commit = async (subject: string) => {
-    await git("add", "arch.yaml", "code.js");
+    await git("add", ".archiview/modules.tree", ".archiview/modules/root.yaml", "code.js");
     await git("-c", "user.name=ArchiView Test", "-c", "user.email=archiview@example.invalid", "commit", "--quiet", "-m", subject);
     return git("rev-parse", "HEAD");
   };

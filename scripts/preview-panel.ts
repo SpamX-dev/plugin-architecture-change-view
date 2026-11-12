@@ -18,8 +18,10 @@ import { digest } from "../src/serialization/digest.js";
 
 const root = await mkdtemp(path.join(os.tmpdir(), "archiview-panel-preview-"));
 await mkdir(path.join(root, "domain"));
-for (const [directory, id, title] of [[".", "preview", "Тестовый проект"], ["domain", "domain", "Игровой модуль"]]) {
-  await writeFile(path.join(root, directory, "arch.yaml"), stringify({ schema_version: 1, id, title,
+await mkdir(path.join(root, ".archiview/modules"), { recursive: true });
+await writeFile(path.join(root, ".archiview/modules.tree"), stringify({ preview: ".", domain: "domain" }));
+for (const [id, title] of [["preview", "Тестовый проект"], ["domain", "Игровой модуль"]]) {
+  await writeFile(path.join(root, ".archiview/modules", id + ".yaml"), stringify({ schema_version: 1, id, title,
     kind: "module", purpose: "Обслуживать тестовый игровой модуль.",
     responsibilities: { R1: "Вычислять значение без изменения состояния." },
     boundaries: { B1: "Не обращаться к сети." }, invariants: { I1: "Результат детерминирован." } }));

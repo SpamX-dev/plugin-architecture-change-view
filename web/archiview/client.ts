@@ -10,16 +10,19 @@ export function createArchiViewClient({ mode, connection, fetcher = globalThis.f
     if (mode === "mcp") {
       const bridge = await connection;
       if (!bridge?.call) throw new Error("Хост не поддерживает вызовы MCP из панели");
-      result = await bridge.call("archiview_ui_" + tool, { ...args });
+      const input = Object.fromEntries(Object.entries(args).filter(([, value]) => value !== undefined));
+      result = await bridge.call("archiview_ui_" + tool, input);
     } else {
       const params = new URLSearchParams();
-      if (verb === "GET" && query) for (const [key, value] of Object.entries(args)) {
+      const { repository, ...payload } = args as Record<string, unknown>;
+      if (verb === "GET" && query) for (const [key, value] of Object.entries(payload)) {
         if (value !== undefined) params.set(key, String(value));
       }
+      if (typeof repository === "string") params.set("repository", repository);
       if (sessionId !== "") params.set("session", sessionId);
       const search = params.toString();
       const response = await fetcher(base + route + (search ? "?" + search : ""), verb === "GET" ? undefined : {
-        method: verb, headers: { "Content-Type": "application/json" }, body: JSON.stringify(args),
+        method: verb, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       result = await response.json();
       if (!response.ok) throw Object.assign(new Error(isRecord(result) && typeof result.error === "string" ? result.error : "Не удалось получить данные"),

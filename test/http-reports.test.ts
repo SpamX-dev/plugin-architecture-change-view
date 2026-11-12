@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
 import type { Snapshot } from "../src/snapshots/types.js";
 import type { ReviewOptions } from "../src/reports/types.js";
@@ -26,8 +27,9 @@ async function fixture(t: TestContext) {
   const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module", purpose: "Предоставлять данные.",
     responsibilities: { R1: "Возвращать значение." }, boundaries: {}, invariants: {} });
   await mkdir(path.join(root, "child"));
-  await writeFile(path.join(root, "arch.yaml"), stringify(contract("root")));
-  await writeFile(path.join(root, "child/arch.yaml"), stringify(contract("child")));
+  await writeModuleTree(root, { root: ".", child: "child" });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract("root")));
+  await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify(contract("child")));
   await writeFile(path.join(root, "child/code.js"), "export const value = 1;\n");
   return root;
 }
@@ -122,7 +124,8 @@ test("a cached current view cannot republish its older snapshot over the work pu
 
 test("missing contracts remain visible in automatic structure details", async (t) => {
   const root = await fixture(t);
-  await rm(path.join(root, "child/arch.yaml"));
+  await writeModuleTree(root, { root: "." });
+  await rm(path.join(root, ".archiview/modules/child.yaml"));
   const app = await serve(t, root);
   const response = await fetch(app.url + "/api/comparison?baseline=initial");
   assert.equal(response.status, 200);
@@ -134,15 +137,15 @@ test("missing contracts remain visible in automatic structure details", async (t
   assert.deepEqual(detail.reviews, []);
 });
 
-test("duplicate contract ids are structural diagnostics rather than a startup failure", async (t) => {
+test("a contract whose id conflicts with its map entry has a structural diagnostic", async (t) => {
   const root = await fixture(t);
-  await writeFile(path.join(root, "child/arch.yaml"), await readFile(path.join(root, "arch.yaml")));
+  await writeFile(path.join(root, ".archiview/modules/child.yaml"), await readFile(path.join(root, ".archiview/modules/root.yaml")));
   const app = await serve(t, root);
   const response = await fetch(app.url + "/api/comparison?baseline=initial");
   assert.equal(response.status, 200);
   const view = await (response.json() as Promise<ComparisonResponse>);
   assert.equal(view.modules.length, 2);
-  assert.ok(view.modules.every((module) => module.documentState === "invalid"));
+  assert.equal(view.modules.find((module) => module.directory === "child")?.documentState, "invalid");
   const detail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: "child" }))).json() as Promise<ModuleResponse>);
   assert.ok(detail.after!.document.errors!.some((message) => message.includes("id")));
   assert.equal(detail.reviewStatus!.self.current.status, "not_reviewed");

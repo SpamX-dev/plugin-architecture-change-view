@@ -1,4 +1,5 @@
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
+import { contractYaml, writeModuleTree } from "./support.js";
 import type { AddressInfo } from "node:net";
 /** Проверки реального HTTP-контракта просмотра, удалённых модулей и снимков. */
 import assert from "node:assert/strict";
@@ -14,8 +15,10 @@ test("serves tree and historical documents; snapshot creation preserves selected
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const root = path.join(temporary, "project");
   await mkdir(path.join(root, "gone"), { recursive: true });
-  await writeFile(path.join(root, "module.md"), "# Root responsibility");
-  await writeFile(path.join(root, "gone/module.md"), "# Historical responsibility");
+  await writeModuleTree(root, { root: ".", gone: "gone" });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), contractYaml("root"));
+  const historical = contractYaml("gone", "Historical responsibility");
+  await writeFile(path.join(root, ".archiview/modules/gone.yaml"), historical);
   await writeFile(path.join(root, "gone/code.js"), "export const old = true;");
   const { server } = await createArchiView({ root,
     stateDirectory: path.join(temporary, "snapshots") });
@@ -34,12 +37,14 @@ test("serves tree and historical documents; snapshot creation preserves selected
   }
   const first = await ((await fetch(url + "/api/comparison")).json() as Promise<ComparisonResponse>);
   await rm(path.join(root, "gone"), { recursive: true });
+  await writeModuleTree(root, { root: "." });
+  await rm(path.join(root, ".archiview/modules/gone.yaml"));
   const view = await ((await fetch(url + "/api/comparison?baseline=" + first.before.id)).json() as Promise<ComparisonResponse>);
   assert.equal(view.counts.removed, 1);
   const detail = await ((await fetch(url + "/api/module?" + new URLSearchParams({
     view: view.id, path: "gone",
   }))).json() as Promise<ModuleResponse>);
-  assert.equal(detail.before!.document.text, "# Historical responsibility");
+  assert.equal(detail.before!.document.text, historical);
   assert.equal(detail.after, null);
   assert.ok(detail.diff.some((row) => row.kind === "removed"));
   const saved = await fetch(url + "/api/snapshots", { method: "POST",

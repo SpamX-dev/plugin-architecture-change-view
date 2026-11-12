@@ -23,5 +23,4 @@ export interface ContractDocument {
   contract?: Contract | null;
   errors?: string[];
   action?: string;
-  migration?: { document: string; text: string };
 }

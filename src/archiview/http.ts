@@ -1,15 +1,15 @@
-import { callSessionOperation } from "../application/arguments.js";
+import { callSessionOperation, repositoryArguments } from "../application/arguments.js";
 import type { SessionOperations } from "../application/api.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 /** HTTP-адаптер самостоятельного ArchiView: статические ресурсы, маршрутизация и защита origin. */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { createArchiViewSession } from "../application/session.js";
+import { createWorkspaceSession } from "../application/workspace-session.js";
 import { applicationError, ApplicationError } from "../application/errors.js";
 import { packageUrl, webAssetUrl } from "../runtime/package-paths.js";
 
 /** Сопоставляет прикладную ошибку HTTP-статусу, не добавляя HTTP в сервис. */
-const errorStatus: Record<string, number> = { INVALID_ARGUMENT: 400, NOT_FOUND: 404, STALE_VIEW: 409, INCOMPLETE_VIEW: 422 };
+const errorStatus: Record<string, number> = { INVALID_ARGUMENT: 400, REPOSITORY_UNAVAILABLE: 400, NOT_FOUND: 404, STALE_VIEW: 409, INCOMPLETE_VIEW: 422 };
 
 /** Читает ограниченный JSON-запрос; проверка предметных аргументов остаётся в сервисе. */
 async function bodyOf(request: IncomingMessage): Promise<Record<string, unknown>> {
@@ -48,8 +48,9 @@ function requestUrl(request: IncomingMessage, serverOrigin: string) {
 
 /** Создаёт самостоятельный веб-сервер; плагин Codex использует сервис напрямую и этот модуль не импортирует. */
 export async function createArchiView({ root, stateDirectory, panelToken }: { root: string; stateDirectory?: string; panelToken?: string }) {
-  const session = await createArchiViewSession({ root, stateDirectory });
-  return { ...session, server: createArchiViewHttpServer(session, panelToken) };
+  const workspace = await createWorkspaceSession({ root, stateDirectory });
+  const session = await workspace.session();
+  return { ...session, ...workspace, server: createArchiViewHttpServer(workspace, panelToken) };
 }
 
 export function createArchiViewHttpServer(session: SessionOperations, panelToken?: string) {
@@ -108,17 +109,18 @@ export function createArchiViewHttpServer(session: SessionOperations, panelToken
         return response.end(content);
       }
       const args: Record<string, unknown> = Object.fromEntries(url.searchParams);
+      const repository = url.searchParams.get("repository");
       if (request.method === "GET" && url.pathname === "/api/comparison") {
         if (args.historyLimit !== undefined) args.historyLimit = Number(args.historyLimit);
         return json(response, 200, await callSessionOperation(session, "getComparison", args));
       }
       if (request.method === "GET" && url.pathname === "/api/module") return json(response, 200, await callSessionOperation(session, "getModule", args));
       if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))
-        return json(response, 200, await callSessionOperation(session, "getAnalysis", { id: url.pathname.split("/").at(-1) }));
+        return json(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: url.pathname.split("/").at(-1) })));
       if (request.method === "POST") {
-        if (url.pathname === "/api/analysis") return json(response, 201, await callSessionOperation(session, "prepareAnalysis", await bodyOf(request)));
-        if (url.pathname === "/api/reviews") return json(response, 200, await callSessionOperation(session, "buildReview", await bodyOf(request)));
-        if (url.pathname === "/api/snapshots") return json(response, 201, await callSessionOperation(session, "saveSnapshot", await bodyOf(request)));
+        if (url.pathname === "/api/analysis") return json(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await bodyOf(request))));
+        if (url.pathname === "/api/reviews") return json(response, 200, await callSessionOperation(session, "buildReview", repositoryArguments(repository, await bodyOf(request))));
+        if (url.pathname === "/api/snapshots") return json(response, 201, await callSessionOperation(session, "saveSnapshot", repositoryArguments(repository, await bodyOf(request))));
       }
       return json(response, 404, { error: "Ресурс не найден" });
     } catch (cause) {

@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { Snapshot, ComparisonModule } from "../src/snapshots/types.js";
 import type { TechnicalReport, ReviewHistory } from "../src/reports/types.js";
 import type { TestContext } from "node:test";
@@ -33,8 +34,9 @@ async function fixture(t: TestContext) {
   await mkdir(path.join(root, "child"), { recursive: true });
   const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module", purpose: "Читать собственные записи.",
     responsibilities: { R1: "Возвращать записи." }, boundaries: { B1: "Не обращаться к сети." }, invariants: {} });
-  await writeFile(path.join(root, "arch.yaml"), stringify(contract("root")));
-  await writeFile(path.join(root, "child/arch.yaml"), stringify(contract("child")));
+  await writeModuleTree(root, { root: ".", child: "child" });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract("root")));
+  await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify(contract("child")));
   await writeFile(path.join(root, "child/code.js"), "export const read = () => 1;\n");
   const snapshotStore = new SnapshotStore(root);
   const store = new ReportStore(snapshotStore);
@@ -284,6 +286,8 @@ test("A to B to A keeps all attempts and deleted modules keep their complete his
   await store.saveReview(nativeReview(snapshotStore, baseline, returned, "at-A-again"));
   assert.deepEqual((await store.list()).entries.map((entry) => entry.review_id), ["at-A-first", "at-B", "at-A-again"]);
   await rm(path.join(root, "child"), { recursive: true });
+  await writeModuleTree(root, { root: "." });
+  await rm(path.join(root, ".archiview/modules/child.yaml"));
   const removed = await captureWorkingTree(root);
   await store.rebuild(baseline, removed, compareSnapshots(baseline, removed).modules);
   await store.rebuild(removed, removed, compareSnapshots(removed, removed).modules);

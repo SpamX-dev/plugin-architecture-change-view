@@ -21,11 +21,9 @@ export function validateArch(input: unknown): Contract {
   return value;
 }
 
-/** Старый файл возвращается только как материал немедленного переноса, не как контракт. */
-export function contractDocument(text: string | null | undefined, format = "arch.yaml"): ContractDocument {
+/** Parses architecture contract YAML without inferring its module from the file's location. */
+export function contractDocument(text: string | null | undefined, format = "yaml"): ContractDocument {
   if (!text?.trim()) return { state: "empty", text: text ?? null, format, contract: null };
-  if (format === "module.md") return { state: "migration_required", text, format, contract: null,
-    action: "Немедленно перенесите ответственность в arch.yaml, проверьте его и удалите module.md." };
   try { return { state: "documented", text, format, contract: parseYaml(text, validateArch) }; }
   catch (cause) { const error = errorDetails(cause); return { state: "invalid", text, format, contract: null, errors: [error.message] }; }
 }

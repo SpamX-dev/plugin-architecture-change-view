@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
 import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
@@ -5,7 +6,7 @@ import type { TestContext } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { once } from "node:events";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -30,8 +31,9 @@ async function fixture(t: TestContext) {
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const root = path.join(temporary, "original");
   await mkdir(path.join(root, "child"), { recursive: true });
-  await writeFile(path.join(root, "arch.yaml"), stringify(contract("root")));
-  await writeFile(path.join(root, "child/arch.yaml"), stringify(contract("child")));
+  await writeModuleTree(root, { root: ".", child: "child" });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract("root")));
+  await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify(contract("child")));
   await writeFile(path.join(root, "child/code.js"), "export const read = () => 1;\n");
   return { root, temporary };
 }
@@ -180,6 +182,7 @@ for (const target of ["source", "external"]) test(`local state rejects a directo
   const snapshot = await captureWorkingTree(root);
   const destination = target === "source" ? path.join(root, "child") : path.join(temporary, "external");
   await mkdir(destination, { recursive: true });
+  await rename(path.join(root, ".archiview"), path.join(temporary, "original-metadata"));
   await symlink(destination, path.join(root, ".archiview"), process.platform === "win32" ? "junction" : "dir");
   const store = new SnapshotStore(root);
   await assert.rejects(store.list(), /directory links/);

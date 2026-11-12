@@ -97,10 +97,13 @@ function initializeTreeWidth() {
 }
 
 export function createModuleTree(getView: () => ComparisonView | null, getSelection: () => string | null,
-  selectModule: (key: string) => Promise<void>) {
+  selectModule: (key: string, repository?: string) => Promise<void>) {
   let filter = "all";
   let search = "";
-  const expanded = new Set<string>();
+  // Keep expansion and cached comparisons separate even when two checkouts have identical modules.
+  const trees = new Map<string, { view: ComparisonView; expanded: Set<string>; historyLimit: number }>();
+  const closed = new Set<string>();
+  let treeRoot: string | undefined;
 
   /** Перерисовывает счётчики и сохраняет выбранный статус фильтра. */
   function renderFilters() {
@@ -108,9 +111,10 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     filters.replaceChildren();
     const view = getView();
     if (!view) return;
-    const total = view.modules.length;
+    const loaded = [...trees.values()].map((entry) => entry.view);
+    const total = loaded.reduce((count, entry) => count + entry.modules.length, 0);
     for (const status of ["all", "initial", "new", "changed", "removed", "unchanged"]) {
-      const count = status === "all" ? total : view.counts[status];
+      const count = status === "all" ? total : loaded.reduce((sum, entry) => sum + (entry.counts[status] ?? 0), 0);
       const button = el("button", "filter-chip " + status +
         (filter === status ? " active" : ""));
       button.type = "button";
@@ -133,6 +137,54 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     tree.replaceChildren();
     const view = getView();
     if (!view) return;
+    if (!view.workspace) {
+      renderModules(tree, view, trees.get("")!.expanded);
+      return;
+    }
+    for (const repository of view.workspace.repositories) {
+      const cached = trees.get(repository);
+      const open = Boolean(cached && !closed.has(repository));
+      const section = el("div", "repository-section");
+      section.setAttribute("role", "none");
+      const label = repository === "." ? view.workspace.root.split(/[\\/]/).at(-1) || "." : repository;
+      const header = el("button", "tree-row repository-row");
+      header.type = "button";
+      header.dataset.repositoryRoot = repository;
+      header.setAttribute("role", "treeitem");
+      header.setAttribute("aria-expanded", String(open));
+      const caret = el("span", "tree-caret" + (open ? " expanded" : ""), "›");
+      caret.dataset.toggle = "true";
+      header.append(caret, icon("folder"), el("span", "repository-name", label));
+      header.title = label;
+      const activate = (toggle: boolean) => {
+        if (toggle && cached) {
+          if (open) closed.add(repository); else closed.delete(repository);
+          renderTree();
+          focusRepository(repository);
+        } else {
+          closed.delete(repository);
+          void selectModule(".", repository);
+        }
+      };
+      header.addEventListener("click", (event) => activate(event.target instanceof Element && !!event.target.closest("[data-toggle]")));
+      header.addEventListener("keydown", (event) => {
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        event.preventDefault();
+        event.stopPropagation();
+        if ((event.key === "ArrowRight") !== open) activate(true);
+      });
+      section.append(header);
+      if (open && cached) renderModules(section, cached.view, cached.expanded, repository);
+      tree.append(section);
+    }
+  }
+
+  function focusRepository(repository: string) {
+    [...byId("tree").querySelectorAll<HTMLButtonElement>("[data-repository-root]")]
+      .find((node) => node.dataset.repositoryRoot === repository)?.focus();
+  }
+
+  function renderModules(tree: HTMLElement, view: ComparisonView, expanded: Set<string>, repository?: string) {
     const visible = new Set<string>();
     const matches = new Set<string>();
     const parents = treeParents(view.modules);
@@ -169,15 +221,17 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     const render = (module: ModuleSummary): HTMLLIElement => {
       const item = el("li", "tree-item");
       item.setAttribute("role", "none");
+      const selected = getView()?.workspace?.repository === repository && getSelection() === module.key;
       const row = el("button", "tree-row" +
-        (getSelection() === module.key ? " selected" : "") +
+        (selected ? " selected" : "") +
         (!matches.has(module.key) ? " context-row" : "") +
         (module.status === "removed" ? " removed-row" : ""));
       row.type = "button";
       row.dataset.directory = module.directory;
       row.dataset.key = module.key;
+      if (repository !== undefined) row.dataset.repository = repository;
       row.setAttribute("role", "treeitem");
-      row.setAttribute("aria-selected", String(getSelection() === module.key));
+      row.setAttribute("aria-selected", String(selected));
       const title = module.title?.trim() || module.name;
       row.title = title + "\n" + module.directory;
       const nested = children.get(module.key) ?? [];
@@ -207,7 +261,7 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
       }
       if (module.documentState !== "documented") {
         const marker = el("span", "missing-marker", "!");
-        marker.title = module.documentState === "missing" ? "Нет arch.yaml" : "Контракт требует исправления";
+        marker.title = module.documentState === "missing" ? "Нет контракта модуля" : "Контракт требует исправления";
         row.append(marker);
       }
       if (module.descendantChanges) {
@@ -234,7 +288,7 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
           if (expanded.has(module.key)) expanded.delete(module.key);
           else expanded.add(module.key);
           renderTree();
-        } else selectModule(module.key);
+        } else void selectModule(module.key, repository);
       });
       item.append(row);
       if (nested.length) {
@@ -252,15 +306,44 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     tree.append(list);
   }
 
-  function showComparison(view: ComparisonView) {
-    if (!expanded.size && view.modules.length < 100) {
-      for (const module of view.modules) expanded.add(module.key);
+  function showComparison(view: ComparisonView, historyLimit: number) {
+    const root = view.workspace?.root ?? view.root;
+    if (treeRoot !== root) {
+      trees.clear();
+      closed.clear();
+      treeRoot = root;
     }
+    const repository = view.workspace?.repository ?? "";
+    for (const key of trees.keys()) {
+      if (key !== repository && !view.workspace?.repositories.includes(key)) {
+        trees.delete(key);
+        closed.delete(key);
+      }
+    }
+    const expanded = trees.get(repository)?.expanded ?? new Set(view.modules.length < 100 ? view.modules.map((module) => module.key) : []);
+    trees.set(repository, { view, expanded, historyLimit });
+    closed.delete(repository);
+    const repositoryCount = view.workspace?.repositories.length ?? trees.size;
+    const partial = trees.size < repositoryCount;
+    const searchInput = byId("search");
+    const searchLabel = partial ? "Найти модуль в загруженных репозиториях" : "Найти модуль";
+    const scope = partial ? `Поиск и счётчики учитывают загруженные репозитории (${trees.size} из ${repositoryCount}). Раскройте остальные, чтобы добавить их модули.` : "";
+    searchInput.placeholder = searchLabel + "…";
+    searchInput.setAttribute("aria-label", searchLabel);
+    searchInput.title = scope;
+    byId("module-total").title = scope;
+    byId("filters").title = scope;
     renderFilters();
+    renderTree();
   }
 
   function reveal(module: ModuleSummary) {
-    const parents = treeParents(getView()?.modules ?? []);
+    const view = getView();
+    if (!view) return;
+    const repository = view.workspace?.repository ?? "";
+    const expanded = trees.get(repository)!.expanded;
+    closed.delete(repository);
+    const parents = treeParents(view.modules);
     let row: ModuleSummary | undefined = module;
     while (row) {
       expanded.add(row.key);
@@ -275,8 +358,11 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     renderTree();
   });
   byId("collapse").addEventListener("click", () => {
-    expanded.clear();
-    for (const module of getView()?.modules ?? []) if (module.directory === ".") expanded.add(module.key);
+    for (const [repository, { expanded, view }] of trees) {
+      expanded.clear();
+      if (view.workspace) closed.add(repository);
+      else for (const module of view.modules) if (module.directory === ".") expanded.add(module.key);
+    }
     renderTree();
   });
   byId("tree-toggle").addEventListener("click", () => document.body.classList.toggle("tree-open"));
@@ -300,12 +386,13 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
       event.preventDefault();
       const key = row.dataset.key;
       if (!key) return;
+      const expanded = trees.get(row.dataset.repository ?? "")!.expanded;
       if (event.key === "ArrowRight") expanded.add(key);
       else expanded.delete(key);
       renderTree();
       [...byId("tree").querySelectorAll<HTMLButtonElement>(".tree-row")].find((node) =>
-        node.dataset.key === key)?.focus();
+        node.dataset.key === key && node.dataset.repository === row.dataset.repository)?.focus();
     }
   });
-  return { showComparison, reveal };
+  return { showComparison, reveal, getRepository: (repository: string) => trees.get(repository) };
 }

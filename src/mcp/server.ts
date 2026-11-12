@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Stdio MCP-сервер правил arch.yaml. Раздаёт канонический SKILL.md и инструменты
+ * Stdio MCP-сервер контрактов проекта. Раздаёт канонический SKILL.md и инструменты
  * чтения; явный --panel добавляет локальное MCP App со скрытыми от модели операциями UI.
  * Рабочий проект задаётся явно, контекстом рабочей папки Codex или cwd вне плагина.
  */
@@ -65,9 +65,10 @@ async function serve() {
   const server = new Server({ name: packageInfo.name, version: packageInfo.version },
     { capabilities: { resources: {}, tools: {} },
       instructions: "For source-code changes, read skill://module-boundaries. " +
-        "Use module_inventory to find missing arch.yaml contracts and module_context " +
-        "to read target and ancestor boundaries. Module tools are read-only; write documents " +
-        "with your file tools. Migrate module.md immediately. If neither contract exists, analyze source and write arch.yaml with file tools. Responsibility changes require user agreement." });
+        "Use module_inventory to find repositories and module_context with a workspace-relative source path " +
+        "to read the owning repository's contracts, root first. Maintain that repository's .archiview/modules.tree and .archiview/modules/<id>.yaml " +
+        "with your file tools. Analyze source when a contract is missing. " +
+        "Responsibility changes require user agreement." });
   server.setRequestHandler(ListResourcesRequestSchema, async () => ({
     resources: [{ uri, name: metadata.name, description: metadata.description,
       mimeType: "text/markdown" }, ...(panel ? [{ uri: PANEL_URI, name: "ArchiView", mimeType: "text/html;profile=mcp-app" }] : [])],
@@ -82,16 +83,17 @@ async function serve() {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [
     ...(panel ? [PANEL_TOOL, ...UI_TOOLS] : []),
     { name: "module_inventory",
-      description: "List every source directory and arch.yaml coverage, including " +
-        "missing/empty contracts, source-container directories and planned modules. " +
+      description: "List repositories, source directories and mapped contracts in the workspace, including " +
+        "missing or invalid entries in .archiview/modules.tree and contract files. " +
         "Presence is not a semantic compliance verdict. Read skill://module-boundaries.",
       inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT }, additionalProperties: false },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
     { name: "module_context",
-      description: "Read arch.yaml for a target directory and all ancestors, root first. " +
+      description: "Find the Git repository owning a source file or directory and read its contract chain, root first. " +
         "Use before editing source code. Reports missing documents explicitly.",
-      inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT, directory: {
-        type: "string", description: "Project-relative directory; default is ." } },
+      inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT,
+        path: { type: "string", description: "File or directory relative to the chat workspace, e.g. backend/src/main.ts." },
+        directory: { type: "string", description: "Alternative to path for existing callers. Defaults to the workspace root." } },
         additionalProperties: false },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
   ] }));
@@ -108,8 +110,9 @@ async function serve() {
     if (name !== "module_inventory" && name !== "module_context") {
       throw new McpError(ErrorCode.InvalidParams, "Unknown tool: " + name);
     }
-    const allowed = name === "module_context" ? ["directory", "projectRoot"] : ["projectRoot"];
+    const allowed = name === "module_context" ? ["path", "directory", "projectRoot"] : ["projectRoot"];
     if (Object.keys(args).some((key) => !allowed.includes(key)) ||
+        (args.path !== undefined && (typeof args.path !== "string" || args.directory !== undefined)) ||
         (args.directory !== undefined && typeof args.directory !== "string") ||
         (args.projectRoot !== undefined && typeof args.projectRoot !== "string")) {
       throw new McpError(ErrorCode.InvalidParams, "Invalid tool arguments");
@@ -118,7 +121,7 @@ async function serve() {
       const root = await project.select(args.projectRoot, request.params._meta);
       const result = name === "module_inventory"
         ? await moduleInventory(root, { extensions, maxFiles })
-        : await moduleContext(root, args.directory);
+        : await moduleContext(root, args.path ?? args.directory);
       return { content: [{ type: "text", text: JSON.stringify(result) }] };
     } catch (error) {
       return { isError: true, content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }] };

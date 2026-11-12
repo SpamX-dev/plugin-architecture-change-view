@@ -6,7 +6,7 @@
  * Хост-половина (`host.ts`) превращает описания в определения `defineTool`,
  * поэтому этот модуль можно проверять обычным `node --test`.
  *
- * Инструменты только читают: анализ и запись arch.yaml выполняет агент своими
+ * Инструменты только читают: анализ и запись карты и контрактов выполняет агент своими
  * файловыми средствами по каноническому скиллу module-boundaries.
  *
  * @module plugin-architecture-change-view/dsh/tools
@@ -20,7 +20,7 @@ import { within } from "../project/paths.js";
 /** Описание параметра `projectRoot`, общего для обоих инструментов. */
 const PROJECT_ROOT_PARAMETER = {
   type: "string" as const,
-  description: "Абсолютный корень проекта текущего чата. При настроенном root можно выбрать сам root или вложенный каталог.",
+  description: "Абсолютная рабочая папка, которая может содержать несколько Git-репозиториев. По умолчанию берётся настроенный root или папка чата.",
 };
 
 /**
@@ -35,20 +35,24 @@ const PROJECT_ROOT_PARAMETER = {
 export const TOOL_DEFINITIONS = Object.freeze([
   Object.freeze({
     name: "archiview_inventory",
-    description: "List every source directory and arch.yaml coverage, including " +
-      "missing/empty contracts, source-container directories and planned modules. " +
-      "Presence is not a semantic compliance verdict. Read skill://module-boundaries.",
+    description: "List repositories, source directories and mapped contracts in the workspace, including " +
+      "missing or invalid entries in .archiview/modules.tree and contract files. " +
+      "Presence is not a semantic compliance verdict. Use the module-boundaries skill.",
     parameters: Object.freeze({ projectRoot: PROJECT_ROOT_PARAMETER }),
   }),
   Object.freeze({
     name: "archiview_context",
-    description: "Read arch.yaml for a target directory and all ancestors, root first. " +
+    description: "Find the repository owning a source file or directory and read its contract chain, root first. " +
       "Use before editing source code. Reports missing documents explicitly.",
     parameters: Object.freeze({
       projectRoot: PROJECT_ROOT_PARAMETER,
+      path: Object.freeze({
+        type: "string" as const,
+        description: "Путь к файлу или каталогу относительно рабочей папки, например backend/src/main.ts.",
+      }),
       directory: Object.freeze({
         type: "string" as const,
-        description: "Каталог относительно корня проекта; по умолчанию корень.",
+        description: "Альтернативное имя аргумента path для прежних вызовов.",
       }),
     }),
   }),
@@ -80,7 +84,7 @@ export function normalizeExtensions(configured: readonly string[] = []) {
  * Выбирает корень проекта для операции.
  *
  * Настройка хоста ограничивает область каждого модельного вызова.
- * Без настройки проект задаёт аргумент инструмента.
+ * Без настройки адаптер передаёт явно выбранный проект или рабочую папку чата.
  *
  * @param {object} options - параметры выбора.
  * @param {unknown} options.projectRoot - значение аргумента инструмента.
@@ -117,14 +121,17 @@ export async function readInventory({ root, extensions, maxFiles }: { root: stri
 }
 
 /**
- * Читает контракт каталога и всех предков.
+ * Читает контракты предков файла или каталога в его репозитории.
  *
  * @param {object} options - параметры чтения.
- * @param {string} options.root - корень проекта.
- * @param {string} [options.directory] - каталог относительно корня.
+ * @param {string} options.root - рабочая папка.
+ * @param {string} [options.path] - файл или каталог относительно рабочей папки.
+ * @param {string} [options.directory] - прежнее имя аргумента для каталога.
  * @returns {Promise<object>} результат `moduleContext` без изменений формы.
  */
-export async function readContext({ root, directory = "." }: { root: string; directory?: unknown }) {
-  if (typeof directory !== "string") throw new Error("directory должен быть строкой");
-  return moduleContext(root, directory);
+export async function readContext({ root, path: sourcePath, directory }: { root: string; path?: unknown; directory?: unknown }) {
+  if (sourcePath !== undefined && directory !== undefined) throw new Error("Передайте только один путь: path или directory");
+  const target = sourcePath ?? directory ?? ".";
+  if (typeof target !== "string") throw new Error("Путь к исходникам должен быть строкой");
+  return moduleContext(root, target);
 }

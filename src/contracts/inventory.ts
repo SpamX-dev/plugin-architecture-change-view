@@ -1,265 +1,175 @@
-interface InventoryModule {directory:string;document:string;status:string;text?:string|null;format?:string;contract?:Contract|null;errors?:string[];action?:string;migration?:{document:string;text:string};sourceFiles?:number;required?:boolean;files?:string[];preparation?:string}
-import type { Contract } from "./types.js";
-import { errorDetails } from "../runtime/errors.js";
-/**
- * Читает дерево исходников и контракты arch.yaml внутри одного корня проекта.
- * Не разбирает AST и не выводит ответственность эвристически. Git используется
- * для учёта ignore-правил; вне репозитория применяется ограниченный обход.
- */
-import { execFile } from "node:child_process";
-import { lstat, readdir, readFile, realpath } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import path from "node:path";
-import { promisify } from "node:util";
-import { contractDocument } from "./document.js";
-import { STATE_DIRECTORY, within } from "../project/paths.js";
+import { discoverWorkspaceRepositories, locateSourceRepository, resolveWorkspaceRepository } from "../project/workspace.js";
+import { errorDetails } from "../runtime/errors.js";
+import type { ModuleDocument } from "./module-tree.js";
+import {
+  assertModuleDirectory, ADD_MAPPING, listModuleContractPaths,
+  MODULE_TREE_FILE, moduleDocumentPath, readContractStorageFile, readModuleTree, resolveModuleDocument,
+} from "./module-tree.js";
+import { excludedProjectPath, portable, projectFiles, regularProjectFile, SOURCE_EXTENSIONS } from "./source-files.js";
 
-/** Каталоги зависимостей и результатов сборки, исключаемые из обоих обходов. */
-const EXCLUDED = new Set([
-  STATE_DIRECTORY,
-  ".git", ".hg", ".svn", "node_modules", "target", "dist", "build", "coverage",
-  ".venv", "venv", "__pycache__", ".next", ".nuxt", ".cache", "obj",
-]);
-/** Расширения исходного кода; список можно дополнить при запуске сервера. */
-export const SOURCE_EXTENSIONS = new Set((
-  ".c .h .cc .cpp .cxx .hpp .hxx .cs .fs .fsx .vb .java .kt .kts .scala " +
-  ".swift .m .mm .js .jsx .mjs .cjs .ts .tsx .mts .cts .py .pyi .go .rs " +
-  ".rb .php .lua .gd .sh .bash .zsh .ps1 .psm1 .pl .pm .r .sql .proto " +
-  ".dart .zig .ex .exs .erl .hrl .clj .cljs .cljc .vue .svelte .css .scss " +
-  ".less .html .htm .bsl .os .wsdl .xsd"
-).split(" "));
-/** Асинхронный запуск Git без оболочки и интерполяции пользовательских строк. */
-const runFile = promisify(execFile);
-/** Максимальный размер одного описания, читаемого в контекст агента. */
-const MAX_DOCUMENT_BYTES = 128 * 1024;
+export { excludedProjectPath, projectFiles, regularProjectFile, SOURCE_EXTENSIONS } from "./source-files.js";
 
-/** Приводит путь к относительному формату ответа MCP независимо от платформы. */
-function portable(value: string) {
-  return value.split(path.sep).join("/") || ".";
+interface InventoryModule extends ModuleDocument {
+  repository?: string;
+  sourceFiles?: number;
+  required?: boolean;
+  files?: string[];
+  preparation?: string;
 }
 
-/**
- * Отсекает внешние пути, исключённые каталоги и символические ссылки.
- * Отсутствующий после Git-фильтра файл считается удалённым, а не исходником.
- */
-export async function regularProjectFile(root: string, relative: string) {
-  if (excludedProjectPath(relative)) return false;
-  const candidate = path.resolve(root, relative);
-  if (!within(root, candidate)) return false;
-  try {
-    const resolved = await realpath(candidate);
-    if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) return false;
-    const info = await lstat(candidate);
-    return info.isFile() && !info.isSymbolicLink();
-  } catch (errorCause) { const error = errorDetails(errorCause);
-    if (error.code === "ENOENT") return false;
-    throw error;
+async function documentAt(root: string, directory: string, id?: string): Promise<InventoryModule> {
+  await assertModuleDirectory(root, directory);
+  const text = id ? await readContractStorageFile(root, moduleDocumentPath(id)) : null;
+  return resolveModuleDocument(directory, id, text);
+}
+
+function includeDirectory(directories: Map<string, number>, directory: string, source: boolean) {
+  while (true) {
+    directories.set(directory, (directories.get(directory) ?? 0) + Number(source));
+    if (directory === ".") return;
+    directory = path.posix.dirname(directory);
   }
 }
 
-/**
- * Получает учитываемые файлы и признак полноты. Ошибка Git внутри репозитория
- * не маскируется полным результатом обхода: причина возвращается диагностикой.
- */
-export async function projectFiles(root: string, maxFiles: number) {
-  const diagnostics = [];
-  let gitRoot;
-  try {
-    gitRoot = await runFile("git", ["rev-parse", "--show-toplevel"], {
-      cwd: root, timeout: 15000, windowsHide: true,
-    });
-  } catch (errorCause) { const error = errorDetails(errorCause);
-    if (error.code !== "ENOENT" &&
-        !String(error.stderr).includes("not a git repository")) {
-      diagnostics.push("Git discovery failed: " + error.message);
-    }
-  }
-  if (gitRoot) {
-    try {
-      const output = await runFile("git",
-        ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "."],
-        { cwd: root, timeout: 15000, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
-      const files = [...new Set(output.stdout.split("\0").filter((file) => file && !excludedProjectPath(file)))];
-      const limited = files.length > maxFiles;
-      if (limited) diagnostics.push("File limit reached: " + maxFiles);
-      return { files: files.slice(0, maxFiles), discovery: "git",
-        complete: !limited, diagnostics };
-    } catch (errorCause) { const error = errorDetails(errorCause);
-      diagnostics.push("Git file listing failed: " + error.message);
-    }
-  }
-  const files = [];
-  const pending = [root];
-  while (pending.length > 0 && files.length < maxFiles) {
-    const directory = pending.pop()!;
-    let entries;
-    try {
-      entries = await readdir(directory, { withFileTypes: true });
-    } catch (errorCause) { const error = errorDetails(errorCause);
-      diagnostics.push("Cannot list " + portable(path.relative(root, directory)) +
-        ": " + error.message);
-      continue;
-    }
-    entries.sort((left, right) => left.name.localeCompare(right.name));
-    for (let index = 0; index < entries.length; index += 1) {
-      const entry = entries[index];
-      if (excludedProjectPath(entry.name)) continue;
-      const candidate = path.join(directory, entry.name);
-      if (entry.isDirectory()) pending.push(candidate);
-      else if (entry.isFile() || (entry.isSymbolicLink() && ["arch.yaml", "module.md"].includes(entry.name))) {
-        files.push(path.relative(root, candidate));
-      }
-      if (files.length >= maxFiles) {
-        if (index < entries.length - 1 || pending.length > 0) {
-          diagnostics.push("File limit reached: " + maxFiles);
-        }
-        break;
-      }
-    }
-  }
-  return { files, discovery: "filesystem", complete: diagnostics.length === 0,
-    diagnostics };
-}
+/** Inventories source paths and mapped resources, and reports broken central storage explicitly. */
+interface InventoryOptions { extensions?: Set<string>; maxFiles?: number }
 
-/** Общая политика исключения путей для рабочего дерева и исторических снимков. */
-export function excludedProjectPath(relative: string) {
-  return relative.split(/[\\/]/).some((part) => EXCLUDED.has(process.platform === "win32" ? part.toLowerCase() : part));
-}
-
-async function existingEntry(file: string) {
-  try { return await lstat(file); }
-  catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
-}
-
-/**
- * Читает один контракт, различая отсутствие, пустой текст и ошибку чтения.
- * Внешняя ссылка и чрезмерно большой документ отвергаются явно.
- */
-async function documentAt(root: string, directory: string): Promise<InventoryModule> {
-  let file = path.join(directory, "arch.yaml");
-  let info = await existingEntry(file);
-  const legacy = path.join(directory, "module.md");
-  if (!info) {
-    info = await existingEntry(legacy);
-    if (!info) return { directory: portable(path.relative(root, directory)),
-      document: portable(path.relative(root, file)), status: "missing" };
-    file = legacy;
-  }
-  if (!info.isFile()) throw new Error("Contract must be a regular file");
-  if (info.size > MAX_DOCUMENT_BYTES) throw new Error("Contract exceeds 128 KiB");
-  const resolved = await realpath(file);
-  if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) throw new Error("Contract resolves outside project sources");
-  const text = await readFile(file, "utf8");
-  let { state, ...parsed } = contractDocument(text, path.basename(file));
-  if (file !== legacy) {
-    const legacyInfo = await existingEntry(legacy);
-    if (legacyInfo) {
-      if (!legacyInfo.isFile() || legacyInfo.size > MAX_DOCUMENT_BYTES) throw new Error("Invalid legacy contract");
-      parsed.migration = { document: portable(path.relative(root, legacy)), text: await readFile(legacy, "utf8") };
-      parsed.action = "Сверьте arch.yaml и module.md, сохраните все принятые ограничения и удалите module.md после проверки.";
-      if (state === "documented") state = "migration_required";
-    }
-  }
-  return { directory: portable(path.relative(root, directory)), document: portable(path.relative(root, file)),
-    status: state, ...parsed };
-}
-
-/**
- * Возвращает покрытие каждого каталога дерева исходников, включая предков.
- * Старые module.md требуют переноса; их наличие не считается покрытием.
- */
-export async function moduleInventory(projectRoot: string, options: {extensions?: Set<string>;maxFiles?: number} = {}) {
-  const root = await realpath(projectRoot);
+async function repositoryInventory(root: string, options: InventoryOptions, nested: string[]) {
   const extensions = options.extensions ?? SOURCE_EXTENSIONS;
-  const maxFiles = options.maxFiles ?? 50000;
-  const listed = await projectFiles(root, maxFiles);
-  const directories = new Map();
-  const sourcePaths = [];
-  let sourceFiles = 0;
-  for (const file of listed.files) {
-    const source = extensions.has(path.extname(file).toLowerCase());
-    const documented = ["arch.yaml", "module.md"].includes(path.basename(file));
-    if (!source && !documented) continue;
-    try {
-      if (!await regularProjectFile(root, file) &&
-          !(documented && (await existingEntry(path.join(root, file)))?.isSymbolicLink())) continue;
-    } catch (errorCause) { const error = errorDetails(errorCause);
+  const owned = (relative: string) => !nested.some((child) => relative === child || relative.startsWith(child + "/"));
+  const listed = await projectFiles(root, options.maxFiles ?? 50000, owned);
+  const directories = new Map<string, number>();
+  const sourcePaths: string[] = [];
+  let tree = new Map<string, string>();
+  let treeError: string | undefined;
+  try {
+    tree = await readModuleTree(root);
+  } catch (cause) {
+    treeError = MODULE_TREE_FILE + ": " + errorDetails(cause).message;
+    listed.diagnostics.push(treeError);
+    listed.complete = false;
+  }
+  for (const directory of tree.keys()) {
+    if (owned(directory)) includeDirectory(directories, directory, false);
+    else {
       listed.complete = false;
-      listed.diagnostics.push(file + ": " + error.message);
+      listed.diagnostics.push(MODULE_TREE_FILE + ": " + directory + " belongs to a nested repository");
+    }
+  }
+  if (!treeError) {
+    try {
+      const registered = new Set([...tree.values()].map(moduleDocumentPath));
+      for (const file of await listModuleContractPaths(root)) {
+        if (!registered.has(file)) {
+          listed.diagnostics.push(file + " is not registered in " + MODULE_TREE_FILE);
+          listed.complete = false;
+        }
+      }
+    } catch (cause) {
+      listed.diagnostics.push(errorDetails(cause).message);
+      listed.complete = false;
+    }
+  }
+  for (const file of listed.files) {
+    if (!extensions.has(path.extname(file).toLowerCase())) continue;
+    try {
+      if (!await regularProjectFile(root, file)) continue;
+    } catch (cause) {
+      listed.complete = false;
+      listed.diagnostics.push(file + ": " + errorDetails(cause).message);
       continue;
     }
-    let directory = path.dirname(file);
-    if (source) { sourceFiles += 1; sourcePaths.push(portable(file)); }
-    while (true) {
-      const record = directories.get(directory) ?? { sourceFiles: 0 };
-      if (source) record.sourceFiles += 1;
-      directories.set(directory, record);
-      if (directory === ".") break;
-      directory = path.dirname(directory);
-    }
+    const relative = portable(file);
+    sourcePaths.push(relative);
+    includeDirectory(directories, path.posix.dirname(relative), true);
   }
   const modules: InventoryModule[] = [];
-  for (const [directory, counts] of [...directories].sort(([a], [b]) =>
-    a.localeCompare(b))) {
+  for (const [directory, sourceFiles] of [...directories].sort(([a], [b]) => a.localeCompare(b))) {
+    const id = tree.get(directory);
+    let entry: InventoryModule;
     try {
-      const { text, ...document } = await documentAt(root, path.resolve(root, directory));
-      modules.push({ ...document, sourceFiles: counts.sourceFiles,
-        required: counts.sourceFiles > 0 });
-    } catch (errorCause) { const error = errorDetails(errorCause);
+      if (treeError) {
+        entry = { directory, document: MODULE_TREE_FILE, status: "invalid", errors: [treeError] };
+      } else {
+        const { text, ...document } = await documentAt(root, directory, id);
+        entry = document;
+        if (id && entry.status === "missing") {
+          listed.diagnostics.push(directory + ": missing " + entry.document);
+          listed.complete = false;
+        }
+      }
+    } catch (cause) {
+      const message = directory + ": " + errorDetails(cause).message;
+      listed.diagnostics.push(message);
       listed.complete = false;
-      listed.diagnostics.push(directory + ": " + error.message);
-      modules.push({ directory: portable(directory), document: portable(
-        path.join(directory, "arch.yaml")), status: "unreadable",
-        sourceFiles: counts.sourceFiles, required: counts.sourceFiles > 0 });
+      entry = { directory, document: id ? moduleDocumentPath(id) : MODULE_TREE_FILE,
+        status: "unreadable", errors: [message] };
     }
+    entry.sourceFiles = sourceFiles;
+    entry.required = sourceFiles > 0;
+    entry.files = sourcePaths.filter((file) => path.posix.dirname(file) === directory);
+    entry.preparation = entry.status === "documented" ? "ready" :
+      entry.status === "missing" && !id ? "analyze_and_write" : "repair";
+    modules.push(entry);
   }
-  const ids = new Map<string, InventoryModule[]>();
-  for (const module of modules) {
-    if (!module.contract) continue;
-    const id = module.contract.id;
-    if (!ids.has(id)) ids.set(id, []);
-    ids.get(id)!.push(module);
-  }
-  for (const [id, entries] of ids) if (entries.length > 1) {
-    for (const entry of entries) {
-      entry.status = "invalid";
-      entry.errors = [...entry.errors ?? [], "Повторяющийся id модуля: " + id];
-    }
-  }
-  for (const module of modules) {
-    module.files = sourcePaths.filter((file) => path.posix.dirname(file) === module.directory);
-    module.preparation = module.status === "migration_required" ? "migrate" :
-      ["missing", "empty"].includes(module.status) ? "analyze_and_write" :
-        module.status === "documented" ? "ready" : "repair";
-  }
-  return { schema_version: 1, root, complete: listed.complete,
-    discovery: listed.discovery, sourceFiles, modules,
-    diagnostics: listed.diagnostics,
-    preparation: "До просмотра и изменения кода перенесите все module.md в arch.yaml. Если обоих файлов нет, изучите исходники и родительские контракты, затем запишите arch.yaml. Не оставляйте отсутствие контракта конечным результатом." };
+  const inventory = { schema_version: 1, root, complete: listed.complete, discovery: listed.discovery,
+    sourceFiles: sourcePaths.length, modules, diagnostics: listed.diagnostics,
+    preparation: "Исправьте ошибки карты и контрактов. Для нового модуля изучите исходники и контракты предков. " + ADD_MAPPING };
+  return { inventory, scannedFiles: listed.files.length };
 }
 
-/**
- * Возвращает цепочку контрактов от корня до целевого каталога, включая пропуски.
- * Абсолютный путь, выход через .. и ссылка за пределы проекта отклоняются.
- */
-export async function moduleContext(projectRoot: string, directory = ".") {
+/** A workspace lists modules by repository; contract ids stay local to that repository. */
+export async function moduleInventory(projectRoot: string, options: InventoryOptions = {}) {
   const root = await realpath(projectRoot);
-  if (path.isAbsolute(directory)) throw new Error("directory must be relative");
-  const requested = path.resolve(root, directory);
-  if (!within(root, requested)) throw new Error("directory is outside project");
-  if (excludedProjectPath(path.relative(root, requested))) throw new Error("directory is excluded from project sources");
-  const target = await realpath(requested);
-  if (!within(root, target)) throw new Error("directory resolves outside project");
-  if (!(await lstat(target)).isDirectory()) throw new Error("directory is not a directory");
-  const chain = [];
-  let current = requested;
-  while (true) {
-    const physical = current === requested ? target : await realpath(current);
-    if (!within(root, physical)) throw new Error("directory resolves outside project");
-    if (excludedProjectPath(path.relative(root, physical))) throw new Error("directory is excluded from project sources");
-    chain.push(await documentAt(root, current));
-    if (current === root) break;
-    current = path.dirname(current);
+  const repositories = await discoverWorkspaceRepositories(root);
+  if (!repositories.length || repositories.length === 1 && repositories[0] === ".") {
+    const { inventory } = await repositoryInventory(root, options, []);
+    return { ...inventory, repositories };
   }
-  return { schema_version: 1, root, directory: portable(path.relative(root, requested)),
-    contracts: chain.reverse() };
+  const modules: InventoryModule[] = [];
+  const diagnostics: string[] = [];
+  let sourceFiles = 0;
+  let complete = true;
+  let remaining = options.maxFiles ?? 50000;
+  for (const repository of repositories) {
+    if (remaining <= 0) {
+      complete = false;
+      diagnostics.push("File limit reached before repository " + repository);
+      break;
+    }
+    const nested = repositories.filter((child) => child !== repository &&
+      (repository === "." || child.startsWith(repository + "/")))
+      .map((child) => path.posix.relative(repository, child));
+    const { inventory: result, scannedFiles } = await repositoryInventory(
+      await resolveWorkspaceRepository(root, repository), { ...options, maxFiles: remaining }, nested);
+    remaining -= scannedFiles;
+    const prefix = (item: string) => path.posix.join(repository, item);
+    modules.push(...result.modules.map((item) => ({ ...item, repository, directory: prefix(item.directory),
+      document: prefix(item.document), files: item.files?.map(prefix) })));
+    diagnostics.push(...result.diagnostics.map((message) => repository + ": " + message));
+    complete &&= result.complete;
+    sourceFiles += result.sourceFiles;
+  }
+  return { schema_version: 1, root, discovery: "workspace", repositories, complete, sourceFiles, modules, diagnostics,
+    preparation: "Изменяйте карту и контракты в репозитории, указанном в поле repository модуля." };
+}
+
+/** Resolve either a file or a directory, then read the chain inside its owning repository. */
+export async function moduleContext(projectRoot: string, sourcePath = ".") {
+  const { root, directory, workspaceRoot, repository, existingDirectory } = await locateSourceRepository(projectRoot, sourcePath);
+  const tree = await readModuleTree(root);
+  const chain = [];
+  let current = directory;
+  while (true) {
+    const id = tree.get(current);
+    const exists = current === "." || existingDirectory === current || existingDirectory.startsWith(current + "/");
+    if (exists) chain.push(await documentAt(root, current, id));
+    else chain.push({ ...resolveModuleDocument(current, id, null),
+      action: "Каталог ещё не создан. " + ADD_MAPPING });
+    if (current === ".") break;
+    current = path.posix.dirname(current);
+  }
+  return { schema_version: 1, root, directory, workspaceRoot, repository, contracts: chain.reverse() };
 }

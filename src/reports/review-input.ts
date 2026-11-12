@@ -4,7 +4,7 @@ import type { ReviewOptions, ReviewEntry } from "./types.js";
 import { digest } from "../serialization/digest.js";
 import { createStructuralReview } from "../reviews/bundle.js";
 import { randomUUID } from "node:crypto";
-import { contractFile, moduleId, ModuleStateContext } from "./module-state.js";
+import { moduleId, ModuleStateContext } from "./module-state.js";
 import { REPORT_SCHEMA_VERSION } from "./types.js";
 import { technicalReport } from "./technical-report.js";
 import { createInputs } from "./review-state.js";
@@ -63,7 +63,7 @@ function scopedSnapshot(snapshot: SnapshotData | null, id: string, options: Revi
     (snapshot.modules ?? []).some((module) => ids.has(moduleId(module)) && fact.path === module.documentPath) ||
     (snapshot.modules ?? []).some((module) => fullIds.has(moduleId(module)) && (module.files ?? []).some((file) => file.path === fact.path)));
   const modules = snapshot.modules.filter((module) => ids.has(moduleId(module)) || (module.files ?? []).some((file) => filePaths.has(file.path)))
-    .map((module) => ({ ...structuredClone(module), files: structuredClone((module.files ?? []).filter((file) => fullIds.has(moduleId(module)) || contractFile(file.path) || filePaths.has(file.path))) }));
+    .map((module) => ({ ...structuredClone(module), files: structuredClone((module.files ?? []).filter((file) => fullIds.has(moduleId(module)) || file.path === module.documentPath || filePaths.has(file.path))) }));
   const result: ScopedSnapshot = { schema_version: 2, id: snapshot.id, digest: snapshot.digest,
     kind: snapshot.kind, revision: snapshot.revision, complete: snapshot.complete,
     modules, facts: structuredClone(facts), diagnostics: structuredClone(snapshot.diagnostics ?? []),

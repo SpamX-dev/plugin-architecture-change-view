@@ -1,7 +1,7 @@
 /** Сбор файлов, контрактов и доказательств из рабочего дерева, коммита или индекса Git. */
 import { snapshotDigest, structureHash } from "./identity.js";
 import type {
-  FileRecord, Fact, SnapshotModule, Snapshot, SnapshotOptions, GitRevision,
+  FileRecord, Fact, Snapshot, SnapshotOptions, GitRevision,
 } from "./types.js";
 import { errorDetails } from "../runtime/errors.js";
 import { spawn } from "node:child_process";
@@ -9,14 +9,16 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
-import { SOURCE_EXTENSIONS, excludedProjectPath, projectFiles, regularProjectFile } from "../contracts/inventory.js";
-import { contractDocument } from "../contracts/document.js";
+import { excludedProjectPath, projectFiles, regularProjectFile } from "../contracts/source-files.js";
+import { decodeContractText, listModuleContractPaths, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY, MODULE_TREE_FILE, readContractStorageFile } from "../contracts/module-tree.js";
+import { isSource, snapshotModules, type WorkingLayout } from "./module-layout.js";
+import { repositoryDirectoryOwnership } from "../project/workspace.js";
 import { digest as contentDigest } from "../serialization/digest.js";
 import { readSnapshotRoot } from "../project/identity.js";
 
-/** Контракты читаются в обоих форматах; новый формат имеет безусловный приоритет. */
-const isContract = (file: string) => ["arch.yaml", "module.md"].includes(path.posix.basename(file));
-const isSource = (file: string) => SOURCE_EXTENSIONS.has(path.posix.extname(file).toLowerCase());
+function isContractStorage(file: string) {
+  return file === MODULE_TREE_FILE || path.posix.dirname(file) === MODULE_DIRECTORY && file.endsWith(".yaml");
+}
 
 /** Относительные пути снимков используют единые разделители на всех платформах. */
 function portable(value: string) {
@@ -87,64 +89,25 @@ async function fileHash(file: string) {
   return hash.digest("hex");
 }
 
+/** Hash the exact buffer retained as evidence using Git's filters when available. */
+async function capturedText(root: string, file: string, bytes: Buffer, decoded: string, inGit: boolean): Promise<FileRecord> {
+  const hash = inGit ? (await git(root, ["hash-object", "--stdin", "--path", file], bytes)).toString().trim() :
+    createHash("sha1").update("blob " + bytes.length + "\0").update(bytes).digest("hex");
+  return { path: file, hash, text: decoded.replace(/\r\n?/g, "\n") };
+}
+
 /**
  * Строит модули по каталогам исходников и контрактов, включая предков.
  * Вспомогательные файлы принадлежат ближайшему модулю; они тоже влияют на статус.
  */
-function assemble(root: string, records: FileRecord[], metadata: {kind:string;label:string;revision?:string}, diagnostics: string[]): Snapshot {
-  const directories = new Set(["."]);
-  const recordPaths = new Set(records.map((r) => r.path));
-  for (const record of records) {
-    if (!isSource(record.path) && !isContract(record.path)) continue;
-    let directory = path.posix.dirname(record.path);
-    while (true) {
-      directories.add(directory);
-      if (directory === ".") break;
-      directory = path.posix.dirname(directory);
-    }
-  }
-  const modules = new Map<string, SnapshotModule>([...directories].sort().map((directory) => [directory, {
-    directory, documentPath: path.posix.join(directory,
-      recordPaths.has(path.posix.join(directory, "arch.yaml")) ? "arch.yaml" :
-        recordPaths.has(path.posix.join(directory, "module.md")) ? "module.md" : "arch.yaml"),
-    document: { state: "missing", text: null }, files: [], sourceFiles: 0, fingerprint: "",
-  }]));
-  for (const record of records) {
-    let owner = path.posix.dirname(record.path);
-    while (!modules.has(owner)) owner = path.posix.dirname(owner);
-    const module = modules.get(owner)!;
-    module.files.push({ path: record.path, hash: record.hash, error: record.error });
-    if (isSource(record.path)) {
-      module.sourceFiles += 1;
-    }
-    if (record.path === module.documentPath) {
-      module.document = record.error ? { state: "unreadable", text: null, errors: [record.error] } :
-        contractDocument(record.text, path.posix.basename(record.path));
-    }
-  }
-  for (const module of modules.values()) {
-    if (module.document.format === "arch.yaml" && module.files.some((f) => f.path === path.posix.join(module.directory, "module.md"))) {
-      if (module.document.state === "documented") module.document.state = "migration_required";
-      module.document.action = "Сверьте оба описания, перенесите ограничения в arch.yaml и удалите module.md после проверки.";
-    }
-    module.files.sort((a, b) => a.path.localeCompare(b.path));
-    module.fingerprint = structureHash(JSON.stringify(module.files));
-  }
-  const data = [...modules.values()];
-  const ids = new Map<string, SnapshotModule[]>();
-  for (const module of data) if (module.document.contract) {
-    const id = module.document.contract.id;
-    if (!ids.has(id)) ids.set(id, []);
-    ids.get(id)!.push(module);
-  }
-  for (const [id, entries] of ids) if (entries.length > 1) for (const module of entries) {
-    module.document.state = "invalid";
-    module.document.errors = ["Повторяющийся id модуля: " + id];
-  }
+async function assemble(root: string, records: FileRecord[], metadata: {kind:string;label:string;revision?:string}, diagnostics: string[], working?: WorkingLayout): Promise<Snapshot> {
+  const data = await snapshotModules(records, diagnostics, working);
   const facts: Fact[] = [];
   const evidenceLimitations = [];
   let remaining = 16 * 1024 * 1024;
   for (const record of records) {
+    // The map determines the directory of each module and has no module owner of its own.
+    if (record.path === MODULE_TREE_FILE) continue;
     if (record.text === undefined || Buffer.byteLength(record.text) > remaining) {
       evidenceLimitations.push(record.path + ": текст недоступен или превышен лимит доказательств");
       continue;
@@ -175,7 +138,8 @@ function assemble(root: string, records: FileRecord[], metadata: {kind:string;la
 export async function captureWorkingTree(projectRoot: string, options: SnapshotOptions = {}) {
   const root = await realpath(projectRoot);
   const info = await gitInfo(root);
-  const listed = await projectFiles(root, options.maxFiles ?? 50000);
+  const working = { root, ownsDirectory: repositoryDirectoryOwnership(root) };
+  const listed = await projectFiles(root, options.maxFiles ?? 50000, working.ownsDirectory);
   const diagnostics = [...listed.diagnostics];
   const files = [];
   for (const file of listed.files) {
@@ -183,28 +147,45 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
       if (await regularProjectFile(root, file)) files.push(portable(file));
     } catch (errorCause) { const error = errorDetails(errorCause); diagnostics.push(file + ": " + error.message); }
   }
+  // Capture only the registry and contract documents from the reserved metadata directory.
+  // They belong to the source project even when report storage is configured elsewhere.
+  const maxFiles = options.maxFiles ?? 50000;
+  files.push(MODULE_TREE_FILE);
+  try {
+    const contracts = await listModuleContractPaths(root);
+    const room = Math.max(0, maxFiles - (files.length - 1));
+    if (contracts.length > room) diagnostics.push("File limit reached: " + maxFiles);
+    files.push(...contracts.slice(0, room));
+  }
+  catch (cause) { diagnostics.push(MODULE_DIRECTORY + ": " + errorDetails(cause).message); }
   files.sort();
   const records: FileRecord[] = [];
   const hashOnly: FileRecord[] = [];
   let evidenceBudget = 16 * 1024 * 1024;
   for (let offset = 0; offset < files.length; offset += 16) {
-    const batch = await Promise.all(files.slice(offset, offset + 16).map(async (file) => {
+    const batch = await Promise.all(files.slice(offset, offset + 16).map(async (file): Promise<FileRecord | null> => {
       try {
+        if (isContractStorage(file)) {
+          const text = await readContractStorageFile(root, file);
+          if (text === null) return null;
+          const bytes = Buffer.from(text);
+          if (file !== MODULE_TREE_FILE) {
+            if (bytes.length > evidenceBudget) throw new Error("Contract evidence budget exceeded");
+            evidenceBudget -= bytes.length;
+          }
+          return await capturedText(root, file, bytes, text, Boolean(info));
+        }
         const fullPath = path.join(root, file);
         const size = (await lstat(fullPath)).size;
-        if (isContract(file) && size > 128 * 1024) throw new Error("Contract exceeds 128 KiB");
         if (size <= 256 * 1024 && size <= evidenceBudget) {
           evidenceBudget -= size;
           const bytes = await readFile(fullPath);
           if (bytes.length !== size) throw new Error("File changed while being captured");
           const decoded = bytes.toString("utf8");
           if (!bytes.includes(0) && Buffer.from(decoded).equals(bytes)) {
-            // Apply Git's path-specific filters to exactly the bytes retained as evidence.
-            const hash = info ? (await git(root, ["hash-object", "--stdin", "--path", file], bytes)).toString().trim() :
-              createHash("sha1").update("blob " + bytes.length + "\0").update(bytes).digest("hex");
-            return { path: file, hash, text: decoded.replace(/\r\n?/g, "\n") };
+            return await capturedText(root, file, bytes, decoded, Boolean(info));
           }
-        } else if (isContract(file)) throw new Error("Contract evidence budget exceeded");
+        }
         const record = { path: file, hash: info ? null : await fileHash(fullPath) };
         if (info) hashOnly.push(record);
         return record;
@@ -213,7 +194,7 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
         return { path: file, hash: null, error: error.message };
       }
     }));
-    records.push(...batch);
+    records.push(...batch.filter((record) => record !== null));
   }
   if (hashOnly.length) {
     const paths = hashOnly.map((record) => JSON.stringify(record.path)).join("\n") + "\n";
@@ -222,8 +203,8 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
     hashOnly.forEach((record, i) => { record.hash = hashes[i]; });
   }
   const snapshotRoot = options.snapshotRoot ?? await readSnapshotRoot(root) ?? root;
-  const snapshot = assemble(snapshotRoot, records, { kind: "working", label: "Рабочее дерево" },
-    diagnostics);
+  const snapshot = await assemble(snapshotRoot, records, { kind: "working", label: "Рабочее дерево" },
+    diagnostics, working);
   snapshot.id = "working-" + snapshot.digest.slice(7);
   return snapshot;
 }
@@ -254,31 +235,41 @@ export async function captureGitHead(projectRoot: string, options: SnapshotOptio
   }
   const prefix = portable(path.relative(info.repository, root));
   const output = await git(info.repository, ["ls-tree", "-r", "-z", "--full-tree", revision]);
-  const records: FileRecord[] = [];
+  let records: FileRecord[] = [];
+  const diagnostics: string[] = [];
   for (const entry of output.toString().split("\0").filter(Boolean)) {
     const tab = entry.indexOf("\t");
     const [mode, type, hash] = entry.slice(0, tab).split(" ");
     const fullPath = entry.slice(tab + 1);
-    if (type !== "blob" || !["100644", "100755"].includes(mode)) continue;
     if (prefix && !fullPath.startsWith(prefix + "/")) continue;
     const file = prefix ? fullPath.slice(prefix.length + 1) : fullPath;
-    if (!excludedProjectPath(file)) records.push({ path: file, hash });
+    if (type !== "blob" || !["100644", "100755"].includes(mode)) {
+      if (isContractStorage(file) || file === MODULE_DIRECTORY || file === ".archiview")
+        diagnostics.push("Expected regular contract storage: " + file);
+      continue;
+    }
+    if (!excludedProjectPath(file) || isContractStorage(file)) records.push({ path: file, hash });
   }
-  const diagnostics = [];
   const maxFiles = options.maxFiles ?? 50000;
-  if (records.length > maxFiles) {
-    records.length = maxFiles;
+  // The registry is required to interpret the captured files and does not consume a file slot.
+  const registry = records.find((record) => record.path === MODULE_TREE_FILE);
+  if (records.length - Number(Boolean(registry)) > maxFiles) {
+    let kept = 0;
+    records = records.filter((record) => record === registry || kept++ < maxFiles);
     diagnostics.push("File limit reached: " + maxFiles);
   }
   for (let index = 0; index < records.length; index += 16) {
     await Promise.all(records.slice(index, index + 16).map(async (record) => {
       try {
         const bytes = await git(info.repository,
-          ["cat-file", "blob", record.hash!], "", isContract(record.path) ? 128 * 1024 : 256 * 1024);
-        if (!bytes.includes(0) && Buffer.from(bytes.toString("utf8")).equals(bytes))
+          ["cat-file", "blob", record.hash!], "", record.path === MODULE_TREE_FILE ? MAX_TREE_BYTES :
+            isContractStorage(record.path) ? MAX_DOCUMENT_BYTES : 256 * 1024);
+        if (isContractStorage(record.path))
+          record.text = decodeContractText(bytes, record.path).replace(/\r\n?/g, "\n");
+        else if (!bytes.includes(0) && Buffer.from(bytes.toString("utf8")).equals(bytes))
           record.text = bytes.toString("utf8").replace(/\r\n?/g, "\n");
       } catch (errorCause) { const error = errorDetails(errorCause);
-        if (isContract(record.path)) {
+        if (isContractStorage(record.path)) {
           record.error = error.message;
           diagnostics.push(record.path + ": " + error.message);
         }
@@ -286,7 +277,7 @@ export async function captureGitHead(projectRoot: string, options: SnapshotOptio
     }));
   }
   const snapshotRoot = options.snapshotRoot ?? await readSnapshotRoot(root) ?? root;
-  const snapshot = assemble(snapshotRoot, records,
+  const snapshot = await assemble(snapshotRoot, records,
     { kind: "git", revision, label: "HEAD · " + revision.slice(0, 7) }, diagnostics);
   snapshot.id = "git-" + revision;
   return snapshot;

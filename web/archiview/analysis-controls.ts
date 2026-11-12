@@ -13,7 +13,7 @@ export function createAnalysisControls({ client, selection, promptAction, refres
   let activePoll: { record: AnalysisRecord; timer: ReturnType<typeof setTimeout> } | undefined;
   function selectedAnalysis() {
     const { module, view } = selection();
-    const key = module?.moduleId && view ? JSON.stringify([view.id, module.moduleId]) : undefined;
+    const key = module?.moduleId && view ? JSON.stringify([view.root, view.id, module.moduleId]) : undefined;
     return { module, view, key, request: key ? analyses.get(key) : undefined };
   }
 
@@ -32,7 +32,7 @@ export function createAnalysisControls({ client, selection, promptAction, refres
     button.textContent = busy ? "Подготавливаем…" : action?.mode === "copy" ? "Копировать промпт" :
       pending ? "Ожидаем анализ…" : "Анализировать модуль";
     button.title = !action ? "Хост не поддерживает отправку поручений из панели" :
-      module?.documentState !== "documented" ? "Сначала подготовьте корректный arch.yaml" :
+      module?.documentState !== "documented" ? "Сначала подготовьте корректный контракт модуля" :
       action.mode === "send" ? "Проверить выбранный снимок модуля агентом хоста" : "Скопировать промпт для анализа выбранного снимка модуля";
     button.onclick = runAnalysis;
   }
@@ -40,8 +40,8 @@ export function createAnalysisControls({ client, selection, promptAction, refres
   /** Статус относится к конкретному запросу; принятие сообщения не выдаётся за запуск или завершение модели. */
   function renderAnalysisControls() {
     for (const button of document.querySelectorAll<HTMLButtonElement>("[data-analysis]")) configureAnalysisButton(button);
-    const { request } = selectedAnalysis();
-    watchPreparedRequest(request);
+    const { request, view } = selectedAnalysis();
+    watchPreparedRequest(request, view?.workspace?.repository);
     const status = byId("analysis-status");
     status.hidden = !request;
     status.textContent = request?.message ?? "";
@@ -66,7 +66,7 @@ export function createAnalysisControls({ client, selection, promptAction, refres
     renderAnalysisControls();
     try {
       if (!record.prompt) Object.assign(record,
-        await client.prepareAnalysis({ view: view.id, path: module.key }), { status: "preparing" });
+        await client.prepareAnalysis({ view: view.id, path: module.key, repository: view.workspace?.repository }), { status: "preparing" });
       await action.deliver(record.prompt!);
       if (sendToHost) {
         record.message = "Поручение передано агенту хоста. Ожидаем импорт результата для выбранного снимка.";
@@ -83,7 +83,7 @@ export function createAnalysisControls({ client, selection, promptAction, refres
   }
 
   /** Follow only the visible request. A previous observer may still be awaiting its response. */
-  function watchPreparedRequest(request?: AnalysisRecord) {
+  function watchPreparedRequest(request?: AnalysisRecord, repository?: string) {
     const record = request?.status === "prepared" ? request : undefined;
     if (activePoll?.record === record) return;
     clearTimeout(activePoll?.timer);
@@ -100,7 +100,7 @@ export function createAnalysisControls({ client, selection, promptAction, refres
         return;
       }
       try {
-        const status = await client.getAnalysis({ id });
+        const status = await client.getAnalysis({ id, repository });
         if (activePoll !== observer) return;
         if (status.status === "completed") {
           observer.record.status = "completed";

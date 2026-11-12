@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { ReviewHistory, ReviewInput } from "../src/reports/types.js";
 import type { TestContext } from "node:test";
 /** Проверка реального staged-набора, CLI и переносимости без локального накопления. */
@@ -27,7 +28,8 @@ async function fixture(t: TestContext) {
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const root = path.join(temporary, "project");
   await mkdir(root);
-  await writeFile(path.join(root, "arch.yaml"), stringify(contract("root")));
+  await writeModuleTree(root, { root: "." });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract("root")));
   await writeFile(path.join(root, "code.js"), "export const value = 1;\n");
   git(root, ["init", "-q"]); git(root, ["config", "user.name", "Report Test"]);
   git(root, ["config", "user.email", "reports@example.invalid"]); git(root, ["config", "core.autocrlf", "false"]);

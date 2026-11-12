@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { Fact } from "../src/snapshots/types.js";
 import type { ComparisonResponse } from "./support.js";
 import { uiData, panelMetadata, processEnvironment, firstTextContent, structuredData } from "./support.js";
@@ -90,8 +91,8 @@ test("panel client uses the MCP operation adapter and never falls back to fetch"
   const noFetch = () => { throw new Error("Unexpected fetch"); };
   const client = createArchiViewClient({ mode: "mcp", fetcher: noFetch,
     connection: Promise.resolve({ call: async (name, args) => uiData(await panel.callUi(name, args)) }) });
-  const view = await client.getComparison();
-  assert.equal((await client.getModule({ view: view.id, path: "child" })).moduleId, "child");
+  const view = await client.getComparison({ repository: undefined });
+  assert.equal((await client.getModule({ view: view.id, path: "child", repository: undefined })).moduleId, "child");
   await panel.close();
   await assert.rejects(client.getComparison(), { code: "SESSION_CLOSED" });
   const unavailable = createArchiViewClient({ mode: "mcp", fetcher: noFetch, connection: Promise.resolve(null) });
@@ -103,8 +104,9 @@ export async function panelFixture(t: TestContext) {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-panel-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, "child"));
+  await writeModuleTree(root, { root: ".", child: "child" });
   for (const [directory, id] of [[".", "root"], ["child", "child"]]) {
-    await writeFile(path.join(root, directory, "arch.yaml"), stringify({ schema_version: 1,
+    await writeFile(path.join(root, ".archiview/modules", id + ".yaml"), stringify({ schema_version: 1,
       id, title: directory === "." ? "Тестовый проект панели" : "Тестовый модуль", kind: "module",
       purpose: "Предоставлять значение тестового модуля.", responsibilities: { R1: "Возвращать значение." },
       boundaries: { B1: "Не изменять исходники при просмотре." }, invariants: {} }));
@@ -211,7 +213,8 @@ test("analysis rejects unknown view/module, missing contracts, changed inputs an
   await symlink(outside, directory, process.platform === "win32" ? "junction" : "dir");
   await assert.rejects(app.analysis.complete(request.id), /ссыл|storage|Недопустимый/i);
   assert.equal((await app.reports.list()).entries.length, 0);
-  await rm(path.join(root, "child/arch.yaml"));
+  await writeModuleTree(root, { root: "." });
+  await rm(path.join(root, ".archiview/modules/child.yaml"));
   const missing = await ((await fetch(app.url + "/api/comparison?baseline=initial")).json() as Promise<ComparisonResponse>);
   assert.equal((await prepare(app, missing)).status, 422);
 });

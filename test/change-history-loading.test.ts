@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { TestContext } from "node:test";
 /** История после наблюдения берётся из того же проверенного чтения без потери событий. */
 import assert from "node:assert/strict";
@@ -21,13 +22,14 @@ async function fixture(t: TestContext, useGit = false) {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const root = path.join(directory, "source");
   await mkdir(root);
-  await writeFile(path.join(root, "arch.yaml"), stringify({ schema_version: 1, id: "root", title: "Root", kind: "module",
+  await writeModuleTree(root, { root: "." });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify({ schema_version: 1, id: "root", title: "Root", kind: "module",
     purpose: "Читать записи.", responsibilities: { R1: "Читать записи." }, boundaries: {}, invariants: {} }));
   const edit = (value: number) => writeFile(path.join(root, "code.js"), "export const value = " + value + ";\n");
   await edit(0);
   const git = async (...args: string[]) => (await run("git", args, { cwd: root, windowsHide: true })).stdout.trim();
   const commit = async () => {
-    await git("add", "arch.yaml", "code.js");
+    await git("add", ".archiview/modules.tree", ".archiview/modules/root.yaml", "code.js");
     await git("-c", "user.name=ArchiView Test", "-c", "user.email=archiview@example.invalid", "commit", "--quiet", "-m", "Snapshot");
     return captureGitHead(root);
   };

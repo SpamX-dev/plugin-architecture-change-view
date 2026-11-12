@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-project-location
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: e09973ab93ddeb276f54e75cc12d1b7a2c7029b70749bff7c5715153f7ef90ae
+check_hash: 8062f9bb35234eac98dd3bc355197a4b6065b620c49cbe532cf7507b1ca70cde
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,274 +10,19 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 0b96b3b9d93dff79913dc90e292caef48df01eaf
+      id: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
     state:
-      exists: true
-      directory: src/project
-      self_digest: sha256:efb2a539b904a308de5901f4cc179b2f3432f65b80acfb87355667a36d624014
-      subtree_digest: sha256:e3b7cab55a7a6b2b547cd0de26d72f18fe0e78f1d7668b09a39dd747bd42bc3b
+      exists: false
   current:
     exists: true
     directory: src/project
-    self_digest: sha256:789e3b509b346085d6d84d7fb96fdc4e19b685581b7feb34d6d632ac6d3bb25f
-    subtree_digest: sha256:4ebc2fdd438cd16a0d210d8e00c811be5cb502337581b79ae1e7ff4cc2856612
+    self_digest: sha256:3eaefe955dd95e5af7de35d6f96c96387c226d7db733e1548f1e5a1c0d8795c1
+    subtree_digest: sha256:22b3c0502c1b1088a8548b8b46a6d3b800804b8469a31c37552bd398064b9ad1
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
-baseline:
-  module_id: archiview-project-location
-  directory: src/project
-  parent_id: architecture-core
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: archiview-project-location
-    directory: src/project
-    own_files:
-      - path: src/project/identity.ts
-        digest: sha256:a260ec0af221a119bbd139fd6c453a3845135fc4b495d56a7de037cfe915c28a
-        normalization: text-lf/v1
-      - path: src/project/paths.ts
-        digest: sha256:f3836076f18a81d39b460cdd9555399eec5f1d207ac292ba3ab0bda207d5d7d9
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: archiview-project-location
-      title: Расположение данных и происхождение проекта
-      kind: module
-      extensions:
-        archiview.roles:
-          - domain
-      purpose: Определять допустимую область файловых операций с данными ArchiView и
-        идентичность истории при переносе проекта.
-      responsibilities:
-        R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое
-          расположение.
-        R2: Читать и фиксировать исходный корень истории проекта.
-      boundaries:
-        B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям
-          этих правил.
-      invariants:
-        I1: При переносе происхождение истории сохраняется, а операции с исходниками
-          используют выбранный корень.
-        I2: Создание манифеста идентичности не заменяет существующий манифест с другим
-          происхождением.
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
-          адаптерам. Извлечение символов, разрешение зависимостей и индексация
-          AST принадлежат ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
-          текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Прикладные операции находятся в application; HTTP и CLI в archiview
-          являются адаптерами, отображение принадлежит web.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B3
-        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
-          от модели инструменты UI без HTTP-сервера.
-      - module_id: architecture-core
-        section: boundaries
-        id: B4
-        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
-          скилл хоста, получая прикладные операции из application.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-  technical_digest: sha256:efb2a539b904a308de5901f4cc179b2f3432f65b80acfb87355667a36d624014
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: archiview-project-location
-    directory: src/project
-    own_files:
-      - path: src/project/identity.ts
-        digest: sha256:a260ec0af221a119bbd139fd6c453a3845135fc4b495d56a7de037cfe915c28a
-        normalization: text-lf/v1
-      - path: src/project/paths.ts
-        digest: sha256:f3836076f18a81d39b460cdd9555399eec5f1d207ac292ba3ab0bda207d5d7d9
-        normalization: text-lf/v1
-    contract:
-      id: archiview-project-location
-      kind: module
-      purpose: Определять допустимую область файловых операций с данными ArchiView и
-        идентичность истории при переносе проекта.
-      responsibilities:
-        R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое
-          расположение.
-        R2: Читать и фиксировать исходный корень истории проекта.
-      boundaries:
-        B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям
-          этих правил.
-      invariants:
-        I1: При переносе происхождение истории сохраняется, а операции с исходниками
-          используют выбранный корень.
-        I2: Создание манифеста идентичности не заменяет существующий манифест с другим
-          происхождением.
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
-          адаптерам. Извлечение символов, разрешение зависимостей и индексация
-          AST принадлежат ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
-          текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Прикладные операции находятся в application; HTTP и CLI в archiview
-          являются адаптерами, отображение принадлежит web.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B3
-        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
-          от модели инструменты UI без HTTP-сервера.
-      - module_id: architecture-core
-        section: boundaries
-        id: B4
-        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
-          скилл хоста, получая прикладные операции из application.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-    children: []
-  self_digest: sha256:fb507d6fc01d801d2c64154acc802caa7a2439c1c5add9d5e0a48fd480521fd1
-  subtree:
-    self: sha256:efb2a539b904a308de5901f4cc179b2f3432f65b80acfb87355667a36d624014
-    children: []
-  subtree_digest: sha256:e3b7cab55a7a6b2b547cd0de26d72f18fe0e78f1d7668b09a39dd747bd42bc3b
-  semantic_subtree:
-    self: sha256:fb507d6fc01d801d2c64154acc802caa7a2439c1c5add9d5e0a48fd480521fd1
-    children: []
-  semantic_subtree_digest: sha256:d266ff782b786518755fa1f44a1cbb3ccb87d5d695db18d914cf60625b98ca3f
+baseline: null
 current:
   module_id: archiview-project-location
   directory: src/project
@@ -292,7 +37,10 @@ current:
         digest: sha256:a260ec0af221a119bbd139fd6c453a3845135fc4b495d56a7de037cfe915c28a
         normalization: text-lf/v1
       - path: src/project/paths.ts
-        digest: sha256:f3836076f18a81d39b460cdd9555399eec5f1d207ac292ba3ab0bda207d5d7d9
+        digest: sha256:8451cb848dcc87566659047291feb42b88c694c7114fffedb45cfae452ebc5d9
+        normalization: text-lf/v1
+      - path: src/project/workspace.ts
+        digest: sha256:17aa37f7e1441292c07291c710936f118f1c74f97722be75295077446b15e690
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -308,6 +56,8 @@ current:
         R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое
           расположение.
         R2: Читать и фиксировать исходный корень истории проекта.
+        R3: Находить корни рабочих деревьев Git внутри выбранной папки и определять,
+          какому репозиторию принадлежит путь исходника.
       boundaries:
         B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям
           этих правил.
@@ -344,8 +94,9 @@ current:
       - module_id: architecture-change-view
         section: invariants
         id: I3
-        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
-          текущий код не разрешают её расширять.
+        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+          modules.tree связывает его id с каталогом проекта. Эвристические
+          оценки и текущий код не разрешают её расширять.
       - module_id: architecture-change-view
         section: invariants
         id: I4
@@ -367,6 +118,11 @@ current:
         id: I7
         text: Панель обращается к агенту только по явному поручению пользователя
           проанализировать модуль или исправить замечание.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I8
+        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
       - module_id: architecture-core
         section: boundaries
         id: B1
@@ -397,7 +153,7 @@ current:
       - module_id: architecture-core
         section: invariants
         id: I3
-        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
+        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
           ответственность.
       - module_id: architecture-core
         section: invariants
@@ -414,7 +170,7 @@ current:
         id: I6
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:789e3b509b346085d6d84d7fb96fdc4e19b685581b7feb34d6d632ac6d3bb25f
+  technical_digest: sha256:3eaefe955dd95e5af7de35d6f96c96387c226d7db733e1548f1e5a1c0d8795c1
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -425,7 +181,10 @@ current:
         digest: sha256:a260ec0af221a119bbd139fd6c453a3845135fc4b495d56a7de037cfe915c28a
         normalization: text-lf/v1
       - path: src/project/paths.ts
-        digest: sha256:f3836076f18a81d39b460cdd9555399eec5f1d207ac292ba3ab0bda207d5d7d9
+        digest: sha256:8451cb848dcc87566659047291feb42b88c694c7114fffedb45cfae452ebc5d9
+        normalization: text-lf/v1
+      - path: src/project/workspace.ts
+        digest: sha256:17aa37f7e1441292c07291c710936f118f1c74f97722be75295077446b15e690
         normalization: text-lf/v1
     contract:
       id: archiview-project-location
@@ -436,6 +195,8 @@ current:
         R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое
           расположение.
         R2: Читать и фиксировать исходный корень истории проекта.
+        R3: Находить корни рабочих деревьев Git внутри выбранной папки и определять,
+          какому репозиторию принадлежит путь исходника.
       boundaries:
         B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям
           этих правил.
@@ -471,8 +232,9 @@ current:
       - module_id: architecture-change-view
         section: invariants
         id: I3
-        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
-          текущий код не разрешают её расширять.
+        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+          modules.tree связывает его id с каталогом проекта. Эвристические
+          оценки и текущий код не разрешают её расширять.
       - module_id: architecture-change-view
         section: invariants
         id: I4
@@ -494,6 +256,11 @@ current:
         id: I7
         text: Панель обращается к агенту только по явному поручению пользователя
           проанализировать модуль или исправить замечание.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I8
+        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
       - module_id: architecture-core
         section: boundaries
         id: B1
@@ -524,7 +291,7 @@ current:
       - module_id: architecture-core
         section: invariants
         id: I3
-        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
+        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
           ответственность.
       - module_id: architecture-core
         section: invariants
@@ -542,20 +309,20 @@ current:
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
     children: []
-  self_digest: sha256:1145f0ba27fd94d1be5d855f41bcf387f9677f1a866f26cb8e21ae4aa2144443
+  self_digest: sha256:be12c5e5bee503930c4b385901726e65fe109564193f4b2ce76f098ab2b0b486
   subtree:
-    self: sha256:789e3b509b346085d6d84d7fb96fdc4e19b685581b7feb34d6d632ac6d3bb25f
+    self: sha256:3eaefe955dd95e5af7de35d6f96c96387c226d7db733e1548f1e5a1c0d8795c1
     children: []
-  subtree_digest: sha256:4ebc2fdd438cd16a0d210d8e00c811be5cb502337581b79ae1e7ff4cc2856612
+  subtree_digest: sha256:22b3c0502c1b1088a8548b8b46a6d3b800804b8469a31c37552bd398064b9ad1
   semantic_subtree:
-    self: sha256:1145f0ba27fd94d1be5d855f41bcf387f9677f1a866f26cb8e21ae4aa2144443
+    self: sha256:be12c5e5bee503930c4b385901726e65fe109564193f4b2ce76f098ab2b0b486
     children: []
-  semantic_subtree_digest: sha256:e2fc087ff643c4a3b14a465c60082c3e9e4e17aeaa7d42f4bdf6da53d2e715cd
+  semantic_subtree_digest: sha256:16acee27617d6e52e2c47422c2e3c39315c419b457867712f58b3e2f8113bc74
 change:
-  existence: retained
-  own: false
-  own_code: false
-  own_contract: false
+  existence: added
+  own: true
+  own_code: true
+  own_contract: true
   inherited_constraints: true
   descendants: false
   child_composition: false
@@ -565,331 +332,30 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 182
-  comparison_key: sha256:c18ab19c9fc847b2d20d35c6fdeabc6597b1f373315df10da5a976f8126344a1
+  generation: 183
+  comparison_key: sha256:1a9e697f70a7f34abee8431f8f7774afdeb7a0c481cc31290787febd79c6f93d
   baseline:
     metadata:
-      id: git-0b96b3b9d93dff79913dc90e292caef48df01eaf
-      digest: sha256:e31d891e8f1dec834749e6c266ea5dbb1efd664f35b597ff7a235b605348f923
+      id: git-69649a19d2d61e4b0c27cace211cfafdc2ff8892
+      digest: sha256:67ba9bf1650481774479508d992404faf971ab7b282ffb9afb33aab29c2caf79
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T00:31:54.269Z
+      capturedAt: 2026-11-12T02:13:12.001Z
       kind: git
-      revision: 0b96b3b9d93dff79913dc90e292caef48df01eaf
-      label: HEAD
-      fingerprint: 095b729cc6824d5689ecda2dec975727705423f316b2d49fc04e1437cd52a405
+      revision: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
+      label: HEAD · 69649a1
+      fingerprint: a5988a454e89ccb68bb909f2c139a65474093903545a3a093b12222f34eb4df3
       complete: true
       diagnostics: []
       evidenceLimitations: []
       isHead: true
-    module_index: 9
+    module_index: 10
     module:
       directory: src/project
-      documentPath: src/project/arch.yaml
       document:
-        state: documented
-        text: >
-          schema_version: 1
-
-          id: archiview-project-location
-
-          title: Расположение данных и происхождение проекта
-
-          kind: module
-
-          extensions:
-            archiview.roles: [domain]
-          purpose: Определять допустимую область файловых операций с данными
-          ArchiView и идентичность истории при переносе проекта.
-
-          responsibilities:
-            R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое расположение.
-            R2: Читать и фиксировать исходный корень истории проекта.
-          boundaries:
-            B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям этих правил.
-          invariants:
-            I1: При переносе происхождение истории сохраняется, а операции с исходниками используют выбранный корень.
-            I2: Создание манифеста идентичности не заменяет существующий манифест с другим происхождением.
-        format: arch.yaml
-        contract:
-          schema_version: 1
-          id: archiview-project-location
-          title: Расположение данных и происхождение проекта
-          kind: module
-          extensions:
-            archiview.roles:
-              - domain
-          purpose: Определять допустимую область файловых операций с данными ArchiView и
-            идентичность истории при переносе проекта.
-          responsibilities:
-            R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое
-              расположение.
-            R2: Читать и фиксировать исходный корень истории проекта.
-          boundaries:
-            B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям
-              этих правил.
-          invariants:
-            I1: При переносе происхождение истории сохраняется, а операции с исходниками
-              используют выбранный корень.
-            I2: Создание манифеста идентичности не заменяет существующий манифест с другим
-              происхождением.
-      files:
-        - path: src/project/arch.yaml
-          hash: 1e80de513f8acff3df2c5323b4acff7d38954bde
-        - path: src/project/identity.ts
-          hash: 7cdab7a0e02c89c2d893529d6f5576b3d08b5ee9
-        - path: src/project/paths.ts
-          hash: e12db4c9c85339fc8009445b09bd74cc979b3d41
-      sourceFiles: 2
-      fingerprint: 04db739832e96e086286fa532be6ffe7247f2666cd34645c33bc9a80edc31885
-    facts:
-      - index: 74
-        fact:
-          id: sha256:db752bae47467754f2dbc535c89cb7e90952aa0284d8f341acad69a819259c38
-          kind: file
-          path: src/project/arch.yaml
-          start_line: 1
-          end_line: 16
-          text: >
-            schema_version: 1
-
-            id: archiview-project-location
-
-            title: Расположение данных и происхождение проекта
-
-            kind: module
-
-            extensions:
-              archiview.roles: [domain]
-            purpose: Определять допустимую область файловых операций с данными
-            ArchiView и идентичность истории при переносе проекта.
-
-            responsibilities:
-              R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое расположение.
-              R2: Читать и фиксировать исходный корень истории проекта.
-            boundaries:
-              B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям этих правил.
-            invariants:
-              I1: При переносе происхождение истории сохраняется, а операции с исходниками используют выбранный корень.
-              I2: Создание манифеста идентичности не заменяет существующий манифест с другим происхождением.
-      - index: 75
-        fact:
-          id: sha256:040e66020ee2c175de50985e527ff0cd6147abbdaf30025ec1c8baff26e3533e
-          kind: file
-          path: src/project/identity.ts
-          start_line: 1
-          end_line: 43
-          text: >
-            import { randomUUID } from "node:crypto";
-
-            import { link, lstat, mkdir, readFile, rm, writeFile } from
-            "node:fs/promises";
-
-            import path from "node:path";
-
-            import { errorDetails } from "../runtime/errors.js";
-
-            import { assertStateLocation, projectStateDirectory } from
-            "./paths.js";
-
-
-            /** Читает происхождение истории; отсутствующий манифест не
-            создаётся при анализе. */
-
-            export async function readSnapshotRoot(root: string, directory =
-            projectStateDirectory(root)) {
-              await assertStateLocation(root, directory);
-              const file = path.join(directory, "project.json");
-              try {
-                const info = await lstat(file);
-                if (!info.isFile() || info.isSymbolicLink() || info.size > 16 * 1024) throw new Error("Invalid ArchiView project identity file");
-                const value: {schema_version?: unknown; snapshot_root?: unknown} = JSON.parse(await readFile(file, "utf8"));
-                if (value.schema_version !== 1 || typeof value.snapshot_root !== "string" || !value.snapshot_root ||
-                    value.snapshot_root.includes("\0") || Object.keys(value).some((key) => !["schema_version", "snapshot_root"].includes(key))) {
-                  throw new Error("Invalid ArchiView project identity");
-                }
-                return value.snapshot_root;
-              } catch (errorCause) { const error = errorDetails(errorCause);
-                if (error.code === "ENOENT") return null;
-                throw error;
-              }
-            }
-
-
-            /** Фиксирует идентичность один раз; Git отслеживает историю, но
-            пропускает временные записи. */
-
-            export async function ensureProjectIdentity(root: string, directory:
-            string, snapshotRoot: string) {
-              await assertStateLocation(root, directory);
-              await mkdir(directory, { recursive: true });
-              const temporary = path.join(directory, ".identity-" + randomUUID());
-              try {
-                await writeFile(temporary, JSON.stringify({ schema_version: 1, snapshot_root: snapshotRoot }, null, 2) + "\n", { flag: "wx" });
-                // Hard link публикует готовый файл атомарно и не заменяет уже принятую идентичность.
-                try { await link(temporary, path.join(directory, "project.json")); }
-                catch (errorCause) { const error = errorDetails(errorCause);
-                  if (error.code !== "EEXIST") throw error;
-                  if (await readSnapshotRoot(root, directory) !== snapshotRoot) throw new Error("ArchiView project identity collision");
-                }
-              } finally { await rm(temporary, { force: true }); }
-              try { await writeFile(path.join(directory, ".gitignore"), ".snapshot-*\n.pending-*\n.identity-*\n", { flag: "wx" }); }
-              catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "EEXIST") throw error; }
-            }
-      - index: 76
-        fact:
-          id: sha256:9018113f3ed8a3c6c3004a0d41909f8af5741b7d0c318c4270199e3dfbfe227a
-          kind: file
-          path: src/project/paths.ts
-          start_line: 1
-          end_line: 60
-          text: >
-            import { lstat, realpath } from "node:fs/promises";
-
-            import path from "node:path";
-
-            import { errorDetails } from "../runtime/errors.js";
-
-
-            /** Зарезервированное хранилище данных, исключаемое из анализа
-            исходников. */
-
-            export const STATE_DIRECTORY = ".archiview";
-
-
-            /** Выбирает папку данных относительно проекта; абсолютный внешний
-            путь сохраняется. */
-
-            export function projectStateDirectory(root: string, directory =
-            STATE_DIRECTORY) {
-              const target = path.resolve(root, directory);
-              if (within(root, target) && !within(path.join(root, STATE_DIRECTORY), target)) {
-                throw new Error("State storage must be under .archiview or outside source project");
-              }
-              return target;
-            }
-
-
-            /** Проверяет вложенность разрешённых абсолютных путей, включая сам
-            каталог. */
-
-            export function within(root: string, target: string) {
-              const relative = path.relative(root, target);
-              return relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(".." + path.sep));
-            }
-
-
-            /** Resolves existing components before checking the location of a
-            pending write. */
-
-            async function physicalPath(target: string): Promise<string> {
-              let ancestor = target;
-              while (true) {
-                try {
-                  await lstat(ancestor);
-                  break;
-                } catch (cause) {
-                  const parent = path.dirname(ancestor);
-                  if (errorDetails(cause).code !== "ENOENT" || parent === ancestor) throw cause;
-                  ancestor = parent;
-                }
-              }
-              // A dangling link exists according to lstat; its realpath error must reach the caller.
-              return path.resolve(await realpath(ancestor), path.relative(ancestor, target));
-            }
-
-
-            /**
-             * Разрешает данные только в зарезервированной папке проекта либо во внешнем
-             * хранилище. Ссылки не могут перенаправить локальные данные в исходники или наружу.
-             */
-            export async function assertStateLocation(root: string, directory:
-            string, target = directory) {
-              const local = within(root, directory);
-              if (local && !within(path.join(root, STATE_DIRECTORY), directory)) {
-                throw new Error("State storage inside source project must be under .archiview");
-              }
-              if (!within(directory, target)) throw new Error("Path escapes state storage");
-              const destination = await physicalPath(target);
-              if (local) {
-                if (path.relative(target, destination) !== "") throw new Error("Local state storage cannot use directory links");
-                return;
-              }
-              const boundary = target === directory ? destination : await physicalPath(directory);
-              const project = await realpath(root);
-              if (within(project, boundary) || within(project, destination)) throw new Error("External state storage resolves inside source project");
-              if (!within(boundary, destination)) throw new Error("Path resolves outside external state storage");
-            }
-      - index: 179
-        fact:
-          id: sha256:06062c1ca039768a6f0679665374987126fe619a30c29db75f184512e5b3ee44
-          kind: module
-          path: src/project
-          text: '{"contract":"documented","format":"arch.yaml","sources":["src/project/identity.ts","src/project/paths.ts"]}'
-  current:
-    metadata:
-      id: working-ecbeed389470865132b216322c10f6abf09865de6694cf1f019a01cd455c2d2c
-      digest: sha256:ecbeed389470865132b216322c10f6abf09865de6694cf1f019a01cd455c2d2c
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T00:32:39.863Z
-      kind: working
-      label: Рабочее дерево
-      fingerprint: 9fcb9410353c7d4930e13803fa291c5376e4daa3aa7b64d096674b7d5935ef1f
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-    module_index: 12
-    module:
-      directory: src/project
-      documentPath: src/project/arch.yaml
-      document:
-        state: documented
-        text: >
-          schema_version: 1
-
-          id: archiview-project-location
-
-          title: Расположение данных и происхождение проекта
-
-          kind: module
-
-          extensions:
-            archiview.roles: [domain]
-          purpose: Определять допустимую область файловых операций с данными
-          ArchiView и идентичность истории при переносе проекта.
-
-          responsibilities:
-            R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое расположение.
-            R2: Читать и фиксировать исходный корень истории проекта.
-          boundaries:
-            B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям этих правил.
-          invariants:
-            I1: При переносе происхождение истории сохраняется, а операции с исходниками используют выбранный корень.
-            I2: Создание манифеста идентичности не заменяет существующий манифест с другим происхождением.
-        format: arch.yaml
-        contract:
-          schema_version: 1
-          id: archiview-project-location
-          title: Расположение данных и происхождение проекта
-          kind: module
-          extensions:
-            archiview.roles:
-              - domain
-          purpose: Определять допустимую область файловых операций с данными ArchiView и
-            идентичность истории при переносе проекта.
-          responsibilities:
-            R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое
-              расположение.
-            R2: Читать и фиксировать исходный корень истории проекта.
-          boundaries:
-            B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям
-              этих правил.
-          invariants:
-            I1: При переносе происхождение истории сохраняется, а операции с исходниками
-              используют выбранный корень.
-            I2: Создание манифеста идентичности не заменяет существующий манифест с другим
-              происхождением.
+        state: missing
+        text: null
+      documentPath: .archiview/modules.tree
       files:
         - path: src/project/arch.yaml
           hash: 1e80de513f8acff3df2c5323b4acff7d38954bde
@@ -1077,19 +543,478 @@ publication:
               if (within(project, boundary) || within(project, destination)) throw new Error("External state storage resolves inside source project");
               if (!within(boundary, destination)) throw new Error("Path resolves outside external state storage");
             }
-      - index: 184
+      - index: 182
         fact:
-          id: sha256:06062c1ca039768a6f0679665374987126fe619a30c29db75f184512e5b3ee44
+          id: sha256:082d785f157e2d0d43cc2b9b4575548b1de6ec7da58bcc1dfa1068cb0790c7c7
           kind: module
           path: src/project
-          text: '{"contract":"documented","format":"arch.yaml","sources":["src/project/identity.ts","src/project/paths.ts"]}'
+          text: '{"contract":"missing","sources":["src/project/identity.ts","src/project/paths.ts"]}'
+  current:
+    metadata:
+      id: working-229ae0075628b257c2ee1c427b3e4a468b3d90c0e2144d52794919619663669f
+      digest: sha256:229ae0075628b257c2ee1c427b3e4a468b3d90c0e2144d52794919619663669f
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-12T02:13:13.926Z
+      kind: working
+      label: Рабочее дерево
+      fingerprint: 697fa2e47691ebd4f0cea6c0ba8f2948491d4d806914055352b7796de198912d
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+      baseRevision: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
+    module_index: 12
+    module:
+      directory: src/project
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-project-location
+
+          title: Расположение данных и происхождение проекта
+
+          kind: module
+
+          extensions:
+            archiview.roles: [domain]
+          purpose: Определять допустимую область файловых операций с данными
+          ArchiView и идентичность истории при переносе проекта.
+
+          responsibilities:
+            R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое расположение.
+            R2: Читать и фиксировать исходный корень истории проекта.
+            R3: Находить корни рабочих деревьев Git внутри выбранной папки и определять, какому репозиторию принадлежит путь исходника.
+          boundaries:
+            B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям этих правил.
+          invariants:
+            I1: При переносе происхождение истории сохраняется, а операции с исходниками используют выбранный корень.
+            I2: Создание манифеста идентичности не заменяет существующий манифест с другим происхождением.
+        format: yaml
+        contract:
+          schema_version: 1
+          id: archiview-project-location
+          title: Расположение данных и происхождение проекта
+          kind: module
+          extensions:
+            archiview.roles:
+              - domain
+          purpose: Определять допустимую область файловых операций с данными ArchiView и
+            идентичность истории при переносе проекта.
+          responsibilities:
+            R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое
+              расположение.
+            R2: Читать и фиксировать исходный корень истории проекта.
+            R3: Находить корни рабочих деревьев Git внутри выбранной папки и определять,
+              какому репозиторию принадлежит путь исходника.
+          boundaries:
+            B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям
+              этих правил.
+          invariants:
+            I1: При переносе происхождение истории сохраняется, а операции с исходниками
+              используют выбранный корень.
+            I2: Создание манифеста идентичности не заменяет существующий манифест с другим
+              происхождением.
+      documentPath: .archiview/modules/archiview-project-location.yaml
+      files:
+        - path: .archiview/modules/archiview-project-location.yaml
+          hash: 6887cf83c5344d40244b58a5fa2cea5fd2aaa216
+        - path: src/project/identity.ts
+          hash: 7cdab7a0e02c89c2d893529d6f5576b3d08b5ee9
+        - path: src/project/paths.ts
+          hash: 55c971928816082ae22f2607d47dae5a7a4f99c4
+        - path: src/project/workspace.ts
+          hash: 2b70863c5b707de64eb7cea626865f8471088603
+      sourceFiles: 3
+      fingerprint: adc97635f5f85625914ade0a670faf6a57aea74d4fe18fbf9b5db8763e082279
+    facts:
+      - index: 14
+        fact:
+          id: sha256:92a9ebbe97a71f8e91637daeaeb4f20b85efc20890963e32b76016f1cecd1198
+          kind: file
+          path: .archiview/modules/archiview-project-location.yaml
+          start_line: 1
+          end_line: 17
+          text: >
+            schema_version: 1
+
+            id: archiview-project-location
+
+            title: Расположение данных и происхождение проекта
+
+            kind: module
+
+            extensions:
+              archiview.roles: [domain]
+            purpose: Определять допустимую область файловых операций с данными
+            ArchiView и идентичность истории при переносе проекта.
+
+            responsibilities:
+              R1: Разрешать пути локального и внешнего хранилища, проверяя их фактическое расположение.
+              R2: Читать и фиксировать исходный корень истории проекта.
+              R3: Находить корни рабочих деревьев Git внутри выбранной папки и определять, какому репозиторию принадлежит путь исходника.
+            boundaries:
+              B1: Сбор снимков, хранение истории и публикация отчётов принадлежат потребителям этих правил.
+            invariants:
+              I1: При переносе происхождение истории сохраняется, а операции с исходниками используют выбранный корень.
+              I2: Создание манифеста идентичности не заменяет существующий манифест с другим происхождением.
+      - index: 90
+        fact:
+          id: sha256:040e66020ee2c175de50985e527ff0cd6147abbdaf30025ec1c8baff26e3533e
+          kind: file
+          path: src/project/identity.ts
+          start_line: 1
+          end_line: 43
+          text: >
+            import { randomUUID } from "node:crypto";
+
+            import { link, lstat, mkdir, readFile, rm, writeFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { errorDetails } from "../runtime/errors.js";
+
+            import { assertStateLocation, projectStateDirectory } from
+            "./paths.js";
+
+
+            /** Читает происхождение истории; отсутствующий манифест не
+            создаётся при анализе. */
+
+            export async function readSnapshotRoot(root: string, directory =
+            projectStateDirectory(root)) {
+              await assertStateLocation(root, directory);
+              const file = path.join(directory, "project.json");
+              try {
+                const info = await lstat(file);
+                if (!info.isFile() || info.isSymbolicLink() || info.size > 16 * 1024) throw new Error("Invalid ArchiView project identity file");
+                const value: {schema_version?: unknown; snapshot_root?: unknown} = JSON.parse(await readFile(file, "utf8"));
+                if (value.schema_version !== 1 || typeof value.snapshot_root !== "string" || !value.snapshot_root ||
+                    value.snapshot_root.includes("\0") || Object.keys(value).some((key) => !["schema_version", "snapshot_root"].includes(key))) {
+                  throw new Error("Invalid ArchiView project identity");
+                }
+                return value.snapshot_root;
+              } catch (errorCause) { const error = errorDetails(errorCause);
+                if (error.code === "ENOENT") return null;
+                throw error;
+              }
+            }
+
+
+            /** Фиксирует идентичность один раз; Git отслеживает историю, но
+            пропускает временные записи. */
+
+            export async function ensureProjectIdentity(root: string, directory:
+            string, snapshotRoot: string) {
+              await assertStateLocation(root, directory);
+              await mkdir(directory, { recursive: true });
+              const temporary = path.join(directory, ".identity-" + randomUUID());
+              try {
+                await writeFile(temporary, JSON.stringify({ schema_version: 1, snapshot_root: snapshotRoot }, null, 2) + "\n", { flag: "wx" });
+                // Hard link публикует готовый файл атомарно и не заменяет уже принятую идентичность.
+                try { await link(temporary, path.join(directory, "project.json")); }
+                catch (errorCause) { const error = errorDetails(errorCause);
+                  if (error.code !== "EEXIST") throw error;
+                  if (await readSnapshotRoot(root, directory) !== snapshotRoot) throw new Error("ArchiView project identity collision");
+                }
+              } finally { await rm(temporary, { force: true }); }
+              try { await writeFile(path.join(directory, ".gitignore"), ".snapshot-*\n.pending-*\n.identity-*\n", { flag: "wx" }); }
+              catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "EEXIST") throw error; }
+            }
+      - index: 91
+        fact:
+          id: sha256:f4e21acdaa702fafd407b3a1bef9ec0db8817ec278e8b6e7f8bef66f36f402f5
+          kind: file
+          path: src/project/paths.ts
+          start_line: 1
+          end_line: 70
+          text: >
+            import { lstat, realpath } from "node:fs/promises";
+
+            import path from "node:path";
+
+            import { errorDetails } from "../runtime/errors.js";
+
+
+            /** Зарезервированное хранилище данных, исключаемое из анализа
+            исходников. */
+
+            export const STATE_DIRECTORY = ".archiview";
+
+
+            /** Source enumeration and repository discovery skip dependencies,
+            metadata and generated files. */
+
+            const EXCLUDED = new Set([
+              STATE_DIRECTORY,
+              ".git", ".hg", ".svn", "node_modules", "target", "dist", "build", "coverage",
+              ".venv", "venv", "__pycache__", ".next", ".nuxt", ".cache", "obj",
+            ]);
+
+            export function excludedProjectPath(relative: string) {
+              return relative.split(/[\\/]/).some((part) => EXCLUDED.has(process.platform === "win32" ? part.toLowerCase() : part));
+            }
+
+
+            /** Выбирает папку данных относительно проекта; абсолютный внешний
+            путь сохраняется. */
+
+            export function projectStateDirectory(root: string, directory =
+            STATE_DIRECTORY) {
+              const target = path.resolve(root, directory);
+              if (within(root, target) && !within(path.join(root, STATE_DIRECTORY), target)) {
+                throw new Error("State storage must be under .archiview or outside source project");
+              }
+              return target;
+            }
+
+
+            /** Проверяет вложенность разрешённых абсолютных путей, включая сам
+            каталог. */
+
+            export function within(root: string, target: string) {
+              const relative = path.relative(root, target);
+              return relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(".." + path.sep));
+            }
+
+
+            /** Resolves existing components before checking the location of a
+            pending write. */
+
+            async function physicalPath(target: string): Promise<string> {
+              let ancestor = target;
+              while (true) {
+                try {
+                  await lstat(ancestor);
+                  break;
+                } catch (cause) {
+                  const parent = path.dirname(ancestor);
+                  if (errorDetails(cause).code !== "ENOENT" || parent === ancestor) throw cause;
+                  ancestor = parent;
+                }
+              }
+              // A dangling link exists according to lstat; its realpath error must reach the caller.
+              return path.resolve(await realpath(ancestor), path.relative(ancestor, target));
+            }
+
+
+            /**
+             * Разрешает данные только в зарезервированной папке проекта либо во внешнем
+             * хранилище. Ссылки не могут перенаправить локальные данные в исходники или наружу.
+             */
+            export async function assertStateLocation(root: string, directory:
+            string, target = directory) {
+              const local = within(root, directory);
+              if (local && !within(path.join(root, STATE_DIRECTORY), directory)) {
+                throw new Error("State storage inside source project must be under .archiview");
+              }
+              if (!within(directory, target)) throw new Error("Path escapes state storage");
+              const destination = await physicalPath(target);
+              if (local) {
+                if (path.relative(target, destination) !== "") throw new Error("Local state storage cannot use directory links");
+                return;
+              }
+              const boundary = target === directory ? destination : await physicalPath(directory);
+              const project = await realpath(root);
+              if (within(project, boundary) || within(project, destination)) throw new Error("External state storage resolves inside source project");
+              if (!within(boundary, destination)) throw new Error("Path resolves outside external state storage");
+            }
+      - index: 92
+        fact:
+          id: sha256:437b8588e84a211505d15a873fe04250c68caedf8ae42c26e629537b0b78030b
+          kind: file
+          path: src/project/workspace.ts
+          start_line: 1
+          end_line: 139
+          text: >
+            import { execFile } from "node:child_process";
+
+            import { lstat, readdir, realpath } from "node:fs/promises";
+
+            import path from "node:path";
+
+            import { promisify } from "node:util";
+
+            import { errorDetails } from "../runtime/errors.js";
+
+            import { excludedProjectPath, within } from "./paths.js";
+
+
+            const git = promisify(execFile);
+
+            const relativePath = (root: string, directory: string) =>
+            path.relative(root, directory).split(path.sep).join("/") || ".";
+
+            const internalDirectory = (name: string) => [".codex",
+            ".agents"].includes(process.platform === "win32" ?
+            name.toLowerCase() : name);
+
+
+            async function entry(candidate: string) {
+              try { return await lstat(candidate); }
+              catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
+            }
+
+
+            /** A linked worktree or initialized submodule has a regular .git
+            file instead of a directory. */
+
+            async function isRepositoryRoot(directory: string) {
+              const marker = await entry(path.join(directory, ".git"));
+              if (!marker || marker.isSymbolicLink() || !marker.isDirectory() && !marker.isFile()) return false;
+              const top = await gitTopLevel(directory);
+              return top !== null && path.relative(top, directory) === "";
+            }
+
+
+            async function gitTopLevel(directory: string) {
+              try {
+                const { stdout } = await git("git", ["rev-parse", "--show-toplevel"], {
+                  cwd: directory, windowsHide: true, timeout: 15000,
+                });
+                return await realpath(stdout.trim());
+              } catch (cause) {
+                const error = errorDetails(cause);
+                if (error.code === "ENOENT" || /not a git repository|invalid gitfile format/i.test(String(error.stderr))) return null;
+                throw cause;
+              }
+            }
+
+
+            /** Find checked-out repositories, including nested checkouts,
+            without following directory links. */
+
+            export async function discoverWorkspaceRepositories(workspace:
+            string): Promise<string[]> {
+              const root = await realpath(workspace);
+              const pending = [root];
+              const repositories: string[] = [];
+              while (pending.length > 0) {
+                const directory = pending.pop()!;
+                const entries = await readdir(directory, { withFileTypes: true }).catch((cause: unknown) => {
+                  const { code } = errorDetails(cause);
+                  if (directory !== root && (code === "ENOENT" || code === "ENOTDIR")) return [];
+                  throw cause;
+                });
+                for (const child of entries) {
+                  if (child.name === ".git" && !child.isSymbolicLink() && await isRepositoryRoot(directory)) {
+                    repositories.push(relativePath(root, directory));
+                  } else if (child.isDirectory() && !child.isSymbolicLink() && !excludedProjectPath(child.name) && !internalDirectory(child.name)) {
+                    pending.push(path.join(directory, child.name));
+                  }
+                }
+              }
+              // A selected subtree of an enclosing checkout can also contain its own nested checkouts.
+              if (repositories.length && !repositories.includes(".") && await gitTopLevel(root)) repositories.push(".");
+              return repositories.sort();
+            }
+
+
+            function checkedTarget(root: string, relative: string) {
+              if (path.isAbsolute(relative) || path.win32.isAbsolute(relative) || /^[a-z]:/i.test(relative))
+                throw new Error("source path must be relative");
+              const target = path.resolve(root, relative);
+              if (!within(root, target)) throw new Error("source path is outside project");
+              if (excludedProjectPath(path.relative(root, target))) throw new Error("path is excluded from project sources");
+              return target;
+            }
+
+
+            /** Revalidate a panel selection before passing its canonical
+            directory to any repository session. */
+
+            export async function resolveWorkspaceRepository(workspace: string,
+            repository: string): Promise<string> {
+              const root = await realpath(workspace);
+              const target = checkedTarget(root, repository);
+              if (relativePath(root, target) !== repository || repository.split("/").some(internalDirectory))
+                throw new Error("Invalid repository path: " + repository);
+              const physical = await realpath(target);
+              if (!within(root, physical) || relativePath(root, physical) !== repository ||
+                  !(repository === "." ? await gitTopLevel(root) : await isRepositoryRoot(physical))) {
+                throw new Error("Not a repository in the selected workspace: " + repository);
+              }
+              return physical;
+            }
+
+
+            /** Check only the ancestors of paths actually listed by Git or the
+            contract map. */
+
+            export function repositoryDirectoryOwnership(root: string) {
+              const states = new Map<string, Promise<boolean>>([[".", Promise.resolve(true)]]);
+              function owns(directory: string): Promise<boolean> {
+                const cached = states.get(directory);
+                if (cached) return cached;
+                const result = owns(path.posix.dirname(directory)).then(async (parentOwned) => {
+                  if (!parentOwned) return false;
+                  const candidate = checkedTarget(root, directory);
+                  const info = await entry(candidate);
+                  if (!info) return true; // Its parent owns any planned path or deleted tracked file.
+                  if (info.isSymbolicLink() || !info.isDirectory()) return false;
+                  return !await isRepositoryRoot(candidate);
+                });
+                states.set(directory, result);
+                return result;
+              }
+              return owns;
+            }
+
+
+            /** A new file uses its nearest existing ancestor. The chat's
+            selected root is the upper bound. */
+
+            export async function locateSourceRepository(workspace: string,
+            relative: string) {
+              const workspaceRoot = await realpath(workspace);
+              const target = checkedTarget(workspaceRoot, relative);
+              let existing = target;
+              let info = await entry(existing);
+              while (!info) {
+                existing = path.dirname(existing);
+                info = await entry(existing);
+              }
+              const physical = await realpath(existing);
+              if (!within(workspaceRoot, physical)) throw new Error("source path resolves outside project");
+              if (excludedProjectPath(path.relative(workspaceRoot, physical))) throw new Error("path is excluded from project sources");
+              if (path.relative(physical, existing) !== "") throw new Error("source path uses a link");
+              if (info.isSymbolicLink() || !info.isFile() && !info.isDirectory()) throw new Error("Expected a source file or directory");
+              const existingDirectory = info.isDirectory() ? physical : path.dirname(physical);
+              const requested = path.join(physical, path.relative(existing, target));
+              const targetDirectory = (existing === target ? info.isDirectory() : /[\\/]$/.test(relative))
+                ? requested : path.dirname(requested);
+              let root = existingDirectory;
+              while (!await isRepositoryRoot(root)) {
+                if (root === workspaceRoot) {
+                  const repositories = await discoverWorkspaceRepositories(workspaceRoot);
+                  if (repositories.length && !repositories.includes(".")) {
+                    throw new Error("Source path is outside the workspace repositories. Choose a repository: " + repositories.join(", "));
+                  }
+                  break;
+                }
+                root = path.dirname(root);
+              }
+              return { workspaceRoot, root, repository: relativePath(workspaceRoot, root),
+                directory: relativePath(root, targetDirectory), existingDirectory: relativePath(root, existingDirectory) };
+            }
+      - index: 190
+        fact:
+          id: sha256:9f5d3de18b28479113d2b2ecbb1551dfa54c42e562194fb7cdd851ed3e51bcdd
+          kind: module
+          path: src/project
+          text: '{"contract":"documented","format":"yaml","sources":["src/project/identity.ts","src/project/paths.ts","src/project/workspace.ts"]}'
 review_status:
   self:
     current:
       status: stale
       reasons:
         - code: own_code
+        - code: own_contract
         - code: dependency_input
+        - code: own_code
+        - code: own_contract
         - code: dependency_input
       verdict: null
       verdicts: []
@@ -1117,15 +1042,34 @@ review_status:
       status: stale
       reasons:
         - code: own_code
+        - code: own_contract
         - code: dependency_input
         - code: baseline_identity
+        - code: module_existence
+          side: baseline
+        - code: module_path
+          side: baseline
         - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
+        - code: child_composition
           side: baseline
         - code: dependency_input
           side: baseline
+        - code: own_code
+        - code: own_contract
         - code: dependency_input
         - code: baseline_identity
+        - code: module_existence
+          side: baseline
+        - code: module_path
+          side: baseline
         - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
+        - code: child_composition
           side: baseline
         - code: dependency_input
           side: baseline

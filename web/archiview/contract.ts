@@ -153,9 +153,9 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
     paper.append(decorate(references, "references", "Ссылки"));
   }
   const raw = el("details", "raw-document");
-  raw.append(el("summary", "", "arch.yaml"));
+  raw.append(el("summary", "", "YAML контракта"));
   if (options.rawChanged && options.showRawDiff) {
-    const diff = el("button", "button button-quiet", "Диф arch.yaml");
+    const diff = el("button", "button button-quiet", "Диф YAML");
     diff.onclick = options.showRawDiff;
     raw.append(diff);
   }

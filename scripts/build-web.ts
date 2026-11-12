@@ -28,7 +28,7 @@ export async function buildWeb(root = new URL("../", import.meta.url), output = 
     for (const file of result.outputFiles) {
       await writeFile(new URL(path.basename(file.path), destination), file.contents);
     }
-    for (const name of ["index.html", "styles.css", "favicon.svg", "arch.yaml"]) {
+    for (const name of ["index.html", "styles.css", "favicon.svg"]) {
       await cp(new URL(`web/archiview/${name}`, root), new URL(name, destination));
     }
   }

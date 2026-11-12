@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 /** Real browser acceptance of the built standalone app; never opens a host client. */
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
@@ -42,16 +43,17 @@ async function browserProject(defer: DeferCleanup) {
   await mkdir(path.join(root, "src"));
   const contract = (id: string, title: string) => stringify({ schema_version: 1, id, title, kind: "module",
     purpose: "Показывать проверяемую функцию", responsibilities: { R1: "Предоставлять функцию" }, boundaries: {}, invariants: {} });
-  await writeFile(path.join(root, "arch.yaml"), contract("browser-project", "Браузерный проект"));
-  await writeFile(path.join(root, "src/arch.yaml"), contract("browser-feature", "Функция браузера"));
+  await writeModuleTree(root, { "browser-project": ".", "browser-feature": "src" });
+  await writeFile(path.join(root, ".archiview/modules/browser-project.yaml"), contract("browser-project", "Браузерный проект"));
+  await writeFile(path.join(root, ".archiview/modules/browser-feature.yaml"), contract("browser-feature", "Функция браузера"));
   await writeFile(path.join(root, "src/feature.ts"), "export const feature = 1;\n");
   const run = promisify(execFile);
   const git = (args: string[]) => run("git", args, { cwd: root, windowsHide: true });
   await git(["init", "-q"]);
   await git(["add", "."]);
   await git(["-c", "user.name=Browser Test", "-c", "user.email=browser@example.test", "commit", "-qm", "Initial feature"]);
-  await writeFile(path.join(root, "arch.yaml"), contract("browser-project", "Новый заголовок проекта"));
-  await git(["add", "arch.yaml"]);
+  await writeFile(path.join(root, ".archiview/modules/browser-project.yaml"), contract("browser-project", "Новый заголовок проекта"));
+  await git(["add", ".archiview/modules/browser-project.yaml"]);
   await git(["-c", "user.name=Browser Test", "-c", "user.email=browser@example.test", "commit", "-qm", "Update root contract"]);
   await writeFile(path.join(root, "src/feature.ts"), "export const feature = 2;\n");
   return root;
@@ -157,17 +159,19 @@ test("a reused directory retains its exact module under search and status filter
   const child = path.join(root, "src/undocumented");
   await mkdir(child);
   await writeFile(path.join(child, "child.ts"), "export const child = 1;");
-  await writeFile(path.join(root, "src/arch.yaml"), "\nextensions:\n  archiview.roles: [queue-consumer, queue-producer]\n", { flag: "a" });
-  const rootDocument = path.join(root, "arch.yaml");
+  await writeFile(path.join(root, ".archiview/modules/browser-feature.yaml"), "\nextensions:\n  archiview.roles: [queue-consumer, queue-producer]\n", { flag: "a" });
+  const rootDocument = path.join(root, ".archiview/modules/browser-project.yaml");
   const rootText = await readFile(rootDocument, "utf8");
   const setRootRoles = (ids: string[]) => writeFile(rootDocument, rootText + stringify({ extensions: { "archiview.roles": ids } }));
   await setRootRoles(["domain", "storage"]);
   const git = (args: string[]) => promisify(execFile)("git", args, { cwd: root, windowsHide: true });
-  await git(["add", "arch.yaml", "src/undocumented", "src/arch.yaml"]);
+  await git(["add", ".archiview/modules/browser-project.yaml", "src/undocumented", ".archiview/modules/browser-feature.yaml"]);
   await git(["-c", "user.name=Browser Test", "-c", "user.email=browser@example.test", "commit", "-qm", "Add child before replacement"]);
   await rm(child, { recursive: true });
   await setRootRoles(["ui", "domain"]);
-  await writeFile(path.join(root, "src/arch.yaml"), stringify({ schema_version: 1, id: "replacement", title: "Новая функция",
+  await rm(path.join(root, ".archiview/modules/browser-feature.yaml"));
+  await writeModuleTree(root, { "browser-project": ".", replacement: "src" });
+  await writeFile(path.join(root, ".archiview/modules/replacement.yaml"), stringify({ schema_version: 1, id: "replacement", title: "Новая функция",
     kind: "module", purpose: "Заменить прежнюю функцию", responsibilities: { R1: "Показать замену" }, boundaries: {}, invariants: {},
     extensions: { "archiview.roles": ["http-client"], "example.owner": "team" } }));
   const origin = await listen(defer, (await createArchiView({ root })).server);
@@ -206,6 +210,109 @@ test("a reused directory retains its exact module under search and status filter
   await page.locator('.clause-row[data-change-status="added"]').waitFor();
   assert.deepEqual(await page.locator(".contract-roles li").allTextContents(), ["http-client"]);
   assert.match(await page.locator(".contract-extra").first().innerText(), /example\.owner/);
+});
+
+test("a workspace keeps identical modules, history and deep links scoped to each repository", browserOptions, async (t) => {
+  const defer = fixtureCleanup(t);
+  const root = await mkdtemp(path.join(os.tmpdir(), "archiview-browser-workspace-"));
+  defer(() => rm(root, { recursive: true, force: true, maxRetries: 5 }));
+  const revisions = new Map<string, string>();
+  for (const name of ["alpha", "beta"]) {
+    const repo = path.join(root, name);
+    await mkdir(path.join(repo, "src"), { recursive: true });
+    await writeModuleTree(repo, { project: ".", feature: "src" });
+    for (const id of ["project", "feature"]) {
+      await writeFile(path.join(repo, ".archiview/modules", id + ".yaml"), stringify({
+        schema_version: 1, id, kind: "module", title: name + " " + id, purpose: "Contract of " + name,
+        responsibilities: { R1: name + " implementation" }, boundaries: {}, invariants: {},
+      }));
+    }
+    await writeFile(path.join(repo, "src/feature.ts"), "export const feature = 1;\n");
+    const git = (args: string[]) => promisify(execFile)("git", args, { cwd: repo, windowsHide: true });
+    await git(["init", "-q"]);
+    await git(["add", "."]);
+    await git(["-c", "user.name=Browser Test", "-c", "user.email=test@example.invalid", "commit", "-qm", name + " initial"]);
+    revisions.set(name, "git-" + (await git(["rev-parse", "HEAD"])).stdout.trim());
+  }
+  const origin = await listen(defer, (await createArchiView({ root })).server);
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(origin);
+  const alpha = page.locator('[data-repository="alpha"][data-key="src"]');
+  const beta = page.locator('[data-repository="beta"][data-key="src"]');
+  await alpha.click();
+  await page.getByRole("heading", { name: "alpha feature", exact: true }).waitFor();
+  assert.ok(await page.getByRole("searchbox", { name: "Найти модуль в загруженных репозиториях" }).isVisible());
+  assert.match(await page.locator("#module-total").getAttribute("title") ?? "", /1 из 2/);
+  await page.locator('[data-repository-root="beta"]').click();
+  await beta.click();
+  await page.getByRole("heading", { name: "beta feature", exact: true }).waitFor();
+  await page.locator(".contract-paper").getByText("beta implementation", { exact: true }).waitFor();
+  assert.ok(await page.getByRole("searchbox", { name: "Найти модуль", exact: true }).isVisible());
+  assert.equal(await page.locator("#module-total").getAttribute("title"), "");
+  assert.ok(await alpha.isVisible(), "the other open repository stays accessible");
+  assert.equal(await alpha.getAttribute("aria-selected"), "false");
+  assert.equal(await beta.getAttribute("aria-selected"), "true");
+  const timeline = page.locator("#timeline");
+  const betaRevision = revisions.get("beta")!;
+  assert.equal(await timeline.locator('option[value="' + revisions.get("alpha") + '"]').count(), 0);
+  await timeline.selectOption(betaRevision);
+  await page.waitForFunction((id) => {
+    const node = document.querySelector<HTMLSelectElement>("#timeline");
+    return node?.value === id && !node.disabled;
+  }, betaRevision);
+  await alpha.click();
+  await page.getByRole("heading", { name: "alpha feature", exact: true }).waitFor();
+  assert.equal(await timeline.locator('option[value="' + betaRevision + '"]').count(), 0);
+  await beta.click();
+  await page.getByRole("heading", { name: "beta feature", exact: true }).waitFor();
+  assert.equal(await timeline.inputValue(), betaRevision);
+
+  let capture!: (route: import("playwright").Route) => void;
+  const pendingAlpha = new Promise<import("playwright").Route>((resolve) => { capture = resolve; });
+  await page.route("**/api/module?**", (route) => {
+    const query = new URL(route.request().url()).searchParams;
+    if (query.get("repository") === "alpha" && query.get("path") === "src") return capture(route);
+    return route.continue();
+  });
+  await alpha.click();
+  const late = await pendingAlpha;
+  const oldDetail = await late.fetch();
+  await beta.click();
+  await page.locator(".contract-paper").getByText("beta implementation", { exact: true }).waitFor();
+  const received = page.waitForResponse((response) => response.url() === late.request().url());
+  await late.fulfill({ response: oldDetail });
+  await received;
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  assert.ok(await page.locator(".contract-paper").getByText("beta implementation", { exact: true }).isVisible());
+  assert.equal(await beta.getAttribute("aria-selected"), "true");
+
+  const repositoriesRequested: (string | null)[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === "/api/comparison") repositoriesRequested.push(url.searchParams.get("repository"));
+  });
+  await page.reload();
+  await page.getByRole("heading", { name: "beta feature", exact: true }).waitFor();
+  assert.deepEqual(repositoriesRequested, ["beta"]);
+  await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
+  await page.getByText("Промпт скопирован. Вставьте его в чат с агентом.", { exact: false }).waitFor();
+  const prompt = await page.evaluate(() => navigator.clipboard.readText());
+  assert.ok(prompt.includes('"project":' + JSON.stringify(path.join(root, "beta"))));
+
+  repositoriesRequested.length = 0;
+  await page.evaluate(() => history.replaceState(null, "", "#?repository=removed&module=src"));
+  await page.reload();
+  await page.getByRole("heading", { name: "alpha project", exact: true }).waitFor();
+  assert.deepEqual(repositoriesRequested, ["removed", null]);
+
+  repositoriesRequested.length = 0;
+  await page.route("**/api/comparison?**", (route) => route.fulfill({
+    status: 500, json: { code: "INTERNAL_ERROR", error: "Ошибка чтения истории beta" },
+  }));
+  await page.evaluate(() => history.replaceState(null, "", "#?repository=beta&module=src"));
+  await page.reload();
+  await page.getByText("Ошибка чтения истории beta", { exact: true }).waitFor();
+  assert.deepEqual(repositoriesRequested, ["beta"]);
 });
 
 test("dsh browser ties delivery and navigation to the active host and comparison", browserOptions, async (t) => {
@@ -270,7 +377,7 @@ test("dsh browser ties delivery and navigation to the active host and comparison
   assert.notEqual(requests[1].view, currentRequest.view);
 
   await panel.locator(".raw-document > summary").click();
-  await panel.getByRole("button", { name: "Диф arch.yaml" }).click();
+  await panel.getByRole("button", { name: "Диф YAML" }).click();
   assert.match(await panel.locator(".diff-labels").innerText(), /Revision [a-f0-9]+ → HEAD/);
   await panel.getByRole("button", { name: "Закрыть", exact: true }).click();
 

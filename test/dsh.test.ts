@@ -11,7 +11,8 @@ import type { PromptContext } from "../src/dsh/client/types.js";
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { createSessionRegistry } from "../src/dsh/sessions.js";
@@ -34,6 +35,8 @@ import { createArchiViewClient } from "../web/archiview/client.js";
 import { createPromptSender } from "../src/dsh/client/prompt.js";
 import { connectPanel } from "../web/archiview/panel-bridge.js";
 import { ApplicationError } from "../src/application/errors.js";
+import { apply } from "../src/dsh/host.js";
+import { contractYaml, writeModuleTree } from "./support.js";
 
 /**
  * Собирает поддельный запрос node:http.
@@ -156,6 +159,30 @@ test("tools: описания инструментов стабильны", () =
   for (const tool of TOOL_DEFINITIONS) {
     assert.ok(tool.description.length > 0);
     assert.equal(tool.parameters.projectRoot.type, "string");
+  }
+});
+
+test("tools: путь файла из рабочей папки чата dsh выбирает собственный контракт репозитория", async (t) => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), "dsh-chat-repositories-"));
+  t.after(() => rm(workspace, { recursive: true, force: true }));
+  for (const repository of ["client", "server"]) {
+    const root = path.join(workspace, repository);
+    await mkdir(path.join(root, "src"), { recursive: true });
+    execFileSync("git", ["init", "-q", root], { windowsHide: true });
+    await writeModuleTree(root, { core: "src" });
+    await writeFile(path.join(root, ".archiview/modules/core.yaml"), contractYaml("core", repository));
+  }
+  type Tool = { name: string; execute(args: { path: string }, exec: typeof execution): Promise<{ repository: string; contracts: { text: string | null }[] }> };
+  const execution = { agent: { session: { header: { cwd: workspace } } } };
+  const registered = new Map<string, Tool>();
+  const unused = () => { throw new Error("Unexpected host service"); };
+  apply({ tools: { register(tool) { const item = tool as Tool; registered.set(item.name, item); } },
+    effect: () => {}, get: unused, on: unused, connection: { requestRejection: unused }, webServer: { register: unused } },
+  { root: "", stateDirectory: "", prefix: "/archiview", maxFiles: 100, extensions: [], tools: true, panel: false, skill: false });
+  for (const repository of ["client", "server"]) {
+    const result = await registered.get("archiview_context")!.execute({ path: repository + "/src/new.ts" }, execution);
+    assert.equal(result.repository, repository);
+    assert.equal(result.contracts.at(-1)?.text, contractYaml("core", repository));
   }
 });
 

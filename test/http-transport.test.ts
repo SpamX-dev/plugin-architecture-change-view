@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
 /** Проверяет, что некорректная цель запроса становится ответом транспорта, а не падением сервера. */
@@ -15,7 +16,8 @@ import { createArchiView } from "../src/archiview/http.js";
 async function serve(t: TestContext) {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-transport-"));
   t.after(() => rm(root, { recursive: true, force: true }));
-  await writeFile(path.join(root, "arch.yaml"), stringify({ schema_version: 1, id: "root", title: "Пример",
+  await writeModuleTree(root, { root: "." });
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify({ schema_version: 1, id: "root", title: "Пример",
     kind: "module", purpose: "Возвращать значение.", responsibilities: { R1: "Возвращать значение." },
     boundaries: {}, invariants: {} }));
   await writeFile(path.join(root, "code.js"), "export const value = 1;\n");

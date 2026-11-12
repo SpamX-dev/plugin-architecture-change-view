@@ -1,4 +1,4 @@
-import { firstTextContent } from "./support.js";
+import { firstTextContent, writeModuleTree } from "./support.js";
 import type { moduleInventory } from "../src/contracts/inventory.js";
 /** Проверяет настоящий MCP handshake, ресурсы skill:// и инструменты чтения. */
 import assert from "node:assert/strict";
@@ -15,7 +15,9 @@ test("serves a matching skill descriptor and read-only module tools over stdio",
   const root = await mkdtemp(path.join(os.tmpdir(), "module-mcp-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, "src"));
-  await writeFile(path.join(root, "module.md"), "Root responsibility");
+  await writeModuleTree(root, { root: "." });
+  const document = "schema_version: 1\nid: root\ntitle: Root\nkind: module\npurpose: Read\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\n";
+  await writeFile(path.join(root, ".archiview/modules/root.yaml"), document);
   await writeFile(path.join(root, "src/main.js"), "export const main = 1;");
   const client = new Client({ name: "module-test", version: "1.0.0" });
   const transport = new StdioClientTransport({ command: process.execPath,
@@ -46,8 +48,15 @@ test("serves a matching skill descriptor and read-only module tools over stdio",
     "missing");
   const context = await client.callTool({ name: "module_context",
     arguments: { directory: "src" } });
-  assert.equal(JSON.parse(firstTextContent(context)).contracts[0].text,
-    "Root responsibility");
+  const [rootContract] = JSON.parse(firstTextContent(context)).contracts;
+  assert.equal(rootContract.text, document);
+  assert.equal(rootContract.document, ".archiview/modules/root.yaml");
+  const forFile = await client.callTool({ name: "module_context", arguments: { path: "src/main.js" } });
+  const resolved = JSON.parse(firstTextContent(forFile));
+  assert.equal(resolved.directory, "src");
+  assert.deepEqual(resolved.contracts, JSON.parse(firstTextContent(context)).contracts);
+  await assert.rejects(client.callTool({ name: "module_context",
+    arguments: { path: "src/main.js", directory: "src" } }), /Invalid tool arguments/);
   const outside = await client.callTool({ name: "module_context",
     arguments: { directory: "../" } });
   assert.equal(outside.isError, true);

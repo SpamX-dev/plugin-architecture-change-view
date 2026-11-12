@@ -1,3 +1,4 @@
+import { writeModuleTree } from "./support.js";
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
@@ -14,7 +15,8 @@ import { ApplicationError } from '../src/application/errors.js';
 test('a newer publication cannot be rolled back by an already running cached action', async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'archiview-publication-race-'));
   t.after(() => rm(root, { recursive: true, force: true }));
-  await writeFile(path.join(root, 'arch.yaml'), 'schema_version: 1\nid: root\ntitle: Root\nkind: module\npurpose: Provide a value.\nresponsibilities:\n  R1: Export a value.\nboundaries: {}\ninvariants: {}\n');
+  await writeModuleTree(root, { root: "." });
+  await writeFile(path.join(root, '.archiview/modules/root.yaml'), 'schema_version: 1\nid: root\ntitle: Root\nkind: module\npurpose: Provide a value.\nresponsibilities:\n  R1: Export a value.\nboundaries: {}\ninvariants: {}\n');
   await writeFile(path.join(root, 'value.ts'), 'export const value = 1;\n');
   const session = await createArchiViewSession({ root });
   const old = await session.getComparison();
@@ -134,14 +136,15 @@ test('the first live read uses the completeness of the baseline selected by anot
   const root = await mkdtemp(path.join(os.tmpdir(), 'archiview-shared-incomplete-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const git = (args: string[]) => promisify(execFile)('git', args, { cwd: root, windowsHide: true });
-  const contract = path.join(root, 'arch.yaml');
-  const valid = 'schema_version: 1\nid: root\ntitle: Root\nkind: module\nresponsibilities: {}\nboundaries: {}\ninvariants: {}\npurpose: ';
+  await writeModuleTree(root, { root: "." });
+  const contract = path.join(root, '.archiview/modules/root.yaml');
+  const valid = 'schema_version: 1\nid: root\ntitle: Root\nkind: module\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\npurpose: ';
   const oversized = valid + 'X'.repeat(140 * 1024);
   const code = path.join(root, 'value.ts');
   await git(['init', '-q']);
   async function commitContract(text: string, message: string) {
     await writeFile(contract, text);
-    await git(['add', 'arch.yaml', 'value.ts']);
+    await git(['add', '.archiview/modules.tree', '.archiview/modules/root.yaml', 'value.ts']);
     await git(['-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '-qm', message]);
   }
   await writeFile(code, 'export const value = 1;');
@@ -169,7 +172,7 @@ test('the first live read uses the completeness of the baseline selected by anot
   await writeFile(contract, valid + 'Working repair.');
   const incomplete = await reader.getComparison();
   assert.equal(incomplete.complete, false);
-  assert.ok(incomplete.diagnostics.some((message) => message.includes('arch.yaml')));
+  assert.ok(incomplete.diagnostics.some((message) => message.includes('.archiview/modules/root.yaml')));
   assert.equal(incomplete.modules[0].structure?.checkHash, null);
   assert.deepEqual(await writer.reports.publishedComparison(), previous);
 });

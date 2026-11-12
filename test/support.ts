@@ -1,6 +1,19 @@
 /** Assertions at protocol boundaries keep fixtures explicit without weakening application types. */
 import assert from "node:assert/strict";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { stringify } from "yaml";
 export type { ComparisonView as ComparisonResponse, ModuleDetail as ModuleResponse } from "../src/application/api.js";
+
+export async function writeModuleTree(root: string, directories: Record<string, string>) {
+  await mkdir(path.join(root, ".archiview/modules"), { recursive: true });
+  await writeFile(path.join(root, ".archiview/modules.tree"), stringify(directories));
+}
+
+export function contractYaml(id: string, purpose = "Read project data.") {
+  return stringify({ schema_version: 1, id, title: id, kind: "module", purpose,
+    responsibilities: { R1: purpose }, boundaries: {}, invariants: {} });
+}
 
 function record(value: unknown): asserts value is Record<string, unknown> {
   assert.ok(typeof value === "object" && value !== null && !Array.isArray(value));
