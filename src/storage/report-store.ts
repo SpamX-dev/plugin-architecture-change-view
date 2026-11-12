@@ -1,4 +1,5 @@
 import { withFileLock } from "./file-lock.js";
+import { ArchiveCache } from "./archive-cache.js";
 import { parseReportYaml } from "../serialization/yaml.js";
 import type { SnapshotStore } from "./snapshot-store.js";
 import type { SnapshotData, Snapshot, ComparisonModule } from "../snapshots/types.js";
@@ -18,7 +19,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { stringify } from "yaml";
 import { canonical, digest } from "../serialization/digest.js";
-import { readReviewBundle } from "./review-store.js";
+import { readBounded, readReviewBundle } from "./review-store.js";
 import { compareSnapshots } from "../snapshots/comparison.js";
 import { persistedCopy, publicationIdentity, reconstruct, snapshotFragment, technicalCore, validateStoredReport } from "./publication.js";
 import { createReportModel } from "../reports/model.js";
@@ -79,6 +80,9 @@ export class StalePublicationError extends Error {
 }
 
 export class ReportStore {
+  readonly #publishedFiles = new ArchiveCache<CheckedFile>();
+  readonly #rawFiles = new ArchiveCache<CheckedFile>();
+  readonly #legacyFiles = new ArchiveCache<string>();
   root: string; directory: string; work: string; raw: string; control: string;
   constructor(public snapshotStore: SnapshotStore) {
     this.snapshotStore = snapshotStore;
@@ -238,9 +242,36 @@ export class ReportStore {
       entries: state.entries, reports: state.reports, diagnostics: state.diagnostics, comparison: state.comparison };
   }
 
+  async #checkedFile(file: string, published: boolean) {
+    await this.snapshotStore.assertLocation(file);
+    const name = path.basename(file);
+    const cache = published ? this.#publishedFiles : this.#rawFiles;
+    // During journal recovery, the validated staging files move together into work.
+    const key = published ? name : file;
+    return cache.read(file, async (): Promise<CheckedFile> => {
+      const data = await readYaml<TechnicalReport | ReviewHistory>(file);
+      if (name !== moduleReportName(data.module_id) + (data.kind === "archi" ? ".archi.yaml" : ".review.yaml")) throw new Error("Module filename mismatch");
+      const directoryHash = path.basename(path.dirname(file));
+      if (data.kind === "archi") {
+        validateStoredReport(data);
+        if (data.project_id !== digest(this.snapshotStore.snapshotRoot)) throw new Error("Foreign technical report project");
+        if (published) {
+          if (!data.publication) throw new Error("Published technical report lacks snapshot fragments");
+          return { kind: "published", report: data };
+        }
+        if (data.check_hash !== directoryHash) throw new Error("Raw check directory mismatch");
+        return { kind: "raw", key: data.check_hash + "/" + data.module_id };
+      }
+      const entries = validateHistoryFile(data, name, this.snapshotStore.snapshotRoot);
+      if (!published && entries.some(entry => entry.check_hash !== directoryHash)) throw new Error("Raw check directory mismatch");
+      return { kind: "reviews", entries, fingerprint: digest(entries) };
+    }, key);
+  }
+
   /** Общий reader объединяет work и raw: work остаётся первичным после clone. */
   async #read(workDirectory = this.work, includeRaw = true) {
-    const state: StoreState = { entries: [], reports: [], diagnostics: [], workErrors: [], integrityErrors: [], rawArchi: new Set(), comparison: null };
+    const state: StoreState = { entries: [], reports: [], diagnostics: [], workErrors: [], integrityErrors: [], rawArchi: new Set(), rawReviews: new Map(), comparison: null };
+    const publishedNames = new Set<string>(), rawPaths = new Set<string>();
     const readDirectory = async (directory: string, published: boolean) => {
       await this.snapshotStore.assertLocation(directory);
       let names;
@@ -254,23 +285,17 @@ export class ReportStore {
         try {
           if (!item.isFile() || item.isSymbolicLink()) throw new Error("Report must be an ordinary file");
           const file = path.join(directory, item.name);
-          await this.snapshotStore.assertLocation(file);
-          const data = await readYaml<TechnicalReport | ReviewHistory>(file);
-          if (item.name !== moduleReportName(data.module_id) + (data.kind === "archi" ? ".archi.yaml" : ".review.yaml")) throw new Error("Module filename mismatch");
-          if (data.kind === "archi") {
-            validateStoredReport(data);
-            if (published && !data.publication) throw new Error("Published technical report lacks snapshot fragments");
-            if (data.project_id !== digest(this.snapshotStore.snapshotRoot)) throw new Error("Foreign technical report project");
-            if (!published && data.check_hash !== path.basename(directory)) throw new Error("Raw check directory mismatch");
-            if (published) {
-              state.reports.push(data);
-              state.diagnostics.push(...data.storage_diagnostics ?? []);
-            } else state.rawArchi.add(data.check_hash + "/" + data.module_id);
+          if (published) publishedNames.add(item.name);
+          else rawPaths.add(file);
+          const checked = await this.#checkedFile(file, published);
+          if (checked.kind === "published") {
+            state.reports.push(structuredClone(checked.report));
+            state.diagnostics.push(...checked.report.storage_diagnostics ?? []);
+          } else if (checked.kind === "raw") {
+            state.rawArchi.add(checked.key);
           } else {
-            for (const entry of validateHistoryFile(data, item.name, this.snapshotStore.snapshotRoot)) {
-              if (!published && entry.check_hash !== path.basename(directory)) throw new Error("Raw check directory mismatch");
-              this.#add(state, entry, true);
-            }
+            if (!published) state.rawReviews.set(file, checked.fingerprint);
+            for (const entry of checked.entries) this.#add(state, entry, true);
           }
         } catch (errorCause) { const error = errorDetails(errorCause);
           const message = path.relative(this.directory, path.join(directory, item.name)) + ": " + error.message;
@@ -281,6 +306,7 @@ export class ReportStore {
       }
     };
     await readDirectory(workDirectory, true);
+    this.#publishedFiles.retain(publishedNames);
     try { state.comparison = reconstruct(state.reports); } catch (errorCause) { const error = errorDetails(errorCause);
       const message = "work publication: " + error.message;
       state.diagnostics.push(message); state.workErrors.push(message);
@@ -297,6 +323,7 @@ export class ReportStore {
       if (/^[a-f0-9]{64}$/.test(directory.name) && directory.isDirectory() && !directory.isSymbolicLink()) await readDirectory(path.join(this.raw, directory.name), false);
     }
     state.entries.sort((a, b) => (a.registration_order ?? 0) - (b.registration_order ?? 0));
+    if (includeRaw) this.#rawFiles.retain(rawPaths);
     try { validateReviewRelations(state.entries); } catch (errorCause) { const error = errorDetails(errorCause);
       state.diagnostics.push(error.message); state.integrityErrors.push(error.message);
     }
@@ -327,6 +354,7 @@ export class ReportStore {
   }
 
   async #legacy(state: StoreState) {
+    const paths = new Set<string>();
     const legacy = path.join(this.directory, "reviews");
     await this.snapshotStore.assertLocation(legacy);
     let names: import("node:fs").Dirent[] = [];
@@ -336,7 +364,10 @@ export class ReportStore {
       try {
         const directory = path.join(legacy, item.name);
         await this.snapshotStore.assertLocation(directory);
-        const bundle = await readReviewBundle(directory);
+        const bundle = await readReviewBundle(directory, file => {
+          paths.add(file);
+          return this.#legacyFiles.read(file, () => readBounded(file));
+        });
         this.#assertProject(bundle.current);
         if (bundle.report.analysis.analyzer.name === "archiview-structure") continue;
         if (this.#alreadyMigrated(state, bundle)) continue;
@@ -346,6 +377,7 @@ export class ReportStore {
         if (error.message.startsWith("Review ID collision:")) throw error;
       }
     }
+    this.#legacyFiles.retain(paths);
   }
 
   /** Управляемый блок не заменяет пользовательские правила .gitignore. */
@@ -366,8 +398,10 @@ export class ReportStore {
     await this.snapshotStore.assertLocation(directory);
     await mkdir(directory, { recursive: true });
     const file = path.join(directory, moduleReportName(report.module_id) + ".archi.yaml");
-    try { validateStoredReport(await readYaml<TechnicalReport | ReviewHistory>(file)); }
-    catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "ENOENT") throw error; await this.#atomic(file, stringify(report, { aliasDuplicateObjects: false })); }
+    try { await this.#checkedFile(file, false); return; }
+    catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
+    await this.#atomic(file, stringify(report, { aliasDuplicateObjects: false }));
+    await this.#checkedFile(file, false);
   }
 
   /** Создаёт полную следующую публикацию и журнал, позволяющий завершить замену после сбоя. */
@@ -390,9 +424,12 @@ export class ReportStore {
     for (const same of rawGroups.values()) {
       const entry = same[0];
       const directory = path.join(this.raw, entry.check_hash);
+      const file = path.join(directory, moduleReportName(entry.module_id) + ".review.yaml");
+      if (state.rawReviews.get(file) === digest(same)) continue;
       await this.snapshotStore.assertLocation(directory);
       await mkdir(directory, { recursive: true });
-      await this.#atomic(path.join(directory, moduleReportName(entry.module_id) + ".review.yaml"), stringify({ schema_version: REPORT_SCHEMA_VERSION, kind: "review_history", module_id: entry.module_id, entries: same }, { aliasDuplicateObjects: false }));
+      await this.#atomic(file, stringify({ schema_version: REPORT_SCHEMA_VERSION, kind: "review_history", module_id: entry.module_id, entries: same }, { aliasDuplicateObjects: false }));
+      await this.#checkedFile(file, false);
     }
     const id = randomUUID();
     const pending = ".publication-" + id;
@@ -473,6 +510,11 @@ export class ReportStore {
   }
 }
 
+type CheckedFile =
+  | { kind: "published"; report: TechnicalReport }
+  | { kind: "raw"; key: string }
+  | { kind: "reviews"; entries: ReviewEntry[]; fingerprint: string };
+
 interface StoreState {
   entries: ReviewEntry[];
   reports: TechnicalReport[];
@@ -480,6 +522,7 @@ interface StoreState {
   workErrors: string[];
   integrityErrors: string[];
   rawArchi: Set<string>;
+  rawReviews: Map<string, string>;
   comparison: PublishedComparison | null;
   publishedEntries?: string;
   publishedDiagnostics?: string;

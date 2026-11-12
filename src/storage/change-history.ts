@@ -1,4 +1,5 @@
 import { withFileLock } from "./file-lock.js";
+import { ArchiveCache } from "./archive-cache.js";
 import type { Snapshot } from "../snapshots/types.js";
 import { errorDetails } from "../runtime/errors.js";
 /**
@@ -23,6 +24,8 @@ const chronological = (a: Pick<ChangeRecord, "capturedAt" | "sequence">, b: Pick
 /** Хранилище событий одного проекта; сырые записи не нужны переносимому work. */
 type PageOptions = { beforeSequence?: number | null; limit?: number | null };
 export class ChangeHistory {
+  readonly #records = new ArchiveCache<ChangeRecord>();
+  readonly #cursors = new ArchiveCache<unknown>();
   readonly snapshotStore: import("./snapshot-store.js").SnapshotStore;
   readonly directory: string;
   constructor(snapshotStore: import("./snapshot-store.js").SnapshotStore) {
@@ -48,7 +51,7 @@ export class ChangeHistory {
     const newest = records.sort((a, b) => b.sequence - a.sequence);
     const selected = limit === null ? newest : newest.slice(0, limit);
     const hasMore = selected.length < newest.length;
-    return { changes: selected.sort(chronological), hasMore,
+    return { changes: structuredClone(selected.sort(chronological)), hasMore,
       nextBeforeSequence: hasMore ? Math.min(...selected.map((record) => record.sequence)) : null,
       diagnostics: state.diagnostics };
   }
@@ -59,7 +62,7 @@ export class ChangeHistory {
     await this.snapshotStore.open();
     const file = path.join(this.directory, id + ".yaml");
     await this.snapshotStore.assertLocation(file);
-    try { return this.#validateRecord(await this.#yaml(file)); }
+    try { return structuredClone(await this.#readRecord(file)); }
     catch (errorCause) { const error = errorDetails(errorCause); if (error.code === "ENOENT") return null; throw error; }
   }
 
@@ -82,7 +85,7 @@ export class ChangeHistory {
       this.#revision(baseRevision);
       const state = await this.#read();
       this.#writable(state);
-      const observed = (record: ChangeRecord | null, created: boolean) => ({ record, created,
+      const observed = (record: ChangeRecord | null, created: boolean) => ({ record: structuredClone(record), created,
         ...(includeHistory ? { history: this.#history(state, baseRevision) } : {}) });
       let cursor = await this.#cursor(state);
       const same = cursor?.digest === current.digest && cursor?.headRevision === baseRevision;
@@ -118,7 +121,7 @@ export class ChangeHistory {
         this.#snapshot(snapshot);
         const id = "change-" + digest({ source, baseRevision, id: snapshot.id, digest: snapshot.digest, capturedAt: snapshot.capturedAt }).slice(7);
         const existing = state.changes.find((record) => record.id === id);
-        if (existing) { changes.push(existing); continue; }
+        if (existing) { changes.push(structuredClone(existing)); continue; }
         const record = this.#record(snapshot, baseRevision, ++sequence, id, { imported: true, source });
         await this.#save(record);
         state.changes.push(record);
@@ -168,6 +171,15 @@ export class ChangeHistory {
       recordId: record.id, sequence: record.sequence, capturedAt: record.capturedAt };
   }
 
+  async #readRecord(file: string) {
+    await this.snapshotStore.assertLocation(file);
+    return this.#records.read(file, async () => {
+      const record = this.#validateRecord(await this.#yaml(file));
+      if (path.basename(file) !== record.id + ".yaml") throw new Error("Change history filename mismatch");
+      return record;
+    });
+  }
+
   /** Проверяет сохранённую историю до записи; повреждение не превращается в пустую историю. */
   async #read() {
     const state: ChangeState = { changes: [], diagnostics: [] };
@@ -177,11 +189,11 @@ export class ChangeHistory {
       if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("Invalid change history directory");
       names = await readdir(this.directory);
     } catch (errorCause) { const error = errorDetails(errorCause); if (error.code === "ENOENT") return state; throw error; }
-    for (const name of names.sort()) {
-      if (!name.startsWith("change-") || !name.endsWith(".yaml")) continue;
+    const files = names.sort().filter(name => name.startsWith("change-") && name.endsWith(".yaml"));
+    this.#records.retain(new Set(files.map(name => path.join(this.directory, name))));
+    for (const name of files) {
       try {
-        const record = this.#validateRecord(await this.#yaml(path.join(this.directory, name)));
-        if (name !== record.id + ".yaml") throw new Error("Change history filename mismatch");
+        const record = await this.#readRecord(path.join(this.directory, name));
         if (state.changes.some((entry) => entry.sequence === record.sequence)) throw new Error("Duplicate change sequence");
         state.changes.push(record);
       } catch (errorCause) { const error = errorDetails(errorCause); state.diagnostics.push(name + ": " + error.message); }
@@ -197,7 +209,7 @@ export class ChangeHistory {
   async #cursor(state: ChangeState) {
     let cursor: ChangeCursor | null = null;
     try {
-      cursor = await this.#yaml(path.join(this.directory, ".cursor.yaml")) as ChangeCursor;
+      cursor = await this.#readCursor() as ChangeCursor;
       this.#revision(cursor.headRevision);
       if (cursor.schema_version !== 1 || !/^sha256:[a-f0-9]{64}$/.test(cursor.digest) || !Number.isSafeInteger(cursor.sequence) || cursor.sequence < 0 ||
           (cursor.recordId !== null && !ID.test(cursor.recordId)) || typeof cursor.capturedAt !== "string" || !Number.isFinite(Date.parse(cursor.capturedAt))) throw new Error("Invalid change history cursor");
@@ -219,11 +231,20 @@ export class ChangeHistory {
   }
 
   async #save(record: ChangeRecord) {
-    await this.#atomic(path.join(this.directory, record.id + ".yaml"), stringify(record, { aliasDuplicateObjects: false }), true);
+    const file = path.join(this.directory, record.id + ".yaml");
+    await this.#atomic(file, stringify(record, { aliasDuplicateObjects: false }), true);
+    await this.#readRecord(file);
+  }
+
+  async #readCursor() {
+    const file = path.join(this.directory, ".cursor.yaml");
+    await this.snapshotStore.assertLocation(file);
+    return this.#cursors.read(file, () => this.#yaml(file));
   }
 
   async #writeCursor(cursor: ChangeCursor) {
     await this.#atomic(path.join(this.directory, ".cursor.yaml"), stringify(cursor), false);
+    await this.#readCursor();
   }
 
   /** Immutable событие публикуется hard link; cursor заменяется готовым файлом. */

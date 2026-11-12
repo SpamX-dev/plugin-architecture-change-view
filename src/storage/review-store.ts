@@ -18,18 +18,18 @@ import { validateReview } from "../reviews/schema.js";
 import { validateReviewBundle } from "../reviews/bundle.js";
 
 /** Читает ограниченный файл пакета, не следуя файловым ссылкам. */
-async function readBounded(file: string) {
+export async function readBounded(file: string) {
   const info = await lstat(file);
   if (!info.isFile() || info.isSymbolicLink() || info.size > 64 * 1024 * 1024) throw new Error("Invalid review bundle file");
   return readFile(file, "utf8");
 }
 
 /** Загружает переносимый пакет анализа и проверяет сохранённые доказательства. */
-export async function readReviewBundle(directory: string): Promise<ReviewBundle> {
-  const report = parseYaml(await readBounded(path.join(directory, "review.yaml")), validateReview);
-  const manifest: ReviewManifest = JSON.parse(await readBounded(path.join(directory, "input.json")));
-  const current: Snapshot = JSON.parse(await readBounded(path.join(directory, "current.json")));
-  const baseline: Snapshot | null = report.comparison.baseline ? JSON.parse(await readBounded(path.join(directory, "baseline.json"))) : null;
+export async function readReviewBundle(directory: string, read = readBounded): Promise<ReviewBundle> {
+  const report = parseYaml(await read(path.join(directory, "review.yaml")), validateReview);
+  const manifest: ReviewManifest = JSON.parse(await read(path.join(directory, "input.json")));
+  const current: Snapshot = JSON.parse(await read(path.join(directory, "current.json")));
+  const baseline: Snapshot | null = report.comparison.baseline ? JSON.parse(await read(path.join(directory, "baseline.json"))) : null;
   return validateReviewBundle({ report, manifest, baseline, current });
 }
 

@@ -4,6 +4,8 @@ import type { TechnicalReport, ReviewHistory } from "../src/reports/types.js";
 import type { TestContext } from "node:test";
 /** Переносимость, неизменность реальных попыток и восстановление публикаций v2. */
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { cp, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -27,6 +29,35 @@ import { createPublishedView } from "../src/application/published-view.js";
 import { createArchiViewSession } from "../src/application/session.js";
 
 const stored = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+test("a warm refresh only reads archive files replaced since the previous comparison", async (t) => {
+  const { root } = await fixture(t);
+  const session = await createArchiViewSession({ root, deferPublication: true });
+  const first = await session.getComparison({ baseline: "auto" });
+  const module = first.modules.find(item => item.moduleId === "child")!;
+  const meta = path.join(root, ".archiview");
+  const raw = path.join(meta, "snapshots", "modules", module.structure!.checkHash!, moduleReportName("child") + ".archi.yaml");
+  const changeDir = path.join(meta, "snapshots", "changes");
+  const change = path.join(changeDir, (await readdir(changeDir)).find(name => name.startsWith("change-"))!);
+  const old = await Promise.all([raw, change].map(async file => ({ file, bytes: await readFile(file), info: await stat(file) })));
+
+  const reads = t.mock.method(fs, "readFile");
+  syncBuiltinESMExports();
+  t.after(() => { reads.mock.restore(); syncBuiltinESMExports(); });
+  const archiveReads = () => reads.mock.calls.map(call => String(call.arguments[0])).filter(file =>
+    [session.reports.raw, session.reports.work, changeDir].some(directory => file.startsWith(directory + path.sep)));
+  assert.equal((await session.getComparison({ baseline: "auto" })).id, first.id);
+  assert.deepEqual(archiveReads(), []);
+  // Preserve length, mtime and contents. Replacement must still be revalidated.
+  for (const { file, bytes, info } of old) {
+    const replacement = file + ".replacement";
+    await writeFile(replacement, bytes);
+    await utimes(replacement, info.atime, info.mtime);
+    await rename(replacement, file);
+  }
+  assert.equal((await session.getComparison({ baseline: "auto" })).id, first.id);
+  assert.deepEqual(archiveReads().sort(), [raw, change].sort());
+});
 
 /** Каждый тест владеет своими исходниками, состоянием и копиями проекта. */
 async function fixture(t: TestContext) {

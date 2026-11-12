@@ -298,7 +298,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     if (selected !== undefined) await selectModule(selected, clause, reviewId);
   }
 
-  /** При открытии сначала показывает опубликованную структуру, пока проверяется рабочее дерево. */
+  /** При переходе к текущему состоянию сначала показывает опубликованную структуру. */
   async function refresh({ target = state.target, historyLimit = state.historyLimit, clause, repository = state.view?.workspace?.repository, key }: {
     target?: string; historyLimit?: number; clause?: ClauseNavigation; repository?: string; key?: string;
   } = {}) {
@@ -325,7 +325,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     button.classList.add("is-loading");
     try {
       const args = { target, baseline: "auto", historyLimit, repository };
-      const preferPublished = target === "current" && (!state.view || switching);
+      const preferPublished = target === "current" && (switching || state.view?.target.id !== "current");
       const view = await client.getComparison(preferPublished ? { ...args, published: true } : args);
       if (token !== state.refresh) return;
       if (view.published) saved = view;

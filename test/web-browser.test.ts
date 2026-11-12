@@ -138,7 +138,21 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   assert.ok(revision);
   await timeline.selectOption(revision);
   await page.waitForFunction((id) => (document.querySelector("#timeline") as HTMLSelectElement).value === id && !(document.querySelector("#timeline") as HTMLSelectElement).disabled, revision);
+  let releaseLive!: () => void;
+  const gate = new Promise<void>(resolve => { releaseLive = resolve; });
+  await page.route(url => url.pathname === "/api/comparison" && !url.searchParams.has("published"), async route => {
+    await gate;
+    await route.continue();
+  }, { times: 1 });
+  const nextComparison = page.waitForRequest(request => new URL(request.url()).pathname === "/api/comparison");
   await timeline.selectOption("current");
+  try {
+    assert.equal(new URL((await nextComparison).url()).searchParams.get("published"), "true");
+    await page.locator("#document-version").filter({ hasText: /^Сохранённое состояние$/ }).waitFor();
+    assert.equal(await page.locator(".tree-row.selected").getAttribute("data-key"), "src");
+  } finally {
+    releaseLive();
+  }
   await page.getByRole("button", { name: "Обновить", exact: true }).click();
   await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
   const artifacts = path.resolve("dist/verification");

@@ -1,4 +1,5 @@
 import type { Snapshot } from "../snapshots/types.js";
+import { ArchiveCache } from "./archive-cache.js";
 import { errorDetails } from "../runtime/errors.js";
 /**
  * Сохраняет снимки в <root>/.archiview либо явно выбранном внешнем хранилище.
@@ -49,6 +50,7 @@ async function readStoredFile(file: string) {
 
 /** Владеет снимками одного проекта и манифестом происхождения его истории. */
 export class SnapshotStore {
+  readonly #savedFiles = new ArchiveCache<Snapshot>();
   /** Настоящий корень исходников: только он используется для файловых операций. */
   root;
   /** Физическое размещение данных, исключаемое из исходного дерева. */
@@ -160,15 +162,23 @@ export class SnapshotStore {
     try { entries = await readdir(this.directory); }
     catch (errorCause) { const error = errorDetails(errorCause); if (error.code === "ENOENT") return []; throw error; }
     const snapshots: Snapshot[] = [];
-    for (const file of entries.filter((name) => /^saved-[a-f0-9]{24}\.json$/.test(name))) {
-      snapshots.push(validate(JSON.parse((await readStoredFile(path.join(this.directory, file))).toString("utf8")), this.snapshotRoot));
-    }
+    const paths = entries.filter(name => /^saved-[a-f0-9]{24}\.json$/.test(name)).map(name => path.join(this.directory, name));
     const raw = path.join(this.directory, "snapshots");
     await this.assertLocation(raw);
     let savedFiles: string[] = [];
     try { savedFiles = await readdir(raw); } catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "ENOENT") throw error; }
     for (const file of savedFiles.filter((name) => /^saved-[a-f0-9]{24}\.yaml$/.test(name))) {
-      snapshots.push(parseYaml((await readStoredFile(path.join(raw, file))).toString("utf8"), (value) => validate(value as Snapshot, this.snapshotRoot)));
+      paths.push(path.join(raw, file));
+    }
+    this.#savedFiles.retain(new Set(paths));
+    for (const file of paths) {
+      await this.assertLocation(file);
+      const saved = await this.#savedFiles.read(file, async () => {
+        const text = (await readStoredFile(file)).toString("utf8");
+        return file.endsWith(".json") ? validate(JSON.parse(text), this.snapshotRoot) :
+          parseYaml(text, value => validate(value, this.snapshotRoot));
+      });
+      snapshots.push(structuredClone(saved));
     }
     // Опубликованные фрагменты восстанавливают выбранную базу даже без локальных snapshots.
     if (includePublished) {
