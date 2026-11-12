@@ -7,7 +7,7 @@ import type { Comparison, ComparisonModule, Fact, Snapshot } from "../snapshots/
 import type { compareContracts, RoleChange } from "../snapshots/contract-diff.js";
 
 export interface RepositoryArgs { repository?: string }
-export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number };
+export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number; published?: boolean };
 export type ModuleArgs = RepositoryArgs & { view: string; path: string };
 export type SnapshotArgs = RepositoryArgs & { view: string; label?: string };
 
@@ -33,6 +33,8 @@ export interface ModuleReviewState {
 
 export type ModuleSummary = Omit<ComparisonModule, "before" | "after" | "files"> & ModuleReviewState & { roles?: RoleChange[] };
 export interface ComparisonView extends Pick<Comparison, "schema_version" | "id" | "root" | "complete" | "diagnostics" | "counts" | "before" | "after"> {
+  /** Served from the last complete publication, before checking the working tree. */
+  published?: true;
   workspace?: { root: string; repositories: string[]; repository: string };
   reviewDiagnostics: string[];
   modules: ModuleSummary[];

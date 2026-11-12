@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-skills
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 084d66d9ffe4ee26a51d52d9be114808f0d66a9e5ec4a56e35c7083d5b086a11
+check_hash: e95b94e8b3bc5f749a081c654093f9810588fbe96f39087877dcb31f1374ec90
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,9 +10,12 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
+      id: febbde194ffbf2e44be0ad37702a1ad906063427
     state:
-      exists: false
+      exists: true
+      directory: skills
+      self_digest: sha256:0312bd7c9261875ebd8a4873d6223383312deb6d57c662fd9d02d1935a8bd3a3
+      subtree_digest: sha256:d73f66d17f4d4f8692294e1f39f3e34294b8cde8583bb55277292de5e04fe867
   current:
     exists: true
     directory: skills
@@ -22,7 +25,198 @@ input_manifest:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
-baseline: null
+baseline:
+  module_id: archiview-skills
+  directory: skills
+  parent_id: architecture-change-view
+  children:
+    - archiview-module-boundaries-skill
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-skills
+    directory: skills
+    own_files: []
+    contract:
+      schema_version: 1
+      id: archiview-skills
+      title: Скиллы ArchiView
+      kind: group
+      extensions:
+        archiview.roles:
+          - resources
+      purpose: Предоставлять единый набор именованных умений для поставок ArchiView.
+      responsibilities:
+        R1: Определять состав набора и размещение каждого умения в каталоге с его
+          именем.
+      boundaries:
+        B1: Умение определяет свои инструкции. Сборка и адаптеры используют материалы из
+          этого набора.
+      invariants:
+        I1: Канонический текст каждого умения доступен в файле SKILL.md его каталога.
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+          modules.tree связывает его id с каталогом проекта. Эвристические
+          оценки и текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I8
+        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+  technical_digest: sha256:0312bd7c9261875ebd8a4873d6223383312deb6d57c662fd9d02d1935a8bd3a3
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-skills
+    directory: skills
+    own_files: []
+    contract:
+      id: archiview-skills
+      kind: group
+      purpose: Предоставлять единый набор именованных умений для поставок ArchiView.
+      responsibilities:
+        R1: Определять состав набора и размещение каждого умения в каталоге с его
+          именем.
+      boundaries:
+        B1: Умение определяет свои инструкции. Сборка и адаптеры используют материалы из
+          этого набора.
+      invariants:
+        I1: Канонический текст каждого умения доступен в файле SKILL.md его каталога.
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+          modules.tree связывает его id с каталогом проекта. Эвристические
+          оценки и текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I8
+        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+    children:
+      - module_id: archiview-module-boundaries-skill
+        directory: skills/module-boundaries
+        contract:
+          id: archiview-module-boundaries-skill
+          kind: module
+          purpose: Давать агенту инструкции для работы с ответственностью каталогов
+            проекта.
+          responsibilities:
+            R1: Определять, как агент создаёт и пересматривает контракты, выбирает роли и
+              учитывает границы предков.
+            R2: Описывать, как агент проверяет контракт по доказательствам выбранного снимка
+              и оформляет результат.
+          boundaries:
+            B1: Адаптеры отвечают за публикацию инструкций в своих хостах.
+          invariants:
+            I1: Скилл содержит имя и описание для обнаружения и единый текст правил для всех
+              способов публикации.
+        document_state: documented
+  self_digest: sha256:a831b90f84cbffc0a1de2ea4363a74a1fa05172350ef0cea26bc1f6d4afffd72
+  subtree:
+    self: sha256:0312bd7c9261875ebd8a4873d6223383312deb6d57c662fd9d02d1935a8bd3a3
+    children:
+      - module_id: archiview-module-boundaries-skill
+        digest: sha256:a05f151ef947bd2ae2368eb3173f321a39bdfd4fca8a03b5dd309c9cf384cef0
+  subtree_digest: sha256:d73f66d17f4d4f8692294e1f39f3e34294b8cde8583bb55277292de5e04fe867
+  semantic_subtree:
+    self: sha256:a831b90f84cbffc0a1de2ea4363a74a1fa05172350ef0cea26bc1f6d4afffd72
+    children:
+      - module_id: archiview-module-boundaries-skill
+        digest: sha256:2cde2d38c4b37fa1ae7456a2f63f502960651a92925cd2abcd3b3ccc888e82d5
+  semantic_subtree_digest: sha256:9c481a4667b29f1098e891d58a1152480d6de04f9ed9e42e465e4fc716ce9904
 current:
   module_id: archiview-skills
   directory: skills
@@ -216,36 +410,36 @@ current:
         digest: sha256:2cde2d38c4b37fa1ae7456a2f63f502960651a92925cd2abcd3b3ccc888e82d5
   semantic_subtree_digest: sha256:9c481a4667b29f1098e891d58a1152480d6de04f9ed9e42e465e4fc716ce9904
 change:
-  existence: added
-  own: true
-  own_code: true
-  own_contract: true
-  inherited_constraints: true
-  descendants: true
-  child_composition: true
+  existence: retained
+  own: false
+  own_code: false
+  own_contract: false
+  inherited_constraints: false
+  descendants: false
+  child_composition: false
   moved: false
 structure:
   complete: true
   diagnostics: []
   document_state: documented
 publication:
-  generation: 183
-  comparison_key: sha256:1a9e697f70a7f34abee8431f8f7774afdeb7a0c481cc31290787febd79c6f93d
-  baseline: null
-  current:
+  generation: 195
+  comparison_key: sha256:b77050f8c181a9d2ef3a43dce740dee8a6af806f2f99ba0d011e9d451d5cc699
+  baseline:
     metadata:
-      id: working-229ae0075628b257c2ee1c427b3e4a468b3d90c0e2144d52794919619663669f
+      id: git-febbde194ffbf2e44be0ad37702a1ad906063427
       digest: sha256:229ae0075628b257c2ee1c427b3e4a468b3d90c0e2144d52794919619663669f
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T02:13:13.926Z
-      kind: working
-      label: Рабочее дерево
+      capturedAt: 2026-11-12T02:45:35.837Z
+      kind: git
+      revision: febbde194ffbf2e44be0ad37702a1ad906063427
+      label: HEAD
       fingerprint: 697fa2e47691ebd4f0cea6c0ba8f2948491d4d806914055352b7796de198912d
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      baseRevision: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
+      isHead: true
     module_index: 2
     module:
       directory: skills
@@ -324,6 +518,102 @@ publication:
             invariants:
               I1: Канонический текст каждого умения доступен в файле SKILL.md его каталога.
       - index: 180
+        fact:
+          id: sha256:909c711cc9db61f57d0a6ab494e687e6e03f234a99d2b1bf75f91ac6a6b61eab
+          kind: module
+          path: skills
+          text: '{"contract":"documented","format":"yaml","sources":[]}'
+  current:
+    metadata:
+      id: launch-69b926dc066185d566b94702c44c53a05ac923a608af0cfb03a8e49ab127b80f
+      digest: sha256:fd99619f9d0888f33a3f69199c58b5be78f7adc2984e4d332594c90f18951a55
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-12T02:47:21.499Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 69b926dc066185d566b94702c44c53a05ac923a608af0cfb03a8e49ab127b80f
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+    module_index: 2
+    module:
+      directory: skills
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-skills
+
+          title: Скиллы ArchiView
+
+          kind: group
+
+          extensions:
+            archiview.roles: [resources]
+          purpose: Предоставлять единый набор именованных умений для поставок
+          ArchiView.
+
+          responsibilities:
+            R1: Определять состав набора и размещение каждого умения в каталоге с его именем.
+          boundaries:
+            B1: Умение определяет свои инструкции. Сборка и адаптеры используют материалы из этого набора.
+          invariants:
+            I1: Канонический текст каждого умения доступен в файле SKILL.md его каталога.
+        format: yaml
+        contract:
+          schema_version: 1
+          id: archiview-skills
+          title: Скиллы ArchiView
+          kind: group
+          extensions:
+            archiview.roles:
+              - resources
+          purpose: Предоставлять единый набор именованных умений для поставок ArchiView.
+          responsibilities:
+            R1: Определять состав набора и размещение каждого умения в каталоге с его
+              именем.
+          boundaries:
+            B1: Умение определяет свои инструкции. Сборка и адаптеры используют материалы из
+              этого набора.
+          invariants:
+            I1: Канонический текст каждого умения доступен в файле SKILL.md его каталога.
+      documentPath: .archiview/modules/archiview-skills.yaml
+      files:
+        - path: .archiview/modules/archiview-skills.yaml
+          hash: 500dcf56d8b6f1884455803aadbf7b12f5224290
+      sourceFiles: 0
+      fingerprint: f1b1286758f598c0d9c72d499baf453e038d65c04401da0628048eeb05a44446
+    facts:
+      - index: 18
+        fact:
+          id: sha256:d8099e152c5214e0171baf08d75c200941819f0e1a0fcc72cacd33f1a7d73a6a
+          kind: file
+          path: .archiview/modules/archiview-skills.yaml
+          start_line: 1
+          end_line: 14
+          text: >
+            schema_version: 1
+
+            id: archiview-skills
+
+            title: Скиллы ArchiView
+
+            kind: group
+
+            extensions:
+              archiview.roles: [resources]
+            purpose: Предоставлять единый набор именованных умений для поставок
+            ArchiView.
+
+            responsibilities:
+              R1: Определять состав набора и размещение каждого умения в каталоге с его именем.
+            boundaries:
+              B1: Умение определяет свои инструкции. Сборка и адаптеры используют материалы из этого набора.
+            invariants:
+              I1: Канонический текст каждого умения доступен в файле SKILL.md его каталога.
+      - index: 183
         fact:
           id: sha256:909c711cc9db61f57d0a6ab494e687e6e03f234a99d2b1bf75f91ac6a6b61eab
           kind: module

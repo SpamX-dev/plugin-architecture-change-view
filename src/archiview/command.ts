@@ -60,7 +60,7 @@ export async function runCli(prepareWeb?: () => Promise<void>) {
     const workspace = await createWorkspaceSession({
       root: values.root ?? process.cwd(), stateDirectory: values["state-dir"],
     });
-    if (workspace.showWorkspace && !batch && !values["import-review"]) return serve(workspace, port, prepareWeb);
+    if (!batch && !values["import-review"]) return serve(workspace, port, prepareWeb);
     // Batch commands operate on their explicit --root. A workspace container has no shared history.
     const { store, reports, analysis } = await workspace.session(".");
     if (values["complete-analysis"]) {

@@ -71,6 +71,10 @@ test("autonomous MCP panel serves project operations with no listening sockets a
   await assert.rejects(call("get_module", { view: "expired", path: "child" }).then(uiData), { code: "STALE_VIEW" });
   await assert.rejects(call("get_comparison", { url: "http://example.com" }).then(uiData), { code: "INVALID_ARGUMENT" });
   await assert.rejects(call("get_comparison", { historyLimit: "50" }).then(uiData), { code: "INVALID_ARGUMENT" });
+  await assert.rejects(call("get_comparison", { published: "true" }).then(uiData), { code: "INVALID_ARGUMENT" });
+  const published = uiData<ComparisonView>(await call("get_comparison", { published: true }));
+  assert.equal(published.published, true);
+  assert.equal(uiData<ModuleDetail>(await call("get_module", { view: published.id, path: "child" })).moduleId, "child");
   const saved = uiData(await call("save_snapshot", { view: view.id, label: "MCP snapshot" }));
   assert.equal(saved.label, "MCP snapshot");
   await writeFile(path.join(root, "child/code.js"), "export const value = 2;\n");
@@ -97,6 +101,28 @@ test("panel client uses the MCP operation adapter and never falls back to fetch"
   await assert.rejects(client.getComparison(), { code: "SESSION_CLOSED" });
   const unavailable = createArchiViewClient({ mode: "mcp", fetcher: noFetch, connection: Promise.resolve(null) });
   await assert.rejects(unavailable.getComparison(), /Хост не поддерживает/);
+});
+
+test("Codex waits for explicit project selection before opening a published comparison", async (t) => {
+  const root = await panelFixture(t);
+  let release!: () => void, entered!: () => void;
+  const blocked = new Promise<void>((resolve) => { release = resolve; });
+  const started = new Promise<void>((resolve) => { entered = resolve; });
+  let readStarted = false;
+  const panel = createCodexPanel({ root, async select(requested) {
+    if (requested !== undefined) { entered(); await blocked; } else { readStarted = true; }
+    return root;
+  } });
+  t.after(() => panel.close());
+  const selecting = panel.callUi("archiview_ui_set_project", { projectRoot: root });
+  await started;
+  const comparison = panel.callUi("archiview_ui_get_comparison", { published: true });
+  try {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.equal(readStarted, false);
+  } finally { release(); }
+  assert.equal(uiData(await selecting).root, root);
+  assert.equal(uiData<ComparisonView>(await comparison).root, root);
 });
 
 /** Изолированный проект с настоящим наследуемым ограничением и отдельной реализацией ребёнка. */

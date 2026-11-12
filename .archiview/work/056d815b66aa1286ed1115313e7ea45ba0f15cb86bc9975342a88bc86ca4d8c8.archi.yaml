@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: architecture-web
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 057f541ea0c2200ba471fc20c058caae7c60d01601d6ebb8c9cf33bd45795383
+check_hash: ea37603677dba8f7aea7570cd32c029073439f676ce4fe3078b42f453afce7cc
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,20 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
+      id: febbde194ffbf2e44be0ad37702a1ad906063427
     state:
-      exists: false
+      exists: true
+      directory: web
+      self_digest: sha256:ef674f6529e86b6d9bf27db4314319e0fa6941ca93327ae3789575fccd35c4c5
+      subtree_digest: sha256:765b6da50dab6d46f968160a64c87609674b88f6798b33da28ced2a87033110d
   current:
     exists: true
     directory: web
     self_digest: sha256:ef674f6529e86b6d9bf27db4314319e0fa6941ca93327ae3789575fccd35c4c5
-    subtree_digest: sha256:765b6da50dab6d46f968160a64c87609674b88f6798b33da28ced2a87033110d
+    subtree_digest: sha256:dc40b7b5e838f9b6f36da5022497782bcb49c1657294ba014054aaeda6e16a75
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
-baseline: null
-current:
+baseline:
   module_id: architecture-web
   directory: web
   parent_id: architecture-change-view
@@ -265,12 +267,257 @@ current:
       - module_id: archiview-client
         digest: sha256:54ff05a0392e784063ad20a5a5d2c6128bd3ae4b336ce74752db895e3007a559
   semantic_subtree_digest: sha256:391f5e209680762f5590cccb624867536521a11371f9df1adbed3a8087fcc6de
+current:
+  module_id: architecture-web
+  directory: web
+  parent_id: architecture-change-view
+  children:
+    - archiview-client
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: architecture-web
+    directory: web
+    own_files: []
+    contract:
+      schema_version: 1
+      id: architecture-web
+      title: Клиентские интерфейсы архитектуры
+      kind: group
+      purpose: Давать пользователю единый интерфейс просмотра архитектуры проекта в
+        браузере и в панелях хостов.
+      responsibilities:
+        R1: Обеспечивать одинаковую навигацию по модулям выбранного сравнения в
+          самостоятельной версии и во встроенных панелях.
+      boundaries:
+        B1: Интерфейс получает состояние проекта и результаты сравнений через API
+          ArchiView.
+      invariants:
+        I1: Содержимое контрактов, отчётов и исходников отображается как данные.
+        I2: Клиент не изменяет исходники и принятые границы ответственности.
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+          modules.tree связывает его id с каталогом проекта. Эвристические
+          оценки и текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I8
+        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+  technical_digest: sha256:ef674f6529e86b6d9bf27db4314319e0fa6941ca93327ae3789575fccd35c4c5
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: architecture-web
+    directory: web
+    own_files: []
+    contract:
+      id: architecture-web
+      kind: group
+      purpose: Давать пользователю единый интерфейс просмотра архитектуры проекта в
+        браузере и в панелях хостов.
+      responsibilities:
+        R1: Обеспечивать одинаковую навигацию по модулям выбранного сравнения в
+          самостоятельной версии и во встроенных панелях.
+      boundaries:
+        B1: Интерфейс получает состояние проекта и результаты сравнений через API
+          ArchiView.
+      invariants:
+        I1: Содержимое контрактов, отчётов и исходников отображается как данные.
+        I2: Клиент не изменяет исходники и принятые границы ответственности.
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+          modules.tree связывает его id с каталогом проекта. Эвристические
+          оценки и текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I8
+        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+    children:
+      - module_id: archiview-client
+        directory: web/archiview
+        contract:
+          id: archiview-client
+          kind: module
+          purpose: Давать навигацию по дереву модулей и показывать контракты, изменения и
+            результаты архитектурных проверок.
+          responsibilities:
+            R1: Владеть поиском, фильтрами, выбором модуля и представлением его
+              структурированного контракта. Различать добавленные,
+              неизменившиеся и удалённые роли при сравнении собственных
+              контрактов. В дереве показывать только роли выбранного состояния,
+              в карточке — также удалённые.
+            R2: Показывать изменения непосредственно в контракте цветом и открывать диф
+              выбранного поля. Название, тип, идентификатор и назначение
+              образуют одну группу с общим дифом и самым строгим статусом
+              изменения. Представлять состав файлов, историю проверок, замечания
+              и сохранённые доказательства. Ошибки показываются в замечаниях без
+              дублирующего общего вердикта; пункт и его владелец доступны из
+              замечания. Основной чеклист содержит только собственные пункты
+              выбранного состояния модуля; пункты предков и повторы версий в
+              него не включаются. Изменение текста пункта и замечания к нему
+              представлены независимо; каждое замечание доступно отдельным
+              переходом из пункта. Открытые замечания обозначаются жуком на
+              вкладке замечаний и в дереве; свёрнутый родитель показывает также
+              замечания скрытых потомков, раскрытый — только собственные.
+            R3: Раздельно показывать собственную актуальность и актуальность поддерева,
+              причины перепроверки, полноту проверки, подтверждённость перечня
+              зависимостей и расхождения содержательных оценок; совпадение
+              проверенных входов не скрывать из-за частичного покрытия.
+            R4: Представлять хронологию коммитов, незакоммиченных изменений и текущего
+              сжатого состояния; выбирать просматриваемое состояние в едином
+              списке от свежих состояний к ранним. При открытии показывать
+              доступное сохранённое сравнение с датой, сохранять выбор модуля
+              при актуализации рабочего дерева и открывать анализ после
+              получения актуального сравнения.
+            R5: Позволять выбрать папку проекта, если хост открыл панель без привязанного
+              корня.
+            R6: По явному действию подготавливать поручение анализа выбранного снимка и
+              передавать его агенту хоста либо копировать промпт в буфер обмена
+              в самостоятельной веб-версии; завершение анализа подтверждать
+              импортом результата.
+            R7: По явной кнопке карточки передавать агенту поручение исправить выбранное
+              замечание либо копировать его в самостоятельной веб-версии.
+              Ссылаться на сохранённый анализ и устойчивые идентификаторы
+              проверки и замечания; подтверждение передачи не закрывает
+              замечание.
+            R8: Запрашивать данные сравнения и выполнять выбранные пользователем операции
+              просмотра через HTTP в браузере и dsh или через инструменты MCP в
+              панели Codex.
+            R9: Показывать репозитории рабочей папки в общей навигации и открывать детали и
+              историю в контексте выбранного репозитория.
+          boundaries:
+            B2: Компоненты обращаются к общему клиенту просмотра. В Codex подключение к
+              хосту предоставляет адаптер панели. Агент получает только явные
+              поручения анализа и исправления.
+            B1: Снимки, статусы и вычисленное устаревание получает через API; семантические
+              оценки берёт из выбранного отчёта.
+          invariants:
+            I1: initial, new, changed, removed и unchanged описывают изменения файлов, а не
+              качество архитектуры.
+            I2: Удалённые модули и исторические доказательства остаются доступны.
+            I3: Если контракт отсутствует, интерфейс указывает, что нужно проверить запись
+              модуля в карте и его YAML-контракт.
+            I4: Неполнота и устаревание видны рядом с выводами; содержимое документов не
+              исполняется.
+            I5: Изменение контракта отображается только в контракте; исторические записи
+              contract_change не входят в замечания, их счётчики и действия
+              исправления.
+        document_state: documented
+  self_digest: sha256:3ba80866bbfe7a1c55c467904bf5bd693f4494b4bc7b5846ecc08dd044f66e3d
+  subtree:
+    self: sha256:ef674f6529e86b6d9bf27db4314319e0fa6941ca93327ae3789575fccd35c4c5
+    children:
+      - module_id: archiview-client
+        digest: sha256:1d10ef5414a19f2b539b5c36e246ec56f1a2ebb8b043543b1c36081091d2824d
+  subtree_digest: sha256:dc40b7b5e838f9b6f36da5022497782bcb49c1657294ba014054aaeda6e16a75
+  semantic_subtree:
+    self: sha256:3ba80866bbfe7a1c55c467904bf5bd693f4494b4bc7b5846ecc08dd044f66e3d
+    children:
+      - module_id: archiview-client
+        digest: sha256:1fffa49c57ae5b08700bd940c10c47b07214189c65215b75223e9104c3ed301a
+  semantic_subtree_digest: sha256:64242ec3c36a1888b43e4af3c5b6b7a00d999118d5f94d6207e30c36b53921e5
 change:
-  existence: added
-  own: true
-  own_code: true
-  own_contract: true
-  inherited_constraints: true
+  existence: retained
+  own: false
+  own_code: false
+  own_contract: false
+  inherited_constraints: false
   descendants: true
   child_composition: true
   moved: false
@@ -279,83 +526,23 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 183
-  comparison_key: sha256:1a9e697f70a7f34abee8431f8f7774afdeb7a0c481cc31290787febd79c6f93d
+  generation: 195
+  comparison_key: sha256:b77050f8c181a9d2ef3a43dce740dee8a6af806f2f99ba0d011e9d451d5cc699
   baseline:
     metadata:
-      id: git-69649a19d2d61e4b0c27cace211cfafdc2ff8892
-      digest: sha256:67ba9bf1650481774479508d992404faf971ab7b282ffb9afb33aab29c2caf79
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T02:13:12.001Z
-      kind: git
-      revision: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
-      label: HEAD · 69649a1
-      fingerprint: a5988a454e89ccb68bb909f2c139a65474093903545a3a093b12222f34eb4df3
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-      isHead: true
-    module_index: 18
-    module:
-      directory: web
-      document:
-        state: missing
-        text: null
-      documentPath: .archiview/modules.tree
-      files:
-        - path: web/arch.yaml
-          hash: 5bacae672df816ba1bf4c9b1adef6a6d8ef13ca2
-      sourceFiles: 0
-      fingerprint: ecc2db06d1e60db8b42934d143adf2eee88509ad75cc38222f055be30ce2dda3
-    facts:
-      - index: 148
-        fact:
-          id: sha256:527af7e7f734a9ea2590088c3a86fc78fb639f964d19e506384c1201554bbc3e
-          kind: file
-          path: web/arch.yaml
-          start_line: 1
-          end_line: 14
-          text: >
-            schema_version: 1
-
-            id: architecture-web
-
-            title: Клиентские интерфейсы архитектуры
-
-            kind: group
-
-            purpose: Давать пользователю единый интерфейс просмотра архитектуры
-            проекта в браузере и в панелях хостов.
-
-            responsibilities:
-              R1: Обеспечивать одинаковую навигацию по модулям выбранного сравнения в самостоятельной
-                версии и во встроенных панелях.
-            boundaries:
-              B1: Интерфейс получает состояние проекта и результаты сравнений через API ArchiView.
-            invariants:
-              I1: Содержимое контрактов, отчётов и исходников отображается как данные.
-              I2: Клиент не изменяет исходники и принятые границы ответственности.
-      - index: 190
-        fact:
-          id: sha256:f1e46775f0bc815beba36982b703514f65882384c6921e756214ad976a0351fa
-          kind: module
-          path: web
-          text: '{"contract":"missing","sources":[]}'
-  current:
-    metadata:
-      id: working-229ae0075628b257c2ee1c427b3e4a468b3d90c0e2144d52794919619663669f
+      id: git-febbde194ffbf2e44be0ad37702a1ad906063427
       digest: sha256:229ae0075628b257c2ee1c427b3e4a468b3d90c0e2144d52794919619663669f
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T02:13:13.926Z
-      kind: working
-      label: Рабочее дерево
+      capturedAt: 2026-11-12T02:45:35.837Z
+      kind: git
+      revision: febbde194ffbf2e44be0ad37702a1ad906063427
+      label: HEAD
       fingerprint: 697fa2e47691ebd4f0cea6c0ba8f2948491d4d806914055352b7796de198912d
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      baseRevision: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
+      isHead: true
     module_index: 20
     module:
       directory: web
@@ -438,6 +625,101 @@ publication:
           kind: module
           path: web
           text: '{"contract":"documented","format":"yaml","sources":[]}'
+  current:
+    metadata:
+      id: launch-69b926dc066185d566b94702c44c53a05ac923a608af0cfb03a8e49ab127b80f
+      digest: sha256:fd99619f9d0888f33a3f69199c58b5be78f7adc2984e4d332594c90f18951a55
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-12T02:47:21.499Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 69b926dc066185d566b94702c44c53a05ac923a608af0cfb03a8e49ab127b80f
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+    module_index: 20
+    module:
+      directory: web
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: architecture-web
+
+          title: Клиентские интерфейсы архитектуры
+
+          kind: group
+
+          purpose: Давать пользователю единый интерфейс просмотра архитектуры
+          проекта в браузере и в панелях хостов.
+
+          responsibilities:
+            R1: Обеспечивать одинаковую навигацию по модулям выбранного сравнения в самостоятельной
+              версии и во встроенных панелях.
+          boundaries:
+            B1: Интерфейс получает состояние проекта и результаты сравнений через API ArchiView.
+          invariants:
+            I1: Содержимое контрактов, отчётов и исходников отображается как данные.
+            I2: Клиент не изменяет исходники и принятые границы ответственности.
+        format: yaml
+        contract:
+          schema_version: 1
+          id: architecture-web
+          title: Клиентские интерфейсы архитектуры
+          kind: group
+          purpose: Давать пользователю единый интерфейс просмотра архитектуры проекта в
+            браузере и в панелях хостов.
+          responsibilities:
+            R1: Обеспечивать одинаковую навигацию по модулям выбранного сравнения в
+              самостоятельной версии и во встроенных панелях.
+          boundaries:
+            B1: Интерфейс получает состояние проекта и результаты сравнений через API
+              ArchiView.
+          invariants:
+            I1: Содержимое контрактов, отчётов и исходников отображается как данные.
+            I2: Клиент не изменяет исходники и принятые границы ответственности.
+      documentPath: .archiview/modules/architecture-web.yaml
+      files:
+        - path: .archiview/modules/architecture-web.yaml
+          hash: 5bacae672df816ba1bf4c9b1adef6a6d8ef13ca2
+      sourceFiles: 0
+      fingerprint: e303979b9d5066fc69f571baae479e09d40adeeb85afde8dc2876d99b1488997
+    facts:
+      - index: 4
+        fact:
+          id: sha256:8fa883585133803c7f34d7f4471d25aa654156cf574c548471afbf8ed5e5b0da
+          kind: file
+          path: .archiview/modules/architecture-web.yaml
+          start_line: 1
+          end_line: 14
+          text: >
+            schema_version: 1
+
+            id: architecture-web
+
+            title: Клиентские интерфейсы архитектуры
+
+            kind: group
+
+            purpose: Давать пользователю единый интерфейс просмотра архитектуры
+            проекта в браузере и в панелях хостов.
+
+            responsibilities:
+              R1: Обеспечивать одинаковую навигацию по модулям выбранного сравнения в самостоятельной
+                версии и во встроенных панелях.
+            boundaries:
+              B1: Интерфейс получает состояние проекта и результаты сравнений через API ArchiView.
+            invariants:
+              I1: Содержимое контрактов, отчётов и исходников отображается как данные.
+              I2: Клиент не изменяет исходники и принятые границы ответственности.
+      - index: 201
+        fact:
+          id: sha256:7d2a1168e432de4fce9357ed60a11fdf88e9aa99d78908dca6068e82b278c07f
+          kind: module
+          path: web
+          text: '{"contract":"documented","format":"yaml","sources":[]}'
 review_status:
   self:
     current:
@@ -486,12 +768,6 @@ review_status:
         - code: child_composition
         - code: dependency_input
         - code: baseline_identity
-        - code: module_existence
-          side: baseline
-        - code: module_path
-          side: baseline
-        - code: own_code
-          side: baseline
         - code: own_contract
           side: baseline
         - code: child_composition
@@ -504,12 +780,6 @@ review_status:
         - code: child_composition
         - code: dependency_input
         - code: baseline_identity
-        - code: module_existence
-          side: baseline
-        - code: module_path
-          side: baseline
-        - code: own_code
-          side: baseline
         - code: own_contract
           side: baseline
         - code: child_composition
@@ -520,12 +790,6 @@ review_status:
         - code: child_composition
         - code: dependency_input
         - code: baseline_identity
-        - code: module_existence
-          side: baseline
-        - code: module_path
-          side: baseline
-        - code: own_code
-          side: baseline
         - code: own_contract
           side: baseline
         - code: child_composition

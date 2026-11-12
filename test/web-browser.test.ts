@@ -153,6 +153,66 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   assert.deepEqual(errors, []);
 });
 
+test("a saved comparison remains browsable while live data loads, fails and retries", browserOptions, async (t) => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const app = await createArchiView({ root });
+  await app.getComparison(); // Publish the feature under its original name.
+  const contract = path.join(root, ".archiview/modules/browser-feature.yaml");
+  await writeFile(contract, (await readFile(contract, "utf8")).replace("Функция браузера", "Новая функция"));
+  const origin = await listen(defer, app.server);
+  const page = await (await browserContext(defer)).newPage();
+  const requests: boolean[] = [];
+  let holdLive: ((route: import("playwright").Route) => void) | undefined;
+  const nextLive = () => new Promise<import("playwright").Route>((resolve) => { holdLive = resolve; });
+  await page.route("**/api/comparison?**", (route) => {
+    const published = new URL(route.request().url()).searchParams.get("published") === "true";
+    requests.push(published);
+    if (!published && holdLive) {
+      const capture = holdLive;
+      holdLive = undefined;
+      return capture(route);
+    }
+    return route.continue();
+  });
+  const firstLive = nextLive();
+  await page.goto(origin, { waitUntil: "commit" });
+  const pending = await firstLive;
+  await page.getByRole("treeitem", { name: /Функция браузера/ }).click();
+  await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
+  await page.getByRole("tab", { name: /^Файлы/ }).click();
+  const file = page.locator("#document-panel").getByText("feature.ts", { exact: true });
+  await file.waitFor();
+  assert.match(await page.locator("#updated").innerText(), /Сохранено.*Проверяем изменения/);
+  assert.ok(await page.locator("#analyze-module").isDisabled());
+  await pending.fulfill({ status: 500, json: { error: "Недоступна история Git" } });
+  await page.getByRole("alert").filter({ hasText: "Недоступна история Git" }).waitFor();
+  assert.ok(await file.isVisible());
+  assert.equal(await page.locator('.tree-row.selected').getAttribute("data-key"), "src");
+
+  const retry = nextLive();
+  await page.locator("#refresh").click();
+  await (await retry).continue();
+  await page.getByRole("heading", { name: "Новая функция", exact: true }).waitFor();
+  await file.waitFor();
+  assert.equal(await page.locator("#tab-files").getAttribute("aria-selected"), "true");
+  assert.ok(await page.locator("#analyze-module").isEnabled());
+  assert.ok(await page.locator("#timeline option").count() > 1);
+  assert.deepEqual(requests, [true, false, false]);
+
+  // A new page opens the saved root. Change its selection before the fresh response arrives.
+  const secondLive = nextLive();
+  await page.goto(origin, { waitUntil: "commit" });
+  const second = await secondLive;
+  await page.locator('.tree-row[data-key="src"]').click();
+  await page.getByRole("tab", { name: /^Файлы/ }).click();
+  await file.waitFor();
+  await second.continue();
+  await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#analyze-module")?.disabled);
+  assert.equal(await page.locator('.tree-row.selected').getAttribute("data-key"), "src");
+  assert.ok(await file.isVisible());
+});
+
 test("a reused directory retains its exact module under search and status filters", browserOptions, async (t) => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);
@@ -293,7 +353,8 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   });
   await page.reload();
   await page.getByRole("heading", { name: "beta feature", exact: true }).waitFor();
-  assert.deepEqual(repositoriesRequested, ["beta"]);
+  await page.locator("#updated").filter({ hasText: /^Обновлено/ }).waitFor();
+  assert.deepEqual(repositoriesRequested, ["beta", "beta"]);
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
   await page.getByText("Промпт скопирован. Вставьте его в чат с агентом.", { exact: false }).waitFor();
   const prompt = await page.evaluate(() => navigator.clipboard.readText());
@@ -303,7 +364,8 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   await page.evaluate(() => history.replaceState(null, "", "#?repository=removed&module=src"));
   await page.reload();
   await page.getByRole("heading", { name: "alpha project", exact: true }).waitFor();
-  assert.deepEqual(repositoriesRequested, ["removed", null]);
+  await page.locator("#updated").filter({ hasText: /^Обновлено/ }).waitFor();
+  assert.deepEqual(repositoriesRequested, ["removed", null, "alpha"]);
 
   repositoriesRequested.length = 0;
   await page.route("**/api/comparison?**", (route) => route.fulfill({

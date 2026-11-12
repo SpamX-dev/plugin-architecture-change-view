@@ -32,7 +32,7 @@ export function renderTimeline(view: ComparisonView, target: string) {
   // но её открытый просмотр должен сохранять видимое выбранное значение.
   if (view.target && !options.some(entry => entry.id === target)) options.push(view.target);
   for (const entry of options) {
-    const label = timelineLabel(entry);
+    const label = view.published && entry.id === "current" ? "Сохранённое состояние" : timelineLabel(entry);
     const option = el("option", "", label);
     option.value = entry.id;
     option.selected = entry.id === target;

@@ -23,6 +23,8 @@ import { validateReviewEntry } from "../src/reports/review-validation.js";
 import { ReportStore, moduleReportName, readPublishedSnapshots } from "../src/storage/report-store.js";
 import { validateArchiReport } from "../src/reports/technical-report.js";
 import { parseReportYaml } from "../src/serialization/yaml.js";
+import { createPublishedView } from "../src/application/published-view.js";
+import { createArchiViewSession } from "../src/application/session.js";
 
 const stored = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -102,6 +104,61 @@ async function publicationVersion(store: ReportStore, version: string) {
   }
   return files;
 }
+
+test("published tree reads only work, loads one module's exact reviews, and detects a review-only publication", async (t) => {
+  const { root, snapshotStore, store, baseline, current, comparison } = await fixture(t);
+  assert.equal(await createPublishedView({ root }), null);
+  await store.rebuild(baseline, current, comparison.modules);
+  await store.saveReview(nativeReview(snapshotStore, baseline, current));
+  const workFiles = async () => (await readdir(store.work)).sort();
+  const before = await workFiles();
+  await writeFile(path.join(root, "child/code.js"), "unpublished changes");
+  const saved = await createPublishedView({ root });
+  assert.ok(saved);
+  assert.equal(saved.comparison.published, true);
+  assert.equal(saved.comparison.after.digest, current.digest);
+  const args = { view: saved.comparison.id, path: "child" };
+  const detail = await saved.getModule(args);
+  assert.equal(detail.review?.id, "attempt-1");
+  assert.equal(detail.reviews[0].report.id, detail.review.id);
+  assert.equal(detail.reviews[0].reviewFile, ".archiview/work/" + moduleReportName("child") + ".review.yaml");
+  assert.deepEqual(detail.after, stored(current.modules.find(module => module.directory === "child")));
+  assert.deepEqual(await workFiles(), before);
+  await store.saveReview(nativeReview(snapshotStore, baseline, current, "next-attempt"));
+  await assert.rejects(saved.getModule(args), { code: "STALE_VIEW" });
+  const next = await createPublishedView({ root });
+  assert.ok(next);
+  assert.notEqual(next.comparison.id, args.view);
+  assert.equal((await next.getModule({ ...args, view: next.comparison.id })).review?.id, "next-attempt");
+
+  // A checkout without raw history can still show all of work. Reading the root
+  // neither parses a sibling's damaged review nor masks its failure on selection.
+  const clone = path.join(path.dirname(root), "copied");
+  await mkdir(path.join(clone, ".archiview"), { recursive: true });
+  await cp(store.work, path.join(clone, ".archiview/work"), { recursive: true });
+  await cp(path.join(store.directory, "project.json"), path.join(clone, ".archiview/project.json"));
+  await writeFile(path.join(clone, detail.reviews[0].reviewFile), "broken: true");
+  const copy = await createPublishedView({ root: clone });
+  assert.ok(copy);
+  assert.deepEqual((await copy.getModule({ view: copy.comparison.id, path: "." })).reviews, []);
+  await assert.rejects(copy.getModule({ view: copy.comparison.id, path: "child" }), /Invalid review history schema/);
+  assert.deepEqual((await readdir(path.join(clone, ".archiview"))).sort(), ["project.json", "work"]);
+});
+
+test("deferred first comparison selects the ordinary baseline and publishes the working snapshot only once", async (t) => {
+  const { root } = await fixture(t);
+  const session = await createArchiViewSession({ root, deferPublication: true });
+  assert.equal(await createPublishedView({ root }), null);
+  const result = await session.getComparison();
+  const saved = await createPublishedView({ root });
+  assert.ok(saved);
+  assert.equal(saved.comparison.after.id, result.after.id);
+  assert.equal(saved.comparison.before.id, result.before.id);
+  const history = await session.reports.list();
+  assert.equal(history.comparison?.current.kind, "working");
+  assert.equal(history.comparison?.baseline?.kind, "launch");
+  assert.ok(history.reports.every(report => report.publication?.generation === 1));
+});
 
 test("supported analyzer versions retain exact snapshots and review history across an upgrade", async (t) => {
   const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
@@ -384,6 +441,8 @@ test("recovers a committed directory replacement and an abandoned dead-process l
   await rename(store.work, path.join(store.control, backup));
   await writeFile(path.join(store.control, ".publication.yaml"), stringify({ schema_version: 1, pending, backup }));
   await writeFile(path.join(store.control, ".report-store.lock"), JSON.stringify({ pid: 2147483647, token: "dead-owner" }));
+  assert.equal(await createPublishedView({ root: store.root }), null);
+  assert.ok((await readdir(store.control)).includes(".publication.yaml"));
   const result = await store.list();
   assert.equal(result.reports.length, 2);
   assert.deepEqual(result.diagnostics, []);

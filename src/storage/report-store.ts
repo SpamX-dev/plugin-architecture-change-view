@@ -47,10 +47,24 @@ function validateEntry(entry: ReviewEntry) {
 }
 
 /** Читает только обычные файлы, не переходя по ссылкам и без скрытого лимита истории. */
-async function readYaml<T = unknown>(file: string): Promise<T> {
+export async function readYaml<T = unknown>(file: string): Promise<T> {
   const info = await lstat(file);
   if (!info.isFile() || info.isSymbolicLink()) throw new Error("Report must be an ordinary file");
   return parseReportYaml<T>(await readFile(file, "utf8"));
+}
+
+/** A portable review file contains the attempts of exactly one module. */
+export function validateHistoryFile(data: ReviewHistory, name: string, snapshotRoot: string) {
+  if (data.schema_version !== REPORT_SCHEMA_VERSION || data.kind !== "review_history" ||
+      name !== moduleReportName(data.module_id) + ".review.yaml" || !Array.isArray(data.entries) ||
+      Object.keys(data).some((key) => !["schema_version", "kind", "module_id", "entries"].includes(key))) throw new Error("Invalid review history schema");
+  for (const entry of data.entries) {
+    validateEntry(entry);
+    if (entry.module_id !== data.module_id) throw new Error("Review history module mismatch");
+    if (entry.format === "legacy-v1" ? !("root" in entry.current) || entry.current.root !== snapshotRoot :
+      entry.project_id !== digest(snapshotRoot)) throw new Error("Foreign review project");
+  }
+  return data.entries;
 }
 
 /** Возвращает выбранные переносимые снимки, ничего не создавая при отсутствии work. */
@@ -253,12 +267,8 @@ export class ReportStore {
               state.diagnostics.push(...data.storage_diagnostics ?? []);
             } else state.rawArchi.add(data.check_hash + "/" + data.module_id);
           } else {
-            if (data.schema_version !== REPORT_SCHEMA_VERSION || data.kind !== "review_history" || !Array.isArray(data.entries) || Object.keys(data).some((key) => !["schema_version", "kind", "module_id", "entries"].includes(key))) throw new Error("Invalid review history schema");
-            for (const entry of data.entries) {
-              validateEntry(entry);
-              if (entry.module_id !== data.module_id) throw new Error("Review history module mismatch");
+            for (const entry of validateHistoryFile(data, item.name, this.snapshotStore.snapshotRoot)) {
               if (!published && entry.check_hash !== path.basename(directory)) throw new Error("Raw check directory mismatch");
-              this.#assertEntryProject(entry);
               this.#add(state, entry, true);
             }
           }

@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: dsh-adapter
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: d0692cb09baf427f3f03384655626dd4e5235970d39ed1df7f4abfd811b91e07
+check_hash: 631d95c9077db04bcf1df2075601170fd1871c61ba24f2796e0944155075d83b
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,20 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
+      id: febbde194ffbf2e44be0ad37702a1ad906063427
     state:
-      exists: false
+      exists: true
+      directory: src/dsh
+      self_digest: sha256:c531370ee049d91106f904d087a965192858b4303d4fe09e4652a2c5847c2418
+      subtree_digest: sha256:c66fb0c68886ec40cf278297133b3d1bcec63e48753c0598e5cce6b0e9d52911
   current:
     exists: true
     directory: src/dsh
-    self_digest: sha256:c531370ee049d91106f904d087a965192858b4303d4fe09e4652a2c5847c2418
-    subtree_digest: sha256:c66fb0c68886ec40cf278297133b3d1bcec63e48753c0598e5cce6b0e9d52911
+    self_digest: sha256:c2863413bdac1d0858b394021cead6b79a2cd0d300e709d234da46a1b6c4b155
+    subtree_digest: sha256:5df77cd07ca533ae043f63b743c5a35dab13138497a2b7555fc9fcad2138efa8
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
-baseline: null
-current:
+baseline:
   module_id: dsh-adapter
   directory: src/dsh
   parent_id: architecture-core
@@ -430,1404 +432,444 @@ current:
       - module_id: dsh-client-panel
         digest: sha256:e31045860fefa9227ffccfa35568c3d00f64fb39b4623f924b4296b594b7352a
   semantic_subtree_digest: sha256:0f942eff6ba1e1670e79bbfd6702c3e17b7071ef6a3ef7335419360d7d16e86d
+current:
+  module_id: dsh-adapter
+  directory: src/dsh
+  parent_id: architecture-core
+  children:
+    - dsh-client-panel
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: dsh-adapter
+    directory: src/dsh
+    own_files:
+      - path: src/dsh/chat-root.ts
+        digest: sha256:c01a1c760cde4aba38601151f1d5e61ab8f0ab30e73e6f96216ba8082a44e389
+        normalization: text-lf/v1
+      - path: src/dsh/host-types.ts
+        digest: sha256:aa3e3810be60554645eaafdbf1147ab0fe8b9573f879c4c467def7ca10de7f1f
+        normalization: text-lf/v1
+      - path: src/dsh/host.ts
+        digest: sha256:ae24650ff3e90b892c1aa5af380d20759a2704a1f0d73f64014523d81ab63701
+        normalization: text-lf/v1
+      - path: src/dsh/panel-contract.ts
+        digest: sha256:100e50fa78abcbefda53f5099a08e84057ae7e11599dc685974b0f81a14c9b25
+        normalization: text-lf/v1
+      - path: src/dsh/routes.ts
+        digest: sha256:5bdb7c7dd227eac71e0b459cc411ca8881770faaf37301222b0ec6cf9459a0f5
+        normalization: text-lf/v1
+      - path: src/dsh/sessions.ts
+        digest: sha256:d48f90ecc6868ab5213e18c451c7b047ce789cb1213d2848158151cee4c2170d
+        normalization: text-lf/v1
+      - path: src/dsh/skill.ts
+        digest: sha256:4f2b782a83822968acb56b8c781a2bce3ff5e95b557399d49bc4180df349a05d
+        normalization: text-lf/v1
+      - path: src/dsh/tools.ts
+        digest: sha256:0b54a9a51d004cbbd3478f25b12e52ed4922ea093aa4d44e61cce7a85691ce0e
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: dsh-adapter
+      title: Плагин dsh
+      kind: module
+      extensions:
+        archiview.roles:
+          - host-adapter
+          - web-endpoints
+      purpose: Предоставлять агенту DeepSeek Harness правила и контекст контрактов, а
+        пользователю — панель ArchiView для проекта его чата.
+      responsibilities:
+        R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста
+          каталогов, не добавляя данные панели в контекст модели.
+        R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из
+          единственного файла пакета, без копий в пользовательских каталогах.
+        R3: Отдавать браузерной половине шаблон панели и операции просмотра по
+          префиксным маршрутам, проверяя каждый запрос политикой соединения
+          хоста.
+        R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по
+          рабочему каталогу чата вкладки, и закрывать реестр при выгрузке
+          плагина.
+        R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+      boundaries:
+        B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса
+          прикладному сервису.
+        B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для
+          привязки к проекту. Содержимое панели поступает из общего
+          веб-интерфейса ArchiView.
+        B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+        B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты
+          через прикладной сервис.
+      invariants:
+        I1: Маршрут панели не запускает модель и не возвращает данные просмотра в
+          контекст агента.
+        I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+        I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного
+          хостом. Для прямого просмотра действует настроенный корень или рабочий
+          каталог процесса. Панель выбирает репозиторий внутри этой папки.
+          Модельные инструменты используют настроенный корень или рабочую папку
+          чата. Настроенный корень ограничивает доступные пути.
+        I4: Публикация скилла не создаёт второго источника текста — используется файл
+          пакета.
+        I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий)
+          читаются только при наличии и не блокируют активацию плагина.
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+          modules.tree связывает его id с каталогом проекта. Эвристические
+          оценки и текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I8
+        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+      - module_id: architecture-core
+        section: boundaries
+        id: B1
+        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
+          принимает данные проекта и возвращает результат независимо от
+          транспорта, хоста и способа отображения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: Семантический вывод ответственности выполняет агент или внешний
+          анализатор. Наличие контракта не доказывает его выполнения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B5
+        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
+          проверка контрактов доступны независимо от MCP, HTTP и хоста.
+      - module_id: architecture-core
+        section: invariants
+        id: I1
+        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+          сборка и папки .archiview не расширяют анализ. Запись данных
+          допускается в .archiview корня проекта либо явно выбранном внешнем
+          хранилище; ссылки не меняют эту область.
+      - module_id: architecture-core
+        section: invariants
+        id: I2
+        text: Неполнота обхода и доказательств сообщается явно.
+      - module_id: architecture-core
+        section: invariants
+        id: I3
+        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
+          ответственность.
+      - module_id: architecture-core
+        section: invariants
+        id: I4
+        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+          файлах.
+      - module_id: architecture-core
+        section: invariants
+        id: I5
+        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
+          требует отдельного анализа.
+      - module_id: architecture-core
+        section: invariants
+        id: I6
+        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
+          описывают состояние исходников и контрактов из того же индекса Git.
+  technical_digest: sha256:c2863413bdac1d0858b394021cead6b79a2cd0d300e709d234da46a1b6c4b155
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: dsh-adapter
+    directory: src/dsh
+    own_files:
+      - path: src/dsh/chat-root.ts
+        digest: sha256:c01a1c760cde4aba38601151f1d5e61ab8f0ab30e73e6f96216ba8082a44e389
+        normalization: text-lf/v1
+      - path: src/dsh/host-types.ts
+        digest: sha256:aa3e3810be60554645eaafdbf1147ab0fe8b9573f879c4c467def7ca10de7f1f
+        normalization: text-lf/v1
+      - path: src/dsh/host.ts
+        digest: sha256:ae24650ff3e90b892c1aa5af380d20759a2704a1f0d73f64014523d81ab63701
+        normalization: text-lf/v1
+      - path: src/dsh/panel-contract.ts
+        digest: sha256:100e50fa78abcbefda53f5099a08e84057ae7e11599dc685974b0f81a14c9b25
+        normalization: text-lf/v1
+      - path: src/dsh/routes.ts
+        digest: sha256:5bdb7c7dd227eac71e0b459cc411ca8881770faaf37301222b0ec6cf9459a0f5
+        normalization: text-lf/v1
+      - path: src/dsh/sessions.ts
+        digest: sha256:d48f90ecc6868ab5213e18c451c7b047ce789cb1213d2848158151cee4c2170d
+        normalization: text-lf/v1
+      - path: src/dsh/skill.ts
+        digest: sha256:4f2b782a83822968acb56b8c781a2bce3ff5e95b557399d49bc4180df349a05d
+        normalization: text-lf/v1
+      - path: src/dsh/tools.ts
+        digest: sha256:0b54a9a51d004cbbd3478f25b12e52ed4922ea093aa4d44e61cce7a85691ce0e
+        normalization: text-lf/v1
+    contract:
+      id: dsh-adapter
+      kind: module
+      purpose: Предоставлять агенту DeepSeek Harness правила и контекст контрактов, а
+        пользователю — панель ArchiView для проекта его чата.
+      responsibilities:
+        R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста
+          каталогов, не добавляя данные панели в контекст модели.
+        R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из
+          единственного файла пакета, без копий в пользовательских каталогах.
+        R3: Отдавать браузерной половине шаблон панели и операции просмотра по
+          префиксным маршрутам, проверяя каждый запрос политикой соединения
+          хоста.
+        R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по
+          рабочему каталогу чата вкладки, и закрывать реестр при выгрузке
+          плагина.
+        R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+      boundaries:
+        B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса
+          прикладному сервису.
+        B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для
+          привязки к проекту. Содержимое панели поступает из общего
+          веб-интерфейса ArchiView.
+        B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+        B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты
+          через прикладной сервис.
+      invariants:
+        I1: Маршрут панели не запускает модель и не возвращает данные просмотра в
+          контекст агента.
+        I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+        I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного
+          хостом. Для прямого просмотра действует настроенный корень или рабочий
+          каталог процесса. Панель выбирает репозиторий внутри этой папки.
+          Модельные инструменты используют настроенный корень или рабочую папку
+          чата. Настроенный корень ограничивает доступные пути.
+        I4: Публикация скилла не создаёт второго источника текста — используется файл
+          пакета.
+        I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий)
+          читаются только при наличии и не блокируют активацию плагина.
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+          modules.tree связывает его id с каталогом проекта. Эвристические
+          оценки и текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I8
+        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+      - module_id: architecture-core
+        section: boundaries
+        id: B1
+        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
+          принимает данные проекта и возвращает результат независимо от
+          транспорта, хоста и способа отображения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: Семантический вывод ответственности выполняет агент или внешний
+          анализатор. Наличие контракта не доказывает его выполнения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B5
+        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
+          проверка контрактов доступны независимо от MCP, HTTP и хоста.
+      - module_id: architecture-core
+        section: invariants
+        id: I1
+        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+          сборка и папки .archiview не расширяют анализ. Запись данных
+          допускается в .archiview корня проекта либо явно выбранном внешнем
+          хранилище; ссылки не меняют эту область.
+      - module_id: architecture-core
+        section: invariants
+        id: I2
+        text: Неполнота обхода и доказательств сообщается явно.
+      - module_id: architecture-core
+        section: invariants
+        id: I3
+        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
+          ответственность.
+      - module_id: architecture-core
+        section: invariants
+        id: I4
+        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+          файлах.
+      - module_id: architecture-core
+        section: invariants
+        id: I5
+        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
+          требует отдельного анализа.
+      - module_id: architecture-core
+        section: invariants
+        id: I6
+        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
+          описывают состояние исходников и контрактов из того же индекса Git.
+    children:
+      - module_id: dsh-client-panel
+        directory: src/dsh/client
+        contract:
+          id: dsh-client-panel
+          kind: module
+          purpose: Регистрировать в правой панели веб-клиента dsh страницу ArchiView и
+            показывать её во вкладке, не дублируя интерфейс и операции
+            просмотра.
+          responsibilities:
+            R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
+              записью в справочнике панели.
+            R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
+              панели.
+            R3: Показывать страницу по адресу, который сообщает хост, передавать хосту
+              идентификатор чата вкладки и сохранять транспорт и разметку
+              страницы внутри iframe.
+            R4: Передавать явные поручения анализа и исправления замечания из панели в чат
+              вкладки по сообщению моста, не создавая ходов при обычной
+              навигации.
+          boundaries:
+            B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+            B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции
+              повторно.
+            B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет
+              корень проекта и не задаёт маршрут собственной константой. Без
+              внедрения действует стандартный префикс, совпадающий с настройкой
+              хоста по умолчанию.
+          invariants:
+            I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+            I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
+              скрытым обходом или прямым чтением проекта.
+            I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
+              вкладок.
+            I4: Тело вкладки принимает сообщения только от собственного iframe с тем же
+              origin; отказ передачи виден панели, а не выдаётся за успех.
+        document_state: documented
+  self_digest: sha256:d462409f4fef1d24b64d2fc469cc22570de465ea8ca6f1ae46bfaefe1fbdd2ea
+  subtree:
+    self: sha256:c2863413bdac1d0858b394021cead6b79a2cd0d300e709d234da46a1b6c4b155
+    children:
+      - module_id: dsh-client-panel
+        digest: sha256:1529e1190e0dd36811fd307d132d53dd83617871011bc0cad667d730a5eefbe1
+  subtree_digest: sha256:5df77cd07ca533ae043f63b743c5a35dab13138497a2b7555fc9fcad2138efa8
+  semantic_subtree:
+    self: sha256:d462409f4fef1d24b64d2fc469cc22570de465ea8ca6f1ae46bfaefe1fbdd2ea
+    children:
+      - module_id: dsh-client-panel
+        digest: sha256:e31045860fefa9227ffccfa35568c3d00f64fb39b4623f924b4296b594b7352a
+  semantic_subtree_digest: sha256:ed88e527e5eb44312798ed7d4138acc17c078387115f5e7238b738b27ef8a41b
 change:
-  existence: added
+  existence: retained
   own: true
   own_code: true
-  own_contract: true
-  inherited_constraints: true
-  descendants: true
-  child_composition: true
+  own_contract: false
+  inherited_constraints: false
+  descendants: false
+  child_composition: false
   moved: false
 structure:
   complete: true
   diagnostics: []
   document_state: documented
 publication:
-  generation: 183
-  comparison_key: sha256:1a9e697f70a7f34abee8431f8f7774afdeb7a0c481cc31290787febd79c6f93d
+  generation: 195
+  comparison_key: sha256:b77050f8c181a9d2ef3a43dce740dee8a6af806f2f99ba0d011e9d451d5cc699
   baseline:
     metadata:
-      id: git-69649a19d2d61e4b0c27cace211cfafdc2ff8892
-      digest: sha256:67ba9bf1650481774479508d992404faf971ab7b282ffb9afb33aab29c2caf79
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T02:13:12.001Z
-      kind: git
-      revision: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
-      label: HEAD · 69649a1
-      fingerprint: a5988a454e89ccb68bb909f2c139a65474093903545a3a093b12222f34eb4df3
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-      isHead: true
-    module_index: 7
-    module:
-      directory: src/dsh
-      document:
-        state: missing
-        text: null
-      documentPath: .archiview/modules.tree
-      files:
-        - path: src/dsh/arch.yaml
-          hash: 3367a9eccf0061978bc87ea9f55bdff81422a816
-        - path: src/dsh/chat-root.ts
-          hash: 82ea8c53a4a0e353cf46e28f12d1d6ef926b4cf7
-        - path: src/dsh/host-types.ts
-          hash: f6fb06fb310e1f1cf7e6787e841912bd39fc4d49
-        - path: src/dsh/host.ts
-          hash: d65c87d863eb3dea58c22496f6b997ecc21cf4e1
-        - path: src/dsh/panel-contract.ts
-          hash: 14013b94176f2fe6dbb4d42bf400fc50c71577b1
-        - path: src/dsh/routes.ts
-          hash: 2defb1202cca163b8de96563f5f376121c94b3aa
-        - path: src/dsh/sessions.ts
-          hash: f4fbf0fc1dfee01b32d96f3a361a9411223cf23c
-        - path: src/dsh/skill.ts
-          hash: d725f2ef313699c21806abe4d2ee72d72434f75e
-        - path: src/dsh/tools.ts
-          hash: c665fdba4833db8322845dfeff94fa43aaafe746
-      sourceFiles: 8
-      fingerprint: 2ce8c817815a5bfe9e80986255ae927302cec2cd92b431ef82fd3e4505fe5d08
-    facts:
-      - index: 60
-        fact:
-          id: sha256:ea1ccac1ebfa4ba4c3665e8bcf13b8c8164f17724793aa9a3dd6243beadadb6c
-          kind: file
-          path: src/dsh/arch.yaml
-          start_line: 1
-          end_line: 34
-          text: >
-            schema_version: 1
-
-            id: dsh-adapter
-
-            title: Плагин dsh
-
-            kind: module
-
-            extensions:
-              archiview.roles: [host-adapter, web-endpoints]
-            purpose: Предоставлять агенту DeepSeek Harness правила и контекст
-            контрактов, а пользователю —
-              панель ArchiView для проекта его чата.
-            responsibilities:
-              R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста каталогов,
-                не добавляя данные панели в контекст модели.
-              R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из единственного
-                файла пакета, без копий в пользовательских каталогах.
-              R3: Отдавать браузерной половине шаблон панели и операции просмотра по префиксным маршрутам,
-                проверяя каждый запрос политикой соединения хоста.
-              R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по рабочему каталогу
-                чата вкладки, и закрывать реестр при выгрузке плагина.
-              R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
-            boundaries:
-              B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса прикладному сервису.
-              B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для привязки к проекту.
-                Содержимое панели поступает из общего веб-интерфейса ArchiView.
-              B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
-              B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты через прикладной сервис.
-            invariants:
-              I1: Маршрут панели не запускает модель и не возвращает данные просмотра в контекст агента.
-              I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
-              I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного хостом. Для прямого
-                просмотра действует настроенный корень или рабочий каталог процесса. URL может выбирать чат
-                по идентификатору, но не задаёт путь проекта. Настроенный корень ограничивает чтение модельных инструментов.
-              I4: Публикация скилла не создаёт второго источника текста — используется файл пакета.
-              I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий) читаются только
-                при наличии и не блокируют активацию плагина.
-      - index: 61
-        fact:
-          id: sha256:22a34d709766a3d0b465d36b82981ac15bb77931f50637e0b9dd7464371bbd1b
-          kind: file
-          path: src/dsh/chat-root.ts
-          start_line: 1
-          end_line: 64
-          text: >
-            /**
-             * Разрешение корня проекта по чату вкладки.
-             *
-             * Вкладка правой панели принадлежит конкретному чату dsh, а прикладной сервис
-             * ArchiView работает с одним корнем проекта. Мост между ними — рабочий каталог
-             * сессии: он неизменен в заголовке сессии, поэтому панель, инструменты модели
-             * и экспорт анализа видят один и тот же проект.
-             *
-             * Источников два, в порядке точности:
-             *
-             * 1. живая сессия в `ctx.sessions` — быстрый путь для открытого чата;
-             * 2. сохранённый заголовок через `sessionController.inspect` — путь для
-             *    восстановленной вкладки, когда агент ещё не присоединился.
-             *
-             * Модуль не знает ни HTTP, ни cordis: оба сервиса передаются как зависимости,
-             * поэтому правило проверяется обычным `node --test`.
-             *
-             * @module plugin-architecture-change-view/dsh/chat-root
-             */
-
-            /**
-             * Проверяет, что значение пригодно как рабочий каталог.
-             *
-             * @param {unknown} value - проверяемое значение.
-             * @returns {string | null} непустой путь либо `null`.
-             */
-            function asDirectory(value: unknown) {
-              if (typeof value !== "string") return null;
-              const trimmed = value.trim();
-              return trimmed === "" ? null : trimmed;
-            }
-
-
-            /**
-             * Возвращает рабочий каталог чата.
-             *
-             * @param {object} options - параметры разрешения.
-             * @param {unknown} options.sessionId - идентификатор чата из вкладки.
-             * @param {{ get?: (id: string) => { header?: { cwd?: string } } | undefined } | undefined} [options.sessions]
-             *   живое хранилище сессий dsh.
-             * @param {{ inspect?: (id: string, signal?: AbortSignal) => Promise<{ meta?: { cwd?: string } }> } | undefined} [options.sessionController]
-             *   контроллер сессий для чтения сохранённого заголовка.
-             * @param {AbortSignal} [options.signal] - отмена чтения сохранённого заголовка.
-             * @returns {Promise<string | null>} рабочий каталог или `null`, если чат не найден.
-             * @throws {Error} если чтение сохранённого заголовка завершилось ошибкой хранилища.
-             */
-            export async function resolveChatRoot({ sessionId, sessions,
-            sessionController, signal }: ChatRootOptions) {
-              if (typeof sessionId !== "string" || sessionId === "") return null;
-
-              const live = sessions?.get?.(sessionId);
-              const liveCwd = asDirectory(live?.header?.cwd);
-              if (liveCwd !== null) return liveCwd;
-
-              if (typeof sessionController?.inspect !== "function") return null;
-              const inspection = await sessionController.inspect(sessionId, signal);
-              return asDirectory(inspection?.meta?.cwd);
-            }
-
-
-            export interface ChatRootOptions {
-             sessionId: unknown;
-             sessions?: { get?(id: string): { header?: { cwd?: string } } | undefined };
-             sessionController?: { inspect?(id: string, signal?: AbortSignal): Promise<{ meta?: { cwd?: string } }> };
-             signal?: AbortSignal;
-            }
-      - index: 68
-        fact:
-          id: sha256:ad96acba6ed081da7521c1f7ccdb9fbff7eda9239f955960650f20224bfaf7bd
-          kind: file
-          path: src/dsh/host-types.ts
-          start_line: 1
-          end_line: 34
-          text: >
-            /** The host services consumed by this adapter. Optional services
-            are read lazily. */
-
-            import type { IncomingMessage, ServerResponse } from "node:http";
-
-            import type { ChatRootOptions } from "./chat-root.js";
-
-            import type { loadSkill } from "./skill.js";
-
-            import type { clientConfigRow } from "./panel-contract.js";
-
-
-            export type JsonValue = null | boolean | number | string |
-            JsonValue[] | { [key: string]: JsonValue };
-
-
-            export type Dispose = () => void;
-
-            export interface HostServices {
-              skills: { register(skill: Awaited<ReturnType<typeof loadSkill>>): Dispose };
-              sessions: NonNullable<ChatRootOptions["sessions"]>;
-              sessionController: NonNullable<ChatRootOptions["sessionController"]>;
-            }
-
-            export interface HostContext {
-              effect(register: () => Dispose, label: string): unknown;
-              get<K extends keyof HostServices>(name: K): HostServices[K] | undefined;
-              logger?: { warn?(text: string): void };
-              tools: { register(tool: unknown): unknown };
-              connection: { requestRejection(request: IncomingMessage): number | undefined };
-              webServer: { register(route: { kind: string; path: string; handler(request: IncomingMessage, response: ServerResponse): unknown }): Dispose };
-              on(event: "webserver/index-inject", callback: (rows: ReturnType<typeof clientConfigRow>[]) => void): Dispose;
-            }
-
-            export interface HostConfig {
-              root: string;
-              stateDirectory: string;
-              prefix: string;
-              maxFiles: number;
-              extensions: string[];
-              panel: boolean;
-              tools: boolean;
-              skill: boolean;
-            }
-      - index: 69
-        fact:
-          id: sha256:7fb1116d3b98c32005686d5804ffcb58bf2cec1c432153f7645fe39d0b0fd80c
-          kind: file
-          path: src/dsh/host.ts
-          start_line: 1
-          end_line: 244
-          text: >
-            import type { SessionOperations } from "../application/api.js";
-
-            import type { SessionRegistry } from "./sessions.js";
-
-            import type { HostContext, HostConfig, JsonValue } from
-            "./host-types.js";
-
-            /**
-             * Cordis-плагин ArchiView для DeepSeek Harness.
-             *
-             * Плагин собирает из существующих домены проекта две половины:
-             *
-             * 1. инструменты модели (`archiview_inventory`, `archiview_context`) — чтение
-             *    контрактов через `src/contracts/inventory.ts`;
-             * 2. маршруты панели под префиксом `/archiview` — тот же прикладной сервис
-             *    `src/application`, что используют standalone-адаптер и панель Codex;
-             * 3. публикацию скилла module-boundaries в реестре dsh;
-             * 4. передачу настроенного префикса маршрутов браузерной половине через
-             *    публичный канал `webserver/index-inject`.
-             *
-             * Плагин не содержит прикладной логики и не запускает модель: просмотр только
-             * читает проект, а анализ выполняет агент хоста по явному поручению. Вкладка
-             * получает рабочий каталог своего чата из хоста. Для прямого открытия панели
-             * используются настройка корня и рабочий каталог процесса.
-             *
-             * @module plugin-architecture-change-view/dsh/host
-             */
-
-            import path from "node:path";
-
-            import z from "@deepseek-ai/schemastery";
-
-            import { defineTool } from "@deepseek-ai/dsh-tools";
-
-            import { ApplicationError } from "../application/errors.js";
-
-            import { resolveChatRoot } from "./chat-root.js";
-
-            import { clientConfigRow, DEFAULT_PREFIX } from
-            "./panel-contract.js";
-
-            import { createRouteTable, normalizePrefix } from "./routes.js";
-
-            import { createSessionRegistry } from "./sessions.js";
-
-            import { loadSkill } from "./skill.js";
-
-            import {
-              normalizeExtensions,
-              readContext,
-              readInventory,
-              resolveRoot,
-              TOOL_DEFINITIONS,
-            } from "./tools.js";
-
-
-            /** Имя Cordis-плагина для диагностики загрузчика. */
-
-            export const name = "archiview";
-
-
-            /**
-             * Сервисы, без которых плагин не активируется.
-             *
-             * `connection` обязателен: маршруты панели отдают проект только после его
-             * проверки политики соединения. Реестр скиллов подключается необязательно —
-             * без него инструменты и панель продолжают работать.
-             */
-            export const inject = ["tools", "webServer", "connection"];
-
-
-            /** Схема конфигурации плагина; значения по умолчанию рассчитаны на
-            локальный проект. */
-
-            export const Config = z.object({
-              root: z.string().default(""),
-              stateDirectory: z.string().default(""),
-              prefix: z.string().default(DEFAULT_PREFIX),
-              maxFiles: z.number().default(50_000),
-              extensions: z.array(z.string()).default([]),
-              panel: z.boolean().default(true),
-              tools: z.boolean().default(true),
-              skill: z.boolean().default(true),
-            });
-
-
-            /**
-             * Применяет плагин к контексту dsh.
-             *
-             * Регистрации живут ровно столько же, сколько плагин: маршруты и скилл
-             * снимаются возвращёнными disposer'ами, а реестр сессий закрывается эффектом.
-             *
-             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
-             * @param {object} config - нормализованная конфигурация схемы.
-             * @returns {void}
-             */
-            export function apply(ctx: HostContext, config: HostConfig) {
-              const prefix = normalizePrefix(config.prefix);
-              const extensions = normalizeExtensions(config.extensions);
-              const root = config.root === "" ? "" : path.resolve(config.root);
-              const sessions = createSessionRegistry({
-                stateDirectory: config.stateDirectory === "" ? undefined : config.stateDirectory,
-              });
-
-              ctx.effect(() => () => {
-                void sessions.dispose();
-              }, "archiview: сессии");
-
-              if (config.tools) registerTools(ctx, { extensions, maxFiles: config.maxFiles, configuredRoot: root });
-              if (config.skill) registerSkill(ctx);
-              if (config.panel) {
-                registerClientConfig(ctx, prefix);
-                registerRoutes(ctx, { prefix, sessions, fallbackRoot: root });
-              }
-            }
-
-
-            /**
-             * Регистрирует инструменты модели.
-             *
-             * Схема вывода — произвольный JSON: результат инвентаризации и контекста
-             * остаётся структурированным, а не превращается в строку до валидации.
-             *
-             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
-             * @param {object} options - параметры регистрации.
-             * @param {Set<string>} options.extensions - расширения исходников.
-             * @param {number} options.maxFiles - предел обхода.
-             * @param {string} options.configuredRoot - область чтения инструментов из конфигурации.
-             * @returns {void}
-             */
-            function registerTools(ctx: HostContext, { extensions, maxFiles,
-            configuredRoot }: { extensions: Set<string>; maxFiles: number;
-            configuredRoot: string }) {
-              for (const definition of TOOL_DEFINITIONS) {
-                ctx.tools.register(defineTool({
-                  name: definition.name,
-                  description: definition.description,
-                  parameters: definition.parameters,
-                  output: {
-                    schema: { type: "json" },
-                    render: (_args, value) => [{ type: "text", text: JSON.stringify(value) }],
-                  },
-                  async execute(args: { projectRoot?: string; directory?: string }) {
-                    const projectRoot = await resolveRoot({ projectRoot: args.projectRoot, configuredRoot });
-                    const value = definition.name === "archiview_inventory"
-                      ? await readInventory({ root: projectRoot, extensions, maxFiles })
-                      : await readContext({ root: projectRoot, directory: args.directory });
-                    return JSON.parse(JSON.stringify(value)) as JsonValue;
-                  },
-                }));
-              }
-            }
-
-
-            /**
-             * Публикует встроенный скилл в реестре dsh, если он есть в композиции.
-             *
-             * Регистрация асинхронная: файл читается с диска после активации плагина, а
-             * ошибка чтения не отменяет инструменты и панель.
-             *
-             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
-             * @returns {void}
-             */
-            function registerSkill(ctx: HostContext) {
-              // Скиллы не входят в inject: композиция без dsh-skill должна активировать
-              // инструменты и панель. Поэтому сервис читается через ctx.get, а не ctx.skills.
-              const skills = ctx.get("skills");
-              if (skills === undefined) {
-                ctx.logger?.warn?.("ArchiView: реестр скиллов dsh недоступен, module-boundaries не опубликован");
-                return;
-              }
-              let dispose: (() => void) | undefined;
-              let disposed = false;
-              loadSkill().then((skill) => {
-                if (!disposed) dispose = skills.register(skill);
-              }, (error) => {
-                ctx.logger?.warn?.("ArchiView: скилл не зарегистрирован: " + error.message);
-              });
-              ctx.effect(() => () => {
-                disposed = true;
-                dispose?.();
-              }, "archiview: скилл");
-            }
-
-
-            /**
-             * Сообщает браузерной половине префикс маршрутов панели.
-             *
-             * Используется публичный канал веб-сервера dsh: строка `webserver/index-inject`
-             * с `kind: "global"` присваивает значение свойству `globalThis` до запуска
-             * клиентских бандлов. Так конфигурация `prefix` доходит до вкладки, и клиенту
-             * не нужно угадывать адрес страницы по собственной константе.
-             *
-             * Внедрение действует там, где index.html отдаёт веб-сервер (Web-профиль). В
-             * Electron документ грузится по `file://` и внедрения не получает — клиент
-             * остаётся на стандартном префиксе, который совпадает с настройкой по
-             * умолчанию.
-             *
-             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
-             * @param {string} prefix - нормализованный префикс маршрутов.
-             * @returns {void}
-             */
-            function registerClientConfig(ctx: HostContext, prefix: string) {
-              ctx.effect(() => ctx.on("webserver/index-inject", (rows) => {
-                rows.push(clientConfigRow(prefix));
-              }), "archiview: конфигурация клиента");
-            }
-
-
-            /**
-             * Регистрирует маршруты панели в веб-сервере хоста.
-             *
-             * Корень проекта определяется по чату, которому принадлежит вкладка: клиент
-             * передаёт `?session=<id>`, хост разрешает рабочий каталог сессии и открывает
-             * прикладную сессию этого каталога. Без параметра действует корень из
-             * конфигурации — этот путь остаётся для прямого открытия страницы.
-             *
-             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
-             * @param {object} options - параметры регистрации.
-             * @param {string} options.prefix - префикс маршрутов.
-             * @param {ReturnType<createSessionRegistry>} options.sessions - реестр сессий.
-             * @param {string} options.fallbackRoot - корень из конфигурации.
-             * @returns {void}
-             */
-            function registerRoutes(ctx: HostContext, { prefix, sessions,
-            fallbackRoot }: { prefix: string; sessions:
-            Pick<SessionRegistry<SessionOperations>, "get">; fallbackRoot:
-            string }) {
-              const projectRoot = fallbackRoot === "" ? process.cwd() : fallbackRoot;
-              const getSession = async (request: import("node:http").IncomingMessage, url: URL) => {
-                const sessionId = url.searchParams.get("session");
-                if (sessionId === null) return sessions.get(projectRoot);
-                const root = await chatRoot(ctx, sessionId);
-                if (root === null) {
-                  throw new ApplicationError("NOT_FOUND", "Чат не найден или у него нет рабочего каталога");
-                }
-                return sessions.get(root);
-              };
-              const guard = (request: import("node:http").IncomingMessage, response: import("node:http").ServerResponse) => {
-                const rejection = ctx.connection.requestRejection(request);
-                if (rejection === undefined) return false;
-                response.statusCode = rejection;
-                response.end();
-                return true;
-              };
-              for (const route of createRouteTable({ prefix, guard, getSession })) {
-                ctx.effect(() => ctx.webServer.register(route), "archiview: маршрут " + route.path);
-              }
-            }
-
-
-            /**
-             * Разрешает рабочий каталог чата, не раскрывая деталей хранилища маршруту.
-             *
-             * Ошибка чтения сессии означает лишь то, что корень определить нельзя:
-             * маршрут отвечает `NOT_FOUND`, а не внутренней ошибкой с путями хранилища.
-             *
-             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
-             * @param {string} sessionId - идентификатор чата из запроса.
-             * @returns {Promise<string | null>} рабочий каталог или `null`.
-             */
-            async function chatRoot(ctx: HostContext, sessionId: string) {
-              try {
-                return await resolveChatRoot({
-                  sessionId,
-                  // Хранилище и контроллер сессий не входят в inject: панель должна
-                  // активироваться и в композиции без них. ctx.get читает сервис, если он есть.
-                  sessions: ctx.get("sessions"),
-                  sessionController: ctx.get("sessionController"),
-                });
-              } catch {
-                return null;
-              }
-            }
-      - index: 70
-        fact:
-          id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
-          kind: file
-          path: src/dsh/panel-contract.ts
-          start_line: 1
-          end_line: 105
-          text: >
-            /**
-             * Контракт между половинами плагина dsh.
-             *
-             * Хост и браузерный бандл — разные процессы и разные модульные графы, поэтому
-             * единственное, что они могут разделить, — это зависимый от данных контракт:
-             * имя глобального объекта, форму строки внедрения в index.html и правило
-             * разбора. Модуль намеренно не имеет зависимостей, чтобы его можно было
-             * импортировать и в Node-половину, и в бандл браузера.
-             *
-             * Так префикс маршрутов остаётся одним значением: конфигурация хоста попадает
-             * в документ клиента через публичный канал `webserver/index-inject`, а клиент
-             * читает её оттуда. Ни одна половина не дублирует константу маршрута.
-             *
-             * @module plugin-architecture-change-view/dsh/panel-contract
-             */
-
-            /** Префикс маршрутов панели по умолчанию, если хост не сообщил
-            другой. */
-
-            export const DEFAULT_PREFIX = "/archiview";
-
-
-            /** Имя глобального объекта, который хост внедряет в документ
-            клиента. */
-
-            export const CLIENT_GLOBAL = "__DSH_ARCHIVIEW__";
-
-
-            /**
-             * Начало локального пути: ровно один прямой слэш.
-             *
-             * Второй символ не может быть ещё одним слэшем или обратным слэшем. `//host/path`
-             * — сетевая ссылка (network-path reference): браузер сохраняет схему документа,
-             * но берёт чужой origin. `/\host/path` приводится к той же ссылке при разборе
-             * URL, потому что для специальных схем обратный слэш считается разделителем.
-             */
-            const LOCAL_PATH_START = /^\/(?![/\\])/;
-
-
-            /**
-             * Символы, которых не может быть в локальном пути маршрута: пробельные,
-             * обратный слэш (меняет разбор URL), строка запроса и фрагмент.
-             */
-            const FORBIDDEN_IN_PATH = /[\s\x00-\x1f\x7f\\?#]/;
-
-
-            /**
-             * Проверяет префикс, пришедший из конфигурации или документа.
-             *
-             * Допускается только локальный абсолютный путь. Сетевые ссылки и обратные
-             * слэши отклоняются: иначе адрес iframe увёл бы вкладку на чужой origin вместо
-             * маршрута панели хоста (см. `src/dsh/client/body.ts`). Тот же префикс служит
-             * путём регистрации маршрутов, поэтому проверка общая для обеих половин.
-             *
-             * @param {unknown} value - проверяемое значение.
-             * @returns {string | null} префикс без хвостового слэша либо `null`.
-             */
-            export function asPrefix(value: unknown) {
-              if (typeof value !== "string" || value.endsWith("/")) return null;
-              if (!LOCAL_PATH_START.test(value) || FORBIDDEN_IN_PATH.test(value)) return null;
-              // Use the same serialized pathname as the browser and the host route table.
-              if (value.split("/").some((part) => /^(?:\.|%2e){1,2}$/i.test(part))) return null;
-              return new URL(value, "http://localhost").pathname;
-            }
-
-
-            /**
-             * Собирает строку внедрения конфигурации клиента в index.html.
-             *
-             * `kind: "global"` — штатная строка веб-сервера dsh: она присваивает
-             * JSON-значение свойству `globalThis` до выполнения клиентских бандлов. Форма
-             * строки стабильна и не зависит от версии плагина.
-             *
-             * @param {string} prefix - нормализованный префикс маршрутов панели.
-             * @returns {{ kind: "global", name: string, value: { prefix: string } }} строка внедрения.
-             */
-            export function clientConfigRow(prefix: string) {
-              return { kind: "global", name: CLIENT_GLOBAL, value: { prefix } };
-            }
-
-
-            /**
-             * Читает префикс, который сообщил хост.
-             *
-             * Отсутствие или порча значения не считаются ошибкой: клиент откатывается к
-             * стандартному префиксу, потому что вкладка не должна ломаться из-за
-             * документа, который ещё не успел получить внедрение.
-             *
-             * @param {object} [scope] - глобальный объект; параметр нужен для тестов.
-             * @returns {string} действующий префикс маршрутов.
-             */
-            export function resolveClientPrefix(scope: object = globalThis) {
-              const config = (scope as Record<string, unknown>)[CLIENT_GLOBAL];
-              const injected = config && typeof config === "object" ? (config as Record<string, unknown>).prefix : undefined;
-              return asPrefix(injected) ?? DEFAULT_PREFIX;
-            }
-
-
-            /**
-             * Собирает адрес страницы панели для вкладки чата.
-             *
-             * Идентификатор чата — единственное, что клиент знает о сессии: хост по нему
-             * разрешает рабочий каталог проекта. Значение кодируется как параметр запроса,
-             * потому что оно приходит из состояния клиента и не должно влиять на разбор
-             * пути.
-             *
-             * @param {string} prefix - действующий префикс маршрутов.
-             * @param {unknown} sessionId - идентификатор чата, которому принадлежит вкладка.
-             * @returns {string} адрес страницы с идентификатором чата или без него.
-             */
-            export function panelPageUrl(prefix: string, sessionId: unknown) {
-              const base = (asPrefix(prefix) ?? DEFAULT_PREFIX) + "/";
-              if (typeof sessionId !== "string" || sessionId === "") return base;
-              return base + "?session=" + encodeURIComponent(sessionId);
-            }
-      - index: 71
-        fact:
-          id: sha256:2282cd9d6b855ccdecc1400a10b2f7a6c112d2d36087d2630d140d7cb6032bce
-          kind: file
-          path: src/dsh/routes.ts
-          start_line: 1
-          end_line: 328
-          text: >
-            import type { SessionOperations } from "../application/api.js";
-
-            import { callSessionOperation } from "../application/arguments.js";
-
-            import type { IncomingMessage, ServerResponse } from "node:http";
-
-            /**
-             * HTTP-маршруты панели ArchiView для веб-сервера dsh.
-             *
-             * Модуль знает только про node:http-запросы и прикладной сервис: он отдаёт
-             * статический интерфейс из `web/archiview`, переписывает в нём адреса под
-             * префикс плагина и выполняет те же операции просмотра, что standalone-адаптер
-             * `src/archiview/http.ts`. Сервер не поднимается: маршруты регистрируются в
-             * `ctx.webServer` хоста.
-             *
-             * Политика соединения приходит снаружи как `guard`: маршрут не читает проект
-             * до того, как хост подтвердит допустимость запроса. Корень проекта также не
-             * берётся из URL — его определяет `getSession`.
-             *
-             * @module plugin-architecture-change-view/dsh/routes
-             */
-
-            import { readFile } from "node:fs/promises";
-
-            import { applicationError, ApplicationError } from
-            "../application/errors.js";
-
-            import { packageUrl, webAssetUrl } from
-            "../runtime/package-paths.js";
-
-            import { asPrefix, DEFAULT_PREFIX } from "./panel-contract.js";
-
-
-            export { DEFAULT_PREFIX };
-
-
-            /** Предел тела JSON-запроса: операции панели передают только
-            идентификаторы и пути. */
-
-            const MAX_BODY_BYTES = 4096;
-
-
-            /** Прикладной код ошибки в HTTP-статус; незнакомый код считается
-            внутренним. */
-
-            const ERROR_STATUS: Record<string, number> = {
-              INVALID_ARGUMENT: 400,
-              NOT_FOUND: 404,
-              STALE_VIEW: 409,
-              REQUEST_TOO_LARGE: 413,
-              INCOMPLETE_VIEW: 422,
-            };
-
-
-            /**
-             * Статические ресурсы панели: имя под префиксом, файл пакета и тип содержимого.
-             *
-             * Статические ресурсы HTTP-панели. Отправку поручений обслуживает мост iframe dsh.
-             *
-             * @constant {ReadonlyMap<string, { file: string, type: string }>}
-             */
-            export const PANEL_ASSETS = new Map([
-              ["", { file: "web/archiview/index.html", type: "text/html; charset=utf-8" }],
-              ["index.html", { file: "web/archiview/index.html", type: "text/html; charset=utf-8" }],
-              ["app.mjs", { file: "web/archiview/app.mjs", type: "text/javascript; charset=utf-8" }],
-              ["client.mjs", { file: "web/archiview/client.mjs", type: "text/javascript; charset=utf-8" }],
-              ["panel-bridge.mjs", { file: "web/archiview/panel-bridge.mjs", type: "text/javascript; charset=utf-8" }],
-              ["review.mjs", { file: "web/archiview/review.mjs", type: "text/javascript; charset=utf-8" }],
-              ["styles.css", { file: "web/archiview/styles.css", type: "text/css; charset=utf-8" }],
-              ["favicon.svg", { file: "web/archiview/favicon.svg", type: "image/svg+xml" }],
-            ]);
-
-
-            /** Кэш прочитанных ресурсов: файлы панели неизменны в пределах
-            установленного пакета. */
-
-            const assetCache = new Map<string, Buffer>();
-
-
-            /**
-             * Приводит префикс к виду `/archiview`: локальный путь без хвостового слэша и
-             * служебных символов.
-             *
-             * Сетевые ссылки вида `//host/path` и обратные слэши отклоняются той же
-             * проверкой, которой пользуется клиент: префикс обязан оставаться путём на
-             * origin хоста.
-             *
-             * @param {unknown} value - значение конфигурации.
-             * @returns {string} нормализованный префикс.
-             * @throws {Error} если значение не является допустимым локальным путём.
-             */
-            export function normalizePrefix(value: unknown) {
-              const prefix = typeof value === "string" ? value.trim() : "";
-              if (prefix === "") return DEFAULT_PREFIX;
-              const normalized = asPrefix(prefix);
-              if (normalized === null) {
-                throw new Error(
-                  "Префикс плагина ArchiView должен быть локальным путём: /путь без хвостового слэша, обратных слэшей, ? и #",
-                );
-              }
-              return normalized;
-            }
-
-
-            /**
-             * Экранирует значение для HTML-атрибута.
-             *
-             * @param {string} value - недоверенное значение.
-             * @returns {string} безопасная для атрибута строка.
-             */
-            function escapeAttribute(value: string) {
-              return String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;")
-                .replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-            }
-
-
-            /**
-             * Переписывает шаблон панели под префикс плагина.
-             *
-             * Шаблон ссылается на ресурсы абсолютными путями от корня сервера, поэтому без
-             * переписывания они попадут в SPA-фолбэк dsh. Заодно вставляются метаданные:
-             * префикс маршрутов (его читает `web/archiview/client.ts` и приклеивает к
-             * адресам операций вида `/api/...`) и идентификатор чата, к которому относится
-             * вкладка.
-             *
-             * @param {string} html - исходный шаблон.
-             * @param {object} options - параметры переписывания.
-             * @param {string} options.prefix - префикс маршрутов плагина.
-             * @param {string | null} [options.sessionId] - идентификатор чата для вкладки.
-             * @returns {string} готовый HTML.
-             */
-            export function rewritePanelHtml(html: string, { prefix, sessionId
-            }: { prefix: string; sessionId?: string | null }) {
-              const meta = [`<meta name="archiview-base" content="${escapeAttribute(prefix)}">`];
-              if (typeof sessionId === "string" && sessionId !== "") {
-                meta.push(`<meta name="archiview-session" content="${escapeAttribute(sessionId)}">`);
-              }
-              return html
-                .replace('href="/styles.css"', `href="${prefix}/styles.css"`)
-                .replace('src="/app.mjs"', `src="${prefix}/app.mjs"`)
-                .replace("<head>", "<head>\n  " + meta.join("\n  "));
-            }
-
-
-            /**
-             * Отправляет JSON-ответ с запретом кэширования.
-             *
-             * @param {import("node:http").ServerResponse} response - ответ.
-             * @param {number} status - HTTP-статус.
-             * @param {unknown} value - сериализуемое значение.
-             * @returns {void}
-             */
-            function sendJson(response: ServerResponse, status: number, value:
-            unknown) {
-              response.statusCode = status;
-              response.setHeader("Content-Type", "application/json; charset=utf-8");
-              response.end(JSON.stringify(value));
-            }
-
-
-            /**
-             * Отправляет прикладную ошибку в общей для адаптеров форме.
-             *
-             * @param {import("node:http").ServerResponse} response - ответ.
-             * @param {unknown} cause - перехваченная ошибка.
-             * @returns {void}
-             */
-            function sendError(response: ServerResponse, cause: unknown) {
-              const error = applicationError(cause);
-              const status = error.code === "REQUEST_TOO_LARGE" ? 413 : ERROR_STATUS[error.code] ?? 500;
-              sendJson(response, status, { error: error.message, code: error.code });
-            }
-
-
-            /**
-             * Читает ограниченное JSON-тело запроса.
-             *
-             * Проверяется только форма: предметные ограничения остаются в прикладном
-             * сервисе, поэтому маршрут не дублирует его правила.
-             *
-             * @param {import("node:http").IncomingMessage} request - запрос.
-             * @returns {Promise<Record<string, unknown>>} объект аргументов.
-             * @throws {ApplicationError} при превышении предела или неверной форме.
-             */
-            async function readJson(request: IncomingMessage):
-            Promise<Record<string, unknown>> {
-              const chunks: Buffer[] = [];
-              let bytes = 0;
-              for await (const chunk of request) {
-                const input: unknown = chunk;
-                if (typeof input !== "string" && !(input instanceof Uint8Array)) throw new ApplicationError("INVALID_ARGUMENT", "Некорректное тело запроса");
-                const data = Buffer.from(input);
-                bytes += data.byteLength;
-                if (bytes > MAX_BODY_BYTES) throw new ApplicationError("REQUEST_TOO_LARGE", "Слишком большой запрос");
-                chunks.push(data);
-              }
-              // Decode once: a TCP chunk may end in the middle of a Cyrillic UTF-8 character.
-              let value: unknown;
-              try { value = JSON.parse(Buffer.concat(chunks, bytes).toString("utf8") || "{}"); }
-              catch { throw new ApplicationError("INVALID_ARGUMENT", "Некорректный JSON запроса"); }
-              if (!value || typeof value !== "object" || Array.isArray(value)) throw new ApplicationError("INVALID_ARGUMENT", "Ожидается объект параметров");
-              return value as Record<string, unknown>;
-            }
-
-
-            /**
-             * Выполняет операцию панели по относительному пути под `/api/`.
-             *
-             * @param {import("node:http").IncomingMessage} request - запрос.
-             * @param {import("node:http").ServerResponse} response - ответ.
-             * @param {URL} url - разобранный адрес запроса.
-             * @param {string} relative - путь после `<prefix>/api/`.
-             * @param {object} session - прикладная сессия ArchiView.
-             * @returns {Promise<void>} завершение после отправки ответа.
-             * @throws {ApplicationError} если операция неизвестна.
-             */
-            async function runApiOperation(request: IncomingMessage, response:
-            ServerResponse, url: URL, relative: string, session:
-            SessionOperations) {
-              const method = request.method ?? "GET";
-              const match = /^analysis\/([a-f0-9-]{36})$/.exec(relative);
-              const query: Record<string, unknown> = Object.fromEntries(url.searchParams);
-
-              if (method === "GET" && relative === "comparison") {
-                if (query.historyLimit !== undefined) query.historyLimit = Number(query.historyLimit);
-                return sendJson(response, 200, await callSessionOperation(session, "getComparison", query));
-              }
-              if (method === "GET" && relative === "module") {
-                return sendJson(response, 200, await callSessionOperation(session, "getModule", query));
-              }
-              if (method === "GET" && match !== null) {
-                return sendJson(response, 200, await callSessionOperation(session, "getAnalysis", { id: match[1] }));
-              }
-              if (method === "POST" && relative === "analysis") {
-                return sendJson(response, 201, await callSessionOperation(session, "prepareAnalysis", await readJson(request)));
-              }
-              if (method === "POST" && relative === "reviews") {
-                return sendJson(response, 200, await callSessionOperation(session, "buildReview", await readJson(request)));
-              }
-              if (method === "POST" && relative === "snapshots") {
-                return sendJson(response, 201, await callSessionOperation(session, "saveSnapshot", await readJson(request)));
-              }
-              throw new ApplicationError("NOT_FOUND", "Операция панели не найдена");
-            }
-
-
-            /**
-             * Читает статический ресурс панели с кэшированием.
-             *
-             * @param {string} name - имя ресурса под префиксом.
-             * @returns {Promise<{ content: Buffer, type: string } | null>} ресурс или `null`.
-             */
-            async function readAsset(name: string) {
-              const asset = PANEL_ASSETS.get(name);
-              if (asset === undefined) return null;
-              let content = assetCache.get(name);
-              if (content === undefined) {
-                content = await readFile(new URL(asset.file.replace("web/archiview/", ""), webAssetUrl));
-                assetCache.set(name, content);
-              }
-              return { content, type: asset.type };
-            }
-
-
-            /**
-             * Создаёт маршруты плагина для `ctx.webServer`.
-             *
-             * Возвращаются два маршрута: точный адрес панели с редиректом на слэш и
-             * префиксный обработчик для ресурсов, API и HTML. Обработчик сначала отдаёт
-             * запрос политике соединения хоста и только потом читает проект.
-             *
-             * @param {object} options - параметры маршрутов.
-             * @param {string} [options.prefix] - префикс маршрутов.
-             * @param {(request: import("node:http").IncomingMessage, response: import("node:http").ServerResponse) => boolean} options.guard
-             *   проверка запроса; `true` означает, что ответ уже отправлен.
-             * @param {(request: import("node:http").IncomingMessage, url: URL) => object | Promise<object>} options.getSession
-             *   сессия прикладного сервиса для запроса.
-             * @returns {ReadonlyArray<{ kind: "exact" | "prefix", path: string, handler: Function }>} маршруты.
-             */
-            export function createRouteTable({ prefix: configuredPrefix =
-            DEFAULT_PREFIX, guard, getSession }: { prefix?: string; guard:
-            (request: IncomingMessage, response: ServerResponse) => boolean;
-            getSession: (request: IncomingMessage, url: URL) =>
-            SessionOperations | Promise<SessionOperations> }) {
-              if (typeof guard !== "function" || typeof getSession !== "function") {
-                throw new Error("createRouteTable требует guard и getSession");
-              }
-              const prefix = normalizePrefix(configuredPrefix);
-              const apiBase = prefix + "/api/";
-              const assetBase = prefix + "/";
-
-              /**
-               * Общий обработчик префикса: политика, статика, API.
-               *
-               * @param {import("node:http").IncomingMessage} request - запрос.
-               * @param {import("node:http").ServerResponse} response - ответ.
-               * @returns {Promise<void>} завершение обработки.
-               */
-              async function handler(request: IncomingMessage, response: ServerResponse) {
-                try {
-                  if (guard(request, response)) return;
-                response.setHeader("Cache-Control", "no-store");
-                response.setHeader("X-Content-Type-Options", "nosniff");
-                response.setHeader("Content-Security-Policy",
-                  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; " +
-                  "object-src 'none'; base-uri 'none'; frame-ancestors 'self'");
-                  if (request.method === "OPTIONS") {
-                    response.statusCode = 204;
-                    response.end();
-                    return;
-                  }
-                  const url = new URL(request.url ?? "/", "http://localhost");
-                  if (url.pathname === assetBase || url.pathname === assetBase + "index.html") {
-                    const html = await readFile(new URL("web/archiview/index.html", packageUrl), "utf8");
-                    response.statusCode = 200;
-                    response.setHeader("Content-Type", "text/html; charset=utf-8");
-                    response.end(rewritePanelHtml(html, {
-                      prefix,
-                      sessionId: url.searchParams.get("session"),
-                    }));
-                    return;
-                  }
-                  if (url.pathname.startsWith(apiBase)) {
-                    const session = await getSession(request, url);
-                    await runApiOperation(request, response, url, url.pathname.slice(apiBase.length), session);
-                    return;
-                  }
-                  const asset = await readAsset(url.pathname.slice(assetBase.length));
-                  if (asset === null) {
-                    sendJson(response, 404, { error: "Ресурс не найден", code: "NOT_FOUND" });
-                    return;
-                  }
-                  response.statusCode = 200;
-                  response.setHeader("Content-Type", asset.type);
-                  response.end(asset.content);
-                } catch (error) {
-                  if (response.headersSent) { response.destroy(); return; }
-                  sendError(response, error);
-                }
-              }
-
-              return [
-                {
-                  kind: "exact",
-                  path: prefix,
-                  handler(request: IncomingMessage, response: ServerResponse) {
-                    try {
-                      if (guard(request, response)) return;
-                      response.statusCode = 308;
-                      const url = new URL(request.url ?? "/", "http://localhost");
-                      response.setHeader("Location", prefix + "/" + url.search);
-                      response.end();
-                    } catch (error) {
-                      if (response.headersSent) { response.destroy(); return; }
-                      sendError(response, error);
-                    }
-                  },
-                },
-                // Префикс регистрируется без хвостового слэша: веб-сервер dsh сопоставляет
-                // `pathname === path || pathname.startsWith(path + "/")`, поэтому путь
-                // `/archiview/` не покрыл бы `/archiview/styles.css`.
-                { kind: "prefix", path: prefix, handler },
-              ];
-            }
-      - index: 72
-        fact:
-          id: sha256:3f04d40f19127efe61024de75b9dfe66081ddbe44d9eae4cae12a63901b3b835
-          kind: file
-          path: src/dsh/sessions.ts
-          start_line: 1
-          end_line: 115
-          text: >
-            /**
-             * Реестр прикладных сессий ArchiView для плагина dsh.
-             *
-             * Один процесс dsh обслуживает несколько чатов и проектов, а прикладной сервис
-             * (`src/application/session.ts`) рассчитан на один корень проекта. Реестр
-             * сопоставляет корень и лениво созданную сессию и повторяет одну и ту же
-             * сессию всем запросам этого корня: панель, инструменты модели и экспорт
-             * анализа видят одно состояние сравнения.
-             *
-             * Ответственность модуля ограничена жизненным циклом: он не читает проект,
-             * не кэширует документы и не решает, какой корень считать текущим.
-             *
-             * @module plugin-architecture-change-view/dsh/sessions
-             */
-
-            import { createArchiViewSession } from "../application/session.js";
-
-
-            /**
-             * Создаёт реестр сессий, разделённый по корню проекта.
-             *
-             * Инициализация сессии ленивая: первый запрос к корню создаёт её, остальные
-             * ожидают то же обещание. Неудачная инициализация удаляется из реестра, чтобы
-             * следующий запрос мог повторить попытку, а не унаследовать отклонённое
-             * обещание навсегда.
-             *
-             * @param {object} [options] - параметры реестра.
-             * @param {(options: { root: string, stateDirectory?: string }) => object | Promise<object>} [options.createSession]
-             *   фабрика прикладной сессии; по умолчанию используется штатная.
-             * @param {string} [options.stateDirectory] - явный каталог состояния вместо `.archiview`.
-             * @returns {{
-             *   get: (root: string) => Promise<object>,
-             *   has: (root: string) => boolean,
-             *   size: () => number,
-             *   dispose: () => Promise<void>
-             * }} реестр с ленивыми сессиями.
-             */
-            type ApplicationSession = Awaited<ReturnType<typeof
-            createArchiViewSession>>;
-
-            interface RegistryOptions { stateDirectory?: string }
-
-            type SessionFactory<T> = (options: { root: string; stateDirectory?:
-            string }) => T | Promise<T>;
-
-            export interface SessionRegistry<T> {
-              get(root: string): Promise<T>;
-              has(root: string): boolean;
-              size(): number;
-              dispose(): Promise<void>;
-            }
-
-            /** The generic result requires the corresponding factory; the
-            default always creates application sessions. */
-
-            export function createSessionRegistry(options?: RegistryOptions):
-            SessionRegistry<ApplicationSession>;
-
-            export function createSessionRegistry<T>(options: RegistryOptions &
-            { createSession: SessionFactory<T> }): SessionRegistry<T>;
-
-            export function createSessionRegistry({ createSession =
-            createArchiViewSession, stateDirectory }: RegistryOptions & {
-            createSession?: SessionFactory<unknown> } = {}):
-            SessionRegistry<unknown> {
-              /** @type {Map<string, Promise<object>>} */
-              const entries = new Map<string, Promise<unknown>>();
-              let closed = false;
-
-              /**
-               * Возвращает сессию корня, создавая её при первом обращении.
-               *
-               * @param {string} root - абсолютный корень проекта.
-               * @returns {Promise<object>} прикладная сессия ArchiView.
-               * @throws {Error} если реестр закрыт или корень не задан.
-               */
-              function get(root: string) {
-                if (closed) throw new Error("Реестр сессий ArchiView закрыт");
-                if (typeof root !== "string" || root.trim() === "") {
-                  throw new Error("Не задан корень проекта ArchiView");
-                }
-                let entry = entries.get(root);
-                if (entry === undefined) {
-                  // Обещание нормализует и синхронный throw фабрики, и отказ асинхронной.
-                  entry = Promise.resolve().then(() => createSession({ root, stateDirectory }));
-                  entries.set(root, entry);
-                  entry.catch(() => {
-                    if (entries.get(root) === entry) entries.delete(root);
-                  });
-                }
-                return entry;
-              }
-
-              /**
-               * Проверяет, создавалась ли сессия корня.
-               *
-               * @param {string} root - абсолютный корень проекта.
-               * @returns {boolean} признак существующей записи.
-               */
-              function has(root: string) {
-                return entries.has(root);
-              }
-
-              /**
-               * Возвращает число известных корней.
-               *
-               * @returns {number} размер реестра.
-               */
-              function size() {
-                return entries.size;
-              }
-
-              /**
-               * Закрывает реестр и дожидается уже начатых инициализаций.
-               *
-               * Новые запросы после закрытия отклоняются, уже выданные сессии остаются
-               * рабочими до выгрузки процесса: прикладной сервис не держит сокетов и
-               * фоновых задач, поэтому отдельного закрытия ему не требуется.
-               *
-               * @returns {Promise<void>} завершение после расчёта всех обещаний.
-               */
-              async function dispose() {
-                closed = true;
-                const pending = [...entries.values()];
-                entries.clear();
-                await Promise.allSettled(pending);
-              }
-
-              return { get, has, size, dispose };
-            }
-      - index: 73
-        fact:
-          id: sha256:bfec90d345a0c65ba3e57a78f08472f101cf6c585d020c29ba241bcc245b58fa
-          kind: file
-          path: src/dsh/skill.ts
-          start_line: 1
-          end_line: 62
-          text: >
-            /**
-             * Публикация канонического скилла module-boundaries в реестре dsh.
-             *
-             * Скилл остаётся единственным файлом `skills/module-boundaries/SKILL.md`:
-             * адаптер Codex экспортирует его как MCP-ресурс, а плагин dsh регистрирует тот
-             * же текст как runtime-скилл через `ctx.skills.register`. Копий в
-             * пользовательских каталогах не создаётся, поэтому правка файла меняет оба
-             * хоста одновременно.
-             *
-             * Модуль зависит только от файловой системы и YAML: разбор frontmatter
-             * повторяет правило MCP-сервера, но не требует SDK.
-             *
-             * @module plugin-architecture-change-view/dsh/skill
-             */
-
-            import { readFile } from "node:fs/promises";
-
-            import { parse } from "yaml";
-
-            import { packageUrl } from "../runtime/package-paths.js";
-
-
-            /** Адрес файла скилла внутри пакета. */
-
-            export const SKILL_PATH = new
-            URL("skills/module-boundaries/SKILL.md", packageUrl);
-
-
-            /**
-             * Разбирает текст скилла с YAML-frontmatter.
-             *
-             * Обязательны `name` в kebab-case и непустое `description`: реестр dsh
-             * отклоняет runtime-скилл без них. Тело возвращается без frontmatter, потому
-             * что реестр вставляет его внутрь блока `<skill_instructions>`.
-             *
-             * @param {string} text - полный текст файла.
-             * @returns {{ name: string, description: string, content: string }} разобранный скилл.
-             * @throws {Error} если frontmatter отсутствует или не содержит обязательных полей.
-             */
-            export function parseSkillText(text: string) {
-              const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(String(text ?? ""));
-              if (!frontmatter) throw new Error("У скилла module-boundaries отсутствует frontmatter");
-              const value: unknown = parse(frontmatter[1]);
-              const metadata = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-              if (typeof metadata?.name !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(metadata.name)) {
-                throw new Error("У скилла module-boundaries некорректное имя");
-              }
-              if (typeof metadata.description !== "string" || metadata.description === "") {
-                throw new Error("У скилла module-boundaries отсутствует описание");
-              }
-              return {
-                name: metadata.name,
-                description: metadata.description,
-                content: text.slice(frontmatter[0].length).trimStart(),
-              };
-            }
-
-
-            /**
-             * Читает и разбирает встроенный скилл.
-             *
-             * @param {URL} [file] - адрес файла скилла; по умолчанию штатный в пакете.
-             * @param {(file: URL, encoding: "utf8") => Promise<string>} [read] - чтение для тестов.
-             * @returns {Promise<{ name: string, description: string, content: string }>} разобранный скилл.
-             */
-            export async function loadSkill(file = SKILL_PATH, read: (file: URL,
-            encoding: "utf8") => Promise<string> = readFile) {
-              return parseSkillText(await read(file, "utf8"));
-            }
-      - index: 74
-        fact:
-          id: sha256:6c752c2290e60056f104fa78ca0da10b16863349c810d614a59edf6842b16b4f
-          kind: file
-          path: src/dsh/tools.ts
-          start_line: 1
-          end_line: 131
-          text: >
-            /**
-             * Модельные инструменты ArchiView для плагина dsh.
-             *
-             * Слой не зависит от cordis и SDK инструментов: он объявляет статические
-             * описания (имя, описание, параметры) и чистые операции чтения контрактов.
-             * Хост-половина (`host.ts`) превращает описания в определения `defineTool`,
-             * поэтому этот модуль можно проверять обычным `node --test`.
-             *
-             * Инструменты только читают: анализ и запись arch.yaml выполняет агент своими
-             * файловыми средствами по каноническому скиллу module-boundaries.
-             *
-             * @module plugin-architecture-change-view/dsh/tools
-             */
-
-            import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from
-            "../contracts/inventory.js";
-
-            import { realpath } from "node:fs/promises";
-
-            import path from "node:path";
-
-            import { within } from "../project/paths.js";
-
-
-            /** Описание параметра `projectRoot`, общего для обоих инструментов.
-            */
-
-            const PROJECT_ROOT_PARAMETER = {
-              type: "string" as const,
-              description: "Абсолютный корень проекта текущего чата. При настроенном root можно выбрать сам root или вложенный каталог.",
-            };
-
-
-            /**
-             * Статические определения инструментов модели.
-             *
-             * Порядок фиксирован: он же порядок регистрации в реестре инструментов dsh.
-             * Схемы не содержат `projectRoot` как обязательный параметр, потому что корень
-             * может быть закреплён конфигурацией; проверка выполняется в операции.
-             *
-             * @constant {ReadonlyArray<{ name: string, description: string, parameters: object }>}
-             */
-            export const TOOL_DEFINITIONS = Object.freeze([
-              Object.freeze({
-                name: "archiview_inventory",
-                description: "List every source directory and arch.yaml coverage, including " +
-                  "missing/empty contracts, source-container directories and planned modules. " +
-                  "Presence is not a semantic compliance verdict. Read skill://module-boundaries.",
-                parameters: Object.freeze({ projectRoot: PROJECT_ROOT_PARAMETER }),
-              }),
-              Object.freeze({
-                name: "archiview_context",
-                description: "Read arch.yaml for a target directory and all ancestors, root first. " +
-                  "Use before editing source code. Reports missing documents explicitly.",
-                parameters: Object.freeze({
-                  projectRoot: PROJECT_ROOT_PARAMETER,
-                  directory: Object.freeze({
-                    type: "string" as const,
-                    description: "Каталог относительно корня проекта; по умолчанию корень.",
-                  }),
-                }),
-              }),
-            ]);
-
-
-            /**
-             * Собирает набор расширений исходников из настроек плагина.
-             *
-             * Базовый набор приходит из инвентаризации; конфигурация только добавляет
-             * расширения в формате `.ext`. Пустое или некорректное значение — ошибка
-             * конфигурации, а не молчаливое игнорирование.
-             *
-             * @param {readonly string[]} [configured] - дополнительные расширения из конфигурации.
-             * @returns {Set<string>} расширения с ведущей точкой в нижнем регистре.
-             * @throws {Error} если значение не является расширением.
-             */
-            export function normalizeExtensions(configured: readonly string[] =
-            []) {
-              const extensions = new Set(SOURCE_EXTENSIONS);
-              for (const value of configured) {
-                if (typeof value !== "string" || !/^\.[a-z0-9]+$/i.test(value)) {
-                  throw new Error("Некорректное расширение исходников: " + String(value));
-                }
-                extensions.add(value.toLowerCase());
-              }
-              return extensions;
-            }
-
-
-            /**
-             * Выбирает корень проекта для операции.
-             *
-             * Настройка хоста ограничивает область каждого модельного вызова.
-             * Без настройки проект задаёт аргумент инструмента.
-             *
-             * @param {object} options - параметры выбора.
-             * @param {unknown} options.projectRoot - значение аргумента инструмента.
-             * @param {string} [options.configuredRoot] - корень из конфигурации плагина.
-             * @returns {Promise<string>} путь к разрешённому проекту.
-             * @throws {Error} если корень не задан ни одним способом.
-             */
-            export async function resolveRoot({ projectRoot, configuredRoot }: {
-            projectRoot?: unknown; configuredRoot?: string }) {
-              const selected = typeof projectRoot === "string" ? projectRoot.trim() : "";
-              if (configuredRoot) {
-                const boundary = await realpath(configuredRoot);
-                const candidate = path.resolve(configuredRoot, selected);
-                if (within(configuredRoot, candidate) || within(boundary, candidate)) {
-                  const physical = await realpath(candidate);
-                  if (within(boundary, physical)) return physical;
-                }
-                throw new Error("projectRoot находится вне настроенного корня ArchiView");
-              }
-              if (selected) return realpath(selected);
-              throw new Error("Передайте projectRoot или задайте root в конфигурации плагина ArchiView");
-            }
-
-
-            /**
-             * Читает инвентаризацию каталогов проекта.
-             *
-             * @param {object} options - параметры чтения.
-             * @param {string} options.root - корень проекта.
-             * @param {Set<string>} options.extensions - расширения исходников.
-             * @param {number} options.maxFiles - предел обхода.
-             * @returns {Promise<object>} результат `moduleInventory` без изменений формы.
-             */
-            export async function readInventory({ root, extensions, maxFiles }:
-            { root: string; extensions: Set<string>; maxFiles: number }) {
-              return moduleInventory(root, { extensions, maxFiles });
-            }
-
-
-            /**
-             * Читает контракт каталога и всех предков.
-             *
-             * @param {object} options - параметры чтения.
-             * @param {string} options.root - корень проекта.
-             * @param {string} [options.directory] - каталог относительно корня.
-             * @returns {Promise<object>} результат `moduleContext` без изменений формы.
-             */
-            export async function readContext({ root, directory = "." }: { root:
-            string; directory?: unknown }) {
-              if (typeof directory !== "string") throw new Error("directory должен быть строкой");
-              return moduleContext(root, directory);
-            }
-      - index: 179
-        fact:
-          id: sha256:d627c3ca3e06cf833b9623222e793aeda8dd60b942f8c23afcaba40f3b9a66da
-          kind: module
-          path: src/dsh
-          text: '{"contract":"missing","sources":["src/dsh/chat-root.ts","src/dsh/host-types.ts","src/dsh/host.ts","src/dsh/panel-contract.ts","src/dsh/routes.ts","src/dsh/sessions.ts","src/dsh/skill.ts","src/dsh/tools.ts"]}'
-  current:
-    metadata:
-      id: working-229ae0075628b257c2ee1c427b3e4a468b3d90c0e2144d52794919619663669f
+      id: git-febbde194ffbf2e44be0ad37702a1ad906063427
       digest: sha256:229ae0075628b257c2ee1c427b3e4a468b3d90c0e2144d52794919619663669f
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T02:13:13.926Z
-      kind: working
-      label: Рабочее дерево
+      capturedAt: 2026-11-12T02:45:35.837Z
+      kind: git
+      revision: febbde194ffbf2e44be0ad37702a1ad906063427
+      label: HEAD
       fingerprint: 697fa2e47691ebd4f0cea6c0ba8f2948491d4d806914055352b7796de198912d
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      baseRevision: 69649a19d2d61e4b0c27cace211cfafdc2ff8892
+      isHead: true
     module_index: 9
     module:
       directory: src/dsh
@@ -3285,6 +2327,1475 @@ publication:
           kind: module
           path: src/dsh
           text: '{"contract":"documented","format":"yaml","sources":["src/dsh/chat-root.ts","src/dsh/host-types.ts","src/dsh/host.ts","src/dsh/panel-contract.ts","src/dsh/routes.ts","src/dsh/sessions.ts","src/dsh/skill.ts","src/dsh/tools.ts"]}'
+  current:
+    metadata:
+      id: launch-69b926dc066185d566b94702c44c53a05ac923a608af0cfb03a8e49ab127b80f
+      digest: sha256:fd99619f9d0888f33a3f69199c58b5be78f7adc2984e4d332594c90f18951a55
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-12T02:47:21.499Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 69b926dc066185d566b94702c44c53a05ac923a608af0cfb03a8e49ab127b80f
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+    module_index: 9
+    module:
+      directory: src/dsh
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: dsh-adapter
+
+          title: Плагин dsh
+
+          kind: module
+
+          extensions:
+            archiview.roles: [host-adapter, web-endpoints]
+          purpose: Предоставлять агенту DeepSeek Harness правила и контекст
+          контрактов, а пользователю —
+            панель ArchiView для проекта его чата.
+          responsibilities:
+            R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста каталогов,
+              не добавляя данные панели в контекст модели.
+            R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из единственного
+              файла пакета, без копий в пользовательских каталогах.
+            R3: Отдавать браузерной половине шаблон панели и операции просмотра по префиксным маршрутам,
+              проверяя каждый запрос политикой соединения хоста.
+            R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по рабочему каталогу
+              чата вкладки, и закрывать реестр при выгрузке плагина.
+            R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+          boundaries:
+            B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса прикладному сервису.
+            B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для привязки к проекту.
+              Содержимое панели поступает из общего веб-интерфейса ArchiView.
+            B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+            B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты через прикладной сервис.
+          invariants:
+            I1: Маршрут панели не запускает модель и не возвращает данные просмотра в контекст агента.
+            I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+            I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного хостом. Для прямого
+              просмотра действует настроенный корень или рабочий каталог процесса. Панель выбирает репозиторий
+              внутри этой папки. Модельные инструменты используют настроенный корень или рабочую папку чата.
+              Настроенный корень ограничивает доступные пути.
+            I4: Публикация скилла не создаёт второго источника текста — используется файл пакета.
+            I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий) читаются только
+              при наличии и не блокируют активацию плагина.
+        format: yaml
+        contract:
+          schema_version: 1
+          id: dsh-adapter
+          title: Плагин dsh
+          kind: module
+          extensions:
+            archiview.roles:
+              - host-adapter
+              - web-endpoints
+          purpose: Предоставлять агенту DeepSeek Harness правила и контекст контрактов, а
+            пользователю — панель ArchiView для проекта его чата.
+          responsibilities:
+            R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста
+              каталогов, не добавляя данные панели в контекст модели.
+            R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из
+              единственного файла пакета, без копий в пользовательских
+              каталогах.
+            R3: Отдавать браузерной половине шаблон панели и операции просмотра по
+              префиксным маршрутам, проверяя каждый запрос политикой соединения
+              хоста.
+            R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по
+              рабочему каталогу чата вкладки, и закрывать реестр при выгрузке
+              плагина.
+            R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+          boundaries:
+            B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса
+              прикладному сервису.
+            B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для
+              привязки к проекту. Содержимое панели поступает из общего
+              веб-интерфейса ArchiView.
+            B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+            B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты
+              через прикладной сервис.
+          invariants:
+            I1: Маршрут панели не запускает модель и не возвращает данные просмотра в
+              контекст агента.
+            I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+            I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного
+              хостом. Для прямого просмотра действует настроенный корень или
+              рабочий каталог процесса. Панель выбирает репозиторий внутри этой
+              папки. Модельные инструменты используют настроенный корень или
+              рабочую папку чата. Настроенный корень ограничивает доступные
+              пути.
+            I4: Публикация скилла не создаёт второго источника текста — используется файл
+              пакета.
+            I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий)
+              читаются только при наличии и не блокируют активацию плагина.
+      documentPath: .archiview/modules/dsh-adapter.yaml
+      files:
+        - path: .archiview/modules/dsh-adapter.yaml
+          hash: c7734d0e28fe83c9732541af4b141e255c773978
+        - path: src/dsh/chat-root.ts
+          hash: 82ea8c53a4a0e353cf46e28f12d1d6ef926b4cf7
+        - path: src/dsh/host-types.ts
+          hash: f6fb06fb310e1f1cf7e6787e841912bd39fc4d49
+        - path: src/dsh/host.ts
+          hash: b97e0ac2ca082f8c56aa9336d6c942b573a79fa3
+        - path: src/dsh/panel-contract.ts
+          hash: 14013b94176f2fe6dbb4d42bf400fc50c71577b1
+        - path: src/dsh/routes.ts
+          hash: eb23009d920b25b7d5e60db15e241c73e71a8926
+        - path: src/dsh/sessions.ts
+          hash: f4fbf0fc1dfee01b32d96f3a361a9411223cf23c
+        - path: src/dsh/skill.ts
+          hash: d725f2ef313699c21806abe4d2ee72d72434f75e
+        - path: src/dsh/tools.ts
+          hash: 157e2acdfbafa3b50b6cecd6b19c394655b6cec0
+      sourceFiles: 8
+      fingerprint: 8d2f05a8251bccfbfc91638d23f8c95666eb18847c022ee50de5dc133a1673c0
+    facts:
+      - index: 21
+        fact:
+          id: sha256:50b764ab0387632f4d45b8999da13e1748e0e878c1b08a2cb81e3464d1e5577a
+          kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 35
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: Плагин dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [host-adapter, web-endpoints]
+            purpose: Предоставлять агенту DeepSeek Harness правила и контекст
+            контрактов, а пользователю —
+              панель ArchiView для проекта его чата.
+            responsibilities:
+              R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста каталогов,
+                не добавляя данные панели в контекст модели.
+              R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из единственного
+                файла пакета, без копий в пользовательских каталогах.
+              R3: Отдавать браузерной половине шаблон панели и операции просмотра по префиксным маршрутам,
+                проверяя каждый запрос политикой соединения хоста.
+              R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по рабочему каталогу
+                чата вкладки, и закрывать реестр при выгрузке плагина.
+              R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+            boundaries:
+              B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса прикладному сервису.
+              B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для привязки к проекту.
+                Содержимое панели поступает из общего веб-интерфейса ArchiView.
+              B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+              B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты через прикладной сервис.
+            invariants:
+              I1: Маршрут панели не запускает модель и не возвращает данные просмотра в контекст агента.
+              I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+              I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного хостом. Для прямого
+                просмотра действует настроенный корень или рабочий каталог процесса. Панель выбирает репозиторий
+                внутри этой папки. Модельные инструменты используют настроенный корень или рабочую папку чата.
+                Настроенный корень ограничивает доступные пути.
+              I4: Публикация скилла не создаёт второго источника текста — используется файл пакета.
+              I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий) читаются только
+                при наличии и не блокируют активацию плагина.
+      - index: 78
+        fact:
+          id: sha256:22a34d709766a3d0b465d36b82981ac15bb77931f50637e0b9dd7464371bbd1b
+          kind: file
+          path: src/dsh/chat-root.ts
+          start_line: 1
+          end_line: 64
+          text: >
+            /**
+             * Разрешение корня проекта по чату вкладки.
+             *
+             * Вкладка правой панели принадлежит конкретному чату dsh, а прикладной сервис
+             * ArchiView работает с одним корнем проекта. Мост между ними — рабочий каталог
+             * сессии: он неизменен в заголовке сессии, поэтому панель, инструменты модели
+             * и экспорт анализа видят один и тот же проект.
+             *
+             * Источников два, в порядке точности:
+             *
+             * 1. живая сессия в `ctx.sessions` — быстрый путь для открытого чата;
+             * 2. сохранённый заголовок через `sessionController.inspect` — путь для
+             *    восстановленной вкладки, когда агент ещё не присоединился.
+             *
+             * Модуль не знает ни HTTP, ни cordis: оба сервиса передаются как зависимости,
+             * поэтому правило проверяется обычным `node --test`.
+             *
+             * @module plugin-architecture-change-view/dsh/chat-root
+             */
+
+            /**
+             * Проверяет, что значение пригодно как рабочий каталог.
+             *
+             * @param {unknown} value - проверяемое значение.
+             * @returns {string | null} непустой путь либо `null`.
+             */
+            function asDirectory(value: unknown) {
+              if (typeof value !== "string") return null;
+              const trimmed = value.trim();
+              return trimmed === "" ? null : trimmed;
+            }
+
+
+            /**
+             * Возвращает рабочий каталог чата.
+             *
+             * @param {object} options - параметры разрешения.
+             * @param {unknown} options.sessionId - идентификатор чата из вкладки.
+             * @param {{ get?: (id: string) => { header?: { cwd?: string } } | undefined } | undefined} [options.sessions]
+             *   живое хранилище сессий dsh.
+             * @param {{ inspect?: (id: string, signal?: AbortSignal) => Promise<{ meta?: { cwd?: string } }> } | undefined} [options.sessionController]
+             *   контроллер сессий для чтения сохранённого заголовка.
+             * @param {AbortSignal} [options.signal] - отмена чтения сохранённого заголовка.
+             * @returns {Promise<string | null>} рабочий каталог или `null`, если чат не найден.
+             * @throws {Error} если чтение сохранённого заголовка завершилось ошибкой хранилища.
+             */
+            export async function resolveChatRoot({ sessionId, sessions,
+            sessionController, signal }: ChatRootOptions) {
+              if (typeof sessionId !== "string" || sessionId === "") return null;
+
+              const live = sessions?.get?.(sessionId);
+              const liveCwd = asDirectory(live?.header?.cwd);
+              if (liveCwd !== null) return liveCwd;
+
+              if (typeof sessionController?.inspect !== "function") return null;
+              const inspection = await sessionController.inspect(sessionId, signal);
+              return asDirectory(inspection?.meta?.cwd);
+            }
+
+
+            export interface ChatRootOptions {
+             sessionId: unknown;
+             sessions?: { get?(id: string): { header?: { cwd?: string } } | undefined };
+             sessionController?: { inspect?(id: string, signal?: AbortSignal): Promise<{ meta?: { cwd?: string } }> };
+             signal?: AbortSignal;
+            }
+      - index: 84
+        fact:
+          id: sha256:ad96acba6ed081da7521c1f7ccdb9fbff7eda9239f955960650f20224bfaf7bd
+          kind: file
+          path: src/dsh/host-types.ts
+          start_line: 1
+          end_line: 34
+          text: >
+            /** The host services consumed by this adapter. Optional services
+            are read lazily. */
+
+            import type { IncomingMessage, ServerResponse } from "node:http";
+
+            import type { ChatRootOptions } from "./chat-root.js";
+
+            import type { loadSkill } from "./skill.js";
+
+            import type { clientConfigRow } from "./panel-contract.js";
+
+
+            export type JsonValue = null | boolean | number | string |
+            JsonValue[] | { [key: string]: JsonValue };
+
+
+            export type Dispose = () => void;
+
+            export interface HostServices {
+              skills: { register(skill: Awaited<ReturnType<typeof loadSkill>>): Dispose };
+              sessions: NonNullable<ChatRootOptions["sessions"]>;
+              sessionController: NonNullable<ChatRootOptions["sessionController"]>;
+            }
+
+            export interface HostContext {
+              effect(register: () => Dispose, label: string): unknown;
+              get<K extends keyof HostServices>(name: K): HostServices[K] | undefined;
+              logger?: { warn?(text: string): void };
+              tools: { register(tool: unknown): unknown };
+              connection: { requestRejection(request: IncomingMessage): number | undefined };
+              webServer: { register(route: { kind: string; path: string; handler(request: IncomingMessage, response: ServerResponse): unknown }): Dispose };
+              on(event: "webserver/index-inject", callback: (rows: ReturnType<typeof clientConfigRow>[]) => void): Dispose;
+            }
+
+            export interface HostConfig {
+              root: string;
+              stateDirectory: string;
+              prefix: string;
+              maxFiles: number;
+              extensions: string[];
+              panel: boolean;
+              tools: boolean;
+              skill: boolean;
+            }
+      - index: 85
+        fact:
+          id: sha256:d980c5b20517b46a76bd35ae18b06321b3129f3fb2e20fe26eb36105136df272
+          kind: file
+          path: src/dsh/host.ts
+          start_line: 1
+          end_line: 247
+          text: >
+            import type { SessionOperations } from "../application/api.js";
+
+            import { createWorkspaceSession } from
+            "../application/workspace-session.js";
+
+            import type { SessionRegistry } from "./sessions.js";
+
+            import type { HostContext, HostConfig, JsonValue } from
+            "./host-types.js";
+
+            /**
+             * Cordis-плагин ArchiView для DeepSeek Harness.
+             *
+             * Плагин собирает из существующих домены проекта две половины:
+             *
+             * 1. инструменты модели (`archiview_inventory`, `archiview_context`) — чтение
+             *    контрактов через `src/contracts/inventory.ts`;
+             * 2. маршруты панели под префиксом `/archiview` — тот же прикладной сервис
+             *    `src/application`, что используют standalone-адаптер и панель Codex;
+             * 3. публикацию скилла module-boundaries в реестре dsh;
+             * 4. передачу настроенного префикса маршрутов браузерной половине через
+             *    публичный канал `webserver/index-inject`.
+             *
+             * Плагин не содержит прикладной логики и не запускает модель: просмотр только
+             * читает проект, а анализ выполняет агент хоста по явному поручению. Вкладка
+             * получает рабочий каталог своего чата из хоста. Для прямого открытия панели
+             * используются настройка корня и рабочий каталог процесса.
+             *
+             * @module plugin-architecture-change-view/dsh/host
+             */
+
+            import path from "node:path";
+
+            import z from "@deepseek-ai/schemastery";
+
+            import { defineTool } from "@deepseek-ai/dsh-tools";
+
+            import { ApplicationError } from "../application/errors.js";
+
+            import { resolveChatRoot } from "./chat-root.js";
+
+            import { clientConfigRow, DEFAULT_PREFIX } from
+            "./panel-contract.js";
+
+            import { createRouteTable, normalizePrefix } from "./routes.js";
+
+            import { createSessionRegistry } from "./sessions.js";
+
+            import { loadSkill } from "./skill.js";
+
+            import {
+              normalizeExtensions,
+              readContext,
+              readInventory,
+              resolveRoot,
+              TOOL_DEFINITIONS,
+            } from "./tools.js";
+
+
+            /** Имя Cordis-плагина для диагностики загрузчика. */
+
+            export const name = "archiview";
+
+
+            /**
+             * Сервисы, без которых плагин не активируется.
+             *
+             * `connection` обязателен: маршруты панели отдают проект только после его
+             * проверки политики соединения. Реестр скиллов подключается необязательно —
+             * без него инструменты и панель продолжают работать.
+             */
+            export const inject = ["tools", "webServer", "connection"];
+
+
+            /** Схема конфигурации плагина; значения по умолчанию рассчитаны на
+            локальный проект. */
+
+            export const Config = z.object({
+              root: z.string().default(""),
+              stateDirectory: z.string().default(""),
+              prefix: z.string().default(DEFAULT_PREFIX),
+              maxFiles: z.number().default(50_000),
+              extensions: z.array(z.string()).default([]),
+              panel: z.boolean().default(true),
+              tools: z.boolean().default(true),
+              skill: z.boolean().default(true),
+            });
+
+
+            /**
+             * Применяет плагин к контексту dsh.
+             *
+             * Регистрации живут ровно столько же, сколько плагин: маршруты и скилл
+             * снимаются возвращёнными disposer'ами, а реестр сессий закрывается эффектом.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
+             * @param {object} config - нормализованная конфигурация схемы.
+             * @returns {void}
+             */
+            export function apply(ctx: HostContext, config: HostConfig) {
+              const prefix = normalizePrefix(config.prefix);
+              const extensions = normalizeExtensions(config.extensions);
+              const root = config.root === "" ? "" : path.resolve(config.root);
+              const sessions = createSessionRegistry({
+                createSession: (options: { root: string; stateDirectory?: string }) => createWorkspaceSession({ ...options, sharedStateDirectory: true }),
+                stateDirectory: config.stateDirectory === "" ? undefined : config.stateDirectory,
+              });
+
+              ctx.effect(() => () => {
+                void sessions.dispose();
+              }, "archiview: сессии");
+
+              if (config.tools) registerTools(ctx, { extensions, maxFiles: config.maxFiles, configuredRoot: root });
+              if (config.skill) registerSkill(ctx);
+              if (config.panel) {
+                registerClientConfig(ctx, prefix);
+                registerRoutes(ctx, { prefix, sessions, fallbackRoot: root });
+              }
+            }
+
+
+            /**
+             * Регистрирует инструменты модели.
+             *
+             * Схема вывода — произвольный JSON: результат инвентаризации и контекста
+             * остаётся структурированным, а не превращается в строку до валидации.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
+             * @param {object} options - параметры регистрации.
+             * @param {Set<string>} options.extensions - расширения исходников.
+             * @param {number} options.maxFiles - предел обхода.
+             * @param {string} options.configuredRoot - область чтения инструментов из конфигурации.
+             * @returns {void}
+             */
+            function registerTools(ctx: HostContext, { extensions, maxFiles,
+            configuredRoot }: { extensions: Set<string>; maxFiles: number;
+            configuredRoot: string }) {
+              for (const definition of TOOL_DEFINITIONS) {
+                ctx.tools.register(defineTool({
+                  name: definition.name,
+                  description: definition.description,
+                  parameters: definition.parameters,
+                  output: {
+                    schema: { type: "json" },
+                    render: (_args, value) => [{ type: "text", text: JSON.stringify(value) }],
+                  },
+                  async execute(args: { projectRoot?: string; path?: string; directory?: string }, exec) {
+                    const requested = args.projectRoot ?? (configuredRoot ? undefined : exec.agent?.session.header.cwd);
+                    const projectRoot = await resolveRoot({ projectRoot: requested, configuredRoot });
+                    const value = definition.name === "archiview_inventory"
+                      ? await readInventory({ root: projectRoot, extensions, maxFiles })
+                      : await readContext({ root: projectRoot, path: args.path, directory: args.directory });
+                    return JSON.parse(JSON.stringify(value)) as JsonValue;
+                  },
+                }));
+              }
+            }
+
+
+            /**
+             * Публикует встроенный скилл в реестре dsh, если он есть в композиции.
+             *
+             * Регистрация асинхронная: файл читается с диска после активации плагина, а
+             * ошибка чтения не отменяет инструменты и панель.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
+             * @returns {void}
+             */
+            function registerSkill(ctx: HostContext) {
+              // Скиллы не входят в inject: композиция без dsh-skill должна активировать
+              // инструменты и панель. Поэтому сервис читается через ctx.get, а не ctx.skills.
+              const skills = ctx.get("skills");
+              if (skills === undefined) {
+                ctx.logger?.warn?.("ArchiView: реестр скиллов dsh недоступен, module-boundaries не опубликован");
+                return;
+              }
+              let dispose: (() => void) | undefined;
+              let disposed = false;
+              loadSkill().then((skill) => {
+                if (!disposed) dispose = skills.register(skill);
+              }, (error) => {
+                ctx.logger?.warn?.("ArchiView: скилл не зарегистрирован: " + error.message);
+              });
+              ctx.effect(() => () => {
+                disposed = true;
+                dispose?.();
+              }, "archiview: скилл");
+            }
+
+
+            /**
+             * Сообщает браузерной половине префикс маршрутов панели.
+             *
+             * Используется публичный канал веб-сервера dsh: строка `webserver/index-inject`
+             * с `kind: "global"` присваивает значение свойству `globalThis` до запуска
+             * клиентских бандлов. Так конфигурация `prefix` доходит до вкладки, и клиенту
+             * не нужно угадывать адрес страницы по собственной константе.
+             *
+             * Внедрение действует там, где index.html отдаёт веб-сервер (Web-профиль). В
+             * Electron документ грузится по `file://` и внедрения не получает — клиент
+             * остаётся на стандартном префиксе, который совпадает с настройкой по
+             * умолчанию.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
+             * @param {string} prefix - нормализованный префикс маршрутов.
+             * @returns {void}
+             */
+            function registerClientConfig(ctx: HostContext, prefix: string) {
+              ctx.effect(() => ctx.on("webserver/index-inject", (rows) => {
+                rows.push(clientConfigRow(prefix));
+              }), "archiview: конфигурация клиента");
+            }
+
+
+            /**
+             * Регистрирует маршруты панели в веб-сервере хоста.
+             *
+             * Корень проекта определяется по чату, которому принадлежит вкладка: клиент
+             * передаёт `?session=<id>`, хост разрешает рабочий каталог сессии и открывает
+             * прикладную сессию этого каталога. Без параметра действует корень из
+             * конфигурации — этот путь остаётся для прямого открытия страницы.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
+             * @param {object} options - параметры регистрации.
+             * @param {string} options.prefix - префикс маршрутов.
+             * @param {ReturnType<createSessionRegistry>} options.sessions - реестр сессий.
+             * @param {string} options.fallbackRoot - корень из конфигурации.
+             * @returns {void}
+             */
+            function registerRoutes(ctx: HostContext, { prefix, sessions,
+            fallbackRoot }: { prefix: string; sessions:
+            Pick<SessionRegistry<SessionOperations>, "get">; fallbackRoot:
+            string }) {
+              const projectRoot = fallbackRoot === "" ? process.cwd() : fallbackRoot;
+              const getSession = async (request: import("node:http").IncomingMessage, url: URL) => {
+                const sessionId = url.searchParams.get("session");
+                if (sessionId === null) return sessions.get(projectRoot);
+                const root = await chatRoot(ctx, sessionId);
+                if (root === null) {
+                  throw new ApplicationError("NOT_FOUND", "Чат не найден или у него нет рабочего каталога");
+                }
+                return sessions.get(root);
+              };
+              const guard = (request: import("node:http").IncomingMessage, response: import("node:http").ServerResponse) => {
+                const rejection = ctx.connection.requestRejection(request);
+                if (rejection === undefined) return false;
+                response.statusCode = rejection;
+                response.end();
+                return true;
+              };
+              for (const route of createRouteTable({ prefix, guard, getSession })) {
+                ctx.effect(() => ctx.webServer.register(route), "archiview: маршрут " + route.path);
+              }
+            }
+
+
+            /**
+             * Разрешает рабочий каталог чата, не раскрывая деталей хранилища маршруту.
+             *
+             * Ошибка чтения сессии означает лишь то, что корень определить нельзя:
+             * маршрут отвечает `NOT_FOUND`, а не внутренней ошибкой с путями хранилища.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст хоста.
+             * @param {string} sessionId - идентификатор чата из запроса.
+             * @returns {Promise<string | null>} рабочий каталог или `null`.
+             */
+            async function chatRoot(ctx: HostContext, sessionId: string) {
+              try {
+                return await resolveChatRoot({
+                  sessionId,
+                  // Хранилище и контроллер сессий не входят в inject: панель должна
+                  // активироваться и в композиции без них. ctx.get читает сервис, если он есть.
+                  sessions: ctx.get("sessions"),
+                  sessionController: ctx.get("sessionController"),
+                });
+              } catch {
+                return null;
+              }
+            }
+      - index: 86
+        fact:
+          id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+          kind: file
+          path: src/dsh/panel-contract.ts
+          start_line: 1
+          end_line: 105
+          text: >
+            /**
+             * Контракт между половинами плагина dsh.
+             *
+             * Хост и браузерный бандл — разные процессы и разные модульные графы, поэтому
+             * единственное, что они могут разделить, — это зависимый от данных контракт:
+             * имя глобального объекта, форму строки внедрения в index.html и правило
+             * разбора. Модуль намеренно не имеет зависимостей, чтобы его можно было
+             * импортировать и в Node-половину, и в бандл браузера.
+             *
+             * Так префикс маршрутов остаётся одним значением: конфигурация хоста попадает
+             * в документ клиента через публичный канал `webserver/index-inject`, а клиент
+             * читает её оттуда. Ни одна половина не дублирует константу маршрута.
+             *
+             * @module plugin-architecture-change-view/dsh/panel-contract
+             */
+
+            /** Префикс маршрутов панели по умолчанию, если хост не сообщил
+            другой. */
+
+            export const DEFAULT_PREFIX = "/archiview";
+
+
+            /** Имя глобального объекта, который хост внедряет в документ
+            клиента. */
+
+            export const CLIENT_GLOBAL = "__DSH_ARCHIVIEW__";
+
+
+            /**
+             * Начало локального пути: ровно один прямой слэш.
+             *
+             * Второй символ не может быть ещё одним слэшем или обратным слэшем. `//host/path`
+             * — сетевая ссылка (network-path reference): браузер сохраняет схему документа,
+             * но берёт чужой origin. `/\host/path` приводится к той же ссылке при разборе
+             * URL, потому что для специальных схем обратный слэш считается разделителем.
+             */
+            const LOCAL_PATH_START = /^\/(?![/\\])/;
+
+
+            /**
+             * Символы, которых не может быть в локальном пути маршрута: пробельные,
+             * обратный слэш (меняет разбор URL), строка запроса и фрагмент.
+             */
+            const FORBIDDEN_IN_PATH = /[\s\x00-\x1f\x7f\\?#]/;
+
+
+            /**
+             * Проверяет префикс, пришедший из конфигурации или документа.
+             *
+             * Допускается только локальный абсолютный путь. Сетевые ссылки и обратные
+             * слэши отклоняются: иначе адрес iframe увёл бы вкладку на чужой origin вместо
+             * маршрута панели хоста (см. `src/dsh/client/body.ts`). Тот же префикс служит
+             * путём регистрации маршрутов, поэтому проверка общая для обеих половин.
+             *
+             * @param {unknown} value - проверяемое значение.
+             * @returns {string | null} префикс без хвостового слэша либо `null`.
+             */
+            export function asPrefix(value: unknown) {
+              if (typeof value !== "string" || value.endsWith("/")) return null;
+              if (!LOCAL_PATH_START.test(value) || FORBIDDEN_IN_PATH.test(value)) return null;
+              // Use the same serialized pathname as the browser and the host route table.
+              if (value.split("/").some((part) => /^(?:\.|%2e){1,2}$/i.test(part))) return null;
+              return new URL(value, "http://localhost").pathname;
+            }
+
+
+            /**
+             * Собирает строку внедрения конфигурации клиента в index.html.
+             *
+             * `kind: "global"` — штатная строка веб-сервера dsh: она присваивает
+             * JSON-значение свойству `globalThis` до выполнения клиентских бандлов. Форма
+             * строки стабильна и не зависит от версии плагина.
+             *
+             * @param {string} prefix - нормализованный префикс маршрутов панели.
+             * @returns {{ kind: "global", name: string, value: { prefix: string } }} строка внедрения.
+             */
+            export function clientConfigRow(prefix: string) {
+              return { kind: "global", name: CLIENT_GLOBAL, value: { prefix } };
+            }
+
+
+            /**
+             * Читает префикс, который сообщил хост.
+             *
+             * Отсутствие или порча значения не считаются ошибкой: клиент откатывается к
+             * стандартному префиксу, потому что вкладка не должна ломаться из-за
+             * документа, который ещё не успел получить внедрение.
+             *
+             * @param {object} [scope] - глобальный объект; параметр нужен для тестов.
+             * @returns {string} действующий префикс маршрутов.
+             */
+            export function resolveClientPrefix(scope: object = globalThis) {
+              const config = (scope as Record<string, unknown>)[CLIENT_GLOBAL];
+              const injected = config && typeof config === "object" ? (config as Record<string, unknown>).prefix : undefined;
+              return asPrefix(injected) ?? DEFAULT_PREFIX;
+            }
+
+
+            /**
+             * Собирает адрес страницы панели для вкладки чата.
+             *
+             * Идентификатор чата — единственное, что клиент знает о сессии: хост по нему
+             * разрешает рабочий каталог проекта. Значение кодируется как параметр запроса,
+             * потому что оно приходит из состояния клиента и не должно влиять на разбор
+             * пути.
+             *
+             * @param {string} prefix - действующий префикс маршрутов.
+             * @param {unknown} sessionId - идентификатор чата, которому принадлежит вкладка.
+             * @returns {string} адрес страницы с идентификатором чата или без него.
+             */
+            export function panelPageUrl(prefix: string, sessionId: unknown) {
+              const base = (asPrefix(prefix) ?? DEFAULT_PREFIX) + "/";
+              if (typeof sessionId !== "string" || sessionId === "") return base;
+              return base + "?session=" + encodeURIComponent(sessionId);
+            }
+      - index: 87
+        fact:
+          id: sha256:646a715767d43fdb31c83368f3857864a17eb48e21563b675792190cc7077ba6
+          kind: file
+          path: src/dsh/routes.ts
+          start_line: 1
+          end_line: 329
+          text: >
+            import type { SessionOperations } from "../application/api.js";
+
+            import { callSessionOperation, comparisonQueryArguments,
+            repositoryArguments } from "../application/arguments.js";
+
+            import type { IncomingMessage, ServerResponse } from "node:http";
+
+            /**
+             * HTTP-маршруты панели ArchiView для веб-сервера dsh.
+             *
+             * Модуль знает только про node:http-запросы и прикладной сервис: он отдаёт
+             * статический интерфейс из `web/archiview`, переписывает в нём адреса под
+             * префикс плагина и выполняет те же операции просмотра, что standalone-адаптер
+             * `src/archiview/http.ts`. Сервер не поднимается: маршруты регистрируются в
+             * `ctx.webServer` хоста.
+             *
+             * Политика соединения приходит снаружи как `guard`: маршрут не читает проект
+             * до того, как хост подтвердит допустимость запроса. Корень проекта также не
+             * берётся из URL — его определяет `getSession`.
+             *
+             * @module plugin-architecture-change-view/dsh/routes
+             */
+
+            import { readFile } from "node:fs/promises";
+
+            import { applicationError, ApplicationError } from
+            "../application/errors.js";
+
+            import { packageUrl, webAssetUrl } from
+            "../runtime/package-paths.js";
+
+            import { asPrefix, DEFAULT_PREFIX } from "./panel-contract.js";
+
+
+            export { DEFAULT_PREFIX };
+
+
+            /** Предел тела JSON-запроса: операции панели передают только
+            идентификаторы и пути. */
+
+            const MAX_BODY_BYTES = 4096;
+
+
+            /** Прикладной код ошибки в HTTP-статус; незнакомый код считается
+            внутренним. */
+
+            const ERROR_STATUS: Record<string, number> = {
+              INVALID_ARGUMENT: 400,
+              REPOSITORY_UNAVAILABLE: 400,
+              NOT_FOUND: 404,
+              STALE_VIEW: 409,
+              REQUEST_TOO_LARGE: 413,
+              INCOMPLETE_VIEW: 422,
+            };
+
+
+            /**
+             * Статические ресурсы панели: имя под префиксом, файл пакета и тип содержимого.
+             *
+             * Статические ресурсы HTTP-панели. Отправку поручений обслуживает мост iframe dsh.
+             *
+             * @constant {ReadonlyMap<string, { file: string, type: string }>}
+             */
+            export const PANEL_ASSETS = new Map([
+              ["", { file: "web/archiview/index.html", type: "text/html; charset=utf-8" }],
+              ["index.html", { file: "web/archiview/index.html", type: "text/html; charset=utf-8" }],
+              ["app.mjs", { file: "web/archiview/app.mjs", type: "text/javascript; charset=utf-8" }],
+              ["client.mjs", { file: "web/archiview/client.mjs", type: "text/javascript; charset=utf-8" }],
+              ["panel-bridge.mjs", { file: "web/archiview/panel-bridge.mjs", type: "text/javascript; charset=utf-8" }],
+              ["review.mjs", { file: "web/archiview/review.mjs", type: "text/javascript; charset=utf-8" }],
+              ["styles.css", { file: "web/archiview/styles.css", type: "text/css; charset=utf-8" }],
+              ["favicon.svg", { file: "web/archiview/favicon.svg", type: "image/svg+xml" }],
+            ]);
+
+
+            /** Кэш прочитанных ресурсов: файлы панели неизменны в пределах
+            установленного пакета. */
+
+            const assetCache = new Map<string, Buffer>();
+
+
+            /**
+             * Приводит префикс к виду `/archiview`: локальный путь без хвостового слэша и
+             * служебных символов.
+             *
+             * Сетевые ссылки вида `//host/path` и обратные слэши отклоняются той же
+             * проверкой, которой пользуется клиент: префикс обязан оставаться путём на
+             * origin хоста.
+             *
+             * @param {unknown} value - значение конфигурации.
+             * @returns {string} нормализованный префикс.
+             * @throws {Error} если значение не является допустимым локальным путём.
+             */
+            export function normalizePrefix(value: unknown) {
+              const prefix = typeof value === "string" ? value.trim() : "";
+              if (prefix === "") return DEFAULT_PREFIX;
+              const normalized = asPrefix(prefix);
+              if (normalized === null) {
+                throw new Error(
+                  "Префикс плагина ArchiView должен быть локальным путём: /путь без хвостового слэша, обратных слэшей, ? и #",
+                );
+              }
+              return normalized;
+            }
+
+
+            /**
+             * Экранирует значение для HTML-атрибута.
+             *
+             * @param {string} value - недоверенное значение.
+             * @returns {string} безопасная для атрибута строка.
+             */
+            function escapeAttribute(value: string) {
+              return String(value).replaceAll("&", "&amp;").replaceAll('"', "&quot;")
+                .replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+            }
+
+
+            /**
+             * Переписывает шаблон панели под префикс плагина.
+             *
+             * Шаблон ссылается на ресурсы абсолютными путями от корня сервера, поэтому без
+             * переписывания они попадут в SPA-фолбэк dsh. Заодно вставляются метаданные:
+             * префикс маршрутов (его читает `web/archiview/client.ts` и приклеивает к
+             * адресам операций вида `/api/...`) и идентификатор чата, к которому относится
+             * вкладка.
+             *
+             * @param {string} html - исходный шаблон.
+             * @param {object} options - параметры переписывания.
+             * @param {string} options.prefix - префикс маршрутов плагина.
+             * @param {string | null} [options.sessionId] - идентификатор чата для вкладки.
+             * @returns {string} готовый HTML.
+             */
+            export function rewritePanelHtml(html: string, { prefix, sessionId
+            }: { prefix: string; sessionId?: string | null }) {
+              const meta = [`<meta name="archiview-base" content="${escapeAttribute(prefix)}">`];
+              if (typeof sessionId === "string" && sessionId !== "") {
+                meta.push(`<meta name="archiview-session" content="${escapeAttribute(sessionId)}">`);
+              }
+              return html
+                .replace('href="/styles.css"', `href="${prefix}/styles.css"`)
+                .replace('src="/app.mjs"', `src="${prefix}/app.mjs"`)
+                .replace("<head>", "<head>\n  " + meta.join("\n  "));
+            }
+
+
+            /**
+             * Отправляет JSON-ответ с запретом кэширования.
+             *
+             * @param {import("node:http").ServerResponse} response - ответ.
+             * @param {number} status - HTTP-статус.
+             * @param {unknown} value - сериализуемое значение.
+             * @returns {void}
+             */
+            function sendJson(response: ServerResponse, status: number, value:
+            unknown) {
+              response.statusCode = status;
+              response.setHeader("Content-Type", "application/json; charset=utf-8");
+              response.end(JSON.stringify(value));
+            }
+
+
+            /**
+             * Отправляет прикладную ошибку в общей для адаптеров форме.
+             *
+             * @param {import("node:http").ServerResponse} response - ответ.
+             * @param {unknown} cause - перехваченная ошибка.
+             * @returns {void}
+             */
+            function sendError(response: ServerResponse, cause: unknown) {
+              const error = applicationError(cause);
+              const status = error.code === "REQUEST_TOO_LARGE" ? 413 : ERROR_STATUS[error.code] ?? 500;
+              sendJson(response, status, { error: error.message, code: error.code });
+            }
+
+
+            /**
+             * Читает ограниченное JSON-тело запроса.
+             *
+             * Проверяется только форма: предметные ограничения остаются в прикладном
+             * сервисе, поэтому маршрут не дублирует его правила.
+             *
+             * @param {import("node:http").IncomingMessage} request - запрос.
+             * @returns {Promise<Record<string, unknown>>} объект аргументов.
+             * @throws {ApplicationError} при превышении предела или неверной форме.
+             */
+            async function readJson(request: IncomingMessage):
+            Promise<Record<string, unknown>> {
+              const chunks: Buffer[] = [];
+              let bytes = 0;
+              for await (const chunk of request) {
+                const input: unknown = chunk;
+                if (typeof input !== "string" && !(input instanceof Uint8Array)) throw new ApplicationError("INVALID_ARGUMENT", "Некорректное тело запроса");
+                const data = Buffer.from(input);
+                bytes += data.byteLength;
+                if (bytes > MAX_BODY_BYTES) throw new ApplicationError("REQUEST_TOO_LARGE", "Слишком большой запрос");
+                chunks.push(data);
+              }
+              // Decode once: a TCP chunk may end in the middle of a Cyrillic UTF-8 character.
+              let value: unknown;
+              try { value = JSON.parse(Buffer.concat(chunks, bytes).toString("utf8") || "{}"); }
+              catch { throw new ApplicationError("INVALID_ARGUMENT", "Некорректный JSON запроса"); }
+              if (!value || typeof value !== "object" || Array.isArray(value)) throw new ApplicationError("INVALID_ARGUMENT", "Ожидается объект параметров");
+              return value as Record<string, unknown>;
+            }
+
+
+            /**
+             * Выполняет операцию панели по относительному пути под `/api/`.
+             *
+             * @param {import("node:http").IncomingMessage} request - запрос.
+             * @param {import("node:http").ServerResponse} response - ответ.
+             * @param {URL} url - разобранный адрес запроса.
+             * @param {string} relative - путь после `<prefix>/api/`.
+             * @param {object} session - прикладная сессия ArchiView.
+             * @returns {Promise<void>} завершение после отправки ответа.
+             * @throws {ApplicationError} если операция неизвестна.
+             */
+            async function runApiOperation(request: IncomingMessage, response:
+            ServerResponse, url: URL, relative: string, session:
+            SessionOperations) {
+              const method = request.method ?? "GET";
+              const match = /^analysis\/([a-f0-9-]{36})$/.exec(relative);
+              const query: Record<string, unknown> = Object.fromEntries(url.searchParams);
+              const repository = url.searchParams.get("repository");
+
+              if (method === "GET" && relative === "comparison") {
+                return sendJson(response, 200, await callSessionOperation(session, "getComparison", comparisonQueryArguments(query)));
+              }
+              if (method === "GET" && relative === "module") {
+                return sendJson(response, 200, await callSessionOperation(session, "getModule", query));
+              }
+              if (method === "GET" && match !== null) {
+                return sendJson(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: match[1] })));
+              }
+              if (method === "POST" && relative === "analysis") {
+                return sendJson(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await readJson(request))));
+              }
+              if (method === "POST" && relative === "reviews") {
+                return sendJson(response, 200, await callSessionOperation(session, "buildReview", repositoryArguments(repository, await readJson(request))));
+              }
+              if (method === "POST" && relative === "snapshots") {
+                return sendJson(response, 201, await callSessionOperation(session, "saveSnapshot", repositoryArguments(repository, await readJson(request))));
+              }
+              throw new ApplicationError("NOT_FOUND", "Операция панели не найдена");
+            }
+
+
+            /**
+             * Читает статический ресурс панели с кэшированием.
+             *
+             * @param {string} name - имя ресурса под префиксом.
+             * @returns {Promise<{ content: Buffer, type: string } | null>} ресурс или `null`.
+             */
+            async function readAsset(name: string) {
+              const asset = PANEL_ASSETS.get(name);
+              if (asset === undefined) return null;
+              let content = assetCache.get(name);
+              if (content === undefined) {
+                content = await readFile(new URL(asset.file.replace("web/archiview/", ""), webAssetUrl));
+                assetCache.set(name, content);
+              }
+              return { content, type: asset.type };
+            }
+
+
+            /**
+             * Создаёт маршруты плагина для `ctx.webServer`.
+             *
+             * Возвращаются два маршрута: точный адрес панели с редиректом на слэш и
+             * префиксный обработчик для ресурсов, API и HTML. Обработчик сначала отдаёт
+             * запрос политике соединения хоста и только потом читает проект.
+             *
+             * @param {object} options - параметры маршрутов.
+             * @param {string} [options.prefix] - префикс маршрутов.
+             * @param {(request: import("node:http").IncomingMessage, response: import("node:http").ServerResponse) => boolean} options.guard
+             *   проверка запроса; `true` означает, что ответ уже отправлен.
+             * @param {(request: import("node:http").IncomingMessage, url: URL) => object | Promise<object>} options.getSession
+             *   сессия прикладного сервиса для запроса.
+             * @returns {ReadonlyArray<{ kind: "exact" | "prefix", path: string, handler: Function }>} маршруты.
+             */
+            export function createRouteTable({ prefix: configuredPrefix =
+            DEFAULT_PREFIX, guard, getSession }: { prefix?: string; guard:
+            (request: IncomingMessage, response: ServerResponse) => boolean;
+            getSession: (request: IncomingMessage, url: URL) =>
+            SessionOperations | Promise<SessionOperations> }) {
+              if (typeof guard !== "function" || typeof getSession !== "function") {
+                throw new Error("createRouteTable требует guard и getSession");
+              }
+              const prefix = normalizePrefix(configuredPrefix);
+              const apiBase = prefix + "/api/";
+              const assetBase = prefix + "/";
+
+              /**
+               * Общий обработчик префикса: политика, статика, API.
+               *
+               * @param {import("node:http").IncomingMessage} request - запрос.
+               * @param {import("node:http").ServerResponse} response - ответ.
+               * @returns {Promise<void>} завершение обработки.
+               */
+              async function handler(request: IncomingMessage, response: ServerResponse) {
+                try {
+                  if (guard(request, response)) return;
+                response.setHeader("Cache-Control", "no-store");
+                response.setHeader("X-Content-Type-Options", "nosniff");
+                response.setHeader("Content-Security-Policy",
+                  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; " +
+                  "object-src 'none'; base-uri 'none'; frame-ancestors 'self'");
+                  if (request.method === "OPTIONS") {
+                    response.statusCode = 204;
+                    response.end();
+                    return;
+                  }
+                  const url = new URL(request.url ?? "/", "http://localhost");
+                  if (url.pathname === assetBase || url.pathname === assetBase + "index.html") {
+                    const html = await readFile(new URL("web/archiview/index.html", packageUrl), "utf8");
+                    response.statusCode = 200;
+                    response.setHeader("Content-Type", "text/html; charset=utf-8");
+                    response.end(rewritePanelHtml(html, {
+                      prefix,
+                      sessionId: url.searchParams.get("session"),
+                    }));
+                    return;
+                  }
+                  if (url.pathname.startsWith(apiBase)) {
+                    const session = await getSession(request, url);
+                    await runApiOperation(request, response, url, url.pathname.slice(apiBase.length), session);
+                    return;
+                  }
+                  const asset = await readAsset(url.pathname.slice(assetBase.length));
+                  if (asset === null) {
+                    sendJson(response, 404, { error: "Ресурс не найден", code: "NOT_FOUND" });
+                    return;
+                  }
+                  response.statusCode = 200;
+                  response.setHeader("Content-Type", asset.type);
+                  response.end(asset.content);
+                } catch (error) {
+                  if (response.headersSent) { response.destroy(); return; }
+                  sendError(response, error);
+                }
+              }
+
+              return [
+                {
+                  kind: "exact",
+                  path: prefix,
+                  handler(request: IncomingMessage, response: ServerResponse) {
+                    try {
+                      if (guard(request, response)) return;
+                      response.statusCode = 308;
+                      const url = new URL(request.url ?? "/", "http://localhost");
+                      response.setHeader("Location", prefix + "/" + url.search);
+                      response.end();
+                    } catch (error) {
+                      if (response.headersSent) { response.destroy(); return; }
+                      sendError(response, error);
+                    }
+                  },
+                },
+                // Префикс регистрируется без хвостового слэша: веб-сервер dsh сопоставляет
+                // `pathname === path || pathname.startsWith(path + "/")`, поэтому путь
+                // `/archiview/` не покрыл бы `/archiview/styles.css`.
+                { kind: "prefix", path: prefix, handler },
+              ];
+            }
+      - index: 88
+        fact:
+          id: sha256:3f04d40f19127efe61024de75b9dfe66081ddbe44d9eae4cae12a63901b3b835
+          kind: file
+          path: src/dsh/sessions.ts
+          start_line: 1
+          end_line: 115
+          text: >
+            /**
+             * Реестр прикладных сессий ArchiView для плагина dsh.
+             *
+             * Один процесс dsh обслуживает несколько чатов и проектов, а прикладной сервис
+             * (`src/application/session.ts`) рассчитан на один корень проекта. Реестр
+             * сопоставляет корень и лениво созданную сессию и повторяет одну и ту же
+             * сессию всем запросам этого корня: панель, инструменты модели и экспорт
+             * анализа видят одно состояние сравнения.
+             *
+             * Ответственность модуля ограничена жизненным циклом: он не читает проект,
+             * не кэширует документы и не решает, какой корень считать текущим.
+             *
+             * @module plugin-architecture-change-view/dsh/sessions
+             */
+
+            import { createArchiViewSession } from "../application/session.js";
+
+
+            /**
+             * Создаёт реестр сессий, разделённый по корню проекта.
+             *
+             * Инициализация сессии ленивая: первый запрос к корню создаёт её, остальные
+             * ожидают то же обещание. Неудачная инициализация удаляется из реестра, чтобы
+             * следующий запрос мог повторить попытку, а не унаследовать отклонённое
+             * обещание навсегда.
+             *
+             * @param {object} [options] - параметры реестра.
+             * @param {(options: { root: string, stateDirectory?: string }) => object | Promise<object>} [options.createSession]
+             *   фабрика прикладной сессии; по умолчанию используется штатная.
+             * @param {string} [options.stateDirectory] - явный каталог состояния вместо `.archiview`.
+             * @returns {{
+             *   get: (root: string) => Promise<object>,
+             *   has: (root: string) => boolean,
+             *   size: () => number,
+             *   dispose: () => Promise<void>
+             * }} реестр с ленивыми сессиями.
+             */
+            type ApplicationSession = Awaited<ReturnType<typeof
+            createArchiViewSession>>;
+
+            interface RegistryOptions { stateDirectory?: string }
+
+            type SessionFactory<T> = (options: { root: string; stateDirectory?:
+            string }) => T | Promise<T>;
+
+            export interface SessionRegistry<T> {
+              get(root: string): Promise<T>;
+              has(root: string): boolean;
+              size(): number;
+              dispose(): Promise<void>;
+            }
+
+            /** The generic result requires the corresponding factory; the
+            default always creates application sessions. */
+
+            export function createSessionRegistry(options?: RegistryOptions):
+            SessionRegistry<ApplicationSession>;
+
+            export function createSessionRegistry<T>(options: RegistryOptions &
+            { createSession: SessionFactory<T> }): SessionRegistry<T>;
+
+            export function createSessionRegistry({ createSession =
+            createArchiViewSession, stateDirectory }: RegistryOptions & {
+            createSession?: SessionFactory<unknown> } = {}):
+            SessionRegistry<unknown> {
+              /** @type {Map<string, Promise<object>>} */
+              const entries = new Map<string, Promise<unknown>>();
+              let closed = false;
+
+              /**
+               * Возвращает сессию корня, создавая её при первом обращении.
+               *
+               * @param {string} root - абсолютный корень проекта.
+               * @returns {Promise<object>} прикладная сессия ArchiView.
+               * @throws {Error} если реестр закрыт или корень не задан.
+               */
+              function get(root: string) {
+                if (closed) throw new Error("Реестр сессий ArchiView закрыт");
+                if (typeof root !== "string" || root.trim() === "") {
+                  throw new Error("Не задан корень проекта ArchiView");
+                }
+                let entry = entries.get(root);
+                if (entry === undefined) {
+                  // Обещание нормализует и синхронный throw фабрики, и отказ асинхронной.
+                  entry = Promise.resolve().then(() => createSession({ root, stateDirectory }));
+                  entries.set(root, entry);
+                  entry.catch(() => {
+                    if (entries.get(root) === entry) entries.delete(root);
+                  });
+                }
+                return entry;
+              }
+
+              /**
+               * Проверяет, создавалась ли сессия корня.
+               *
+               * @param {string} root - абсолютный корень проекта.
+               * @returns {boolean} признак существующей записи.
+               */
+              function has(root: string) {
+                return entries.has(root);
+              }
+
+              /**
+               * Возвращает число известных корней.
+               *
+               * @returns {number} размер реестра.
+               */
+              function size() {
+                return entries.size;
+              }
+
+              /**
+               * Закрывает реестр и дожидается уже начатых инициализаций.
+               *
+               * Новые запросы после закрытия отклоняются, уже выданные сессии остаются
+               * рабочими до выгрузки процесса: прикладной сервис не держит сокетов и
+               * фоновых задач, поэтому отдельного закрытия ему не требуется.
+               *
+               * @returns {Promise<void>} завершение после расчёта всех обещаний.
+               */
+              async function dispose() {
+                closed = true;
+                const pending = [...entries.values()];
+                entries.clear();
+                await Promise.allSettled(pending);
+              }
+
+              return { get, has, size, dispose };
+            }
+      - index: 89
+        fact:
+          id: sha256:bfec90d345a0c65ba3e57a78f08472f101cf6c585d020c29ba241bcc245b58fa
+          kind: file
+          path: src/dsh/skill.ts
+          start_line: 1
+          end_line: 62
+          text: >
+            /**
+             * Публикация канонического скилла module-boundaries в реестре dsh.
+             *
+             * Скилл остаётся единственным файлом `skills/module-boundaries/SKILL.md`:
+             * адаптер Codex экспортирует его как MCP-ресурс, а плагин dsh регистрирует тот
+             * же текст как runtime-скилл через `ctx.skills.register`. Копий в
+             * пользовательских каталогах не создаётся, поэтому правка файла меняет оба
+             * хоста одновременно.
+             *
+             * Модуль зависит только от файловой системы и YAML: разбор frontmatter
+             * повторяет правило MCP-сервера, но не требует SDK.
+             *
+             * @module plugin-architecture-change-view/dsh/skill
+             */
+
+            import { readFile } from "node:fs/promises";
+
+            import { parse } from "yaml";
+
+            import { packageUrl } from "../runtime/package-paths.js";
+
+
+            /** Адрес файла скилла внутри пакета. */
+
+            export const SKILL_PATH = new
+            URL("skills/module-boundaries/SKILL.md", packageUrl);
+
+
+            /**
+             * Разбирает текст скилла с YAML-frontmatter.
+             *
+             * Обязательны `name` в kebab-case и непустое `description`: реестр dsh
+             * отклоняет runtime-скилл без них. Тело возвращается без frontmatter, потому
+             * что реестр вставляет его внутрь блока `<skill_instructions>`.
+             *
+             * @param {string} text - полный текст файла.
+             * @returns {{ name: string, description: string, content: string }} разобранный скилл.
+             * @throws {Error} если frontmatter отсутствует или не содержит обязательных полей.
+             */
+            export function parseSkillText(text: string) {
+              const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(String(text ?? ""));
+              if (!frontmatter) throw new Error("У скилла module-boundaries отсутствует frontmatter");
+              const value: unknown = parse(frontmatter[1]);
+              const metadata = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+              if (typeof metadata?.name !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(metadata.name)) {
+                throw new Error("У скилла module-boundaries некорректное имя");
+              }
+              if (typeof metadata.description !== "string" || metadata.description === "") {
+                throw new Error("У скилла module-boundaries отсутствует описание");
+              }
+              return {
+                name: metadata.name,
+                description: metadata.description,
+                content: text.slice(frontmatter[0].length).trimStart(),
+              };
+            }
+
+
+            /**
+             * Читает и разбирает встроенный скилл.
+             *
+             * @param {URL} [file] - адрес файла скилла; по умолчанию штатный в пакете.
+             * @param {(file: URL, encoding: "utf8") => Promise<string>} [read] - чтение для тестов.
+             * @returns {Promise<{ name: string, description: string, content: string }>} разобранный скилл.
+             */
+            export async function loadSkill(file = SKILL_PATH, read: (file: URL,
+            encoding: "utf8") => Promise<string> = readFile) {
+              return parseSkillText(await read(file, "utf8"));
+            }
+      - index: 90
+        fact:
+          id: sha256:bf14f637cd2e68d48e036ba2f83d450fb3076d8fa0d6adbc98ebf78280c0dcd4
+          kind: file
+          path: src/dsh/tools.ts
+          start_line: 1
+          end_line: 138
+          text: >
+            /**
+             * Модельные инструменты ArchiView для плагина dsh.
+             *
+             * Слой не зависит от cordis и SDK инструментов: он объявляет статические
+             * описания (имя, описание, параметры) и чистые операции чтения контрактов.
+             * Хост-половина (`host.ts`) превращает описания в определения `defineTool`,
+             * поэтому этот модуль можно проверять обычным `node --test`.
+             *
+             * Инструменты только читают: анализ и запись карты и контрактов выполняет агент своими
+             * файловыми средствами по каноническому скиллу module-boundaries.
+             *
+             * @module plugin-architecture-change-view/dsh/tools
+             */
+
+            import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from
+            "../contracts/inventory.js";
+
+            import { realpath } from "node:fs/promises";
+
+            import path from "node:path";
+
+            import { within } from "../project/paths.js";
+
+
+            /** Описание параметра `projectRoot`, общего для обоих инструментов.
+            */
+
+            const PROJECT_ROOT_PARAMETER = {
+              type: "string" as const,
+              description: "Абсолютная рабочая папка, которая может содержать несколько Git-репозиториев. По умолчанию берётся настроенный root или папка чата.",
+            };
+
+
+            /**
+             * Статические определения инструментов модели.
+             *
+             * Порядок фиксирован: он же порядок регистрации в реестре инструментов dsh.
+             * Схемы не содержат `projectRoot` как обязательный параметр, потому что корень
+             * может быть закреплён конфигурацией; проверка выполняется в операции.
+             *
+             * @constant {ReadonlyArray<{ name: string, description: string, parameters: object }>}
+             */
+            export const TOOL_DEFINITIONS = Object.freeze([
+              Object.freeze({
+                name: "archiview_inventory",
+                description: "List repositories, source directories and mapped contracts in the workspace, including " +
+                  "missing or invalid entries in .archiview/modules.tree and contract files. " +
+                  "Presence is not a semantic compliance verdict. Use the module-boundaries skill.",
+                parameters: Object.freeze({ projectRoot: PROJECT_ROOT_PARAMETER }),
+              }),
+              Object.freeze({
+                name: "archiview_context",
+                description: "Find the repository owning a source file or directory and read its contract chain, root first. " +
+                  "Use before editing source code. Reports missing documents explicitly.",
+                parameters: Object.freeze({
+                  projectRoot: PROJECT_ROOT_PARAMETER,
+                  path: Object.freeze({
+                    type: "string" as const,
+                    description: "Путь к файлу или каталогу относительно рабочей папки, например backend/src/main.ts.",
+                  }),
+                  directory: Object.freeze({
+                    type: "string" as const,
+                    description: "Альтернативное имя аргумента path для прежних вызовов.",
+                  }),
+                }),
+              }),
+            ]);
+
+
+            /**
+             * Собирает набор расширений исходников из настроек плагина.
+             *
+             * Базовый набор приходит из инвентаризации; конфигурация только добавляет
+             * расширения в формате `.ext`. Пустое или некорректное значение — ошибка
+             * конфигурации, а не молчаливое игнорирование.
+             *
+             * @param {readonly string[]} [configured] - дополнительные расширения из конфигурации.
+             * @returns {Set<string>} расширения с ведущей точкой в нижнем регистре.
+             * @throws {Error} если значение не является расширением.
+             */
+            export function normalizeExtensions(configured: readonly string[] =
+            []) {
+              const extensions = new Set(SOURCE_EXTENSIONS);
+              for (const value of configured) {
+                if (typeof value !== "string" || !/^\.[a-z0-9]+$/i.test(value)) {
+                  throw new Error("Некорректное расширение исходников: " + String(value));
+                }
+                extensions.add(value.toLowerCase());
+              }
+              return extensions;
+            }
+
+
+            /**
+             * Выбирает корень проекта для операции.
+             *
+             * Настройка хоста ограничивает область каждого модельного вызова.
+             * Без настройки адаптер передаёт явно выбранный проект или рабочую папку чата.
+             *
+             * @param {object} options - параметры выбора.
+             * @param {unknown} options.projectRoot - значение аргумента инструмента.
+             * @param {string} [options.configuredRoot] - корень из конфигурации плагина.
+             * @returns {Promise<string>} путь к разрешённому проекту.
+             * @throws {Error} если корень не задан ни одним способом.
+             */
+            export async function resolveRoot({ projectRoot, configuredRoot }: {
+            projectRoot?: unknown; configuredRoot?: string }) {
+              const selected = typeof projectRoot === "string" ? projectRoot.trim() : "";
+              if (configuredRoot) {
+                const boundary = await realpath(configuredRoot);
+                const candidate = path.resolve(configuredRoot, selected);
+                if (within(configuredRoot, candidate) || within(boundary, candidate)) {
+                  const physical = await realpath(candidate);
+                  if (within(boundary, physical)) return physical;
+                }
+                throw new Error("projectRoot находится вне настроенного корня ArchiView");
+              }
+              if (selected) return realpath(selected);
+              throw new Error("Передайте projectRoot или задайте root в конфигурации плагина ArchiView");
+            }
+
+
+            /**
+             * Читает инвентаризацию каталогов проекта.
+             *
+             * @param {object} options - параметры чтения.
+             * @param {string} options.root - корень проекта.
+             * @param {Set<string>} options.extensions - расширения исходников.
+             * @param {number} options.maxFiles - предел обхода.
+             * @returns {Promise<object>} результат `moduleInventory` без изменений формы.
+             */
+            export async function readInventory({ root, extensions, maxFiles }:
+            { root: string; extensions: Set<string>; maxFiles: number }) {
+              return moduleInventory(root, { extensions, maxFiles });
+            }
+
+
+            /**
+             * Читает контракты предков файла или каталога в его репозитории.
+             *
+             * @param {object} options - параметры чтения.
+             * @param {string} options.root - рабочая папка.
+             * @param {string} [options.path] - файл или каталог относительно рабочей папки.
+             * @param {string} [options.directory] - прежнее имя аргумента для каталога.
+             * @returns {Promise<object>} результат `moduleContext` без изменений формы.
+             */
+            export async function readContext({ root, path: sourcePath,
+            directory }: { root: string; path?: unknown; directory?: unknown })
+            {
+              if (sourcePath !== undefined && directory !== undefined) throw new Error("Передайте только один путь: path или directory");
+              const target = sourcePath ?? directory ?? ".";
+              if (typeof target !== "string") throw new Error("Путь к исходникам должен быть строкой");
+              return moduleContext(root, target);
+            }
+      - index: 190
+        fact:
+          id: sha256:1a1a3141aaea986efddd291b641e7c4b3621f509e814eef6a0514da05d459c59
+          kind: module
+          path: src/dsh
+          text: '{"contract":"documented","format":"yaml","sources":["src/dsh/chat-root.ts","src/dsh/host-types.ts","src/dsh/host.ts","src/dsh/panel-contract.ts","src/dsh/routes.ts","src/dsh/sessions.ts","src/dsh/skill.ts","src/dsh/tools.ts"]}'
 review_status:
   self:
     current:
@@ -3341,10 +3852,6 @@ review_status:
         - code: own_code
         - code: own_contract
         - code: baseline_identity
-        - code: module_existence
-          side: baseline
-        - code: module_path
-          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
@@ -3354,10 +3861,6 @@ review_status:
         - code: own_code
         - code: own_contract
         - code: baseline_identity
-        - code: module_existence
-          side: baseline
-        - code: module_path
-          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
@@ -3368,15 +3871,9 @@ review_status:
         - code: own_contract
         - code: dependency_input
         - code: baseline_identity
-        - code: module_existence
-          side: baseline
-        - code: module_path
-          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
-          side: baseline
-        - code: child_composition
           side: baseline
         - code: dependency_input
           side: baseline
@@ -3384,15 +3881,9 @@ review_status:
         - code: own_contract
         - code: dependency_input
         - code: baseline_identity
-        - code: module_existence
-          side: baseline
-        - code: module_path
-          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
-          side: baseline
-        - code: child_composition
           side: baseline
         - code: dependency_input
           side: baseline

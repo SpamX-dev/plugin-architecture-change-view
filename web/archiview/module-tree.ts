@@ -251,9 +251,11 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
       }
       row.append(caret, icon("folder"), label);
       const findings = findingCounts.get(module.key) ?? 0;
-      if (findings) {
+      const savedViolation = view.published && (isExpanded ? module.reviewStatus?.self : module.reviewStatus?.subtree)?.current.current_violation;
+      if (findings || savedViolation) {
         const marker = el("span", "finding-marker");
-        marker.title = "Открытые замечания" + (findings > moduleFindingCount(module) ? " в модуле и вложенных модулях" : " модуля") + " · " + findings;
+        marker.title = findings ? "Открытые замечания" + (findings > moduleFindingCount(module) ? " в модуле и вложенных модулях" : " модуля") + " · " + findings :
+          "Сохранённая проверка выявила нарушение";
         marker.setAttribute("role", "img");
         marker.setAttribute("aria-label", marker.title);
         marker.append(findingBug());
@@ -334,7 +336,8 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     byId("module-total").title = scope;
     byId("filters").title = scope;
     renderFilters();
-    renderTree();
+    // Selecting the initial module reveals its parents and renders the tree in one pass.
+    if (!view.modules.length) renderTree();
   }
 
   function reveal(module: ModuleSummary) {

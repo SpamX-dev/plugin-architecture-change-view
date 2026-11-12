@@ -1,5 +1,5 @@
 import type { SessionOperations } from "../application/api.js";
-import { callSessionOperation, repositoryArguments } from "../application/arguments.js";
+import { callSessionOperation, comparisonQueryArguments, repositoryArguments } from "../application/arguments.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 /**
  * HTTP-маршруты панели ArchiView для веб-сервера dsh.
@@ -193,8 +193,7 @@ async function runApiOperation(request: IncomingMessage, response: ServerRespons
   const repository = url.searchParams.get("repository");
 
   if (method === "GET" && relative === "comparison") {
-    if (query.historyLimit !== undefined) query.historyLimit = Number(query.historyLimit);
-    return sendJson(response, 200, await callSessionOperation(session, "getComparison", query));
+    return sendJson(response, 200, await callSessionOperation(session, "getComparison", comparisonQueryArguments(query)));
   }
   if (method === "GET" && relative === "module") {
     return sendJson(response, 200, await callSessionOperation(session, "getModule", query));

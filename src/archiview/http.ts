@@ -1,4 +1,4 @@
-import { callSessionOperation, repositoryArguments } from "../application/arguments.js";
+import { callSessionOperation, comparisonQueryArguments, repositoryArguments } from "../application/arguments.js";
 import type { SessionOperations } from "../application/api.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 /** HTTP-адаптер самостоятельного ArchiView: статические ресурсы, маршрутизация и защита origin. */
@@ -46,7 +46,7 @@ function requestUrl(request: IncomingMessage, serverOrigin: string) {
   throw new ApplicationError("INVALID_ARGUMENT", "Некорректная цель запроса");
 }
 
-/** Создаёт самостоятельный веб-сервер; плагин Codex использует сервис напрямую и этот модуль не импортирует. */
+/** Programmatic access to the server and its initialized store. The standalone CLI only needs the HTTP adapter. */
 export async function createArchiView({ root, stateDirectory, panelToken }: { root: string; stateDirectory?: string; panelToken?: string }) {
   const workspace = await createWorkspaceSession({ root, stateDirectory });
   const session = await workspace.session();
@@ -111,8 +111,7 @@ export function createArchiViewHttpServer(session: SessionOperations, panelToken
       const args: Record<string, unknown> = Object.fromEntries(url.searchParams);
       const repository = url.searchParams.get("repository");
       if (request.method === "GET" && url.pathname === "/api/comparison") {
-        if (args.historyLimit !== undefined) args.historyLimit = Number(args.historyLimit);
-        return json(response, 200, await callSessionOperation(session, "getComparison", args));
+        return json(response, 200, await callSessionOperation(session, "getComparison", comparisonQueryArguments(args)));
       }
       if (request.method === "GET" && url.pathname === "/api/module") return json(response, 200, await callSessionOperation(session, "getModule", args));
       if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))

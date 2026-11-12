@@ -5,6 +5,7 @@ import { within } from "../project/paths.js";
 import { readSnapshotRoot } from "../project/identity.js";
 import { discoverWorkspaceRepositories, resolveWorkspaceRepository } from "../project/workspace.js";
 import { createArchiViewSession } from "./session.js";
+import { createPublishedView } from "./published-view.js";
 import { ApplicationError } from "./errors.js";
 import type { SessionOperations } from "./api.js";
 
@@ -20,8 +21,9 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
   let repositories = await orderedRepositories();
   let hasRepositories = repositories.length > 0;
   const sessions = new Map<string, ReturnType<typeof createArchiViewSession>>();
+  const publishedViews = new Map<string, NonNullable<Awaited<ReturnType<typeof createPublishedView>>>>();
 
-  async function createSession(project: string, repository: string) {
+  async function sessionOptions(project: string, repository: string) {
     const configured = stateDirectory && path.resolve(project, stateDirectory);
     let directory = configured;
     if (configured && !within(project, configured) && (repository !== "." || sharedStateDirectory)) {
@@ -31,23 +33,31 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
         directory = path.join(configured, "repositories", createHash("sha256").update(project).digest("hex"));
       }
     }
-    return createArchiViewSession({ root: project, stateDirectory: directory });
+    return { root: project, stateDirectory: directory };
   }
 
-  async function open(repository: string) {
+  async function projectPath(repository: string) {
     if (!(hasRepositories ? repositories.includes(repository) : repository === ".")) {
       throw new ApplicationError("REPOSITORY_UNAVAILABLE", "Репозиторий не входит в выбранную рабочую папку");
     }
     // Revalidate the physical path even for a cached session: it can be moved or replaced.
     const project = repositories.length ? await resolveWorkspaceRepository(root, repository) : await realpath(root);
     if (path.relative(path.resolve(root, repository), project) !== "") throw new ApplicationError("NOT_FOUND", "Рабочая папка перемещена");
+    return project;
+  }
+
+  function liveSession(project: string, repository: string, deferPublication: boolean) {
     let current = sessions.get(project);
     if (!current) {
-      current = createSession(project, repository);
+      current = sessionOptions(project, repository).then(options => createArchiViewSession({ ...options, deferPublication }));
       sessions.set(project, current);
       current.catch(() => { if (sessions.get(project) === current) sessions.delete(project); });
     }
     return current;
+  }
+
+  async function open(repository: string) {
+    return liveSession(await projectPath(repository), repository, false);
   }
 
   // An unselected workspace can still open its healthy repositories when a sibling's history cannot be read.
@@ -61,18 +71,37 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
   }
 
   const session = (repository?: string) => repository === undefined ? firstAvailable(open) : open(repository);
-  function selected(repository?: string) {
+  function selection(repository?: string) {
     if (repository === undefined && repositories.some((candidate) => candidate !== ".")) {
       throw new ApplicationError("INVALID_ARGUMENT", "Укажите репозиторий для операции с выбранным сравнением");
     }
-    return open(repository ?? ".");
+    return repository ?? ".";
+  }
+
+  // An immutable view can only be used in the checkout which served it.
+  // A stale panel request must not start a publisher in another checkout.
+  async function viewSession(repository: string | undefined, view: string) {
+    const project = await projectPath(selection(repository));
+    const session = sessions.get(project);
+    if (view.startsWith("published-") || !session) throw new ApplicationError("STALE_VIEW", "Обновите сравнение");
+    return session;
   }
   const operations: SessionOperations = {
     async getComparison(args = {}) {
       repositories = await orderedRepositories();
       hasRepositories ||= repositories.length > 0;
       async function compare(repository: string) {
-        const view = await (await open(repository)).getComparison(args);
+        const project = await projectPath(repository);
+        let published;
+        if (args.published && (args.target ?? "current") === "current" && (args.baseline ?? "auto") === "auto") {
+          published = await createPublishedView(await sessionOptions(project, repository));
+          if (published) {
+            publishedViews.delete(published.comparison.id);
+            publishedViews.set(published.comparison.id, published);
+            while (publishedViews.size > 8) publishedViews.delete(publishedViews.keys().next().value!);
+          }
+        }
+        const view = published?.comparison ?? await (await liveSession(project, repository, true)).getComparison(args);
         return repositories.some((candidate) => candidate !== ".")
           ? { ...view, workspace: { root, repositories: [...repositories], repository } } : view;
       }
@@ -80,11 +109,19 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
       if ((args.target ?? "current") !== "current" || (args.baseline ?? "auto") !== "auto") return compare(repositories[0] ?? ".");
       return firstAvailable(compare);
     },
-    async getModule(args) { return (await selected(args.repository)).getModule(args); },
-    async prepareAnalysis(args) { return (await selected(args.repository)).prepareAnalysis(args); },
-    async getAnalysis(args) { return (await selected(args.repository)).getAnalysis(args); },
-    async buildReview(args) { return (await selected(args.repository)).buildReview(args); },
-    async saveSnapshot(args) { return (await selected(args.repository)).saveSnapshot(args); },
+    async getModule(args) {
+      if (args.view.startsWith("published-")) {
+        const project = await projectPath(selection(args.repository));
+        const published = publishedViews.get(args.view);
+        if (published?.comparison.root !== project) throw new ApplicationError("STALE_VIEW", "Обновите сравнение");
+        return published.getModule(args);
+      }
+      return (await viewSession(args.repository, args.view)).getModule(args);
+    },
+    async prepareAnalysis(args) { return (await viewSession(args.repository, args.view)).prepareAnalysis(args); },
+    async getAnalysis(args) { return (await open(selection(args.repository))).getAnalysis(args); },
+    async buildReview(args) { return (await viewSession(args.repository, args.view)).buildReview(args); },
+    async saveSnapshot(args) { return (await viewSession(args.repository, args.view)).saveSnapshot(args); },
   };
   return { ...operations, session, root, get showWorkspace() { return repositories.some((candidate) => candidate !== "."); } };
 }

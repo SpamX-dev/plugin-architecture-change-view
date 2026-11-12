@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import os from "node:os";
@@ -34,6 +34,38 @@ async function fixture(t: TestContext) {
   return { root, a, b };
 }
 
+test("Codex can open checkout B's published tree and card while checkout A is refreshing", { timeout: 15000 }, async (t) => {
+  const { root } = await fixture(t);
+  let release!: () => void, entered!: () => void;
+  const blocked = new Promise<void>(resolve => { release = resolve; });
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  let readStarted = false;
+  const panel = createCodexPanel({ root, async select(_requested, metadata) {
+    if (metadata?.refreshing) { entered(); await blocked; }
+    if (metadata?.reading) readStarted = true;
+    return root;
+  } });
+  t.after(() => panel.close());
+  const call = (name: string, args: Record<string, unknown>, metadata?: Record<string, unknown>) =>
+    panel.callUi("archiview_ui_" + name, args, metadata);
+  uiData(await call("get_comparison", { repository: "b" }));
+  const refresh = call("get_comparison", { repository: "a" }, { refreshing: true });
+  try {
+    await started;
+    const published = call("get_comparison", { repository: "b", published: true }, { reading: true });
+    await new Promise<void>(resolve => setImmediate(resolve));
+    assert.equal(readStarted, true, "the published comparison must pass the pending refresh");
+    const view = uiData<ComparisonView>(await published);
+    assert.equal(view.published, true);
+    assert.equal(view.workspace?.repository, "b");
+    readStarted = false;
+    const detail = call("get_module", { repository: "b", view: view.id, path: "." }, { reading: true });
+    await new Promise<void>(resolve => setImmediate(resolve));
+    assert.equal(readStarted, true, "the module must pass the pending refresh");
+    assert.equal(uiData<ModuleDetail>(await detail).moduleId, "shared");
+  } finally { release(); await refresh; }
+});
+
 async function listen(t: TestContext, server: Server) {
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -47,6 +79,44 @@ async function json<T>(url: string, expectedStatus = 200, body?: Record<string, 
   assert.equal(response.status, expectedStatus, JSON.stringify(value));
   return value as T;
 }
+
+test("opening a checkout serves its published tree and card even when its raw archives are unavailable", async (t) => {
+  const { root, a, b } = await fixture(t);
+  const publisher = await createWorkspaceSession({ root });
+  for (const repository of ["a", "b"]) {
+    const first = await publisher.getComparison({ repository, published: true, baseline: "auto" });
+    assert.equal(first.published, undefined, "a checkout without work must serve a live result");
+    const work = path.join(root, repository, ".archiview", "work");
+    const technical = (await readdir(work)).find(name => name.endsWith(".archi.yaml"))!;
+    assert.match(await readFile(path.join(work, technical), "utf8"), /generation: 1\b/);
+  }
+  const work = path.join(a, ".archiview", "work");
+  const files = await readdir(work);
+  const publicationTimes = () => Promise.all(files.map(async file => (await stat(path.join(work, file))).mtimeMs));
+  const before = await publicationTimes();
+  // The checkout has moved on since publication and the raw archives cannot be traversed.
+  await writeFile(path.join(a, ".archiview/modules/shared.yaml"), contractYaml("shared", "New local purpose."));
+  await writeFile(path.join(b, ".archiview/modules/shared.yaml"), contractYaml("shared", "Other local purpose."));
+  for (const name of ["changes", "modules"]) {
+    const archive = path.join(a, ".archiview", "snapshots", name);
+    await rename(archive, archive + ".saved");
+    await writeFile(archive, "unavailable");
+  }
+  const viewer = await createWorkspaceSession({ root });
+  const left = await viewer.getComparison({ published: true, repository: "a", baseline: "auto" });
+  const right = await viewer.getComparison({ published: true, repository: "b", baseline: "auto" });
+  assert.equal(left.published, true);
+  assert.equal(right.published, true);
+  assert.notEqual(left.id, right.id);
+  const module = await viewer.getModule({ repository: "a", view: left.id, path: "." });
+  assert.equal(module.after?.document.contract?.purpose, "Read project data.");
+  await assert.rejects(viewer.getModule({ repository: "b", view: left.id, path: "." }), { code: "STALE_VIEW" });
+  await assert.rejects(viewer.buildReview({ repository: "a", view: left.id, path: "." }), { code: "STALE_VIEW" });
+  assert.deepEqual(await publicationTimes(), before);
+  const live = await viewer.getComparison({ repository: "b", baseline: "auto" });
+  assert.equal(live.published, undefined);
+  assert.equal((await viewer.getModule({ repository: "b", view: live.id, path: "." })).after?.document.contract?.purpose, "Other local purpose.");
+});
 
 test("standalone and DSH isolate concurrent comparisons, snapshots and analyses for clones with identical module IDs", async (t) => {
   const { root, a, b } = await fixture(t);

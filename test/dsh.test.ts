@@ -429,7 +429,7 @@ test("routes: Unicode-префикс работает на обеих сторо
   assert.ok(page.body.includes('name="archiview-base" content="' + route + '"'));
 });
 
-test("routes: сравнение выполняется с приведённым historyLimit", async () => {
+test("routes: сравнение получает число historyLimit и логический published", async () => {
   const session = fakeSession();
   const table = createRouteTable({
     prefix: "/archiview",
@@ -438,11 +438,16 @@ test("routes: сравнение выполняется с приведённы�
   });
   const response = fakeResponse();
   await prefixHandler(table)(
-    fakeRequest({ url: "/archiview/api/comparison?view=v1&historyLimit=25" }), response);
+    fakeRequest({ url: "/archiview/api/comparison?published=true&historyLimit=25" }), response);
   assert.equal(response.statusCode, 200);
   assert.equal(session.calls[0][0], "getComparison");
   assert.equal((session.calls[0][1] as { historyLimit: number }).historyLimit, 25);
+  assert.equal((session.calls[0][1] as { published: boolean }).published, true);
   assert.deepEqual(JSON.parse(response.body), session.comparison);
+  const invalid = fakeResponse();
+  await prefixHandler(table)(fakeRequest({ url: "/archiview/api/comparison?published=anything" }), invalid);
+  assert.equal(invalid.statusCode, 400);
+  assert.equal(session.calls.length, 1);
 });
 
 test("routes: подготовка анализа принимает JSON-тело", async () => {

@@ -51,12 +51,13 @@ export async function startApp({ client, bridge, host, chooseProject }: {
   const tree = createModuleTree(() => state.view, () => state.selected, chooseTreeModule);
   const fixesByRepository = new Map<string, Map<string, FixRecord>>();
   let refreshing = false;
+  let selectedClause: ClauseNavigation | undefined;
   function promptAction(): PromptAction | undefined {
     if (state.bridge?.send) return { mode: "send", deliver: state.bridge.send };
     if (host === "web") return { mode: "copy", deliver: (prompt) => navigator.clipboard.writeText(prompt) };
   }
   const renderAnalysisControls = createAnalysisControls({ client, promptAction,
-    selection: () => ({ view: refreshing || !state.detail ? null : state.view, module: state.view?.modules.find((entry) => entry.key === state.selected) }),
+    selection: () => ({ view: refreshing || !state.detail || state.view?.published ? null : state.view, module: state.view?.modules.find((entry) => entry.key === state.selected) }),
     refresh, toast });
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -120,18 +121,24 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     byId("review-status").textContent = reviewStatuses;
     byId("files-count").textContent = String(module.filesChanged);
     byId("files-count").hidden = module.filesChanged === 0;
-    const findings = module.review?.findings ?? 0;
-    byId("tab-findings").textContent = "Замечания" + (findings ? " · " + findings : "");
-    if (moduleFindingCount(module)) byId("tab-findings").prepend(findingBug());
+    renderFindingCount(module);
     document.title = module.name + " — ArchiView";
     renderAnalysisControls();
   }
 
+  function renderFindingCount(module: Pick<ModuleSummary, "review" | "reviewStatus">) {
+    const findings = module.review?.findings;
+    const tab = byId("tab-findings");
+    tab.textContent = "Замечания" + (findings ? " · " + findings : "");
+    if (moduleFindingCount(module) || (!module.review && module.reviewStatus?.self.current.current_violation)) tab.prepend(findingBug());
+  }
+
   /** Загружает детали из того же снимка сравнения, что и дерево слева. */
-  async function selectModule(directory: string, clause?: ClauseNavigation) {
+  async function selectModule(directory: string, clause?: ClauseNavigation, reviewId?: string) {
     const view = currentView();
     const module = view.modules.find((item) => item.key === directory) ?? view.modules.find((item) => item.directory === directory);
     if (!module) return;
+    selectedClause = clause;
     state.selected = module.key;
     state.detail = null;
     const token = ++state.selection;
@@ -150,7 +157,8 @@ export async function startApp({ client, bridge, host, chooseProject }: {
       const detail = await client.getModule({ view: view.id, path: module.key, repository: view.workspace?.repository });
       if (token !== state.selection) return;
       state.detail = detail;
-      renderPanel();
+      renderFindingCount(detail);
+      renderPanel({ reviewId });
       if (clause && state.tab === "document") revealClause(clause, detail);
     } catch (error) {
       if (token === state.selection) renderFailure(error, async () => {
@@ -179,8 +187,9 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     state.tab = "document";
     if (module) await selectModule(module.key, { reference, review });
     else if (state.detail) {
+      selectedClause = { reference, review };
       renderPanel();
-      revealClause({ reference, review }, state.detail);
+      revealClause(selectedClause, state.detail);
     }
   }
 
@@ -207,6 +216,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
   /** Жук открывает конкретное замечание той попытки, из которой он был показан. */
   function openReviewFinding(target: FindingTarget) {
     state.tab = "findings";
+    selectedClause = undefined;
     renderPanel({ reviewId: target.reviewId, findingId: target.findingId });
   }
 
@@ -228,8 +238,8 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     if (selected.document.contract) renderContractHeading(heading, selected.document, {
       contractDiff: state.detail.contractDiff, titleElement: byId("module-title"), groupElement: byId("module-heading-content"),
     });
-    byId("document-version").textContent = state.detail.status === "removed" ?
-      "Из базы сравнения" : timelineLabel(currentView().target ?? { id: "current" });
+    byId("document-version").textContent = state.detail.status === "removed" ? "Из базы сравнения" :
+      currentView().published ? "Сохранённое состояние" : timelineLabel(currentView().target ?? { id: "current" });
     if (state.tab === "document") renderDocument(panel, state.detail, currentView(), selectModule, openReviewFinding);
     else if (["checks", "findings"].includes(state.tab)) {
       // Копирование доступно самостоятельной странице; встроенный хост без
@@ -264,19 +274,46 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     byId("document-panel").replaceChildren(box);
   }
 
-  /** Обновляет дерево целиком; выбранные модуль и состояние сохраняются, если доступны. */
+  async function showComparison(view: ComparisonView, historyLimit: number, key?: string, clause?: ClauseNavigation, reviewId?: string) {
+    const sameRepository = state.view?.root === view.root;
+    state.view = view;
+    state.target = view.target.id;
+    state.historyLimit = historyLimit;
+    state.findingFixes = fixesByRepository.get(view.root) ?? new Map();
+    fixesByRepository.set(view.root, state.findingFixes);
+    renderTimeline(view, state.target);
+    byId("project-name").textContent = view.modules[0]?.name ?? "Проект";
+    byId("project-path").textContent = view.root;
+    byId("project-path").title = view.root;
+    byId("warning").hidden = view.complete && !view.reviewDiagnostics.length;
+    byId("warning").textContent = [...view.diagnostics, ...view.reviewDiagnostics].join("; ");
+    const captured = timelineDate(view.after.capturedAt);
+    byId("updated").textContent = view.published ? "Сохранено " + captured + " · Проверяем изменения…" :
+      state.target === "current" ? "Обновлено " + captured : "Состояние от " + captured;
+    const owner = clause && view.modules.find((module) => module.moduleId === clause.reference.module_id);
+    const selected = [owner?.key, key, sameRepository ? state.selected : undefined, "."].find((directory) =>
+      view.modules.some((module) => module.key === directory)) ?? view.modules[0]?.key;
+    tree.showComparison(view, historyLimit);
+    refreshing = false;
+    if (selected !== undefined) await selectModule(selected, clause, reviewId);
+  }
+
+  /** При открытии сначала показывает опубликованную структуру, пока проверяется рабочее дерево. */
   async function refresh({ target = state.target, historyLimit = state.historyLimit, clause, repository = state.view?.workspace?.repository, key }: {
     target?: string; historyLimit?: number; clause?: ClauseNavigation; repository?: string; key?: string;
   } = {}) {
     const token = ++state.refresh;
-    ++state.selection;
-    refreshing = true;
-    state.detail = null;
+    const switching = state.view && repository !== state.view.workspace?.repository;
+    let saved = !switching && state.view?.published && target === state.target ? state.view : undefined;
+    refreshing = !saved;
+    if (!saved) {
+      ++state.selection;
+      state.detail = null;
+    }
     renderAnalysisControls();
     const button = byId("refresh");
     button.disabled = true;
     byId("timeline").disabled = true;
-    const switching = state.view && repository !== state.view.workspace?.repository;
     if (switching) {
       byId("module-title").textContent = repository ?? "Проект";
       byId("module-subtitle").hidden = true;
@@ -287,32 +324,37 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     }
     button.classList.add("is-loading");
     try {
-      const view = await client.getComparison({ target, baseline: "auto", historyLimit, repository });
+      const args = { target, baseline: "auto", historyLimit, repository };
+      const preferPublished = target === "current" && (!state.view || switching);
+      const view = await client.getComparison(preferPublished ? { ...args, published: true } : args);
       if (token !== state.refresh) return;
-      const sameRepository = state.view?.root === view.root;
-      state.view = view;
-      state.target = view.target?.id ?? target;
-      state.historyLimit = historyLimit;
-      state.findingFixes = fixesByRepository.get(view.root) ?? new Map();
-      fixesByRepository.set(view.root, state.findingFixes);
-      renderTimeline(view, state.target);
-      byId("project-name").textContent = view.modules[0]?.name ?? "Проект";
-      byId("project-path").textContent = view.root;
-      byId("project-path").title = view.root;
-      byId("warning").hidden = view.complete && !view.reviewDiagnostics.length;
-      byId("warning").textContent = [...view.diagnostics, ...view.reviewDiagnostics].join("; ");
-      byId("updated").textContent = state.target === "current" ? "Обновлено " + new Intl.DateTimeFormat("ru-RU",
-        { hour: "2-digit", minute: "2-digit" }).format(new Date(view.after.capturedAt)) : "Состояние от " + timelineDate(view.after.capturedAt);
-      tree.showComparison(view, historyLimit);
-      const owner = clause && view.modules.find((module) => module.moduleId === clause.reference.module_id);
-      const selected = [owner?.key, key, sameRepository ? state.selected : undefined, "."].find((directory) =>
-        view.modules.some((module) => module.key === directory)) ?? view.modules[0]?.key;
-      refreshing = false;
-      if (selected !== undefined) await selectModule(selected, clause);
+      if (view.published) saved = view;
+      const shown = showComparison(view, historyLimit, key, clause);
+      const initialSelection = state.selection;
+      await shown;
+      if (!view.published || token !== state.refresh) return;
+      const live = await client.getComparison({ ...args, repository: view.workspace?.repository ?? repository });
+      if (token !== state.refresh) return;
+      const unchangedSelection = state.selection === initialSelection;
+      const selected = view.modules.find((module) => module.key === state.selected);
+      const liveModule = selected?.moduleId && live.modules.find((module) => module.moduleId === selected.moduleId);
+      // A deep link can refer to a module added since publication. An already selected
+      // module follows its stable ID if its directory moved or was reused.
+      const nextKey = unchangedSelection && key && key !== selected?.key && live.modules.some((module) => module.key === key) ? key :
+        liveModule ? liveModule.key : selected?.key;
+      const reviewId = byId("document-panel").querySelector<HTMLElement>(".review-body")?.dataset.reviewId;
+      await showComparison(live, historyLimit, nextKey, selectedClause, reviewId);
     } catch (error) {
       if (token === state.refresh) {
         if (!state.view && repository !== undefined && errorCode(error) === "REPOSITORY_UNAVAILABLE") {
           await refresh();
+          return;
+        }
+        if (saved && state.view === saved) {
+          const warning = byId("warning");
+          byId("updated").textContent = "Сохранено " + timelineDate(saved.after.capturedAt);
+          warning.hidden = false;
+          warning.textContent = [...saved.diagnostics, ...saved.reviewDiagnostics, "Не удалось обновить рабочее дерево: " + errorMessage(error)].join("; ");
           return;
         }
         const selection = ++state.selection;
@@ -328,7 +370,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
         renderAnalysisControls();
         button.disabled = false; button.classList.remove("is-loading");
         byId("timeline").value = state.target;
-        byId("timeline").disabled = !state.view;
+        byId("timeline").disabled = !state.view || Boolean(state.view.published);
       }
     }
   }
@@ -358,7 +400,11 @@ export async function startApp({ client, bridge, host, chooseProject }: {
       currentView().root.replace(/[\\/]$/, "") + "/" + state.detail.directory);
   });
   for (const tab of document.querySelectorAll<HTMLElement>("[data-tab]")) {
-    tab.addEventListener("click", () => { state.tab = tab.dataset.tab ?? "document"; renderPanel(); });
+    tab.addEventListener("click", () => {
+      state.tab = tab.dataset.tab ?? "document";
+      selectedClause = undefined;
+      renderPanel();
+    });
   }
   await refresh(initialSelection());
 }

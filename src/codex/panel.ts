@@ -24,7 +24,9 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
   const binding = rootOrBinding && typeof rootOrBinding === "object" ? Promise.resolve(rootOrBinding) : createProjectBinding(rootOrBinding);
   let session: ReturnType<typeof createWorkspaceSession> | null | undefined;
   let closed = false;
-  let queue = Promise.resolve();
+  let projectSelection = Promise.resolve();
+  let mutations = Promise.resolve();
+  const reads = new Set<Promise<void>>();
   const checkOpen = () => { if (closed) throw new ApplicationError("SESSION_CLOSED", "Сессия панели закрыта"); };
   async function service(metadata?: Record<string, unknown>) {
     const project = await binding;
@@ -48,12 +50,16 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
       const root = project.root;
       return { content: [{ type: "text" as const, text: "ArchiView: " + root }], structuredContent: { root } };
     },
-    /** Сериализация операций сохраняет согласованность view и публикации; ошибки тоже доставляются только UI. */
+    /** A published tree and its cards can be read while another checkout refreshes. Bind the project before routing either request. */
     callUi(name: string, args: unknown, metadata?: Record<string, unknown>) {
-      const operation = queue.then(async () => {
+      const method = UI_TOOL_METHODS.get(name);
+      const selectsProject = method === "setProject" || method === "chooseProject" || method === "getProject";
+      const read = method === "getModule" || (method === "getComparison" && args !== null &&
+        typeof args === "object" && "published" in args && args.published === true);
+      const ready = read || selectsProject ? projectSelection : Promise.all([projectSelection, mutations]);
+      const operation = ready.then(async () => {
         checkOpen();
         validateUiArguments(name, args);
-        const method = UI_TOOL_METHODS.get(name);
         if (!method) throw new ApplicationError("INVALID_ARGUMENT", "Неизвестная операция панели");
         if (method === "chooseProject") {
           try { await (await binding).select(undefined, metadata); }
@@ -67,7 +73,15 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
         // Ни content, ни structuredContent не содержат данные просмотра.
         return { content: [], _meta: { result } };
       }).catch((error) => ({ isError: true, content: [], _meta: { error: applicationError(error) } }));
-      queue = operation.then(() => {});
+      const finished = operation.then(() => {});
+      if (selectsProject) {
+        projectSelection = finished;
+      } else if (read) {
+        reads.add(finished);
+        void finished.then(() => reads.delete(finished));
+      } else {
+        mutations = finished;
+      }
       return operation;
     },
     /** Полностью встроенный HTML подключается к хосту даже при запрете любых сетевых соединений UI. */
@@ -82,6 +96,6 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
           "openai/ui": { availableDisplayModes: ["inline", "fullscreen"] } } }] };
     },
     /** После отключения хоста новые операции отклоняются; уже начатая запись безопасно завершается. */
-    async close() { closed = true; await queue; session = null; },
+    async close() { closed = true; await Promise.all([projectSelection, mutations, ...reads]); session = null; },
   };
 }
