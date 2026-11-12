@@ -19,6 +19,7 @@ import { createArchiViewSession } from "../src/application/session.js";
 import { digest } from "../src/serialization/digest.js";
 import { createReviewInput } from "../src/reports/review-input.js";
 import { captureWorkingTree } from "../src/snapshots/capture.js";
+import { savedClauseText, savedClauseMatchesContract } from "../web/archiview/contract.js";
 
 /** Контракт и дерево принадлежат только этому тесту и удаляются после остановки сервера. */
 async function fixture(t: TestContext) {
@@ -67,6 +68,61 @@ function fixtureReview(app: { store: SnapshotStore }, current: Snapshot, id: str
   }
   return input;
 }
+
+test("own review exposes referenced ancestor clauses from their saved sides without extending its checklist", async (t) => {
+  const root = await fixture(t);
+  const file = path.join(root, ".archiview/modules/root.yaml");
+  const previousContract = { ...parse(await readFile(file, "utf8")),
+    boundaries: { B1: "Сохранённая прежняя граница." }, invariants: { I1: "Прежний инвариант." } };
+  await writeFile(file, stringify(previousContract));
+  const app = await serve(t, root);
+  const baseline = await captureWorkingTree(root);
+  const currentContract = { ...previousContract, boundaries: { B1: "Сохранённая проверенная граница.", B2: "Неиспользованная граница." },
+    invariants: { I1: "Проверенный инвариант." } };
+  await writeFile(file, stringify(currentContract));
+  const current = await captureWorkingTree(root);
+  const input = createReviewInput(digest(app.store.snapshotRoot), baseline, current, "child");
+  input.report.analysis.model = input.manifest.model = { provider: "test", id: "ancestor-navigation-fixture" };
+  input.report.analysis.prompt_digest = input.manifest.prompt_digest = digest("Native own ancestor clause projection fixture");
+  input.report.analysis.input_digest = digest(input.manifest);
+  const oldBoundary = { snapshot: "baseline", module_id: "root", section: "boundaries", id: "B1" } as const;
+  const boundary = { ...oldBoundary, snapshot: "current" } as const;
+  const invariant = { ...boundary, section: "invariants", id: "I1" } as const;
+  input.report.findings = [{ id: "ancestor-boundary", kind: "boundary_violation", severity: "warning",
+    certainty: "confirmed", lifecycle: "unknown", summary: "Fixture ancestor finding",
+    clauses: [oldBoundary, boundary, invariant, boundary],
+    evidence: [{ snapshot: "current", fact_id: input.current.facts[0].id }] }];
+  const originalReport = structuredClone(input.report);
+  const originalContracts = structuredClone(input.manifest.contracts);
+  await app.reports.saveReview(input);
+
+  async function detail() {
+    const view = await ((await fetch(app.url + "/api/comparison")).json() as Promise<ComparisonResponse>);
+    return (await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: "child" }))).json() as Promise<ModuleResponse>;
+  }
+  const review = (await detail()).reviews.find(review => review.report.id === input.review_id)!;
+  assert.deepEqual(review.contracts, originalContracts);
+  assert.ok(review.report.checks.every(check => check.contract.module_id === "child"));
+  assert.deepEqual(review.referencedContracts, {
+    baseline: [{ reference: oldBoundary, text: previousContract.boundaries.B1 }],
+    current: [{ reference: boundary, text: currentContract.boundaries.B1 }, { reference: invariant, text: currentContract.invariants.I1 }],
+  });
+  assert.equal(savedClauseText(review, oldBoundary), previousContract.boundaries.B1);
+  assert.equal(savedClauseText(review, boundary), currentContract.boundaries.B1);
+  assert.equal(savedClauseText(review, invariant), currentContract.invariants.I1);
+  assert.equal(savedClauseMatchesContract(review, boundary, currentContract), true);
+  assert.equal(savedClauseMatchesContract(review, oldBoundary, currentContract), false);
+  assert.equal(savedClauseText(review, { ...boundary, id: "B2" }), null);
+  assert.equal(savedClauseText(review, { ...boundary, module_id: "child" }), null);
+  assert.equal(savedClauseText(review, { ...boundary, section: "invariants" }), null);
+
+  await writeFile(file, stringify({ ...currentContract, boundaries: { B1: "Позднейший изменяемый текст." } }));
+  const historical = (await detail()).reviews.find(review => review.report.id === input.review_id)!;
+  assert.deepEqual(historical.referencedContracts, review.referencedContracts);
+  const stored = (await app.reports.list()).entries.find(entry => entry.review_id === input.review_id)!;
+  assert.deepEqual(stored.report, originalReport);
+  assert.deepEqual(stored.manifest.contracts, originalContracts);
+});
 
 test("startup and comparison compact structure without creating an LLM review", async (t) => {
   const root = await fixture(t);

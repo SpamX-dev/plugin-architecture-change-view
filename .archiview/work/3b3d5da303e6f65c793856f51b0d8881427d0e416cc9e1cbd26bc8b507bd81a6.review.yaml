@@ -38466,3 +38466,3042 @@ entries:
     result_digest: sha256:f6be03e2e0d6fdffd62d58d4b398a12e689397a23946583d14ef47e3f76b3616
     content_digest: sha256:62ae75c7030a625731ed3167cce67376ec550fafe221457c75950e5049d2820b
     registration_order: 89
+  - schema_version: 2
+    kind: review
+    module_id: dsh-client-panel
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-dc15d1a0-0dda-4701-8196-173f7aabc663
+    check_hash: 985d3c376a14fcd65262ad8fd1b938763c9a5d87fd18adeaf148d4bf580c48e6
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: dsh-client-panel
+      baseline:
+        identity:
+          kind: git
+          id: 771efbf7a9efe9e9a863aa96537652f133bfd463
+        state:
+          exists: true
+          directory: src/dsh/client
+          self_digest: sha256:f06423800f84f525cc823ffe9b45633aab831477c264f945ced7371a976056f6
+          subtree_digest: sha256:1529e1190e0dd36811fd307d132d53dd83617871011bc0cad667d730a5eefbe1
+      current:
+        exists: true
+        directory: src/dsh/client
+        self_digest: sha256:f06423800f84f525cc823ffe9b45633aab831477c264f945ced7371a976056f6
+        subtree_digest: sha256:1529e1190e0dd36811fd307d132d53dd83617871011bc0cad667d730a5eefbe1
+      analyzer:
+        name: archiview-structure
+        version: 1.0.2
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: dsh-client-panel
+          directory: src/dsh/client
+          own_files:
+            - path: src/dsh/client/body.ts
+              digest: sha256:9a2192d1306261a6f1f6f7c57444c75352f2a4b11909f7e94805fcb403786345
+              normalization: text-lf/v1
+            - path: src/dsh/client/frame-bridge.ts
+              digest: sha256:dcaaf6a215c68831f3d06c61d8c06d5a5f2ea99d169eec1292d4d714b0b04eec
+              normalization: text-lf/v1
+            - path: src/dsh/client/index.ts
+              digest: sha256:7283125b3d3aa9f2493f50c7de0fdb2a984a6b14dbd8223c710b54d58a7e5de3
+              normalization: text-lf/v1
+            - path: src/dsh/client/prompt.ts
+              digest: sha256:683a277c49f85be181aa4d778ab56f2eb0dfd33caeee5a7657cce95ff56aa064
+              normalization: text-lf/v1
+            - path: src/dsh/client/types.ts
+              digest: sha256:87dd714543b9cea97879f025a0e42fea34fb16203eb34f68565b03ecf35ab89c
+              normalization: text-lf/v1
+          contract:
+            id: dsh-client-panel
+            kind: module
+            purpose: Регистрировать в правой панели веб-клиента dsh страницу ArchiView и
+              показывать её во вкладке, не дублируя интерфейс и операции
+              просмотра.
+            responsibilities:
+              R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
+                записью в справочнике панели.
+              R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
+                панели.
+              R3: Показывать страницу по адресу, который сообщает хост, передавать хосту
+                идентификатор чата вкладки и сохранять транспорт и разметку
+                страницы внутри iframe.
+              R4: Передавать явные поручения анализа и исправления замечания из панели в чат
+                вкладки по сообщению моста, не создавая ходов при обычной
+                навигации.
+            boundaries:
+              B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+              B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции
+                повторно.
+              B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет
+                корень проекта и не задаёт маршрут собственной константой. Без
+                внедрения действует стандартный префикс, совпадающий с
+                настройкой хоста по умолчанию.
+            invariants:
+              I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+              I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
+                скрытым обходом или прямым чтением проекта.
+              I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
+                вкладок.
+              I4: Тело вкладки принимает сообщения только от собственного iframe с тем же
+                origin; отказ передачи виден панели, а не выдаётся за успех.
+          children: []
+        complete: true
+        dependencies:
+          - selector:
+              kind: file
+              path: src/dsh/panel-contract.ts
+            available: true
+            digest: sha256:100e50fa78abcbefda53f5099a08e84057ae7e11599dc685974b0f81a14c9b25
+            content: >
+              /**
+               * Контракт между половинами плагина dsh.
+               *
+               * Хост и браузерный бандл — разные процессы и разные модульные графы, поэтому
+               * единственное, что они могут разделить, — это зависимый от данных контракт:
+               * имя глобального объекта, форму строки внедрения в index.html и правило
+               * разбора. Модуль намеренно не имеет зависимостей, чтобы его можно было
+               * импортировать и в Node-половину, и в бандл браузера.
+               *
+               * Так префикс маршрутов остаётся одним значением: конфигурация хоста попадает
+               * в документ клиента через публичный канал `webserver/index-inject`, а клиент
+               * читает её оттуда. Ни одна половина не дублирует константу маршрута.
+               *
+               * @module plugin-architecture-change-view/dsh/panel-contract
+               */
+
+              /** Префикс маршрутов панели по умолчанию, если хост не сообщил
+              другой. */
+
+              export const DEFAULT_PREFIX = "/archiview";
+
+
+              /** Имя глобального объекта, который хост внедряет в документ
+              клиента. */
+
+              export const CLIENT_GLOBAL = "__DSH_ARCHIVIEW__";
+
+
+              /**
+               * Начало локального пути: ровно один прямой слэш.
+               *
+               * Второй символ не может быть ещё одним слэшем или обратным слэшем. `//host/path`
+               * — сетевая ссылка (network-path reference): браузер сохраняет схему документа,
+               * но берёт чужой origin. `/\host/path` приводится к той же ссылке при разборе
+               * URL, потому что для специальных схем обратный слэш считается разделителем.
+               */
+              const LOCAL_PATH_START = /^\/(?![/\\])/;
+
+
+              /**
+               * Символы, которых не может быть в локальном пути маршрута: пробельные,
+               * обратный слэш (меняет разбор URL), строка запроса и фрагмент.
+               */
+              const FORBIDDEN_IN_PATH = /[\s\x00-\x1f\x7f\\?#]/;
+
+
+              /**
+               * Проверяет префикс, пришедший из конфигурации или документа.
+               *
+               * Допускается только локальный абсолютный путь. Сетевые ссылки и обратные
+               * слэши отклоняются: иначе адрес iframe увёл бы вкладку на чужой origin вместо
+               * маршрута панели хоста (см. `src/dsh/client/body.ts`). Тот же префикс служит
+               * путём регистрации маршрутов, поэтому проверка общая для обеих половин.
+               *
+               * @param {unknown} value - проверяемое значение.
+               * @returns {string | null} префикс без хвостового слэша либо `null`.
+               */
+              export function asPrefix(value: unknown) {
+                if (typeof value !== "string" || value.endsWith("/")) return null;
+                if (!LOCAL_PATH_START.test(value) || FORBIDDEN_IN_PATH.test(value)) return null;
+                // Use the same serialized pathname as the browser and the host route table.
+                if (value.split("/").some((part) => /^(?:\.|%2e){1,2}$/i.test(part))) return null;
+                return new URL(value, "http://localhost").pathname;
+              }
+
+
+              /**
+               * Собирает строку внедрения конфигурации клиента в index.html.
+               *
+               * `kind: "global"` — штатная строка веб-сервера dsh: она присваивает
+               * JSON-значение свойству `globalThis` до выполнения клиентских бандлов. Форма
+               * строки стабильна и не зависит от версии плагина.
+               *
+               * @param {string} prefix - нормализованный префикс маршрутов панели.
+               * @returns {{ kind: "global", name: string, value: { prefix: string } }} строка внедрения.
+               */
+              export function clientConfigRow(prefix: string) {
+                return { kind: "global", name: CLIENT_GLOBAL, value: { prefix } };
+              }
+
+
+              /**
+               * Читает префикс, который сообщил хост.
+               *
+               * Отсутствие или порча значения не считаются ошибкой: клиент откатывается к
+               * стандартному префиксу, потому что вкладка не должна ломаться из-за
+               * документа, который ещё не успел получить внедрение.
+               *
+               * @param {object} [scope] - глобальный объект; параметр нужен для тестов.
+               * @returns {string} действующий префикс маршрутов.
+               */
+              export function resolveClientPrefix(scope: object = globalThis) {
+                const config = (scope as Record<string, unknown>)[CLIENT_GLOBAL];
+                const injected = config && typeof config === "object" ? (config as Record<string, unknown>).prefix : undefined;
+                return asPrefix(injected) ?? DEFAULT_PREFIX;
+              }
+
+
+              /**
+               * Собирает адрес страницы панели для вкладки чата.
+               *
+               * Идентификатор чата — единственное, что клиент знает о сессии: хост по нему
+               * разрешает рабочий каталог проекта. Значение кодируется как параметр запроса,
+               * потому что оно приходит из состояния клиента и не должно влиять на разбор
+               * пути.
+               *
+               * @param {string} prefix - действующий префикс маршрутов.
+               * @param {unknown} sessionId - идентификатор чата, которому принадлежит вкладка.
+               * @returns {string} адрес страницы с идентификатором чата или без него.
+               */
+              export function panelPageUrl(prefix: string, sessionId: unknown) {
+                const base = (asPrefix(prefix) ?? DEFAULT_PREFIX) + "/";
+                if (typeof sessionId !== "string" || sessionId === "") return base;
+                return base + "?session=" + encodeURIComponent(sessionId);
+              }
+        dependency_coverage:
+          status: unknown
+          potential_influence:
+            - scope: project
+      baseline:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: dsh-client-panel
+          directory: src/dsh/client
+          own_files:
+            - path: src/dsh/client/body.ts
+              digest: sha256:9a2192d1306261a6f1f6f7c57444c75352f2a4b11909f7e94805fcb403786345
+              normalization: text-lf/v1
+            - path: src/dsh/client/frame-bridge.ts
+              digest: sha256:dcaaf6a215c68831f3d06c61d8c06d5a5f2ea99d169eec1292d4d714b0b04eec
+              normalization: text-lf/v1
+            - path: src/dsh/client/index.ts
+              digest: sha256:7283125b3d3aa9f2493f50c7de0fdb2a984a6b14dbd8223c710b54d58a7e5de3
+              normalization: text-lf/v1
+            - path: src/dsh/client/prompt.ts
+              digest: sha256:683a277c49f85be181aa4d778ab56f2eb0dfd33caeee5a7657cce95ff56aa064
+              normalization: text-lf/v1
+            - path: src/dsh/client/types.ts
+              digest: sha256:87dd714543b9cea97879f025a0e42fea34fb16203eb34f68565b03ecf35ab89c
+              normalization: text-lf/v1
+          contract:
+            id: dsh-client-panel
+            kind: module
+            purpose: Регистрировать в правой панели веб-клиента dsh страницу ArchiView и
+              показывать её во вкладке, не дублируя интерфейс и операции
+              просмотра.
+            responsibilities:
+              R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
+                записью в справочнике панели.
+              R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
+                панели.
+              R3: Показывать страницу по адресу, который сообщает хост, передавать хосту
+                идентификатор чата вкладки и сохранять транспорт и разметку
+                страницы внутри iframe.
+              R4: Передавать явные поручения анализа и исправления замечания из панели в чат
+                вкладки по сообщению моста, не создавая ходов при обычной
+                навигации.
+            boundaries:
+              B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+              B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции
+                повторно.
+              B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет
+                корень проекта и не задаёт маршрут собственной константой. Без
+                внедрения действует стандартный префикс, совпадающий с
+                настройкой хоста по умолчанию.
+            invariants:
+              I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+              I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
+                скрытым обходом или прямым чтением проекта.
+              I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
+                вкладок.
+              I4: Тело вкладки принимает сообщения только от собственного iframe с тем же
+                origin; отказ передачи виден панели, а не выдаётся за успех.
+          children: []
+        complete: true
+        dependencies:
+          - selector:
+              kind: file
+              path: src/dsh/panel-contract.ts
+            available: true
+            digest: sha256:100e50fa78abcbefda53f5099a08e84057ae7e11599dc685974b0f81a14c9b25
+            content: >
+              /**
+               * Контракт между половинами плагина dsh.
+               *
+               * Хост и браузерный бандл — разные процессы и разные модульные графы, поэтому
+               * единственное, что они могут разделить, — это зависимый от данных контракт:
+               * имя глобального объекта, форму строки внедрения в index.html и правило
+               * разбора. Модуль намеренно не имеет зависимостей, чтобы его можно было
+               * импортировать и в Node-половину, и в бандл браузера.
+               *
+               * Так префикс маршрутов остаётся одним значением: конфигурация хоста попадает
+               * в документ клиента через публичный канал `webserver/index-inject`, а клиент
+               * читает её оттуда. Ни одна половина не дублирует константу маршрута.
+               *
+               * @module plugin-architecture-change-view/dsh/panel-contract
+               */
+
+              /** Префикс маршрутов панели по умолчанию, если хост не сообщил
+              другой. */
+
+              export const DEFAULT_PREFIX = "/archiview";
+
+
+              /** Имя глобального объекта, который хост внедряет в документ
+              клиента. */
+
+              export const CLIENT_GLOBAL = "__DSH_ARCHIVIEW__";
+
+
+              /**
+               * Начало локального пути: ровно один прямой слэш.
+               *
+               * Второй символ не может быть ещё одним слэшем или обратным слэшем. `//host/path`
+               * — сетевая ссылка (network-path reference): браузер сохраняет схему документа,
+               * но берёт чужой origin. `/\host/path` приводится к той же ссылке при разборе
+               * URL, потому что для специальных схем обратный слэш считается разделителем.
+               */
+              const LOCAL_PATH_START = /^\/(?![/\\])/;
+
+
+              /**
+               * Символы, которых не может быть в локальном пути маршрута: пробельные,
+               * обратный слэш (меняет разбор URL), строка запроса и фрагмент.
+               */
+              const FORBIDDEN_IN_PATH = /[\s\x00-\x1f\x7f\\?#]/;
+
+
+              /**
+               * Проверяет префикс, пришедший из конфигурации или документа.
+               *
+               * Допускается только локальный абсолютный путь. Сетевые ссылки и обратные
+               * слэши отклоняются: иначе адрес iframe увёл бы вкладку на чужой origin вместо
+               * маршрута панели хоста (см. `src/dsh/client/body.ts`). Тот же префикс служит
+               * путём регистрации маршрутов, поэтому проверка общая для обеих половин.
+               *
+               * @param {unknown} value - проверяемое значение.
+               * @returns {string | null} префикс без хвостового слэша либо `null`.
+               */
+              export function asPrefix(value: unknown) {
+                if (typeof value !== "string" || value.endsWith("/")) return null;
+                if (!LOCAL_PATH_START.test(value) || FORBIDDEN_IN_PATH.test(value)) return null;
+                // Use the same serialized pathname as the browser and the host route table.
+                if (value.split("/").some((part) => /^(?:\.|%2e){1,2}$/i.test(part))) return null;
+                return new URL(value, "http://localhost").pathname;
+              }
+
+
+              /**
+               * Собирает строку внедрения конфигурации клиента в index.html.
+               *
+               * `kind: "global"` — штатная строка веб-сервера dsh: она присваивает
+               * JSON-значение свойству `globalThis` до выполнения клиентских бандлов. Форма
+               * строки стабильна и не зависит от версии плагина.
+               *
+               * @param {string} prefix - нормализованный префикс маршрутов панели.
+               * @returns {{ kind: "global", name: string, value: { prefix: string } }} строка внедрения.
+               */
+              export function clientConfigRow(prefix: string) {
+                return { kind: "global", name: CLIENT_GLOBAL, value: { prefix } };
+              }
+
+
+              /**
+               * Читает префикс, который сообщил хост.
+               *
+               * Отсутствие или порча значения не считаются ошибкой: клиент откатывается к
+               * стандартному префиксу, потому что вкладка не должна ломаться из-за
+               * документа, который ещё не успел получить внедрение.
+               *
+               * @param {object} [scope] - глобальный объект; параметр нужен для тестов.
+               * @returns {string} действующий префикс маршрутов.
+               */
+              export function resolveClientPrefix(scope: object = globalThis) {
+                const config = (scope as Record<string, unknown>)[CLIENT_GLOBAL];
+                const injected = config && typeof config === "object" ? (config as Record<string, unknown>).prefix : undefined;
+                return asPrefix(injected) ?? DEFAULT_PREFIX;
+              }
+
+
+              /**
+               * Собирает адрес страницы панели для вкладки чата.
+               *
+               * Идентификатор чата — единственное, что клиент знает о сессии: хост по нему
+               * разрешает рабочий каталог проекта. Значение кодируется как параметр запроса,
+               * потому что оно приходит из состояния клиента и не должно влиять на разбор
+               * пути.
+               *
+               * @param {string} prefix - действующий префикс маршрутов.
+               * @param {unknown} sessionId - идентификатор чата, которому принадлежит вкладка.
+               * @returns {string} адрес страницы с идентификатором чата или без него.
+               */
+              export function panelPageUrl(prefix: string, sessionId: unknown) {
+                const base = (asPrefix(prefix) ?? DEFAULT_PREFIX) + "/";
+                if (typeof sessionId !== "string" || sessionId === "") return base;
+                return base + "?session=" + encodeURIComponent(sessionId);
+              }
+        dependency_coverage:
+          status: unknown
+          potential_influence:
+            - scope: project
+      baseline_identity:
+        kind: git
+        id: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      current_digest: sha256:2a411b463d67d0b7f085af119172e4f2c9f1b7209f9004d83b2ead355d005274
+      change_digest: sha256:b66ee11bdd51e5ad6a6cc708032ebc895afdbd21d7de6ac1929a45fda04c7f1d
+    report:
+      schema_version: 1
+      id: review-dc15d1a0-0dda-4701-8196-173f7aabc663
+      module:
+        id: dsh-client-panel
+        baseline_path: src/dsh/client
+        current_path: src/dsh/client
+      comparison:
+        baseline:
+          id: git-771efbf7a9efe9e9a863aa96537652f133bfd463
+          digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+        current:
+          id: launch-4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+          digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      analysis:
+        created_at: 2026-11-12T04:23:29.033Z
+        analyzer:
+          name: agent-review
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:7013ee4ec246a8473e5bd48b2c466a59a99124ee580619692751150f0a91bf75
+        scope: module
+        coverage:
+          status: partial
+          limitations:
+            - "Две фазы завершены: собственные пункты и соответствие
+              контракта/реализации всем фактическим предкам проверены отдельно.
+              В этой области новых подтверждённых нарушений границ не найдено;
+              детали и ограничения в boundary_adapters.json."
+            - Полнота используемых внешних зависимостей не подтверждена; экспорт
+              фиксирует прямые внешние файловые входы с
+              dependency_coverage.status=unknown.
+            - Базовые и текущие входы канонически совпадают, включая собственный
+              контракт, код и заявленные зависимости; анализ применяется к
+              одинаковому содержимому обеих сторон. Оценка изменения ограничена
+              этой сохранённой областью.
+            - Динамика реальных Codex/dsh host, полный активный реестр вкладок
+              dsh и Electron file:// не проверялись; наличие тестов не
+              использовано как доказательство семантического соответствия.
+        model:
+          provider: openai
+          id: gpt-6
+        prompt_digest: sha256:3880bf9e8f4dcfa6e93899709d0dacb1db4fec99ea3c13fcfe30fd5161b41ed1
+      observed:
+        baseline:
+          summary: Канонически идентичные входы подтверждают ту же реализацию. Клиент dsh
+            регистрирует тип и тело вкладки, показывает общий веб-интерфейс в
+            iframe и передаёт только явное поручение в чат вкладки через
+            проверенный мост.
+          responsibilities:
+            - text: apply регистрирует TAB_ID plugin-architecture-change-view/archiview, kind
+                archiview, priority extension и guide запись в sidebarRightTabs.
+              evidence:
+                - snapshot: baseline
+                  fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+            - text: Тело Body регистрируется слотом sidebar.right.pane.tab с key=TAB_ID; тип и
+                тело используют одну константу.
+              evidence:
+                - snapshot: baseline
+                  fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+            - text: PanelBody строит iframe src через panelPageUrl(resolveClientPrefix(),
+                sessionId). Клиент передаёт только ID чата; файлы и операции
+                сервиса остаются на хосте/вложенной странице.
+              evidence:
+                - snapshot: baseline
+                  fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+                - snapshot: baseline
+                  fact_id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+            - text: listenToFrame принимает только hello/send протокола 2, проверяет sessionId
+                и вызывает sendPrompt. createPromptSender удерживает нужную
+                сессию, ждёт очередь prompt и освобождает reference; обычный
+                рендер/навигация prompt не вызывает.
+              evidence:
+                - snapshot: baseline
+                  fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+                - snapshot: baseline
+                  fact_id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+                - snapshot: baseline
+                  fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+        current:
+          summary: Клиент dsh регистрирует тип и тело вкладки, показывает общий
+            веб-интерфейс в iframe и передаёт только явное поручение в чат
+            вкладки через проверенный мост. Отдельная вторая фаза проверила
+            прямого родителя и всю цепочку предков до корня; новых
+            подтверждённых нарушений размещения и разделения операций не
+            обнаружено.
+          responsibilities:
+            - text: apply регистрирует TAB_ID plugin-architecture-change-view/archiview, kind
+                archiview, priority extension и guide запись в sidebarRightTabs.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+            - text: Тело Body регистрируется слотом sidebar.right.pane.tab с key=TAB_ID; тип и
+                тело используют одну константу.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+            - text: PanelBody строит iframe src через panelPageUrl(resolveClientPrefix(),
+                sessionId). Клиент передаёт только ID чата; файлы и операции
+                сервиса остаются на хосте/вложенной странице.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+                - snapshot: current
+                  fact_id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+            - text: listenToFrame принимает только hello/send протокола 2, проверяет sessionId
+                и вызывает sendPrompt. createPromptSender удерживает нужную
+                сессию, ждёт очередь prompt и освобождает reference; обычный
+                рендер/навигация prompt не вызывает.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+                - snapshot: current
+                  fact_id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+                - snapshot: current
+                  fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+      checks:
+        - id: check-1
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: responsibilities
+            id: R1
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. apply регистрирует TAB_ID
+            plugin-architecture-change-view/archiview, kind archiview, priority
+            extension и guide запись в sidebarRightTabs.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+        - id: check-2
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: responsibilities
+            id: R2
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. Тело Body регистрируется слотом
+            sidebar.right.pane.tab с key=TAB_ID; тип и тело используют одну
+            константу.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+        - id: check-3
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: responsibilities
+            id: R3
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. PanelBody строит iframe src через
+            panelPageUrl(resolveClientPrefix(), sessionId). Клиент передаёт
+            только ID чата; файлы и операции сервиса остаются на хосте/вложенной
+            странице.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: baseline
+              fact_id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+        - id: check-4
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: responsibilities
+            id: R4
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. listenToFrame принимает только
+            hello/send протокола 2, проверяет sessionId и вызывает sendPrompt.
+            createPromptSender удерживает нужную сессию, ждёт очередь prompt и
+            освобождает reference; обычный рендер/навигация prompt не вызывает.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+            - snapshot: baseline
+              fact_id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+            - snapshot: baseline
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+        - id: check-5
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: boundaries
+            id: B1
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. Весь клиент использует React, parent
+            postMessage и runtime сервис sessions для явного prompt; импортов
+            fs, application или contract inventory нет.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+            - snapshot: baseline
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: baseline
+              fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+            - snapshot: baseline
+              fact_id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+        - id: check-6
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: boundaries
+            id: B2
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. Клиент регистрирует только iframe и мост
+            отправки. Сетевые операции comparison/module/analysis и разметка
+            общего интерфейса не реализованы повторно.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: baseline
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+        - id: check-7
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: boundaries
+            id: B3
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. resolveClientPrefix читает конфигурацию
+            хоста из CLIENT_GLOBAL и валидирует asPrefix; при отсутствии
+            использует общий DEFAULT_PREFIX. Корень проекта в клиенте не
+            определяется.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: baseline
+              fact_id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+        - id: check-8
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: invariants
+            id: I1
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. Обе регистрации обёрнуты ctx.effect.
+            useEffect устанавливает слушатель iframe и возвращает disposer при
+            изменении sessionId/sendPrompt или размонтировании.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+            - snapshot: baseline
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: baseline
+              fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+        - id: check-9
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: invariants
+            id: I2
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. iframe загружает только путь хостовой
+            страницы; отдельного fallback чтения проекта, HTTP сервера или
+            вызова application нет. Без маршрутов остаётся ответ хоста по этому
+            адресу.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: baseline
+              fact_id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+        - id: check-10
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: invariants
+            id: I3
+          subject: baseline
+          verdict: uncertain
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. TAB_ID имеет namespace пакета,
+            TAB_KIND=archiview. В собственном коде коллизий нет, но уникальность
+            kind зависит от полного реестра активного профиля dsh, которого
+            сохранённые входы не содержат. Проверка только
+            встроенных/собственных типов не доказывает уникальность во всём
+            клиенте.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+        - id: check-11
+          contract:
+            snapshot: baseline
+            module_id: dsh-client-panel
+            section: invariants
+            id: I4
+          subject: baseline
+          verdict: consistent
+          explanation: Сохранённые входы базовой и текущей стороны канонически совпадают;
+            проверено то же содержание. listenToFrame сверяет event.source с
+            frame.contentWindow и event.origin с window.location.origin, затем
+            протокол и sessionId. Любое отклонение sendPrompt отправляет
+            send-failed вместо sent, а принятый prompt подтверждается после
+            ok:true.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+            - snapshot: baseline
+              fact_id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+        - id: check-12
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: responsibilities
+            id: R1
+          subject: current
+          verdict: consistent
+          explanation: apply регистрирует TAB_ID
+            plugin-architecture-change-view/archiview, kind archiview, priority
+            extension и guide запись в sidebarRightTabs.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+        - id: check-13
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: responsibilities
+            id: R2
+          subject: current
+          verdict: consistent
+          explanation: Тело Body регистрируется слотом sidebar.right.pane.tab с
+            key=TAB_ID; тип и тело используют одну константу.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+        - id: check-14
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: responsibilities
+            id: R3
+          subject: current
+          verdict: consistent
+          explanation: PanelBody строит iframe src через
+            panelPageUrl(resolveClientPrefix(), sessionId). Клиент передаёт
+            только ID чата; файлы и операции сервиса остаются на хосте/вложенной
+            странице.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: current
+              fact_id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+        - id: check-15
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: responsibilities
+            id: R4
+          subject: current
+          verdict: consistent
+          explanation: listenToFrame принимает только hello/send протокола 2, проверяет
+            sessionId и вызывает sendPrompt. createPromptSender удерживает
+            нужную сессию, ждёт очередь prompt и освобождает reference; обычный
+            рендер/навигация prompt не вызывает.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+            - snapshot: current
+              fact_id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+            - snapshot: current
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+        - id: check-16
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: boundaries
+            id: B1
+          subject: current
+          verdict: consistent
+          explanation: Весь клиент использует React, parent postMessage и runtime сервис
+            sessions для явного prompt; импортов fs, application или contract
+            inventory нет.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+            - snapshot: current
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: current
+              fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+            - snapshot: current
+              fact_id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+        - id: check-17
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: Клиент регистрирует только iframe и мост отправки. Сетевые операции
+            comparison/module/analysis и разметка общего интерфейса не
+            реализованы повторно.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: current
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+        - id: check-18
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: consistent
+          explanation: resolveClientPrefix читает конфигурацию хоста из CLIENT_GLOBAL и
+            валидирует asPrefix; при отсутствии использует общий DEFAULT_PREFIX.
+            Корень проекта в клиенте не определяется.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: current
+              fact_id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+        - id: check-19
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: invariants
+            id: I1
+          subject: current
+          verdict: consistent
+          explanation: Обе регистрации обёрнуты ctx.effect. useEffect устанавливает
+            слушатель iframe и возвращает disposer при изменении
+            sessionId/sendPrompt или размонтировании.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+            - snapshot: current
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: current
+              fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+        - id: check-20
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: invariants
+            id: I2
+          subject: current
+          verdict: consistent
+          explanation: iframe загружает только путь хостовой страницы; отдельного fallback
+            чтения проекта, HTTP сервера или вызова application нет. Без
+            маршрутов остаётся ответ хоста по этому адресу.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+            - snapshot: current
+              fact_id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+        - id: check-21
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: invariants
+            id: I3
+          subject: current
+          verdict: uncertain
+          explanation: TAB_ID имеет namespace пакета, TAB_KIND=archiview. В собственном
+            коде коллизий нет, но уникальность kind зависит от полного реестра
+            активного профиля dsh, которого сохранённые входы не содержат.
+            Проверка только встроенных/собственных типов не доказывает
+            уникальность во всём клиенте.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+        - id: check-22
+          contract:
+            snapshot: current
+            module_id: dsh-client-panel
+            section: invariants
+            id: I4
+          subject: current
+          verdict: consistent
+          explanation: listenToFrame сверяет event.source с frame.contentWindow и
+            event.origin с window.location.origin, затем протокол и sessionId.
+            Любое отклонение sendPrompt отправляет send-failed вместо sent, а
+            принятый prompt подтверждается после ok:true.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+            - snapshot: current
+              fact_id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+      findings: []
+      assessment:
+        current:
+          verdict: inconclusive
+          summary: По прочитанному собственному коду ответственности и границы соблюдены;
+            полная уникальность kind в активном реестре клиента остаётся
+            непроверенной (I3).
+        change:
+          verdict: consistent
+          summary: Собственный код, контракт и все заявленные файловые зависимости
+            baseline/current канонически идентичны; изменений в сохранённой
+            области проверки нет. Это не устраняет ограничения полноты и
+            динамики.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline:
+          id: git-771efbf7a9efe9e9a863aa96537652f133bfd463
+          digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+        current:
+          id: launch-4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+          digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      module:
+        id: dsh-client-panel
+        baseline_path: src/dsh/client
+        current_path: src/dsh/client
+      analyzer:
+        name: agent-review
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      contract_scope: own
+      contracts:
+        baseline:
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: responsibilities
+              id: R1
+            text: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
+              записью в справочнике панели.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: responsibilities
+              id: R2
+            text: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
+              панели.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: responsibilities
+              id: R3
+            text: Показывать страницу по адресу, который сообщает хост, передавать хосту
+              идентификатор чата вкладки и сохранять транспорт и разметку
+              страницы внутри iframe.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: responsibilities
+              id: R4
+            text: Передавать явные поручения анализа и исправления замечания из панели в чат
+              вкладки по сообщению моста, не создавая ходов при обычной
+              навигации.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: boundaries
+              id: B1
+            text: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: boundaries
+              id: B2
+            text: Интерфейс и транспорт операций принадлежат web; клиент не описывает
+              операции повторно.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: boundaries
+              id: B3
+            text: Адрес страницы задаёт хост через внедрение конфигурации; клиент не
+              вычисляет корень проекта и не задаёт маршрут собственной
+              константой. Без внедрения действует стандартный префикс,
+              совпадающий с настройкой хоста по умолчанию.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: invariants
+              id: I1
+            text: Регистрации типа и тела живут ровно столько же, сколько плагин.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: invariants
+              id: I2
+            text: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
+              скрытым обходом или прямым чтением проекта.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: invariants
+              id: I3
+            text: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
+              вкладок.
+          - reference:
+              snapshot: baseline
+              module_id: dsh-client-panel
+              section: invariants
+              id: I4
+            text: Тело вкладки принимает сообщения только от собственного iframe с тем же
+              origin; отказ передачи виден панели, а не выдаётся за успех.
+        current:
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: responsibilities
+              id: R1
+            text: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
+              записью в справочнике панели.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: responsibilities
+              id: R2
+            text: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
+              панели.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: responsibilities
+              id: R3
+            text: Показывать страницу по адресу, который сообщает хост, передавать хосту
+              идентификатор чата вкладки и сохранять транспорт и разметку
+              страницы внутри iframe.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: responsibilities
+              id: R4
+            text: Передавать явные поручения анализа и исправления замечания из панели в чат
+              вкладки по сообщению моста, не создавая ходов при обычной
+              навигации.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: boundaries
+              id: B1
+            text: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: boundaries
+              id: B2
+            text: Интерфейс и транспорт операций принадлежат web; клиент не описывает
+              операции повторно.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: boundaries
+              id: B3
+            text: Адрес страницы задаёт хост через внедрение конфигурации; клиент не
+              вычисляет корень проекта и не задаёт маршрут собственной
+              константой. Без внедрения действует стандартный префикс,
+              совпадающий с настройкой хоста по умолчанию.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: invariants
+              id: I1
+            text: Регистрации типа и тела живут ровно столько же, сколько плагин.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: invariants
+              id: I2
+            text: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
+              скрытым обходом или прямым чтением проекта.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: invariants
+              id: I3
+            text: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
+              вкладок.
+          - reference:
+              snapshot: current
+              module_id: dsh-client-panel
+              section: invariants
+              id: I4
+            text: Тело вкладки принимает сообщения только от собственного iframe с тем же
+              origin; отказ передачи виден панели, а не выдаётся за успех.
+      instructions: Проверить собственную ответственность, границы и инварианты
+        модуля, включая соответствие его реализации и контракта границам
+        предков. Пункты предков не добавлять в собственный чеклист; противоречия
+        отразить в замечаниях со ссылками на сохранённые ограничения и
+        доказательства. Локальное изменение само по себе не требует пересмотра
+        предков. Зависимости задавать по реально использованному контракту/API,
+        не по расположению каталога. Заполнить модель, prompt и результаты.
+      context: {}
+      review_scope: self
+      model:
+        provider: openai
+        id: gpt-6
+      prompt_digest: sha256:3880bf9e8f4dcfa6e93899709d0dacb1db4fec99ea3c13fcfe30fd5161b41ed1
+    baseline:
+      schema_version: 2
+      id: git-771efbf7a9efe9e9a863aa96537652f133bfd463
+      digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      kind: git
+      revision: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      complete: true
+      modules:
+        - directory: .
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-change-view
+
+              title: Контракты и просмотр архитектуры
+
+              kind: module
+
+              extensions:
+                archiview.roles: [app]
+              purpose: Объединять ведение контрактов и просмотр изменений в
+              приложении ArchiView,
+                где команда может сопоставить состояние проекта с ответственностью его модулей.
+              responsibilities:
+                R1: Поставлять агентам канонические правила ведения контрактов и средства чтения контекста каталога.
+                R2: Давать агенту возможность установить, каким каталогам требуется создание, перенос или
+                  исправление контракта.
+                R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с результатами
+                  проверок и теми доказательствами, на которых основаны выводы.
+                R4: Автоматически поддерживать переносимую историю проверок, в которой видна актуальность
+                  выводов для отдельного модуля и его поддерева.
+                R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                  и DeepSeek Harness с общими контрактами и форматом истории проекта.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                  Просмотр не изменяет исходники проекта.
+                B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за пределами
+                  ArchiView и относятся к ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот корень
+                  от хоста; явно настроенный для модельных инструментов корень ограничивает их чтение.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                  внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                  факты и отчёты не переписываются при переносе проекта.
+                I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта modules.tree
+                  связывает его id с каталогом проекта. Эвристические оценки и текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+                I6: Обе интеграции получают правила ведения контрактов из канонического скилла пакета.
+                I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+                I7: Панель обращается к агенту только по явному поручению пользователя проанализировать модуль
+                  или исправить замечание.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: architecture-change-view
+              title: Контракты и просмотр архитектуры
+              kind: module
+              extensions:
+                archiview.roles:
+                  - app
+              purpose: Объединять ведение контрактов и просмотр изменений в приложении
+                ArchiView, где команда может сопоставить состояние проекта с
+                ответственностью его модулей.
+              responsibilities:
+                R1: Поставлять агентам канонические правила ведения контрактов и средства чтения
+                  контекста каталога.
+                R2: Давать агенту возможность установить, каким каталогам требуется создание,
+                  перенос или исправление контракта.
+                R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с
+                  результатами проверок и теми доказательствами, на которых
+                  основаны выводы.
+                R4: Автоматически поддерживать переносимую историю проверок, в которой видна
+                  актуальность выводов для отдельного модуля и его поддерева.
+                R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                  и DeepSeek Harness с общими контрактами и форматом истории
+                  проекта.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+                  инструментами. Просмотр не изменяет исходники проекта.
+                B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+                  пределами ArchiView и относятся к ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+                  строгим TypeScript перед сборкой; классы сохраняют
+                  единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+                  корень от хоста; явно настроенный для модельных инструментов
+                  корень ограничивает их чтение.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+                  .archiview внутри корня проекта. Эта папка исключена из
+                  анализа исходников; прежние сохранённые факты и отчёты не
+                  переписываются при переносе проекта.
+                I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+                  modules.tree связывает его id с каталогом проекта.
+                  Эвристические оценки и текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+                I6: Обе интеграции получают правила ведения контрактов из канонического скилла
+                  пакета.
+                I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+                  кодом. Панель и агент сохраняют принадлежность модуля его
+                  репозиторию.
+                I7: Панель обращается к агенту только по явному поручению пользователя
+                  проанализировать модуль или исправить замечание.
+          documentPath: .archiview/modules/architecture-change-view.yaml
+          files:
+            - path: .archiview/modules/architecture-change-view.yaml
+              hash: 8bbcbfb87ffc05afb0ebc8fedfce12ec44e75b15
+          sourceFiles: 0
+          fingerprint: ec7bc4e0681ec4a2da64cc46062f1564816306a55dbe2cfa709af5340fec53db
+        - directory: src
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-core
+
+              title: Корень исходников ArchiView
+
+              kind: group
+
+              extensions:
+                archiview.roles: [root]
+              purpose: Объединять серверные модули ArchiView вокруг общей модели
+              проекта, чтобы разные
+                способы доступа давали согласованные контракты, изменения и результаты проверок.
+              responsibilities:
+                R11: Задавать границу между моделью проекта, прикладными операциями и внешними адаптерами.
+              boundaries:
+                B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис принимает данные
+                  проекта и возвращает результат независимо от транспорта, хоста и способа отображения.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                  доказывает его выполнения.
+                B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и проверка
+                  контрактов доступны независимо от MCP, HTTP и хоста.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                  .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                  либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+                I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты описывают
+                  состояние исходников и контрактов из того же индекса Git.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: architecture-core
+              title: Корень исходников ArchiView
+              kind: group
+              extensions:
+                archiview.roles:
+                  - root
+              purpose: Объединять серверные модули ArchiView вокруг общей модели проекта,
+                чтобы разные способы доступа давали согласованные контракты,
+                изменения и результаты проверок.
+              responsibilities:
+                R11: Задавать границу между моделью проекта, прикладными операциями и внешними
+                  адаптерами.
+              boundaries:
+                B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
+                  принимает данные проекта и возвращает результат независимо от
+                  транспорта, хоста и способа отображения.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор.
+                  Наличие контракта не доказывает его выполнения.
+                B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
+                  проверка контрактов доступны независимо от MCP, HTTP и хоста.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+                  сборка и папки .archiview не расширяют анализ. Запись данных
+                  допускается в .archiview корня проекта либо явно выбранном
+                  внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
+                  ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+                  файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения
+                  требует отдельного анализа.
+                I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
+                  описывают состояние исходников и контрактов из того же индекса
+                  Git.
+          documentPath: .archiview/modules/architecture-core.yaml
+          files:
+            - path: .archiview/modules/architecture-core.yaml
+              hash: df81843e61d1f575eaaccc087310d9dcd0110a08
+          sourceFiles: 0
+          fingerprint: eecfabfb38329cca2e2994535554778f663bba1a6a1c6300baa06c8cb68b0834
+        - directory: src/dsh
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-adapter
+
+              title: Плагин dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [host-adapter, web-endpoints]
+              purpose: Предоставлять агенту DeepSeek Harness правила и контекст
+              контрактов, а пользователю —
+                панель ArchiView для проекта его чата.
+              responsibilities:
+                R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста каталогов,
+                  не добавляя данные панели в контекст модели.
+                R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из единственного
+                  файла пакета, без копий в пользовательских каталогах.
+                R3: Отдавать браузерной половине шаблон панели и операции просмотра по префиксным маршрутам,
+                  проверяя каждый запрос политикой соединения хоста.
+                R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по рабочему каталогу
+                  чата вкладки, и закрывать реестр при выгрузке плагина.
+                R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+              boundaries:
+                B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса прикладному сервису.
+                B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для привязки к проекту.
+                  Содержимое панели поступает из общего веб-интерфейса ArchiView.
+                B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+                B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты через прикладной сервис.
+              invariants:
+                I1: Маршрут панели не запускает модель и не возвращает данные просмотра в контекст агента.
+                I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+                I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного хостом. Для прямого
+                  просмотра действует настроенный корень или рабочий каталог процесса. Панель выбирает репозиторий
+                  внутри этой папки. Модельные инструменты используют настроенный корень или рабочую папку чата.
+                  Настроенный корень ограничивает доступные пути.
+                I4: Публикация скилла не создаёт второго источника текста — используется файл пакета.
+                I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий) читаются только
+                  при наличии и не блокируют активацию плагина.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-adapter
+              title: Плагин dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - host-adapter
+                  - web-endpoints
+              purpose: Предоставлять агенту DeepSeek Harness правила и контекст контрактов, а
+                пользователю — панель ArchiView для проекта его чата.
+              responsibilities:
+                R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста
+                  каталогов, не добавляя данные панели в контекст модели.
+                R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из
+                  единственного файла пакета, без копий в пользовательских
+                  каталогах.
+                R3: Отдавать браузерной половине шаблон панели и операции просмотра по
+                  префиксным маршрутам, проверяя каждый запрос политикой
+                  соединения хоста.
+                R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по
+                  рабочему каталогу чата вкладки, и закрывать реестр при
+                  выгрузке плагина.
+                R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+              boundaries:
+                B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса
+                  прикладному сервису.
+                B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для
+                  привязки к проекту. Содержимое панели поступает из общего
+                  веб-интерфейса ArchiView.
+                B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+                B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты
+                  через прикладной сервис.
+              invariants:
+                I1: Маршрут панели не запускает модель и не возвращает данные просмотра в
+                  контекст агента.
+                I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+                I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного
+                  хостом. Для прямого просмотра действует настроенный корень или
+                  рабочий каталог процесса. Панель выбирает репозиторий внутри
+                  этой папки. Модельные инструменты используют настроенный
+                  корень или рабочую папку чата. Настроенный корень ограничивает
+                  доступные пути.
+                I4: Публикация скилла не создаёт второго источника текста — используется файл
+                  пакета.
+                I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий)
+                  читаются только при наличии и не блокируют активацию плагина.
+          documentPath: .archiview/modules/dsh-adapter.yaml
+          files:
+            - path: .archiview/modules/dsh-adapter.yaml
+              hash: c7734d0e28fe83c9732541af4b141e255c773978
+            - path: src/dsh/panel-contract.ts
+              hash: 14013b94176f2fe6dbb4d42bf400fc50c71577b1
+          sourceFiles: 8
+          fingerprint: 8d2f05a8251bccfbfc91638d23f8c95666eb18847c022ee50de5dc133a1673c0
+        - directory: src/dsh/client
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-client-panel
+
+              title: Вкладка ArchiView в веб-клиенте dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [host-adapter]
+              purpose: Регистрировать в правой панели веб-клиента dsh страницу
+              ArchiView и показывать её
+                во вкладке, не дублируя интерфейс и операции просмотра.
+              responsibilities:
+                R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и записью
+                  в справочнике панели.
+                R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте панели.
+                R3: Показывать страницу по адресу, который сообщает хост, передавать хосту идентификатор
+                  чата вкладки и сохранять транспорт и разметку страницы внутри iframe.
+                R4: Передавать явные поручения анализа и исправления замечания из панели в чат вкладки по сообщению моста, не
+                  создавая ходов при обычной навигации.
+              boundaries:
+                B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+                B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции повторно.
+                B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет корень
+                  проекта и не задаёт маршрут собственной константой. Без внедрения действует стандартный
+                  префикс, совпадающий с настройкой хоста по умолчанию.
+              invariants:
+                I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+                I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её скрытым
+                  обходом или прямым чтением проекта.
+                I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных вкладок.
+                I4: Тело вкладки принимает сообщения только от собственного iframe с тем же origin;
+                  отказ передачи виден панели, а не выдаётся за успех.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-client-panel
+              title: Вкладка ArchiView в веб-клиенте dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - host-adapter
+              purpose: Регистрировать в правой панели веб-клиента dsh страницу ArchiView и
+                показывать её во вкладке, не дублируя интерфейс и операции
+                просмотра.
+              responsibilities:
+                R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
+                  записью в справочнике панели.
+                R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
+                  панели.
+                R3: Показывать страницу по адресу, который сообщает хост, передавать хосту
+                  идентификатор чата вкладки и сохранять транспорт и разметку
+                  страницы внутри iframe.
+                R4: Передавать явные поручения анализа и исправления замечания из панели в чат
+                  вкладки по сообщению моста, не создавая ходов при обычной
+                  навигации.
+              boundaries:
+                B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+                B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции
+                  повторно.
+                B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет
+                  корень проекта и не задаёт маршрут собственной константой. Без
+                  внедрения действует стандартный префикс, совпадающий с
+                  настройкой хоста по умолчанию.
+              invariants:
+                I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+                I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
+                  скрытым обходом или прямым чтением проекта.
+                I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
+                  вкладок.
+                I4: Тело вкладки принимает сообщения только от собственного iframe с тем же
+                  origin; отказ передачи виден панели, а не выдаётся за успех.
+          documentPath: .archiview/modules/dsh-client-panel.yaml
+          files:
+            - path: .archiview/modules/dsh-client-panel.yaml
+              hash: c6e00104f3bbd76b8f048312e37e86cd355a19bc
+            - path: src/dsh/client/body.ts
+              hash: e075dea1cfed935b6a02dceb49295fd89bd6af88
+            - path: src/dsh/client/frame-bridge.ts
+              hash: fdd0bccae655fe4e9afb9725b23e00a6a0273ef0
+            - path: src/dsh/client/index.ts
+              hash: 0a6530cde7840fa7736f9f7df1a60c7b61b4af6d
+            - path: src/dsh/client/prompt.ts
+              hash: 25bc163817b4db41369ca1d63140e94a69ad6b79
+            - path: src/dsh/client/types.ts
+              hash: 2d045cf802dace66ae03948a4682081f65aa8135
+          sourceFiles: 5
+          fingerprint: e2cc98e5f0bf955de6afc017183b77ffc14aa3a50c31d17190dac9493195f234
+      facts:
+        - id: sha256:7a3f1a99a120f7ea78a436fb4d73b9fa7401fcb381b621ddf48c65f4a8df33c4
+          kind: file
+          path: .archiview/modules/architecture-change-view.yaml
+          start_line: 1
+          end_line: 38
+          text: >
+            schema_version: 1
+
+            id: architecture-change-view
+
+            title: Контракты и просмотр архитектуры
+
+            kind: module
+
+            extensions:
+              archiview.roles: [app]
+            purpose: Объединять ведение контрактов и просмотр изменений в
+            приложении ArchiView,
+              где команда может сопоставить состояние проекта с ответственностью его модулей.
+            responsibilities:
+              R1: Поставлять агентам канонические правила ведения контрактов и средства чтения контекста каталога.
+              R2: Давать агенту возможность установить, каким каталогам требуется создание, перенос или
+                исправление контракта.
+              R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с результатами
+                проверок и теми доказательствами, на которых основаны выводы.
+              R4: Автоматически поддерживать переносимую историю проверок, в которой видна актуальность
+                выводов для отдельного модуля и его поддерева.
+              R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                и DeepSeek Harness с общими контрактами и форматом истории проекта.
+            boundaries:
+              B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                Просмотр не изменяет исходники проекта.
+              B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за пределами
+                ArchiView и относятся к ast-index.
+            invariants:
+              I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+              I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот корень
+                от хоста; явно настроенный для модельных инструментов корень ограничивает их чтение.
+              I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                факты и отчёты не переписываются при переносе проекта.
+              I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта modules.tree
+                связывает его id с каталогом проекта. Эвристические оценки и текущий код не разрешают её расширять.
+              I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+              I6: Обе интеграции получают правила ведения контрактов из канонического скилла пакета.
+              I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+              I7: Панель обращается к агенту только по явному поручению пользователя проанализировать модуль
+                или исправить замечание.
+        - id: sha256:1a7feb56e9e52cc450306c4ed6067c61829ca9ed40888b9b32c84d75bdecaf1a
+          kind: file
+          path: .archiview/modules/architecture-core.yaml
+          start_line: 1
+          end_line: 28
+          text: >
+            schema_version: 1
+
+            id: architecture-core
+
+            title: Корень исходников ArchiView
+
+            kind: group
+
+            extensions:
+              archiview.roles: [root]
+            purpose: Объединять серверные модули ArchiView вокруг общей модели
+            проекта, чтобы разные
+              способы доступа давали согласованные контракты, изменения и результаты проверок.
+            responsibilities:
+              R11: Задавать границу между моделью проекта, прикладными операциями и внешними адаптерами.
+            boundaries:
+              B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис принимает данные
+                проекта и возвращает результат независимо от транспорта, хоста и способа отображения.
+              B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                доказывает его выполнения.
+              B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и проверка
+                контрактов доступны независимо от MCP, HTTP и хоста.
+            invariants:
+              I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+              I2: Неполнота обхода и доказательств сообщается явно.
+              I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую ответственность.
+              I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+              I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+              I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты описывают
+                состояние исходников и контрактов из того же индекса Git.
+        - id: sha256:50b764ab0387632f4d45b8999da13e1748e0e878c1b08a2cb81e3464d1e5577a
+          kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 35
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: Плагин dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [host-adapter, web-endpoints]
+            purpose: Предоставлять агенту DeepSeek Harness правила и контекст
+            контрактов, а пользователю —
+              панель ArchiView для проекта его чата.
+            responsibilities:
+              R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста каталогов,
+                не добавляя данные панели в контекст модели.
+              R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из единственного
+                файла пакета, без копий в пользовательских каталогах.
+              R3: Отдавать браузерной половине шаблон панели и операции просмотра по префиксным маршрутам,
+                проверяя каждый запрос политикой соединения хоста.
+              R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по рабочему каталогу
+                чата вкладки, и закрывать реестр при выгрузке плагина.
+              R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+            boundaries:
+              B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса прикладному сервису.
+              B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для привязки к проекту.
+                Содержимое панели поступает из общего веб-интерфейса ArchiView.
+              B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+              B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты через прикладной сервис.
+            invariants:
+              I1: Маршрут панели не запускает модель и не возвращает данные просмотра в контекст агента.
+              I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+              I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного хостом. Для прямого
+                просмотра действует настроенный корень или рабочий каталог процесса. Панель выбирает репозиторий
+                внутри этой папки. Модельные инструменты используют настроенный корень или рабочую папку чата.
+                Настроенный корень ограничивает доступные пути.
+              I4: Публикация скилла не создаёт второго источника текста — используется файл пакета.
+              I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий) читаются только
+                при наличии и не блокируют активацию плагина.
+        - id: sha256:bc322938d86a2f31318b6cfb468403d16722d45ba153dee724a7769e6dd96477
+          kind: file
+          path: .archiview/modules/dsh-client-panel.yaml
+          start_line: 1
+          end_line: 30
+          text: >
+            schema_version: 1
+
+            id: dsh-client-panel
+
+            title: Вкладка ArchiView в веб-клиенте dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [host-adapter]
+            purpose: Регистрировать в правой панели веб-клиента dsh страницу
+            ArchiView и показывать её
+              во вкладке, не дублируя интерфейс и операции просмотра.
+            responsibilities:
+              R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и записью
+                в справочнике панели.
+              R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте панели.
+              R3: Показывать страницу по адресу, который сообщает хост, передавать хосту идентификатор
+                чата вкладки и сохранять транспорт и разметку страницы внутри iframe.
+              R4: Передавать явные поручения анализа и исправления замечания из панели в чат вкладки по сообщению моста, не
+                создавая ходов при обычной навигации.
+            boundaries:
+              B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+              B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции повторно.
+              B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет корень
+                проекта и не задаёт маршрут собственной константой. Без внедрения действует стандартный
+                префикс, совпадающий с настройкой хоста по умолчанию.
+            invariants:
+              I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+              I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её скрытым
+                обходом или прямым чтением проекта.
+              I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных вкладок.
+              I4: Тело вкладки принимает сообщения только от собственного iframe с тем же origin;
+                отказ передачи виден панели, а не выдаётся за успех.
+        - id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+          kind: file
+          path: src/dsh/client/body.ts
+          start_line: 1
+          end_line: 58
+          text: >
+            /**
+             * Тело вкладки ArchiView в правой панели dsh.
+             *
+             * Показывает страницу, которую отдают маршруты плагина (`src/dsh/routes.ts`),
+             * в обычном iframe. Такой способ не требует переписывать интерфейс: страница
+             * остаётся тем же `web/archiview`, что и в браузере, и получает базу API из
+             * метатега, который вставляет маршрут.
+             *
+             * Адрес страницы не хранится здесь константой: префикс маршрутов сообщает хост
+             * через внедрение в документ (см. `panel-contract.ts`), поэтому настройка
+             * `config.prefix` меняет и адрес iframe. Значение из документа принимается
+             * только как локальный путь: сетевая ссылка (`//host/path`), обратный слэш и
+             * служебные символы откатываются к стандартному префиксу, поэтому iframe не
+             * может уйти на чужой origin. Без внедрения действует тот же стандартный
+             * префикс — вкладка остаётся рабочей, а не падает.
+             *
+             * Через тот же iframe идёт и явное поручение анализа: страница присылает
+             * `archiview:send`, тело передаёт текст в чат вкладки и отвечает `archiview:sent`
+             * либо `archiview:send-failed`. Других сообщений мост не принимает, поэтому
+             * навигация панели не может создать ход модели.
+             *
+             * @module plugin-architecture-change-view/dsh/client/body
+             */
+
+            import { createElement, useEffect, useRef } from "react";
+
+            import { panelPageUrl, resolveClientPrefix } from
+            "../panel-contract.js";
+
+            import { listenToFrame } from "./frame-bridge.js";
+
+
+            /**
+             * Тело вкладки: страница панели во всю площадь вкладки.
+             *
+             * `sessionId` — стандартное свойство сессионного слота: хост по нему разрешает
+             * рабочий каталог проекта, поэтому панель показывает проект именно этого чата.
+             * `sendPrompt` передаёт поручение в этот же чат; без него мост остаётся
+             * доступным только для просмотра.
+             *
+             * @param {object} [props] - свойства, переданные слотом.
+             * @param {string} [props.sessionId] - идентификатор чата вкладки.
+             * @param {(sessionId: string, text: string) => Promise<void>} [props.sendPrompt]
+             *   отправка поручения в чат.
+             * @returns {import("react").ReactElement} iframe со страницей ArchiView.
+             */
+            export function PanelBody({ sessionId, sendPrompt }:
+            import("./types.js").PanelProps = {}) {
+              const frameRef = useRef<HTMLIFrameElement>(null);
+
+              useEffect(() => {
+                const frame = frameRef.current;
+                if (frame) return listenToFrame(frame, { sessionId, sendPrompt });
+              }, [sendPrompt, sessionId]);
+
+              return createElement("iframe", {
+                ref: frameRef,
+                src: panelPageUrl(resolveClientPrefix(), sessionId),
+                title: "ArchiView",
+                style: { display: "block", width: "100%", height: "100%", border: "0" },
+              });
+            }
+        - id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+          kind: file
+          path: src/dsh/client/frame-bridge.ts
+          start_line: 1
+          end_line: 32
+          text: >
+            import type { PanelProps } from "./types.js";
+
+
+            /** Bind one iframe to the chat selected by the dsh slot for this
+            subscription. */
+
+            export function listenToFrame(frame: HTMLIFrameElement, { sessionId,
+            sendPrompt }: PanelProps) {
+              const origin = window.location.origin;
+              const onMessage = async (event: MessageEvent<unknown>) => {
+                const source = frame.contentWindow;
+                if (!source || event.source !== source || event.origin !== origin) return;
+                if (!event.data || typeof event.data !== "object") return;
+                const data = event.data as Record<string, unknown>;
+                const sameChat = typeof sessionId === "string" && sessionId !== "" && data.sessionId === sessionId;
+                if (data.type === "archiview:hello") {
+                  source.postMessage({ type: "archiview:host", protocol: 2, sessionId,
+                    capabilities: { send: data.protocol === 2 && sameChat && typeof sendPrompt === "function" } }, origin);
+                  return;
+                }
+                if (data.type !== "archiview:send" || typeof data.id !== "string") return;
+                const reply = { id: data.id, sessionId: data.sessionId, protocol: 2 };
+                try {
+                  if (data.protocol !== 2 || !sameChat) throw new Error("Чат поручения не совпадает с чатом вкладки");
+                  if (!sendPrompt || typeof data.prompt !== "string") throw new Error("Хост не умеет передавать поручения");
+                  await sendPrompt(sessionId, data.prompt);
+                  source.postMessage({ type: "archiview:sent", ...reply }, origin);
+                } catch (error) {
+                  source.postMessage({ type: "archiview:send-failed", ...reply,
+                    error: error instanceof Error ? error.message : "Не удалось передать поручение" }, origin);
+                }
+              };
+              window.addEventListener("message", onMessage);
+              return () => window.removeEventListener("message", onMessage);
+            }
+        - id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+          kind: file
+          path: src/dsh/client/index.ts
+          start_line: 1
+          end_line: 65
+          text: >
+            /**
+             * Браузерная половина плагина ArchiView для dsh.
+             *
+             * Модуль регистрирует в правой панели тип вкладки ArchiView и её тело. Тип
+             * объявлен в band `extension` — это штатная полоса для типов из другого
+             * пакета: она выше встроенных и позволяет открывать страницу плагина, не
+             * занимая чужой `kind`.
+             *
+             * Клиентская половина ничего не читает из проекта и не вызывает прикладной
+             * сервис: страницу отдаёт маршрут хоста, а тело вкладки только показывает её в
+             * iframe. Поэтому здесь нет ни сетевого клиента, ни операций просмотра.
+             *
+             * @module plugin-architecture-change-view/dsh/client
+             */
+
+            import { createElement } from "react";
+
+            import { PanelBody } from "./body.js";
+
+            import { createPromptSender } from "./prompt.js";
+
+
+            /**
+             * Сервисы клиента, без которых регистрация невозможна: слоты правой панели и
+             * реестр типов вкладок.
+             */
+            export const inject = ["slots", "sidebarRightTabs"];
+
+
+            /** Идентификатор реализации типа вкладки; он же ключ тела в слоте.
+            */
+
+            export const TAB_ID = "plugin-architecture-change-view/archiview";
+
+
+            /** Дискриминатор типа вкладки, которым открывается страница. */
+
+            export const TAB_KIND = "archiview";
+
+
+            /**
+             * Регистрирует вкладку ArchiView в клиенте dsh.
+             *
+             * Обе регистрации обёрнуты в `ctx.effect`, поэтому живут ровно столько же,
+             * сколько плагин: выгрузка снимает и тип, и тело.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст клиента.
+             * @returns {void}
+             */
+            export function apply(ctx: import("./types.js").ClientContext) {
+              // Отправитель замыкается на контекст плагина: тело вкладки получает только
+              // функцию, поэтому не ищет сервисы само и не знает их имён.
+              const sendPrompt = createPromptSender(ctx);
+              const Body = (props: import("./types.js").PanelProps) => createElement<import("./types.js").PanelProps>(PanelBody, { ...props, sendPrompt });
+
+              ctx.effect(() => ctx.sidebarRightTabs.register({
+                id: TAB_ID,
+                kind: TAB_KIND,
+                priority: "extension",
+                title: () => "ArchiView",
+                guide: [{
+                  id: TAB_ID + "/guide",
+                  order: 40,
+                  title: () => "ArchiView",
+                  description: () => "Архитектура проекта и контракты модулей",
+                }],
+              }), "ui-archiview: тип вкладки");
+
+              ctx.effect(() => ctx.slots.inject("sidebar.right.pane.tab", () => ctx.slots.register({
+                name: "sidebar.right.pane.tab",
+                key: TAB_ID,
+              }, Body)), "ui-archiview: тело вкладки");
+            }
+        - id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+          kind: file
+          path: src/dsh/client/prompt.ts
+          start_line: 1
+          end_line: 55
+          text: >
+            /**
+             * Передача поручения анализа в чат dsh.
+             *
+             * Панель не может звать инструменты модели напрямую: она работает в iframe и
+             * общается с хостом только явными сообщениями. Хост-половина плагина такой
+             * запрос не принимает — поручение отправляет браузерная половина в тот чат,
+             * которому принадлежит вкладка, через клиентский сервис сессий.
+             *
+             * Модуль держит одну операцию: взять сессию на время отправки, передать текст
+             * в очередь хода и отпустить ссылку. Навигация панели сюда не попадает, поэтому
+             * просмотр по-прежнему не создаёт сообщений модели.
+             *
+             * @module plugin-architecture-change-view/dsh/client/prompt
+             */
+
+            /**
+             * Создаёт отправителя поручений для одного экземпляра плагина.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст клиента dsh.
+             * @returns {(sessionId: string, text: string) => Promise<void>} отправка поручения в чат.
+             */
+            export function createPromptSender(ctx:
+            import("./types.js").PromptContext) {
+              /**
+               * Отправляет текст в очередь хода указанного чата.
+               *
+               * @param {string} sessionId - идентификатор чата вкладки.
+               * @param {string} text - подготовленное панелью поручение.
+               * @returns {Promise<void>} завершение после принятия хостом.
+               * @throws {Error} если чат неизвестен, поручение пустое или хост его отклонил.
+               */
+              return async function sendPrompt(sessionId: string, text: string) {
+                if (typeof sessionId !== "string" || sessionId === "") {
+                  throw new Error("Чат вкладки неизвестен");
+                }
+                if (typeof text !== "string" || text.trim() === "") {
+                  throw new Error("Пустое поручение анализа");
+                }
+                const sessions = ctx.get("sessions");
+                if (sessions === undefined) throw new Error("Клиентские сессии dsh недоступны");
+
+                // Ссылка держит поколение сессии на время отправки и освобождается в любом
+                // исходе: удерживать её после ответа хоста нечего.
+                const reference = sessions.retain(sessionId, { source: "archiview" });
+                try {
+                  const binding = await reference.ready;
+                  const result = await binding.session.prompt([{ type: "text", text }], "queue");
+                  if (result?.ok !== true) {
+                    throw new Error(result?.error?.message ?? "Хост отклонил поручение");
+                  }
+                } finally {
+                  reference.release();
+                }
+              };
+            }
+        - id: sha256:665efafaf0b01610d4c35aa71fcb29d81a3e9fc94168f66b1345cb2789369fcb
+          kind: file
+          path: src/dsh/client/types.ts
+          start_line: 1
+          end_line: 22
+          text: >
+            import type { ComponentType } from "react";
+
+
+            export type SendPrompt = (sessionId: string, text: string) =>
+            Promise<void>;
+
+            export interface PanelProps { sessionId?: string; sendPrompt?:
+            SendPrompt }
+
+            type Dispose = () => void;
+
+            export interface PromptContext {
+              get(name: "sessions"): {
+                retain(id: string, options: { source: string }): {
+                  ready: Promise<{ session: { prompt(content: { type: "text"; text: string }[], mode: "queue"): Promise<{ ok: boolean; error?: { message?: string } }> } }>;
+                  release(): void;
+                };
+              } | undefined;
+            }
+
+            export interface ClientContext extends PromptContext {
+              effect(register: () => Dispose, label: string): unknown;
+              sidebarRightTabs: { register(definition: { id: string; kind: string; priority: string; title(): string; guide: { id: string; order: number; title(): string; description(): string }[] }): Dispose };
+              slots: {
+                inject(name: string, register: () => Dispose): Dispose;
+                register(slot: { name: string; key: string }, body: ComponentType<PanelProps>): Dispose;
+              };
+            }
+        - id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+          kind: file
+          path: src/dsh/panel-contract.ts
+          start_line: 1
+          end_line: 105
+          text: >
+            /**
+             * Контракт между половинами плагина dsh.
+             *
+             * Хост и браузерный бандл — разные процессы и разные модульные графы, поэтому
+             * единственное, что они могут разделить, — это зависимый от данных контракт:
+             * имя глобального объекта, форму строки внедрения в index.html и правило
+             * разбора. Модуль намеренно не имеет зависимостей, чтобы его можно было
+             * импортировать и в Node-половину, и в бандл браузера.
+             *
+             * Так префикс маршрутов остаётся одним значением: конфигурация хоста попадает
+             * в документ клиента через публичный канал `webserver/index-inject`, а клиент
+             * читает её оттуда. Ни одна половина не дублирует константу маршрута.
+             *
+             * @module plugin-architecture-change-view/dsh/panel-contract
+             */
+
+            /** Префикс маршрутов панели по умолчанию, если хост не сообщил
+            другой. */
+
+            export const DEFAULT_PREFIX = "/archiview";
+
+
+            /** Имя глобального объекта, который хост внедряет в документ
+            клиента. */
+
+            export const CLIENT_GLOBAL = "__DSH_ARCHIVIEW__";
+
+
+            /**
+             * Начало локального пути: ровно один прямой слэш.
+             *
+             * Второй символ не может быть ещё одним слэшем или обратным слэшем. `//host/path`
+             * — сетевая ссылка (network-path reference): браузер сохраняет схему документа,
+             * но берёт чужой origin. `/\host/path` приводится к той же ссылке при разборе
+             * URL, потому что для специальных схем обратный слэш считается разделителем.
+             */
+            const LOCAL_PATH_START = /^\/(?![/\\])/;
+
+
+            /**
+             * Символы, которых не может быть в локальном пути маршрута: пробельные,
+             * обратный слэш (меняет разбор URL), строка запроса и фрагмент.
+             */
+            const FORBIDDEN_IN_PATH = /[\s\x00-\x1f\x7f\\?#]/;
+
+
+            /**
+             * Проверяет префикс, пришедший из конфигурации или документа.
+             *
+             * Допускается только локальный абсолютный путь. Сетевые ссылки и обратные
+             * слэши отклоняются: иначе адрес iframe увёл бы вкладку на чужой origin вместо
+             * маршрута панели хоста (см. `src/dsh/client/body.ts`). Тот же префикс служит
+             * путём регистрации маршрутов, поэтому проверка общая для обеих половин.
+             *
+             * @param {unknown} value - проверяемое значение.
+             * @returns {string | null} префикс без хвостового слэша либо `null`.
+             */
+            export function asPrefix(value: unknown) {
+              if (typeof value !== "string" || value.endsWith("/")) return null;
+              if (!LOCAL_PATH_START.test(value) || FORBIDDEN_IN_PATH.test(value)) return null;
+              // Use the same serialized pathname as the browser and the host route table.
+              if (value.split("/").some((part) => /^(?:\.|%2e){1,2}$/i.test(part))) return null;
+              return new URL(value, "http://localhost").pathname;
+            }
+
+
+            /**
+             * Собирает строку внедрения конфигурации клиента в index.html.
+             *
+             * `kind: "global"` — штатная строка веб-сервера dsh: она присваивает
+             * JSON-значение свойству `globalThis` до выполнения клиентских бандлов. Форма
+             * строки стабильна и не зависит от версии плагина.
+             *
+             * @param {string} prefix - нормализованный префикс маршрутов панели.
+             * @returns {{ kind: "global", name: string, value: { prefix: string } }} строка внедрения.
+             */
+            export function clientConfigRow(prefix: string) {
+              return { kind: "global", name: CLIENT_GLOBAL, value: { prefix } };
+            }
+
+
+            /**
+             * Читает префикс, который сообщил хост.
+             *
+             * Отсутствие или порча значения не считаются ошибкой: клиент откатывается к
+             * стандартному префиксу, потому что вкладка не должна ломаться из-за
+             * документа, который ещё не успел получить внедрение.
+             *
+             * @param {object} [scope] - глобальный объект; параметр нужен для тестов.
+             * @returns {string} действующий префикс маршрутов.
+             */
+            export function resolveClientPrefix(scope: object = globalThis) {
+              const config = (scope as Record<string, unknown>)[CLIENT_GLOBAL];
+              const injected = config && typeof config === "object" ? (config as Record<string, unknown>).prefix : undefined;
+              return asPrefix(injected) ?? DEFAULT_PREFIX;
+            }
+
+
+            /**
+             * Собирает адрес страницы панели для вкладки чата.
+             *
+             * Идентификатор чата — единственное, что клиент знает о сессии: хост по нему
+             * разрешает рабочий каталог проекта. Значение кодируется как параметр запроса,
+             * потому что оно приходит из состояния клиента и не должно влиять на разбор
+             * пути.
+             *
+             * @param {string} prefix - действующий префикс маршрутов.
+             * @param {unknown} sessionId - идентификатор чата, которому принадлежит вкладка.
+             * @returns {string} адрес страницы с идентификатором чата или без него.
+             */
+            export function panelPageUrl(prefix: string, sessionId: unknown) {
+              const base = (asPrefix(prefix) ?? DEFAULT_PREFIX) + "/";
+              if (typeof sessionId !== "string" || sessionId === "") return base;
+              return base + "?session=" + encodeURIComponent(sessionId);
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      scope_digest: sha256:bd564299afe2011181bbec28b3059da1cab06161b878d5ef070b0fcd570ec743
+    current:
+      schema_version: 2
+      id: launch-4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+      digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      kind: launch
+      complete: true
+      modules:
+        - directory: .
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-change-view
+
+              title: Контракты и просмотр архитектуры
+
+              kind: module
+
+              extensions:
+                archiview.roles: [app]
+              purpose: Объединять ведение контрактов и просмотр изменений в
+              приложении ArchiView,
+                где команда может сопоставить состояние проекта с ответственностью его модулей.
+              responsibilities:
+                R1: Поставлять агентам канонические правила ведения контрактов и средства чтения контекста каталога.
+                R2: Давать агенту возможность установить, каким каталогам требуется создание, перенос или
+                  исправление контракта.
+                R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с результатами
+                  проверок и теми доказательствами, на которых основаны выводы.
+                R4: Автоматически поддерживать переносимую историю проверок, в которой видна актуальность
+                  выводов для отдельного модуля и его поддерева.
+                R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                  и DeepSeek Harness с общими контрактами и форматом истории проекта.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                  Просмотр не изменяет исходники проекта.
+                B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за пределами
+                  ArchiView и относятся к ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот корень
+                  от хоста; явно настроенный для модельных инструментов корень ограничивает их чтение.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                  внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                  факты и отчёты не переписываются при переносе проекта.
+                I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта modules.tree
+                  связывает его id с каталогом проекта. Эвристические оценки и текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+                I6: Обе интеграции получают правила ведения контрактов из канонического скилла пакета.
+                I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+                I7: Панель обращается к агенту только по явному поручению пользователя проанализировать модуль
+                  или исправить замечание.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: architecture-change-view
+              title: Контракты и просмотр архитектуры
+              kind: module
+              extensions:
+                archiview.roles:
+                  - app
+              purpose: Объединять ведение контрактов и просмотр изменений в приложении
+                ArchiView, где команда может сопоставить состояние проекта с
+                ответственностью его модулей.
+              responsibilities:
+                R1: Поставлять агентам канонические правила ведения контрактов и средства чтения
+                  контекста каталога.
+                R2: Давать агенту возможность установить, каким каталогам требуется создание,
+                  перенос или исправление контракта.
+                R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с
+                  результатами проверок и теми доказательствами, на которых
+                  основаны выводы.
+                R4: Автоматически поддерживать переносимую историю проверок, в которой видна
+                  актуальность выводов для отдельного модуля и его поддерева.
+                R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                  и DeepSeek Harness с общими контрактами и форматом истории
+                  проекта.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+                  инструментами. Просмотр не изменяет исходники проекта.
+                B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+                  пределами ArchiView и относятся к ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+                  строгим TypeScript перед сборкой; классы сохраняют
+                  единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+                  корень от хоста; явно настроенный для модельных инструментов
+                  корень ограничивает их чтение.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+                  .archiview внутри корня проекта. Эта папка исключена из
+                  анализа исходников; прежние сохранённые факты и отчёты не
+                  переписываются при переносе проекта.
+                I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+                  modules.tree связывает его id с каталогом проекта.
+                  Эвристические оценки и текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+                I6: Обе интеграции получают правила ведения контрактов из канонического скилла
+                  пакета.
+                I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+                  кодом. Панель и агент сохраняют принадлежность модуля его
+                  репозиторию.
+                I7: Панель обращается к агенту только по явному поручению пользователя
+                  проанализировать модуль или исправить замечание.
+          documentPath: .archiview/modules/architecture-change-view.yaml
+          files:
+            - path: .archiview/modules/architecture-change-view.yaml
+              hash: 8bbcbfb87ffc05afb0ebc8fedfce12ec44e75b15
+          sourceFiles: 0
+          fingerprint: ec7bc4e0681ec4a2da64cc46062f1564816306a55dbe2cfa709af5340fec53db
+        - directory: src
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-core
+
+              title: Корень исходников ArchiView
+
+              kind: group
+
+              extensions:
+                archiview.roles: [root]
+              purpose: Объединять серверные модули ArchiView вокруг общей модели
+              проекта, чтобы разные
+                способы доступа давали согласованные контракты, изменения и результаты проверок.
+              responsibilities:
+                R11: Задавать границу между моделью проекта, прикладными операциями и внешними адаптерами.
+              boundaries:
+                B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис принимает данные
+                  проекта и возвращает результат независимо от транспорта, хоста и способа отображения.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                  доказывает его выполнения.
+                B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и проверка
+                  контрактов доступны независимо от MCP, HTTP и хоста.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                  .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                  либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+                I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты описывают
+                  состояние исходников и контрактов из того же индекса Git.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: architecture-core
+              title: Корень исходников ArchiView
+              kind: group
+              extensions:
+                archiview.roles:
+                  - root
+              purpose: Объединять серверные модули ArchiView вокруг общей модели проекта,
+                чтобы разные способы доступа давали согласованные контракты,
+                изменения и результаты проверок.
+              responsibilities:
+                R11: Задавать границу между моделью проекта, прикладными операциями и внешними
+                  адаптерами.
+              boundaries:
+                B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
+                  принимает данные проекта и возвращает результат независимо от
+                  транспорта, хоста и способа отображения.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор.
+                  Наличие контракта не доказывает его выполнения.
+                B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
+                  проверка контрактов доступны независимо от MCP, HTTP и хоста.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+                  сборка и папки .archiview не расширяют анализ. Запись данных
+                  допускается в .archiview корня проекта либо явно выбранном
+                  внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
+                  ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+                  файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения
+                  требует отдельного анализа.
+                I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
+                  описывают состояние исходников и контрактов из того же индекса
+                  Git.
+          documentPath: .archiview/modules/architecture-core.yaml
+          files:
+            - path: .archiview/modules/architecture-core.yaml
+              hash: df81843e61d1f575eaaccc087310d9dcd0110a08
+          sourceFiles: 0
+          fingerprint: eecfabfb38329cca2e2994535554778f663bba1a6a1c6300baa06c8cb68b0834
+        - directory: src/dsh
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-adapter
+
+              title: Плагин dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [host-adapter, web-endpoints]
+              purpose: Предоставлять агенту DeepSeek Harness правила и контекст
+              контрактов, а пользователю —
+                панель ArchiView для проекта его чата.
+              responsibilities:
+                R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста каталогов,
+                  не добавляя данные панели в контекст модели.
+                R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из единственного
+                  файла пакета, без копий в пользовательских каталогах.
+                R3: Отдавать браузерной половине шаблон панели и операции просмотра по префиксным маршрутам,
+                  проверяя каждый запрос политикой соединения хоста.
+                R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по рабочему каталогу
+                  чата вкладки, и закрывать реестр при выгрузке плагина.
+                R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+              boundaries:
+                B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса прикладному сервису.
+                B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для привязки к проекту.
+                  Содержимое панели поступает из общего веб-интерфейса ArchiView.
+                B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+                B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты через прикладной сервис.
+              invariants:
+                I1: Маршрут панели не запускает модель и не возвращает данные просмотра в контекст агента.
+                I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+                I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного хостом. Для прямого
+                  просмотра действует настроенный корень или рабочий каталог процесса. Панель выбирает репозиторий
+                  внутри этой папки. Модельные инструменты используют настроенный корень или рабочую папку чата.
+                  Настроенный корень ограничивает доступные пути.
+                I4: Публикация скилла не создаёт второго источника текста — используется файл пакета.
+                I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий) читаются только
+                  при наличии и не блокируют активацию плагина.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-adapter
+              title: Плагин dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - host-adapter
+                  - web-endpoints
+              purpose: Предоставлять агенту DeepSeek Harness правила и контекст контрактов, а
+                пользователю — панель ArchiView для проекта его чата.
+              responsibilities:
+                R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста
+                  каталогов, не добавляя данные панели в контекст модели.
+                R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из
+                  единственного файла пакета, без копий в пользовательских
+                  каталогах.
+                R3: Отдавать браузерной половине шаблон панели и операции просмотра по
+                  префиксным маршрутам, проверяя каждый запрос политикой
+                  соединения хоста.
+                R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по
+                  рабочему каталогу чата вкладки, и закрывать реестр при
+                  выгрузке плагина.
+                R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+              boundaries:
+                B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса
+                  прикладному сервису.
+                B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для
+                  привязки к проекту. Содержимое панели поступает из общего
+                  веб-интерфейса ArchiView.
+                B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+                B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты
+                  через прикладной сервис.
+              invariants:
+                I1: Маршрут панели не запускает модель и не возвращает данные просмотра в
+                  контекст агента.
+                I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+                I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного
+                  хостом. Для прямого просмотра действует настроенный корень или
+                  рабочий каталог процесса. Панель выбирает репозиторий внутри
+                  этой папки. Модельные инструменты используют настроенный
+                  корень или рабочую папку чата. Настроенный корень ограничивает
+                  доступные пути.
+                I4: Публикация скилла не создаёт второго источника текста — используется файл
+                  пакета.
+                I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий)
+                  читаются только при наличии и не блокируют активацию плагина.
+          documentPath: .archiview/modules/dsh-adapter.yaml
+          files:
+            - path: .archiview/modules/dsh-adapter.yaml
+              hash: c7734d0e28fe83c9732541af4b141e255c773978
+            - path: src/dsh/panel-contract.ts
+              hash: 14013b94176f2fe6dbb4d42bf400fc50c71577b1
+          sourceFiles: 8
+          fingerprint: 8d2f05a8251bccfbfc91638d23f8c95666eb18847c022ee50de5dc133a1673c0
+        - directory: src/dsh/client
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-client-panel
+
+              title: Вкладка ArchiView в веб-клиенте dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [host-adapter]
+              purpose: Регистрировать в правой панели веб-клиента dsh страницу
+              ArchiView и показывать её
+                во вкладке, не дублируя интерфейс и операции просмотра.
+              responsibilities:
+                R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и записью
+                  в справочнике панели.
+                R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте панели.
+                R3: Показывать страницу по адресу, который сообщает хост, передавать хосту идентификатор
+                  чата вкладки и сохранять транспорт и разметку страницы внутри iframe.
+                R4: Передавать явные поручения анализа и исправления замечания из панели в чат вкладки по сообщению моста, не
+                  создавая ходов при обычной навигации.
+              boundaries:
+                B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+                B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции повторно.
+                B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет корень
+                  проекта и не задаёт маршрут собственной константой. Без внедрения действует стандартный
+                  префикс, совпадающий с настройкой хоста по умолчанию.
+              invariants:
+                I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+                I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её скрытым
+                  обходом или прямым чтением проекта.
+                I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных вкладок.
+                I4: Тело вкладки принимает сообщения только от собственного iframe с тем же origin;
+                  отказ передачи виден панели, а не выдаётся за успех.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-client-panel
+              title: Вкладка ArchiView в веб-клиенте dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - host-adapter
+              purpose: Регистрировать в правой панели веб-клиента dsh страницу ArchiView и
+                показывать её во вкладке, не дублируя интерфейс и операции
+                просмотра.
+              responsibilities:
+                R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и
+                  записью в справочнике панели.
+                R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте
+                  панели.
+                R3: Показывать страницу по адресу, который сообщает хост, передавать хосту
+                  идентификатор чата вкладки и сохранять транспорт и разметку
+                  страницы внутри iframe.
+                R4: Передавать явные поручения анализа и исправления замечания из панели в чат
+                  вкладки по сообщению моста, не создавая ходов при обычной
+                  навигации.
+              boundaries:
+                B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+                B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции
+                  повторно.
+                B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет
+                  корень проекта и не задаёт маршрут собственной константой. Без
+                  внедрения действует стандартный префикс, совпадающий с
+                  настройкой хоста по умолчанию.
+              invariants:
+                I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+                I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её
+                  скрытым обходом или прямым чтением проекта.
+                I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных
+                  вкладок.
+                I4: Тело вкладки принимает сообщения только от собственного iframe с тем же
+                  origin; отказ передачи виден панели, а не выдаётся за успех.
+          documentPath: .archiview/modules/dsh-client-panel.yaml
+          files:
+            - path: .archiview/modules/dsh-client-panel.yaml
+              hash: c6e00104f3bbd76b8f048312e37e86cd355a19bc
+            - path: src/dsh/client/body.ts
+              hash: e075dea1cfed935b6a02dceb49295fd89bd6af88
+            - path: src/dsh/client/frame-bridge.ts
+              hash: fdd0bccae655fe4e9afb9725b23e00a6a0273ef0
+            - path: src/dsh/client/index.ts
+              hash: 0a6530cde7840fa7736f9f7df1a60c7b61b4af6d
+            - path: src/dsh/client/prompt.ts
+              hash: 25bc163817b4db41369ca1d63140e94a69ad6b79
+            - path: src/dsh/client/types.ts
+              hash: 2d045cf802dace66ae03948a4682081f65aa8135
+          sourceFiles: 5
+          fingerprint: e2cc98e5f0bf955de6afc017183b77ffc14aa3a50c31d17190dac9493195f234
+      facts:
+        - id: sha256:7a3f1a99a120f7ea78a436fb4d73b9fa7401fcb381b621ddf48c65f4a8df33c4
+          kind: file
+          path: .archiview/modules/architecture-change-view.yaml
+          start_line: 1
+          end_line: 38
+          text: >
+            schema_version: 1
+
+            id: architecture-change-view
+
+            title: Контракты и просмотр архитектуры
+
+            kind: module
+
+            extensions:
+              archiview.roles: [app]
+            purpose: Объединять ведение контрактов и просмотр изменений в
+            приложении ArchiView,
+              где команда может сопоставить состояние проекта с ответственностью его модулей.
+            responsibilities:
+              R1: Поставлять агентам канонические правила ведения контрактов и средства чтения контекста каталога.
+              R2: Давать агенту возможность установить, каким каталогам требуется создание, перенос или
+                исправление контракта.
+              R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с результатами
+                проверок и теми доказательствами, на которых основаны выводы.
+              R4: Автоматически поддерживать переносимую историю проверок, в которой видна актуальность
+                выводов для отдельного модуля и его поддерева.
+              R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                и DeepSeek Harness с общими контрактами и форматом истории проекта.
+            boundaries:
+              B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                Просмотр не изменяет исходники проекта.
+              B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за пределами
+                ArchiView и относятся к ast-index.
+            invariants:
+              I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+              I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот корень
+                от хоста; явно настроенный для модельных инструментов корень ограничивает их чтение.
+              I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                факты и отчёты не переписываются при переносе проекта.
+              I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта modules.tree
+                связывает его id с каталогом проекта. Эвристические оценки и текущий код не разрешают её расширять.
+              I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+              I6: Обе интеграции получают правила ведения контрактов из канонического скилла пакета.
+              I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+              I7: Панель обращается к агенту только по явному поручению пользователя проанализировать модуль
+                или исправить замечание.
+        - id: sha256:1a7feb56e9e52cc450306c4ed6067c61829ca9ed40888b9b32c84d75bdecaf1a
+          kind: file
+          path: .archiview/modules/architecture-core.yaml
+          start_line: 1
+          end_line: 28
+          text: >
+            schema_version: 1
+
+            id: architecture-core
+
+            title: Корень исходников ArchiView
+
+            kind: group
+
+            extensions:
+              archiview.roles: [root]
+            purpose: Объединять серверные модули ArchiView вокруг общей модели
+            проекта, чтобы разные
+              способы доступа давали согласованные контракты, изменения и результаты проверок.
+            responsibilities:
+              R11: Задавать границу между моделью проекта, прикладными операциями и внешними адаптерами.
+            boundaries:
+              B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис принимает данные
+                проекта и возвращает результат независимо от транспорта, хоста и способа отображения.
+              B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                доказывает его выполнения.
+              B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и проверка
+                контрактов доступны независимо от MCP, HTTP и хоста.
+            invariants:
+              I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+              I2: Неполнота обхода и доказательств сообщается явно.
+              I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую ответственность.
+              I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+              I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+              I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты описывают
+                состояние исходников и контрактов из того же индекса Git.
+        - id: sha256:50b764ab0387632f4d45b8999da13e1748e0e878c1b08a2cb81e3464d1e5577a
+          kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 35
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: Плагин dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [host-adapter, web-endpoints]
+            purpose: Предоставлять агенту DeepSeek Harness правила и контекст
+            контрактов, а пользователю —
+              панель ArchiView для проекта его чата.
+            responsibilities:
+              R1: Регистрировать в реестре инструментов dsh чтение инвентаризации и контекста каталогов,
+                не добавляя данные панели в контекст модели.
+              R2: Публиковать канонический скилл module-boundaries в реестре скиллов dsh из единственного
+                файла пакета, без копий в пользовательских каталогах.
+              R3: Отдавать браузерной половине шаблон панели и операции просмотра по префиксным маршрутам,
+                проверяя каждый запрос политикой соединения хоста.
+              R4: Держать сессии прикладного сервиса по корню проекта, разрешая корень по рабочему каталогу
+                чата вкладки, и закрывать реестр при выгрузке плагина.
+              R5: Передавать вкладке настроенный хостом префикс маршрутов панели.
+            boundaries:
+              B1: Для операций просмотра адаптер передаёт корень проекта и аргументы запроса прикладному сервису.
+              B2: Хост и вкладка используют общий адрес веб-панели и идентификатор чата для привязки к проекту.
+                Содержимое панели поступает из общего веб-интерфейса ArchiView.
+              B3: Интеграция с dsh независима от MCP-сервера и панели Codex.
+              B4: Адаптер работает с существующим проектом и получает его историю Git и отчёты через прикладной сервис.
+            invariants:
+              I1: Маршрут панели не запускает модель и не возвращает данные просмотра в контекст агента.
+              I2: До проверки политики соединения запрос не читает проект и не создаёт сессию.
+              I3: Корень вкладки задаётся рабочим каталогом из заголовка чата, прочитанного хостом. Для прямого
+                просмотра действует настроенный корень или рабочий каталог процесса. Панель выбирает репозиторий
+                внутри этой папки. Модельные инструменты используют настроенный корень или рабочую папку чата.
+                Настроенный корень ограничивает доступные пути.
+              I4: Публикация скилла не создаёт второго источника текста — используется файл пакета.
+              I5: Необязательные сервисы хоста (скиллы, хранилище и контроллер сессий) читаются только
+                при наличии и не блокируют активацию плагина.
+        - id: sha256:bc322938d86a2f31318b6cfb468403d16722d45ba153dee724a7769e6dd96477
+          kind: file
+          path: .archiview/modules/dsh-client-panel.yaml
+          start_line: 1
+          end_line: 30
+          text: >
+            schema_version: 1
+
+            id: dsh-client-panel
+
+            title: Вкладка ArchiView в веб-клиенте dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [host-adapter]
+            purpose: Регистрировать в правой панели веб-клиента dsh страницу
+            ArchiView и показывать её
+              во вкладке, не дублируя интерфейс и операции просмотра.
+            responsibilities:
+              R1: Регистрировать тип вкладки в полосе extension с идентификатором пакета и записью
+                в справочнике панели.
+              R2: Регистрировать тело вкладки под тем же идентификатором в ключевом слоте панели.
+              R3: Показывать страницу по адресу, который сообщает хост, передавать хосту идентификатор
+                чата вкладки и сохранять транспорт и разметку страницы внутри iframe.
+              R4: Передавать явные поручения анализа и исправления замечания из панели в чат вкладки по сообщению моста, не
+                создавая ходов при обычной навигации.
+            boundaries:
+              B1: Вкладка не читает файлы проекта и не вызывает прикладной сервис напрямую.
+              B2: Интерфейс и транспорт операций принадлежат web; клиент не описывает операции повторно.
+              B3: Адрес страницы задаёт хост через внедрение конфигурации; клиент не вычисляет корень
+                проекта и не задаёт маршрут собственной константой. Без внедрения действует стандартный
+                префикс, совпадающий с настройкой хоста по умолчанию.
+            invariants:
+              I1: Регистрации типа и тела живут ровно столько же, сколько плагин.
+              I2: Без маршрутов хоста вкладка показывает страницу хоста и не подменяет её скрытым
+                обходом или прямым чтением проекта.
+              I3: Идентификатор типа уникален в клиенте и не совпадает с kind встроенных вкладок.
+              I4: Тело вкладки принимает сообщения только от собственного iframe с тем же origin;
+                отказ передачи виден панели, а не выдаётся за успех.
+        - id: sha256:4360f818d8509ce7867c852bcd85cbf88ac11d432749c0bd7cb8e317c27dcfd7
+          kind: file
+          path: src/dsh/client/body.ts
+          start_line: 1
+          end_line: 58
+          text: >
+            /**
+             * Тело вкладки ArchiView в правой панели dsh.
+             *
+             * Показывает страницу, которую отдают маршруты плагина (`src/dsh/routes.ts`),
+             * в обычном iframe. Такой способ не требует переписывать интерфейс: страница
+             * остаётся тем же `web/archiview`, что и в браузере, и получает базу API из
+             * метатега, который вставляет маршрут.
+             *
+             * Адрес страницы не хранится здесь константой: префикс маршрутов сообщает хост
+             * через внедрение в документ (см. `panel-contract.ts`), поэтому настройка
+             * `config.prefix` меняет и адрес iframe. Значение из документа принимается
+             * только как локальный путь: сетевая ссылка (`//host/path`), обратный слэш и
+             * служебные символы откатываются к стандартному префиксу, поэтому iframe не
+             * может уйти на чужой origin. Без внедрения действует тот же стандартный
+             * префикс — вкладка остаётся рабочей, а не падает.
+             *
+             * Через тот же iframe идёт и явное поручение анализа: страница присылает
+             * `archiview:send`, тело передаёт текст в чат вкладки и отвечает `archiview:sent`
+             * либо `archiview:send-failed`. Других сообщений мост не принимает, поэтому
+             * навигация панели не может создать ход модели.
+             *
+             * @module plugin-architecture-change-view/dsh/client/body
+             */
+
+            import { createElement, useEffect, useRef } from "react";
+
+            import { panelPageUrl, resolveClientPrefix } from
+            "../panel-contract.js";
+
+            import { listenToFrame } from "./frame-bridge.js";
+
+
+            /**
+             * Тело вкладки: страница панели во всю площадь вкладки.
+             *
+             * `sessionId` — стандартное свойство сессионного слота: хост по нему разрешает
+             * рабочий каталог проекта, поэтому панель показывает проект именно этого чата.
+             * `sendPrompt` передаёт поручение в этот же чат; без него мост остаётся
+             * доступным только для просмотра.
+             *
+             * @param {object} [props] - свойства, переданные слотом.
+             * @param {string} [props.sessionId] - идентификатор чата вкладки.
+             * @param {(sessionId: string, text: string) => Promise<void>} [props.sendPrompt]
+             *   отправка поручения в чат.
+             * @returns {import("react").ReactElement} iframe со страницей ArchiView.
+             */
+            export function PanelBody({ sessionId, sendPrompt }:
+            import("./types.js").PanelProps = {}) {
+              const frameRef = useRef<HTMLIFrameElement>(null);
+
+              useEffect(() => {
+                const frame = frameRef.current;
+                if (frame) return listenToFrame(frame, { sessionId, sendPrompt });
+              }, [sendPrompt, sessionId]);
+
+              return createElement("iframe", {
+                ref: frameRef,
+                src: panelPageUrl(resolveClientPrefix(), sessionId),
+                title: "ArchiView",
+                style: { display: "block", width: "100%", height: "100%", border: "0" },
+              });
+            }
+        - id: sha256:68215e052b300d7ede254f05e8c6d8f3b63ba97592144884bf6e70bce9f3d1d1
+          kind: file
+          path: src/dsh/client/frame-bridge.ts
+          start_line: 1
+          end_line: 32
+          text: >
+            import type { PanelProps } from "./types.js";
+
+
+            /** Bind one iframe to the chat selected by the dsh slot for this
+            subscription. */
+
+            export function listenToFrame(frame: HTMLIFrameElement, { sessionId,
+            sendPrompt }: PanelProps) {
+              const origin = window.location.origin;
+              const onMessage = async (event: MessageEvent<unknown>) => {
+                const source = frame.contentWindow;
+                if (!source || event.source !== source || event.origin !== origin) return;
+                if (!event.data || typeof event.data !== "object") return;
+                const data = event.data as Record<string, unknown>;
+                const sameChat = typeof sessionId === "string" && sessionId !== "" && data.sessionId === sessionId;
+                if (data.type === "archiview:hello") {
+                  source.postMessage({ type: "archiview:host", protocol: 2, sessionId,
+                    capabilities: { send: data.protocol === 2 && sameChat && typeof sendPrompt === "function" } }, origin);
+                  return;
+                }
+                if (data.type !== "archiview:send" || typeof data.id !== "string") return;
+                const reply = { id: data.id, sessionId: data.sessionId, protocol: 2 };
+                try {
+                  if (data.protocol !== 2 || !sameChat) throw new Error("Чат поручения не совпадает с чатом вкладки");
+                  if (!sendPrompt || typeof data.prompt !== "string") throw new Error("Хост не умеет передавать поручения");
+                  await sendPrompt(sessionId, data.prompt);
+                  source.postMessage({ type: "archiview:sent", ...reply }, origin);
+                } catch (error) {
+                  source.postMessage({ type: "archiview:send-failed", ...reply,
+                    error: error instanceof Error ? error.message : "Не удалось передать поручение" }, origin);
+                }
+              };
+              window.addEventListener("message", onMessage);
+              return () => window.removeEventListener("message", onMessage);
+            }
+        - id: sha256:7b4a5bb85219d8efe2c19ec4043befec84cbf090815955dc84b9444b32ae94d4
+          kind: file
+          path: src/dsh/client/index.ts
+          start_line: 1
+          end_line: 65
+          text: >
+            /**
+             * Браузерная половина плагина ArchiView для dsh.
+             *
+             * Модуль регистрирует в правой панели тип вкладки ArchiView и её тело. Тип
+             * объявлен в band `extension` — это штатная полоса для типов из другого
+             * пакета: она выше встроенных и позволяет открывать страницу плагина, не
+             * занимая чужой `kind`.
+             *
+             * Клиентская половина ничего не читает из проекта и не вызывает прикладной
+             * сервис: страницу отдаёт маршрут хоста, а тело вкладки только показывает её в
+             * iframe. Поэтому здесь нет ни сетевого клиента, ни операций просмотра.
+             *
+             * @module plugin-architecture-change-view/dsh/client
+             */
+
+            import { createElement } from "react";
+
+            import { PanelBody } from "./body.js";
+
+            import { createPromptSender } from "./prompt.js";
+
+
+            /**
+             * Сервисы клиента, без которых регистрация невозможна: слоты правой панели и
+             * реестр типов вкладок.
+             */
+            export const inject = ["slots", "sidebarRightTabs"];
+
+
+            /** Идентификатор реализации типа вкладки; он же ключ тела в слоте.
+            */
+
+            export const TAB_ID = "plugin-architecture-change-view/archiview";
+
+
+            /** Дискриминатор типа вкладки, которым открывается страница. */
+
+            export const TAB_KIND = "archiview";
+
+
+            /**
+             * Регистрирует вкладку ArchiView в клиенте dsh.
+             *
+             * Обе регистрации обёрнуты в `ctx.effect`, поэтому живут ровно столько же,
+             * сколько плагин: выгрузка снимает и тип, и тело.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст клиента.
+             * @returns {void}
+             */
+            export function apply(ctx: import("./types.js").ClientContext) {
+              // Отправитель замыкается на контекст плагина: тело вкладки получает только
+              // функцию, поэтому не ищет сервисы само и не знает их имён.
+              const sendPrompt = createPromptSender(ctx);
+              const Body = (props: import("./types.js").PanelProps) => createElement<import("./types.js").PanelProps>(PanelBody, { ...props, sendPrompt });
+
+              ctx.effect(() => ctx.sidebarRightTabs.register({
+                id: TAB_ID,
+                kind: TAB_KIND,
+                priority: "extension",
+                title: () => "ArchiView",
+                guide: [{
+                  id: TAB_ID + "/guide",
+                  order: 40,
+                  title: () => "ArchiView",
+                  description: () => "Архитектура проекта и контракты модулей",
+                }],
+              }), "ui-archiview: тип вкладки");
+
+              ctx.effect(() => ctx.slots.inject("sidebar.right.pane.tab", () => ctx.slots.register({
+                name: "sidebar.right.pane.tab",
+                key: TAB_ID,
+              }, Body)), "ui-archiview: тело вкладки");
+            }
+        - id: sha256:8c5c375283b5d29bdaa80f2115b0f9f8d0357c9126d7bcaf38b6520350a2cc0e
+          kind: file
+          path: src/dsh/client/prompt.ts
+          start_line: 1
+          end_line: 55
+          text: >
+            /**
+             * Передача поручения анализа в чат dsh.
+             *
+             * Панель не может звать инструменты модели напрямую: она работает в iframe и
+             * общается с хостом только явными сообщениями. Хост-половина плагина такой
+             * запрос не принимает — поручение отправляет браузерная половина в тот чат,
+             * которому принадлежит вкладка, через клиентский сервис сессий.
+             *
+             * Модуль держит одну операцию: взять сессию на время отправки, передать текст
+             * в очередь хода и отпустить ссылку. Навигация панели сюда не попадает, поэтому
+             * просмотр по-прежнему не создаёт сообщений модели.
+             *
+             * @module plugin-architecture-change-view/dsh/client/prompt
+             */
+
+            /**
+             * Создаёт отправителя поручений для одного экземпляра плагина.
+             *
+             * @param {import("@deepseek-ai/cordis").Context} ctx - контекст клиента dsh.
+             * @returns {(sessionId: string, text: string) => Promise<void>} отправка поручения в чат.
+             */
+            export function createPromptSender(ctx:
+            import("./types.js").PromptContext) {
+              /**
+               * Отправляет текст в очередь хода указанного чата.
+               *
+               * @param {string} sessionId - идентификатор чата вкладки.
+               * @param {string} text - подготовленное панелью поручение.
+               * @returns {Promise<void>} завершение после принятия хостом.
+               * @throws {Error} если чат неизвестен, поручение пустое или хост его отклонил.
+               */
+              return async function sendPrompt(sessionId: string, text: string) {
+                if (typeof sessionId !== "string" || sessionId === "") {
+                  throw new Error("Чат вкладки неизвестен");
+                }
+                if (typeof text !== "string" || text.trim() === "") {
+                  throw new Error("Пустое поручение анализа");
+                }
+                const sessions = ctx.get("sessions");
+                if (sessions === undefined) throw new Error("Клиентские сессии dsh недоступны");
+
+                // Ссылка держит поколение сессии на время отправки и освобождается в любом
+                // исходе: удерживать её после ответа хоста нечего.
+                const reference = sessions.retain(sessionId, { source: "archiview" });
+                try {
+                  const binding = await reference.ready;
+                  const result = await binding.session.prompt([{ type: "text", text }], "queue");
+                  if (result?.ok !== true) {
+                    throw new Error(result?.error?.message ?? "Хост отклонил поручение");
+                  }
+                } finally {
+                  reference.release();
+                }
+              };
+            }
+        - id: sha256:665efafaf0b01610d4c35aa71fcb29d81a3e9fc94168f66b1345cb2789369fcb
+          kind: file
+          path: src/dsh/client/types.ts
+          start_line: 1
+          end_line: 22
+          text: >
+            import type { ComponentType } from "react";
+
+
+            export type SendPrompt = (sessionId: string, text: string) =>
+            Promise<void>;
+
+            export interface PanelProps { sessionId?: string; sendPrompt?:
+            SendPrompt }
+
+            type Dispose = () => void;
+
+            export interface PromptContext {
+              get(name: "sessions"): {
+                retain(id: string, options: { source: string }): {
+                  ready: Promise<{ session: { prompt(content: { type: "text"; text: string }[], mode: "queue"): Promise<{ ok: boolean; error?: { message?: string } }> } }>;
+                  release(): void;
+                };
+              } | undefined;
+            }
+
+            export interface ClientContext extends PromptContext {
+              effect(register: () => Dispose, label: string): unknown;
+              sidebarRightTabs: { register(definition: { id: string; kind: string; priority: string; title(): string; guide: { id: string; order: number; title(): string; description(): string }[] }): Dispose };
+              slots: {
+                inject(name: string, register: () => Dispose): Dispose;
+                register(slot: { name: string; key: string }, body: ComponentType<PanelProps>): Dispose;
+              };
+            }
+        - id: sha256:6b34b84c154101b69d2c0dd803666f5217d8f2c4b13965e72fd3c3ce46336035
+          kind: file
+          path: src/dsh/panel-contract.ts
+          start_line: 1
+          end_line: 105
+          text: >
+            /**
+             * Контракт между половинами плагина dsh.
+             *
+             * Хост и браузерный бандл — разные процессы и разные модульные графы, поэтому
+             * единственное, что они могут разделить, — это зависимый от данных контракт:
+             * имя глобального объекта, форму строки внедрения в index.html и правило
+             * разбора. Модуль намеренно не имеет зависимостей, чтобы его можно было
+             * импортировать и в Node-половину, и в бандл браузера.
+             *
+             * Так префикс маршрутов остаётся одним значением: конфигурация хоста попадает
+             * в документ клиента через публичный канал `webserver/index-inject`, а клиент
+             * читает её оттуда. Ни одна половина не дублирует константу маршрута.
+             *
+             * @module plugin-architecture-change-view/dsh/panel-contract
+             */
+
+            /** Префикс маршрутов панели по умолчанию, если хост не сообщил
+            другой. */
+
+            export const DEFAULT_PREFIX = "/archiview";
+
+
+            /** Имя глобального объекта, который хост внедряет в документ
+            клиента. */
+
+            export const CLIENT_GLOBAL = "__DSH_ARCHIVIEW__";
+
+
+            /**
+             * Начало локального пути: ровно один прямой слэш.
+             *
+             * Второй символ не может быть ещё одним слэшем или обратным слэшем. `//host/path`
+             * — сетевая ссылка (network-path reference): браузер сохраняет схему документа,
+             * но берёт чужой origin. `/\host/path` приводится к той же ссылке при разборе
+             * URL, потому что для специальных схем обратный слэш считается разделителем.
+             */
+            const LOCAL_PATH_START = /^\/(?![/\\])/;
+
+
+            /**
+             * Символы, которых не может быть в локальном пути маршрута: пробельные,
+             * обратный слэш (меняет разбор URL), строка запроса и фрагмент.
+             */
+            const FORBIDDEN_IN_PATH = /[\s\x00-\x1f\x7f\\?#]/;
+
+
+            /**
+             * Проверяет префикс, пришедший из конфигурации или документа.
+             *
+             * Допускается только локальный абсолютный путь. Сетевые ссылки и обратные
+             * слэши отклоняются: иначе адрес iframe увёл бы вкладку на чужой origin вместо
+             * маршрута панели хоста (см. `src/dsh/client/body.ts`). Тот же префикс служит
+             * путём регистрации маршрутов, поэтому проверка общая для обеих половин.
+             *
+             * @param {unknown} value - проверяемое значение.
+             * @returns {string | null} префикс без хвостового слэша либо `null`.
+             */
+            export function asPrefix(value: unknown) {
+              if (typeof value !== "string" || value.endsWith("/")) return null;
+              if (!LOCAL_PATH_START.test(value) || FORBIDDEN_IN_PATH.test(value)) return null;
+              // Use the same serialized pathname as the browser and the host route table.
+              if (value.split("/").some((part) => /^(?:\.|%2e){1,2}$/i.test(part))) return null;
+              return new URL(value, "http://localhost").pathname;
+            }
+
+
+            /**
+             * Собирает строку внедрения конфигурации клиента в index.html.
+             *
+             * `kind: "global"` — штатная строка веб-сервера dsh: она присваивает
+             * JSON-значение свойству `globalThis` до выполнения клиентских бандлов. Форма
+             * строки стабильна и не зависит от версии плагина.
+             *
+             * @param {string} prefix - нормализованный префикс маршрутов панели.
+             * @returns {{ kind: "global", name: string, value: { prefix: string } }} строка внедрения.
+             */
+            export function clientConfigRow(prefix: string) {
+              return { kind: "global", name: CLIENT_GLOBAL, value: { prefix } };
+            }
+
+
+            /**
+             * Читает префикс, который сообщил хост.
+             *
+             * Отсутствие или порча значения не считаются ошибкой: клиент откатывается к
+             * стандартному префиксу, потому что вкладка не должна ломаться из-за
+             * документа, который ещё не успел получить внедрение.
+             *
+             * @param {object} [scope] - глобальный объект; параметр нужен для тестов.
+             * @returns {string} действующий префикс маршрутов.
+             */
+            export function resolveClientPrefix(scope: object = globalThis) {
+              const config = (scope as Record<string, unknown>)[CLIENT_GLOBAL];
+              const injected = config && typeof config === "object" ? (config as Record<string, unknown>).prefix : undefined;
+              return asPrefix(injected) ?? DEFAULT_PREFIX;
+            }
+
+
+            /**
+             * Собирает адрес страницы панели для вкладки чата.
+             *
+             * Идентификатор чата — единственное, что клиент знает о сессии: хост по нему
+             * разрешает рабочий каталог проекта. Значение кодируется как параметр запроса,
+             * потому что оно приходит из состояния клиента и не должно влиять на разбор
+             * пути.
+             *
+             * @param {string} prefix - действующий префикс маршрутов.
+             * @param {unknown} sessionId - идентификатор чата, которому принадлежит вкладка.
+             * @returns {string} адрес страницы с идентификатором чата или без него.
+             */
+            export function panelPageUrl(prefix: string, sessionId: unknown) {
+              const base = (asPrefix(prefix) ?? DEFAULT_PREFIX) + "/";
+              if (typeof sessionId !== "string" || sessionId === "") return base;
+              return base + "?session=" + encodeURIComponent(sessionId);
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      scope_digest: sha256:4fb22c97bba5206a57a1e9f40aea53074d7aa6f752a4572390f1d4a213644043
+    input_digest: sha256:b584afefe0aeabbfbe8a5e1c432d0c6e0519dc0cef47d8952b87b26dc20094aa
+    result_digest: sha256:e2fd4330ff16d2a8c5309e190af18af1cd31a4325739e14d116fe2f016df1904
+    content_digest: sha256:c7768f0bf7708d3de7a77d27b6cc6b8c68e5ccf83011fd22d54cf40c870393b7
+    registration_order: 111

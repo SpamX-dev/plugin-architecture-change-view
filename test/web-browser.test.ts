@@ -711,3 +711,55 @@ test("retrying a finding link reveals the original clause only after its documen
   assert.equal(await clause.getAttribute("data-clause-id"), reference.id);
   assert.equal(requested[1], requested[0], "the first retry must keep the same module and view");
 });
+
+test("native own finding navigates to its saved ancestor clause and retains historical text after changes", browserOptions, async (t) => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const contractFile = path.join(root, ".archiview/modules/browser-project.yaml");
+  const savedText = "Граница предка из сохранённого снимка.";
+  const contract = (await readFile(contractFile, "utf8")).replace("boundaries: {}", "boundaries:\n  B1: " + savedText);
+  await writeFile(contractFile, contract);
+  const app = await createArchiView({ root });
+  const origin = await listen(defer, app.server);
+  const input = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root), "browser-feature");
+  const reference = { snapshot: "current", module_id: "browser-project", section: "boundaries", id: "B1" } as const;
+  input.report.analysis.model = input.manifest.model = { provider: "test", id: "ancestor-navigation-fixture" };
+  input.report.analysis.prompt_digest = input.manifest.prompt_digest = digest("Own review ancestor finding browser fixture");
+  input.report.analysis.input_digest = digest(input.manifest);
+  input.report.findings = [{ id: "ancestor-link", kind: "boundary_violation", severity: "warning", certainty: "confirmed",
+    lifecycle: "unknown", summary: "Проверить ограничение предка", clauses: [reference],
+    evidence: [{ snapshot: "current", fact_id: input.current.facts[0].id }] }];
+  assert.ok(input.manifest.contracts.current.every(item => item.reference.module_id === "browser-feature"));
+  await app.reports.saveReview(input);
+
+  const page = await (await browserContext(defer)).newPage();
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto(origin);
+  async function openFinding() {
+    await page.getByRole("treeitem").filter({ hasText: "Функция браузера" }).click();
+    await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
+    await page.locator("#tab-findings").click();
+    const link = page.locator(".finding-clauses button").first();
+    await link.waitFor();
+    await link.click();
+  }
+  await openFinding();
+  const target = page.locator(".clause-target:focus");
+  await target.waitFor();
+  assert.equal(await target.getAttribute("data-clause-id"), "B1");
+  assert.equal(await target.getAttribute("data-clause-section"), "boundaries");
+  assert.match(await target.innerText(), new RegExp(savedText));
+  assert.equal(await page.locator("[data-historical-clause]").count(), 0);
+
+  await writeFile(contractFile, contract.replace(savedText, "Позднейшая граница с тем же ID."));
+  await page.locator("#refresh").click();
+  await page.waitForFunction(() => !(document.querySelector("#refresh") as HTMLButtonElement).disabled);
+  await openFinding();
+  const historical = page.locator("[data-historical-clause]:focus");
+  await historical.waitFor();
+  assert.equal(await historical.locator(".historical-clause-text").innerText(), savedText);
+  assert.equal(await historical.locator(".historical-clause-missing").count(), 0);
+  assert.match(await historical.locator(".historical-clause-origin").innerText(), /проверенная версия/);
+  assert.deepEqual(errors, []);
+});

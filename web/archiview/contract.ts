@@ -170,11 +170,14 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
  * поэтому сохранённый текст остаётся доступен отдельно от текущего документа.
  */
 export function savedClauseText(bundle: ReviewBundle | null | undefined, ref: ClauseReference) {
-  const items = ref?.snapshot ? bundle?.contracts?.[ref.snapshot] : null;
-  if (!Array.isArray(items)) return null;
-  const saved = items.find((item) => item.reference?.module_id === ref.module_id &&
-    item.reference?.section === ref.section && item.reference?.id === ref.id);
-  return typeof saved?.text === "string" && saved.text.trim() ? saved.text : null;
+  if (!ref?.snapshot) return null;
+  for (const items of [bundle?.contracts?.[ref.snapshot], bundle?.referencedContracts?.[ref.snapshot]]) {
+    if (!Array.isArray(items)) continue;
+    const saved = items.find((item) => item.reference?.module_id === ref.module_id &&
+      item.reference?.section === ref.section && item.reference?.id === ref.id);
+    if (typeof saved?.text === "string" && saved.text.trim()) return saved.text;
+  }
+  return null;
 }
 
 /** Navigation may highlight a live clause only when it still has the saved meaning. */

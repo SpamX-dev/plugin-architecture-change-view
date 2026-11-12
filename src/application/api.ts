@@ -57,6 +57,8 @@ export interface ModuleReview {
   }[];
   facts: Record<Side, Fact[]>;
   contracts: Record<Side, ClauseInput[]>;
+  /** Saved clauses referenced by findings, kept separate from the manifest checklist. */
+  referencedContracts?: Record<Side, ClauseInput[]>;
 }
 export interface DocumentDiffLine {
   kind: "added" | "removed" | "same";

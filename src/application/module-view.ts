@@ -5,6 +5,8 @@ import type { Snapshot } from "../snapshots/types.js";
 import type { ReportModel } from "../reports/model.js";
 import type { ReviewEntry } from "../reports/types.js";
 import type { ReviewBundle } from "../reviews/types.js";
+import { effectiveClauses } from "../reviews/bundle.js";
+import { canonical } from "../serialization/digest.js";
 import { moduleReportName } from "../storage/report-store.js";
 import type { DocumentDiffLine, ModuleDetail } from "./api.js";
 import type { SessionView } from "./session-view.js";
@@ -26,6 +28,17 @@ function evidenceForReport(bundle: Pick<ReviewBundle, "report"> & { baseline: Pi
     return (bundle[side]?.facts ?? []).filter((fact) => ids.has(fact.id));
   }
   return { baseline: facts("baseline"), current: facts("current") };
+}
+
+/** Дополняет навигацию пунктами сохранённых предков, не расширяя чеклист. */
+function referencedContracts(bundle: ReviewEntry) {
+  const references = new Set(bundle.report.findings.flatMap(finding => finding.clauses).map(canonical));
+  function clauses(side: "baseline" | "current") {
+    const declared = new Set(bundle.manifest.contracts[side].map(item => canonical(item.reference)));
+    return effectiveClauses(bundle[side], bundle.report.module[`${side}_path`], side)
+      .filter(item => references.has(canonical(item.reference)) && !declared.has(canonical(item.reference)));
+  }
+  return { baseline: clauses("baseline"), current: clauses("current") };
 }
 
 /** Контракт зависимости задаёт предпосылку; он не подтверждает проверенность поставщика. */
@@ -88,6 +101,7 @@ export function moduleDetail(module: SessionView["modules"][number], matching: R
     dependencies: dependencyAssumptions(bundle, modules),
     facts: evidenceForReport(bundle),
     contracts: bundle.manifest.contracts,
+    referencedContracts: referencedContracts(bundle),
   })), diff: documentDiff(module.before?.document.text, module.after?.document.text),
   contractDiff: compareContracts(module.before?.document.contract, module.after?.document.contract, module.status !== "initial") } satisfies ModuleDetail);
 }

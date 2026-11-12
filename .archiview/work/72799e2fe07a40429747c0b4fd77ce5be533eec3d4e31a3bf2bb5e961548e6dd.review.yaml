@@ -9741,3 +9741,3828 @@ entries:
     result_digest: sha256:1fbf273823323a4e8ae682361dd911eda073d7df32c780cfdfd23f831918ba17
     content_digest: sha256:1ec4ab90577124bfaf6820cf1487f73f587b5c74b1121d43f68130738758d50a
     registration_order: 81
+  - schema_version: 2
+    kind: review
+    module_id: archiview-reviews
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-c0c88b26-ee06-4e92-b541-affee1191d0c
+    check_hash: 9a8affcfd2177b7c6bcba8386a419f3af2ae895829f8f2733e45167bc4455d28
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-reviews
+      baseline:
+        identity:
+          kind: git
+          id: 771efbf7a9efe9e9a863aa96537652f133bfd463
+        state:
+          exists: true
+          directory: src/reviews
+          self_digest: sha256:02cf772650dc02092862eeb9805594e81aa0091a8435bac7aec7c2a1d4e82931
+          subtree_digest: sha256:b23c2cd5b76e0e935caea23643739e0a8555b75c125b1abe59f7329fddcbaef6
+      current:
+        exists: true
+        directory: src/reviews
+        self_digest: sha256:02cf772650dc02092862eeb9805594e81aa0091a8435bac7aec7c2a1d4e82931
+        subtree_digest: sha256:b23c2cd5b76e0e935caea23643739e0a8555b75c125b1abe59f7329fddcbaef6
+      analyzer:
+        name: archiview-structure
+        version: 1.0.2
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-reviews
+          directory: src/reviews
+          own_files:
+            - path: src/reviews/bundle.ts
+              digest: sha256:fb3bd6ffbabb519d1444939924d03ab74dda434643918021669ace601051e0de
+              normalization: text-lf/v1
+            - path: src/reviews/schema.ts
+              digest: sha256:659fe281ac6cbda8b379a02055eb792b9030eac2eaafeb69ca47d3abb7ba7281
+              normalization: text-lf/v1
+            - path: src/reviews/types.ts
+              digest: sha256:1805704a9fc34eaf090bb2aa2aa26e52f151678b0e59ee5b90f6cba48ea86b68
+              normalization: text-lf/v1
+          contract:
+            id: archiview-reviews
+            kind: module
+            purpose: Описывать проверку по контрактам и доказательствам выбранных снимков и
+              проверять её целостность.
+            responsibilities:
+              R1: Определять состав манифеста, проверяемые пункты и структуру результата.
+              R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно
+                структурную оценку.
+            boundaries:
+              B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого
+                модуля.
+            invariants:
+              I1: Структурная проверка оставляет смысловые пункты непроверенными.
+              I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+              I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
+                Замечание также может ссылаться на границу или инвариант предка
+                из сохранённого контекста проверяемого модуля, не добавляя
+                проверку всего предка.
+          children: []
+        complete: true
+        dependencies:
+          - selector:
+              kind: file
+              path: src/contracts/types.ts
+            available: true
+            digest: sha256:baaecd36f2708c86c4686048c510ee6fead717637e76616e253838a5bc556c0e
+            content: >
+              export type Section = "responsibilities" | "boundaries" |
+              "invariants";
+
+
+              export interface Contract {
+                schema_version: number;
+                id: string;
+                title: string;
+                kind: string;
+                purpose: string;
+                responsibilities: Record<string, string>;
+                boundaries: Record<string, string>;
+                invariants: Record<string, string>;
+                rationale?: string;
+                owners?: string[];
+                tags?: string[];
+                references?: { title: string; uri: string }[];
+                extensions?: Record<string, unknown>;
+              }
+
+
+              export interface ContractDocument {
+                state: string;
+                text: string | null;
+                format?: string;
+                contract?: Contract | null;
+                errors?: string[];
+                action?: string;
+              }
+          - selector:
+              kind: file
+              path: src/serialization/digest.ts
+            available: true
+            digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
+            content: >
+              import { createHash } from "node:crypto";
+
+
+              /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+              массивов. */
+
+              export function canonical(value: unknown): string {
+                if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+                if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                  .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+                return JSON.stringify(value ?? null);
+              }
+
+
+              /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+              префикс алгоритма. */
+
+              export function digest(value: unknown) {
+                return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+              }
+          - selector:
+              kind: file
+              path: src/serialization/schema.ts
+            available: true
+            digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
+            content: >
+              /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+              путь поля. */
+
+              export const fail = (at: string, message: string): never => {
+              throw new Error(at + ": " + message); };
+
+              export type Validator = (v: unknown, at: string) => void;
+
+              export const string: Validator = (v, at) => typeof v === "string"
+              && v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+              export const object: Validator = (v, at) => v && typeof v ===
+              "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+              словарь");
+
+              export const enumeration = (...values: unknown[]): Validator =>
+              (v, at) => values.includes(v) ? undefined : fail(at, "допустимо: "
+              + values.join(", "));
+
+              export const nullable = (check: Validator): Validator => (v, at)
+              => v === null ? undefined : check(v, at);
+
+              export const array = (check: Validator, min = 0): Validator => (v,
+              at) => {
+                if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+                (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+              };
+
+              export const shape = (required: Record<string, Validator>,
+              optional: Record<string, Validator> = {}): Validator => (v, at) =>
+              {
+                object(v, at);
+                for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+                for (const key of Object.keys(v as object)) {
+                  if (Object.hasOwn(required, key)) continue;
+                  if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                  optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+                }
+              };
+
+              export const strings = array(string);
+
+              export const references = array(shape({ title: string, uri: string
+              }));
+
+              export const extensions: Validator = (v, at) => {
+                object(v, at);
+                for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+              };
+          - selector:
+              kind: file
+              path: src/snapshots/identity.ts
+            available: true
+            digest: sha256:5acae35cacbdfdcf4f8489c88e509e590c3968d0d4d6319a36ed296cf71ba312
+            content: >
+              import { createHash } from "node:crypto";
+
+              import { digest as contentDigest } from
+              "../serialization/digest.js";
+
+              import type { Snapshot } from "./types.js";
+
+
+              /** Стабильная контрольная сумма структуры, не зависящая от
+              времени индексации. */
+
+              export function structureHash(value: string | Buffer) {
+                return createHash("sha256").update(value).digest("hex");
+              }
+
+
+              /** Метки и время не меняют содержание снимка; факты и неполнота
+              входят в отпечаток. */
+
+              export function snapshotDigest(snapshot: Snapshot) {
+                return contentDigest({ root: snapshot.root, modules: snapshot.modules,
+                  facts: snapshot.facts ?? [], complete: snapshot.complete,
+                  diagnostics: snapshot.diagnostics, evidenceLimitations: snapshot.evidenceLimitations ?? [] });
+              }
+          - selector:
+              kind: file
+              path: src/snapshots/types.ts
+            available: true
+            digest: sha256:80f5d1bddb2471b66da37d0a11a1850bd24bf90bed0ffaddc3f3d2bd102977ae
+            content: >
+              import type { ContractDocument } from "../contracts/types.js";
+
+
+              export interface SourceFile {
+                path: string;
+                hash: string | null;
+                error?: string;
+              }
+
+
+              export interface FileRecord extends SourceFile {
+                text?: string;
+              }
+
+
+              export interface Fact {
+                id: string;
+                kind: string;
+                path: string;
+                text: string;
+                start_line?: number;
+                end_line?: number;
+              }
+
+
+              export interface SnapshotModule {
+                directory: string;
+                documentPath: string;
+                document: ContractDocument;
+                files: SourceFile[];
+                sourceFiles: number;
+                fingerprint: string;
+              }
+
+
+              export interface Snapshot {
+                schema_version: number;
+                root: string;
+                id: string;
+                digest: string;
+                capturedAt: string;
+                fingerprint: string;
+                kind: string;
+                label: string;
+                revision?: string;
+                baseRevision?: string | null;
+                subject?: string;
+                isHead?: boolean;
+                complete: boolean;
+                diagnostics: string[];
+                modules: SnapshotModule[];
+                facts: Fact[];
+                evidenceLimitations: string[];
+                scoped?: boolean;
+                scope_digest?: string;
+              }
+
+
+              export interface SnapshotOptions {
+                maxFiles?: number;
+                snapshotRoot?: string;
+                revision?: string;
+              }
+
+
+              export type ChangeStatus = "initial" | "new" | "changed" |
+              "removed" | "unchanged";
+
+
+              export interface FileChange {
+                path: string;
+                status: ChangeStatus;
+              }
+
+
+              export interface ComparisonModule {
+                directory: string;
+                key: string;
+                sourceFiles: number;
+                filesChanged: number;
+                descendantChanges: number;
+                name: string;
+                moduleId?: string | null;
+                module_id?: string;
+                title?: string;
+                baselinePath: string | null;
+                currentPath: string | null;
+                moved: boolean;
+                status: ChangeStatus;
+                documentState: string;
+                documentChanged: boolean;
+                files: FileChange[];
+                before: SnapshotModule | null;
+                after: SnapshotModule | null;
+              }
+
+
+              export interface Comparison {
+                before: {
+                  id: string;
+                  label: string;
+                  kind: string;
+                  digest?: string;
+                  capturedAt?: string;
+                };
+                after: { id: string; digest: string; capturedAt: string };
+                counts: Record<string, number>;
+                schema_version: number;
+                id: string;
+                root: string;
+                complete: boolean;
+                diagnostics: string[];
+                modules: ComparisonModule[];
+              }
+
+
+              export interface SnapshotReference {
+                id: string;
+                digest: string;
+              }
+
+
+              export type ScopedSnapshot = Pick<
+                Snapshot,
+                | "schema_version"
+                | "id"
+                | "digest"
+                | "kind"
+                | "revision"
+                | "complete"
+                | "modules"
+                | "facts"
+                | "diagnostics"
+                | "evidenceLimitations"
+              > & { scoped: boolean; scope_digest?: string };
+
+
+              export type SnapshotData = Snapshot | ScopedSnapshot;
+
+
+              export interface GitRevision {
+                id: string;
+                revision: string;
+                parentRevision: string | null;
+                isHead: boolean;
+                kind: string;
+                capturedAt: string;
+                date: string;
+                subject: string;
+                label: string;
+              }
+        dependency_coverage:
+          status: unknown
+          potential_influence:
+            - scope: project
+      baseline:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-reviews
+          directory: src/reviews
+          own_files:
+            - path: src/reviews/bundle.ts
+              digest: sha256:fb3bd6ffbabb519d1444939924d03ab74dda434643918021669ace601051e0de
+              normalization: text-lf/v1
+            - path: src/reviews/schema.ts
+              digest: sha256:659fe281ac6cbda8b379a02055eb792b9030eac2eaafeb69ca47d3abb7ba7281
+              normalization: text-lf/v1
+            - path: src/reviews/types.ts
+              digest: sha256:1805704a9fc34eaf090bb2aa2aa26e52f151678b0e59ee5b90f6cba48ea86b68
+              normalization: text-lf/v1
+          contract:
+            id: archiview-reviews
+            kind: module
+            purpose: Описывать проверку по контрактам и доказательствам выбранных снимков и
+              проверять её целостность.
+            responsibilities:
+              R1: Определять состав манифеста, проверяемые пункты и структуру результата.
+              R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно
+                структурную оценку.
+            boundaries:
+              B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого
+                модуля.
+            invariants:
+              I1: Структурная проверка оставляет смысловые пункты непроверенными.
+              I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+              I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
+                Замечание также может ссылаться на границу или инвариант предка
+                из сохранённого контекста проверяемого модуля, не добавляя
+                проверку всего предка.
+          children: []
+        complete: true
+        dependencies:
+          - selector:
+              kind: file
+              path: src/contracts/types.ts
+            available: true
+            digest: sha256:baaecd36f2708c86c4686048c510ee6fead717637e76616e253838a5bc556c0e
+            content: >
+              export type Section = "responsibilities" | "boundaries" |
+              "invariants";
+
+
+              export interface Contract {
+                schema_version: number;
+                id: string;
+                title: string;
+                kind: string;
+                purpose: string;
+                responsibilities: Record<string, string>;
+                boundaries: Record<string, string>;
+                invariants: Record<string, string>;
+                rationale?: string;
+                owners?: string[];
+                tags?: string[];
+                references?: { title: string; uri: string }[];
+                extensions?: Record<string, unknown>;
+              }
+
+
+              export interface ContractDocument {
+                state: string;
+                text: string | null;
+                format?: string;
+                contract?: Contract | null;
+                errors?: string[];
+                action?: string;
+              }
+          - selector:
+              kind: file
+              path: src/serialization/digest.ts
+            available: true
+            digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
+            content: >
+              import { createHash } from "node:crypto";
+
+
+              /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+              массивов. */
+
+              export function canonical(value: unknown): string {
+                if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+                if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                  .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+                return JSON.stringify(value ?? null);
+              }
+
+
+              /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+              префикс алгоритма. */
+
+              export function digest(value: unknown) {
+                return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+              }
+          - selector:
+              kind: file
+              path: src/serialization/schema.ts
+            available: true
+            digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
+            content: >
+              /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+              путь поля. */
+
+              export const fail = (at: string, message: string): never => {
+              throw new Error(at + ": " + message); };
+
+              export type Validator = (v: unknown, at: string) => void;
+
+              export const string: Validator = (v, at) => typeof v === "string"
+              && v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+              export const object: Validator = (v, at) => v && typeof v ===
+              "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+              словарь");
+
+              export const enumeration = (...values: unknown[]): Validator =>
+              (v, at) => values.includes(v) ? undefined : fail(at, "допустимо: "
+              + values.join(", "));
+
+              export const nullable = (check: Validator): Validator => (v, at)
+              => v === null ? undefined : check(v, at);
+
+              export const array = (check: Validator, min = 0): Validator => (v,
+              at) => {
+                if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+                (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+              };
+
+              export const shape = (required: Record<string, Validator>,
+              optional: Record<string, Validator> = {}): Validator => (v, at) =>
+              {
+                object(v, at);
+                for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+                for (const key of Object.keys(v as object)) {
+                  if (Object.hasOwn(required, key)) continue;
+                  if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                  optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+                }
+              };
+
+              export const strings = array(string);
+
+              export const references = array(shape({ title: string, uri: string
+              }));
+
+              export const extensions: Validator = (v, at) => {
+                object(v, at);
+                for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+              };
+          - selector:
+              kind: file
+              path: src/snapshots/identity.ts
+            available: true
+            digest: sha256:5acae35cacbdfdcf4f8489c88e509e590c3968d0d4d6319a36ed296cf71ba312
+            content: >
+              import { createHash } from "node:crypto";
+
+              import { digest as contentDigest } from
+              "../serialization/digest.js";
+
+              import type { Snapshot } from "./types.js";
+
+
+              /** Стабильная контрольная сумма структуры, не зависящая от
+              времени индексации. */
+
+              export function structureHash(value: string | Buffer) {
+                return createHash("sha256").update(value).digest("hex");
+              }
+
+
+              /** Метки и время не меняют содержание снимка; факты и неполнота
+              входят в отпечаток. */
+
+              export function snapshotDigest(snapshot: Snapshot) {
+                return contentDigest({ root: snapshot.root, modules: snapshot.modules,
+                  facts: snapshot.facts ?? [], complete: snapshot.complete,
+                  diagnostics: snapshot.diagnostics, evidenceLimitations: snapshot.evidenceLimitations ?? [] });
+              }
+          - selector:
+              kind: file
+              path: src/snapshots/types.ts
+            available: true
+            digest: sha256:80f5d1bddb2471b66da37d0a11a1850bd24bf90bed0ffaddc3f3d2bd102977ae
+            content: >
+              import type { ContractDocument } from "../contracts/types.js";
+
+
+              export interface SourceFile {
+                path: string;
+                hash: string | null;
+                error?: string;
+              }
+
+
+              export interface FileRecord extends SourceFile {
+                text?: string;
+              }
+
+
+              export interface Fact {
+                id: string;
+                kind: string;
+                path: string;
+                text: string;
+                start_line?: number;
+                end_line?: number;
+              }
+
+
+              export interface SnapshotModule {
+                directory: string;
+                documentPath: string;
+                document: ContractDocument;
+                files: SourceFile[];
+                sourceFiles: number;
+                fingerprint: string;
+              }
+
+
+              export interface Snapshot {
+                schema_version: number;
+                root: string;
+                id: string;
+                digest: string;
+                capturedAt: string;
+                fingerprint: string;
+                kind: string;
+                label: string;
+                revision?: string;
+                baseRevision?: string | null;
+                subject?: string;
+                isHead?: boolean;
+                complete: boolean;
+                diagnostics: string[];
+                modules: SnapshotModule[];
+                facts: Fact[];
+                evidenceLimitations: string[];
+                scoped?: boolean;
+                scope_digest?: string;
+              }
+
+
+              export interface SnapshotOptions {
+                maxFiles?: number;
+                snapshotRoot?: string;
+                revision?: string;
+              }
+
+
+              export type ChangeStatus = "initial" | "new" | "changed" |
+              "removed" | "unchanged";
+
+
+              export interface FileChange {
+                path: string;
+                status: ChangeStatus;
+              }
+
+
+              export interface ComparisonModule {
+                directory: string;
+                key: string;
+                sourceFiles: number;
+                filesChanged: number;
+                descendantChanges: number;
+                name: string;
+                moduleId?: string | null;
+                module_id?: string;
+                title?: string;
+                baselinePath: string | null;
+                currentPath: string | null;
+                moved: boolean;
+                status: ChangeStatus;
+                documentState: string;
+                documentChanged: boolean;
+                files: FileChange[];
+                before: SnapshotModule | null;
+                after: SnapshotModule | null;
+              }
+
+
+              export interface Comparison {
+                before: {
+                  id: string;
+                  label: string;
+                  kind: string;
+                  digest?: string;
+                  capturedAt?: string;
+                };
+                after: { id: string; digest: string; capturedAt: string };
+                counts: Record<string, number>;
+                schema_version: number;
+                id: string;
+                root: string;
+                complete: boolean;
+                diagnostics: string[];
+                modules: ComparisonModule[];
+              }
+
+
+              export interface SnapshotReference {
+                id: string;
+                digest: string;
+              }
+
+
+              export type ScopedSnapshot = Pick<
+                Snapshot,
+                | "schema_version"
+                | "id"
+                | "digest"
+                | "kind"
+                | "revision"
+                | "complete"
+                | "modules"
+                | "facts"
+                | "diagnostics"
+                | "evidenceLimitations"
+              > & { scoped: boolean; scope_digest?: string };
+
+
+              export type SnapshotData = Snapshot | ScopedSnapshot;
+
+
+              export interface GitRevision {
+                id: string;
+                revision: string;
+                parentRevision: string | null;
+                isHead: boolean;
+                kind: string;
+                capturedAt: string;
+                date: string;
+                subject: string;
+                label: string;
+              }
+        dependency_coverage:
+          status: unknown
+          potential_influence:
+            - scope: project
+      baseline_identity:
+        kind: git
+        id: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      current_digest: sha256:59f619eb1747bd3eaaa89499e6cecf5ba30fafca17131ab16811155e833014e8
+      change_digest: sha256:21df48ea0229962a987b7b13dc259d3304e52066e01af8a0c84ee1d37722c305
+    report:
+      schema_version: 1
+      id: review-c0c88b26-ee06-4e92-b541-affee1191d0c
+      module:
+        id: archiview-reviews
+        baseline_path: src/reviews
+        current_path: src/reviews
+      comparison:
+        baseline:
+          id: git-771efbf7a9efe9e9a863aa96537652f133bfd463
+          digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+        current:
+          id: launch-4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+          digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      analysis:
+        created_at: 2026-11-12T04:22:30.863Z
+        analyzer:
+          name: agent-review
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:92af41fad7d96d7b57d084de42bb08c4f758ddf2605035648e4ac88d20cbb1e9
+        scope: module
+        coverage:
+          status: partial
+          limitations:
+            - Прочитан весь собственный код и проверен каждый собственный пункт;
+              полнота внешних зависимостей не доказана, dependency_coverage
+              сохранён unknown.
+            - Семантическая проверка выполнена чтением кода и сохранённых
+              фактов; исчерпывающая проверка всех динамических режимов и живых
+              хостов не выполнялась.
+            - "Проверены непосредственная связь с architecture-core и полная
+              цепочка architecture-change-view/architecture-core: контракт,
+              реализация, роли и применимые границы; подробные доказательства в
+              boundary_core.json. Полнота внешних зависимостей остаётся
+              неизвестной."
+            - "Дополнительная проверка main: typecheck pass; общая suite 250
+              pass,10 skip; затем 8/8 браузерных сценариев прошли в
+              установленном Chrome. Живой native Codex loader не проверен."
+        model:
+          provider: openai
+          id: gpt-6
+        prompt_digest: sha256:424e397c5e6a6f79bed85809450f141e28f62db59e2a91113cecf05645d5d546
+      observed:
+        baseline:
+          summary: Модуль задаёт формат review/manifest, собственную или совместимую
+            прежнюю область пунктов, валидирует сохранённые доказательства и
+            создаёт явно неполную структурную оценку без LLM-выводов.
+          responsibilities:
+            - text: Модуль задаёт формат review/manifest, собственную или совместимую прежнюю
+                область пунктов, валидирует сохранённые доказательства и создаёт
+                явно неполную структурную оценку без LLM-выводов.
+              evidence:
+                - snapshot: baseline
+                  fact_id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
+                - snapshot: baseline
+                  fact_id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+                - snapshot: baseline
+                  fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+        current:
+          summary: Модуль задаёт формат review/manifest, собственную или совместимую
+            прежнюю область пунктов, валидирует сохранённые доказательства и
+            создаёт явно неполную структурную оценку без LLM-выводов.
+          responsibilities:
+            - text: Модуль задаёт формат review/manifest, собственную или совместимую прежнюю
+                область пунктов, валидирует сохранённые доказательства и создаёт
+                явно неполную структурную оценку без LLM-выводов.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
+                - snapshot: current
+                  fact_id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+                - snapshot: current
+                  fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+      checks:
+        - id: check-1
+          contract:
+            snapshot: baseline
+            module_id: archiview-reviews
+            section: responsibilities
+            id: R1
+          subject: baseline
+          verdict: consistent
+          explanation: Собственные код, контракт и использованные входы базы совпадают с
+            текущими; применён анализ идентичного сохранённого текста. types.ts
+            задаёт контракт manifest/report; reviewManifest сохраняет сторону и
+            область, effectiveClauses выделяет собственные пункты или прежний
+            effective scope, requiredClauseChecks формирует обязательные
+            проверки обеих сторон и изменённых прежних требований.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
+            - snapshot: baseline
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+            - snapshot: baseline
+              fact_id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+        - id: check-2
+          contract:
+            snapshot: baseline
+            module_id: archiview-reviews
+            section: responsibilities
+            id: R2
+          subject: baseline
+          verdict: consistent
+          explanation: Собственные код, контракт и использованные входы базы совпадают с
+            текущими; применён анализ идентичного сохранённого текста.
+            validateReviewBundle проверяет digest манифеста и снимков,
+            идентичности, стороны, факты и пункты; createStructuralReview
+            формирует только структурные замечания с явной неполнотой.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+            - snapshot: baseline
+              fact_id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+        - id: check-3
+          contract:
+            snapshot: baseline
+            module_id: archiview-reviews
+            section: boundaries
+            id: B1
+          subject: baseline
+          verdict: consistent
+          explanation: Собственные код, контракт и использованные входы базы совпадают с
+            текущими; применён анализ идентичного сохранённого текста. В
+            bundle.ts/schema.ts/types.ts нет ввода-вывода, публикации и расчёта
+            stale/fresh; функции возвращают и валидируют пакет для других
+            модулей.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+            - snapshot: baseline
+              fact_id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+            - snapshot: baseline
+              fact_id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
+        - id: check-4
+          contract:
+            snapshot: baseline
+            module_id: archiview-reviews
+            section: invariants
+            id: I1
+          subject: baseline
+          verdict: consistent
+          explanation: Собственные код, контракт и использованные входы базы совпадают с
+            текущими; применён анализ идентичного сохранённого текста.
+            createStructuralReview назначает всем смысловым пунктам not_checked,
+            observation явно говорит об отсутствии вывода ответственности,
+            coverage=partial с ограничениями. Пустые findings не превращаются в
+            consistent.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+        - id: check-5
+          contract:
+            snapshot: baseline
+            module_id: archiview-reviews
+            section: invariants
+            id: I2
+          subject: baseline
+          verdict: consistent
+          explanation: Собственные код, контракт и использованные входы базы совпадают с
+            текущими; применён анализ идентичного сохранённого текста.
+            resolveClause и resolveEvidence в validateReviewBundle выбирают
+            baseline/current из ссылки, проверяют единственность и digest факта.
+            validateContractScope сверяет checks с пунктами манифеста. Текущие
+            файлы для разрешения не используются.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+        - id: check-6
+          contract:
+            snapshot: baseline
+            module_id: archiview-reviews
+            section: invariants
+            id: I3
+          subject: baseline
+          verdict: consistent
+          explanation: Собственные код, контракт и использованные входы базы совпадают с
+            текущими; применён анализ идентичного сохранённого текста.
+            effectiveClauses own включает только каталог модуля;
+            validateContractScope запрещает чужой module_id в checks. Для
+            finding разрешён собственный пункт либо boundary/invariant
+            фактического предка из сохранённого снимка, с проверкой пути предка.
+          evidence:
+            - snapshot: baseline
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+        - id: check-7
+          contract:
+            snapshot: current
+            module_id: archiview-reviews
+            section: responsibilities
+            id: R1
+          subject: current
+          verdict: consistent
+          explanation: types.ts задаёт контракт manifest/report; reviewManifest сохраняет
+            сторону и область, effectiveClauses выделяет собственные пункты или
+            прежний effective scope, requiredClauseChecks формирует обязательные
+            проверки обеих сторон и изменённых прежних требований.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
+            - snapshot: current
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+            - snapshot: current
+              fact_id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+        - id: check-8
+          contract:
+            snapshot: current
+            module_id: archiview-reviews
+            section: responsibilities
+            id: R2
+          subject: current
+          verdict: consistent
+          explanation: validateReviewBundle проверяет digest манифеста и снимков,
+            идентичности, стороны, факты и пункты; createStructuralReview
+            формирует только структурные замечания с явной неполнотой.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+            - snapshot: current
+              fact_id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+        - id: check-9
+          contract:
+            snapshot: current
+            module_id: archiview-reviews
+            section: boundaries
+            id: B1
+          subject: current
+          verdict: consistent
+          explanation: В bundle.ts/schema.ts/types.ts нет ввода-вывода, публикации и
+            расчёта stale/fresh; функции возвращают и валидируют пакет для
+            других модулей.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+            - snapshot: current
+              fact_id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+            - snapshot: current
+              fact_id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
+        - id: check-10
+          contract:
+            snapshot: current
+            module_id: archiview-reviews
+            section: invariants
+            id: I1
+          subject: current
+          verdict: consistent
+          explanation: createStructuralReview назначает всем смысловым пунктам
+            not_checked, observation явно говорит об отсутствии вывода
+            ответственности, coverage=partial с ограничениями. Пустые findings
+            не превращаются в consistent.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+        - id: check-11
+          contract:
+            snapshot: current
+            module_id: archiview-reviews
+            section: invariants
+            id: I2
+          subject: current
+          verdict: consistent
+          explanation: resolveClause и resolveEvidence в validateReviewBundle выбирают
+            baseline/current из ссылки, проверяют единственность и digest факта.
+            validateContractScope сверяет checks с пунктами манифеста. Текущие
+            файлы для разрешения не используются.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+        - id: check-12
+          contract:
+            snapshot: current
+            module_id: archiview-reviews
+            section: invariants
+            id: I3
+          subject: current
+          verdict: consistent
+          explanation: effectiveClauses own включает только каталог модуля;
+            validateContractScope запрещает чужой module_id в checks. Для
+            finding разрешён собственный пункт либо boundary/invariant
+            фактического предка из сохранённого снимка, с проверкой пути предка.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: По прочитанному собственному коду и сохранённым фактам противоречий
+            собственным пунктам не обнаружено; ограничения полноты указаны
+            отдельно.
+        change:
+          verdict: consistent
+          summary: В выбранной паре собственные проверяемые входы, контракты и объявленные
+            зависимости совпадают. Нового изменения ответственности либо
+            собственного поведения в этих входах нет.
+      extensions:
+        archiview.boundary_review:
+          phase: 2
+          parent: architecture-core
+          ancestors:
+            - architecture-change-view
+            - architecture-core
+          verdict: consistent
+          summary: "Контракт ребёнка владеет структурой и доказательственной целостностью
+            проверки: роли data-types/domain относятся к manifest/report и
+            правилам ссылок. Публикация и freshness оставлены storage/reports,
+            транспорт отсутствует (core.B1/B5). createStructuralReview явно
+            оставляет смысловые пункты not_checked и partial, что соблюдает
+            core.B2/I3/I5 и root.B1/I4. validateReviewBundle разрешает каждую
+            ссылку в сохранённой стороне, а own scope принимает собственные
+            пункты и допускает ancestor findings без расширения собственного
+            чеклиста (core.I4). Ни контракты, ни исходники не записываются.
+            Формат хранит контекст предков как доказательство, не делает
+            собственный результат заменой договорённой ответственности."
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline:
+          id: git-771efbf7a9efe9e9a863aa96537652f133bfd463
+          digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+        current:
+          id: launch-4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+          digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      module:
+        id: archiview-reviews
+        baseline_path: src/reviews
+        current_path: src/reviews
+      analyzer:
+        name: agent-review
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      contract_scope: own
+      contracts:
+        baseline:
+          - reference:
+              snapshot: baseline
+              module_id: archiview-reviews
+              section: responsibilities
+              id: R1
+            text: Определять состав манифеста, проверяемые пункты и структуру результата.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-reviews
+              section: responsibilities
+              id: R2
+            text: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно
+              структурную оценку.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-reviews
+              section: boundaries
+              id: B1
+            text: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого
+              модуля.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-reviews
+              section: invariants
+              id: I1
+            text: Структурная проверка оставляет смысловые пункты непроверенными.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-reviews
+              section: invariants
+              id: I2
+            text: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+          - reference:
+              snapshot: baseline
+              module_id: archiview-reviews
+              section: invariants
+              id: I3
+            text: В собственной проверке модуля чеклист содержит только пункты его
+              контракта. Замечание также может ссылаться на границу или
+              инвариант предка из сохранённого контекста проверяемого модуля, не
+              добавляя проверку всего предка.
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-reviews
+              section: responsibilities
+              id: R1
+            text: Определять состав манифеста, проверяемые пункты и структуру результата.
+          - reference:
+              snapshot: current
+              module_id: archiview-reviews
+              section: responsibilities
+              id: R2
+            text: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно
+              структурную оценку.
+          - reference:
+              snapshot: current
+              module_id: archiview-reviews
+              section: boundaries
+              id: B1
+            text: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого
+              модуля.
+          - reference:
+              snapshot: current
+              module_id: archiview-reviews
+              section: invariants
+              id: I1
+            text: Структурная проверка оставляет смысловые пункты непроверенными.
+          - reference:
+              snapshot: current
+              module_id: archiview-reviews
+              section: invariants
+              id: I2
+            text: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+          - reference:
+              snapshot: current
+              module_id: archiview-reviews
+              section: invariants
+              id: I3
+            text: В собственной проверке модуля чеклист содержит только пункты его
+              контракта. Замечание также может ссылаться на границу или
+              инвариант предка из сохранённого контекста проверяемого модуля, не
+              добавляя проверку всего предка.
+      instructions: Проверить собственную ответственность, границы и инварианты
+        модуля, включая соответствие его реализации и контракта границам
+        предков. Пункты предков не добавлять в собственный чеклист; противоречия
+        отразить в замечаниях со ссылками на сохранённые ограничения и
+        доказательства. Локальное изменение само по себе не требует пересмотра
+        предков. Зависимости задавать по реально использованному контракту/API,
+        не по расположению каталога. Заполнить модель, prompt и результаты.
+      context: {}
+      review_scope: self
+      model:
+        provider: openai
+        id: gpt-6
+      prompt_digest: sha256:424e397c5e6a6f79bed85809450f141e28f62db59e2a91113cecf05645d5d546
+    baseline:
+      schema_version: 2
+      id: git-771efbf7a9efe9e9a863aa96537652f133bfd463
+      digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      kind: git
+      revision: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      complete: true
+      modules:
+        - directory: .
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-change-view
+
+              title: Контракты и просмотр архитектуры
+
+              kind: module
+
+              extensions:
+                archiview.roles: [app]
+              purpose: Объединять ведение контрактов и просмотр изменений в
+              приложении ArchiView,
+                где команда может сопоставить состояние проекта с ответственностью его модулей.
+              responsibilities:
+                R1: Поставлять агентам канонические правила ведения контрактов и средства чтения контекста каталога.
+                R2: Давать агенту возможность установить, каким каталогам требуется создание, перенос или
+                  исправление контракта.
+                R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с результатами
+                  проверок и теми доказательствами, на которых основаны выводы.
+                R4: Автоматически поддерживать переносимую историю проверок, в которой видна актуальность
+                  выводов для отдельного модуля и его поддерева.
+                R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                  и DeepSeek Harness с общими контрактами и форматом истории проекта.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                  Просмотр не изменяет исходники проекта.
+                B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за пределами
+                  ArchiView и относятся к ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот корень
+                  от хоста; явно настроенный для модельных инструментов корень ограничивает их чтение.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                  внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                  факты и отчёты не переписываются при переносе проекта.
+                I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта modules.tree
+                  связывает его id с каталогом проекта. Эвристические оценки и текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+                I6: Обе интеграции получают правила ведения контрактов из канонического скилла пакета.
+                I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+                I7: Панель обращается к агенту только по явному поручению пользователя проанализировать модуль
+                  или исправить замечание.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: architecture-change-view
+              title: Контракты и просмотр архитектуры
+              kind: module
+              extensions:
+                archiview.roles:
+                  - app
+              purpose: Объединять ведение контрактов и просмотр изменений в приложении
+                ArchiView, где команда может сопоставить состояние проекта с
+                ответственностью его модулей.
+              responsibilities:
+                R1: Поставлять агентам канонические правила ведения контрактов и средства чтения
+                  контекста каталога.
+                R2: Давать агенту возможность установить, каким каталогам требуется создание,
+                  перенос или исправление контракта.
+                R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с
+                  результатами проверок и теми доказательствами, на которых
+                  основаны выводы.
+                R4: Автоматически поддерживать переносимую историю проверок, в которой видна
+                  актуальность выводов для отдельного модуля и его поддерева.
+                R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                  и DeepSeek Harness с общими контрактами и форматом истории
+                  проекта.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+                  инструментами. Просмотр не изменяет исходники проекта.
+                B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+                  пределами ArchiView и относятся к ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+                  строгим TypeScript перед сборкой; классы сохраняют
+                  единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+                  корень от хоста; явно настроенный для модельных инструментов
+                  корень ограничивает их чтение.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+                  .archiview внутри корня проекта. Эта папка исключена из
+                  анализа исходников; прежние сохранённые факты и отчёты не
+                  переписываются при переносе проекта.
+                I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+                  modules.tree связывает его id с каталогом проекта.
+                  Эвристические оценки и текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+                I6: Обе интеграции получают правила ведения контрактов из канонического скилла
+                  пакета.
+                I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+                  кодом. Панель и агент сохраняют принадлежность модуля его
+                  репозиторию.
+                I7: Панель обращается к агенту только по явному поручению пользователя
+                  проанализировать модуль или исправить замечание.
+          documentPath: .archiview/modules/architecture-change-view.yaml
+          files:
+            - path: .archiview/modules/architecture-change-view.yaml
+              hash: 8bbcbfb87ffc05afb0ebc8fedfce12ec44e75b15
+          sourceFiles: 0
+          fingerprint: ec7bc4e0681ec4a2da64cc46062f1564816306a55dbe2cfa709af5340fec53db
+        - directory: src
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-core
+
+              title: Корень исходников ArchiView
+
+              kind: group
+
+              extensions:
+                archiview.roles: [root]
+              purpose: Объединять серверные модули ArchiView вокруг общей модели
+              проекта, чтобы разные
+                способы доступа давали согласованные контракты, изменения и результаты проверок.
+              responsibilities:
+                R11: Задавать границу между моделью проекта, прикладными операциями и внешними адаптерами.
+              boundaries:
+                B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис принимает данные
+                  проекта и возвращает результат независимо от транспорта, хоста и способа отображения.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                  доказывает его выполнения.
+                B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и проверка
+                  контрактов доступны независимо от MCP, HTTP и хоста.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                  .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                  либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+                I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты описывают
+                  состояние исходников и контрактов из того же индекса Git.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: architecture-core
+              title: Корень исходников ArchiView
+              kind: group
+              extensions:
+                archiview.roles:
+                  - root
+              purpose: Объединять серверные модули ArchiView вокруг общей модели проекта,
+                чтобы разные способы доступа давали согласованные контракты,
+                изменения и результаты проверок.
+              responsibilities:
+                R11: Задавать границу между моделью проекта, прикладными операциями и внешними
+                  адаптерами.
+              boundaries:
+                B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
+                  принимает данные проекта и возвращает результат независимо от
+                  транспорта, хоста и способа отображения.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор.
+                  Наличие контракта не доказывает его выполнения.
+                B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
+                  проверка контрактов доступны независимо от MCP, HTTP и хоста.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+                  сборка и папки .archiview не расширяют анализ. Запись данных
+                  допускается в .archiview корня проекта либо явно выбранном
+                  внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
+                  ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+                  файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения
+                  требует отдельного анализа.
+                I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
+                  описывают состояние исходников и контрактов из того же индекса
+                  Git.
+          documentPath: .archiview/modules/architecture-core.yaml
+          files:
+            - path: .archiview/modules/architecture-core.yaml
+              hash: df81843e61d1f575eaaccc087310d9dcd0110a08
+          sourceFiles: 0
+          fingerprint: eecfabfb38329cca2e2994535554778f663bba1a6a1c6300baa06c8cb68b0834
+        - directory: src/contracts
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-contracts
+
+              title: Контракты каталогов
+
+              kind: module
+
+              extensions:
+                archiview.roles: [domain]
+              purpose: Читать декларации ответственности и находить каталоги
+              исходников, которым нужен контракт.
+
+              responsibilities:
+                R1: Проверять карту каталогов и соответствие идентификатора каждого YAML-контракта записи в карте, сообщать об отсутствующих и повреждённых описаниях.
+                R2: Предоставлять инвентаризацию каталогов по репозиториям и находить цепочку контрактов для пути файла или каталога.
+              boundaries:
+                B1: Предметные выводы по реализации и публикация отчётов принадлежат другим модулям.
+              invariants:
+                I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается диагностика.
+                I2: Наличие документа подтверждает только его структурное состояние.
+                I3: Контракт и его предки читаются из карты репозитория исходника. Идентификаторы модулей уникальны в пределах одной карты.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-contracts
+              title: Контракты каталогов
+              kind: module
+              extensions:
+                archiview.roles:
+                  - domain
+              purpose: Читать декларации ответственности и находить каталоги исходников,
+                которым нужен контракт.
+              responsibilities:
+                R1: Проверять карту каталогов и соответствие идентификатора каждого
+                  YAML-контракта записи в карте, сообщать об отсутствующих и
+                  повреждённых описаниях.
+                R2: Предоставлять инвентаризацию каталогов по репозиториям и находить цепочку
+                  контрактов для пути файла или каталога.
+              boundaries:
+                B1: Предметные выводы по реализации и публикация отчётов принадлежат другим
+                  модулям.
+              invariants:
+                I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается
+                  диагностика.
+                I2: Наличие документа подтверждает только его структурное состояние.
+                I3: Контракт и его предки читаются из карты репозитория исходника.
+                  Идентификаторы модулей уникальны в пределах одной карты.
+          documentPath: .archiview/modules/archiview-contracts.yaml
+          files:
+            - path: .archiview/modules/archiview-contracts.yaml
+              hash: 76641eefe8a3115e527ca1550bdb2e72d7d53a6a
+            - path: src/contracts/types.ts
+              hash: a74de37c7c75214b6c65e0a790b9c71022a5e8db
+          sourceFiles: 6
+          fingerprint: fa97dd6ffd3df28e95f5fad8da4e56eeab094ba12749c464bb5e98881dcf7e9f
+        - directory: src/reviews
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-reviews
+
+              title: Содержимое архитектурной проверки
+
+              kind: module
+
+              extensions:
+                archiview.roles: [data-types, domain]
+              purpose: Описывать проверку по контрактам и доказательствам
+              выбранных снимков и проверять её целостность.
+
+              responsibilities:
+                R1: Определять состав манифеста, проверяемые пункты и структуру результата.
+                R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно структурную оценку.
+              boundaries:
+                B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого модуля.
+              invariants:
+                I1: Структурная проверка оставляет смысловые пункты непроверенными.
+                I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+                I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
+                  Замечание также может ссылаться на границу или инвариант предка из сохранённого
+                  контекста проверяемого модуля, не добавляя проверку всего предка.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-reviews
+              title: Содержимое архитектурной проверки
+              kind: module
+              extensions:
+                archiview.roles:
+                  - data-types
+                  - domain
+              purpose: Описывать проверку по контрактам и доказательствам выбранных снимков и
+                проверять её целостность.
+              responsibilities:
+                R1: Определять состав манифеста, проверяемые пункты и структуру результата.
+                R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно
+                  структурную оценку.
+              boundaries:
+                B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого
+                  модуля.
+              invariants:
+                I1: Структурная проверка оставляет смысловые пункты непроверенными.
+                I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+                I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
+                  Замечание также может ссылаться на границу или инвариант
+                  предка из сохранённого контекста проверяемого модуля, не
+                  добавляя проверку всего предка.
+          documentPath: .archiview/modules/archiview-reviews.yaml
+          files:
+            - path: .archiview/modules/archiview-reviews.yaml
+              hash: bdf93ee82c46df2070578466e634fe0aa5f07736
+            - path: src/reviews/bundle.ts
+              hash: 90285eae895337b40a3f739c3148ff0188675996
+            - path: src/reviews/schema.ts
+              hash: 678680f955a6d28156bd33dbb48844c53b480ed2
+            - path: src/reviews/types.ts
+              hash: e8b0c54a7ca64f46ed4caa5a7d5ee22f3953b8dc
+          sourceFiles: 3
+          fingerprint: 2a2fea22a81e531adb7ab6efa584ba058f37c1da4f211e63e99917fcf6c4f476
+        - directory: src/serialization
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-serialization
+
+              title: Кодирование данных
+
+              kind: module
+
+              extensions:
+                archiview.roles: [serialization]
+              purpose: Предоставлять общее чтение YAML, средства проверки
+              структуры и канонические отпечатки внешних данных.
+
+              responsibilities:
+                R1: Читать однозначные JSON-совместимые значения из YAML и предоставлять примитивы проверки их структуры.
+                R2: Канонизировать значения и вычислять согласованный SHA-256 по байтам UTF-8.
+              boundaries:
+                B1: Схемы конкретных контрактов и проверок определяются их владельцами.
+              invariants:
+                I1: Порядок ключей словаря не влияет на каноническую форму. Порядок массива сохраняется.
+                I2: Неоднозначные ключи, ссылки YAML и недопустимые типы отклоняются до использования данных.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-serialization
+              title: Кодирование данных
+              kind: module
+              extensions:
+                archiview.roles:
+                  - serialization
+              purpose: Предоставлять общее чтение YAML, средства проверки структуры и
+                канонические отпечатки внешних данных.
+              responsibilities:
+                R1: Читать однозначные JSON-совместимые значения из YAML и предоставлять
+                  примитивы проверки их структуры.
+                R2: Канонизировать значения и вычислять согласованный SHA-256 по байтам UTF-8.
+              boundaries:
+                B1: Схемы конкретных контрактов и проверок определяются их владельцами.
+              invariants:
+                I1: Порядок ключей словаря не влияет на каноническую форму. Порядок массива
+                  сохраняется.
+                I2: Неоднозначные ключи, ссылки YAML и недопустимые типы отклоняются до
+                  использования данных.
+          documentPath: .archiview/modules/archiview-serialization.yaml
+          files:
+            - path: .archiview/modules/archiview-serialization.yaml
+              hash: 98d749a75d47207124e25ca215520aae1978fb91
+            - path: src/serialization/digest.ts
+              hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+            - path: src/serialization/schema.ts
+              hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+          sourceFiles: 3
+          fingerprint: 45fce546e006eadbbb2c6abc3c61377793349ff8285526b3755956f22a3d8f88
+        - directory: src/snapshots
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-snapshots
+
+              title: Снимки и сравнение
+
+              kind: module
+
+              extensions:
+                archiview.roles: [domain]
+              purpose: Фиксировать состояние исходников и сравнивать собственные
+              файлы, контракты и расположение модулей.
+
+              responsibilities:
+                R1: Собирать снимки рабочего дерева, коммита и индекса Git с происхождением файлов и наблюдаемых фактов.
+                R2: Сопоставлять версии модулей и вычислять различия файлов и композиции дерева.
+              boundaries:
+                B1: Публикация, оценка проверок и выбор представления принадлежат хранилищу, модели отчётов и прикладной сессии.
+              invariants:
+                I1: Идентичность содержимого включает факты и неполноту, время захвата и пользовательская метка её не меняют.
+                I2: Сравнение сохраняет удалённые модули и различает изменение собственных файлов и изменение потомков.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-snapshots
+              title: Снимки и сравнение
+              kind: module
+              extensions:
+                archiview.roles:
+                  - domain
+              purpose: Фиксировать состояние исходников и сравнивать собственные файлы,
+                контракты и расположение модулей.
+              responsibilities:
+                R1: Собирать снимки рабочего дерева, коммита и индекса Git с происхождением
+                  файлов и наблюдаемых фактов.
+                R2: Сопоставлять версии модулей и вычислять различия файлов и композиции дерева.
+              boundaries:
+                B1: Публикация, оценка проверок и выбор представления принадлежат хранилищу,
+                  модели отчётов и прикладной сессии.
+              invariants:
+                I1: Идентичность содержимого включает факты и неполноту, время захвата и
+                  пользовательская метка её не меняют.
+                I2: Сравнение сохраняет удалённые модули и различает изменение собственных
+                  файлов и изменение потомков.
+          documentPath: .archiview/modules/archiview-snapshots.yaml
+          files:
+            - path: .archiview/modules/archiview-snapshots.yaml
+              hash: 729614d43b6c368f1bbd8d8586ff2d6b02f2eac7
+            - path: src/snapshots/identity.ts
+              hash: a397fd9979b0ca0911893b78d4ec4d0f951e078d
+            - path: src/snapshots/types.ts
+              hash: fbced32fb23a0c6279f89c6f24263b0c638385a2
+          sourceFiles: 6
+          fingerprint: a7ae5e2c4183bbf605ea242852545aff2d282b5955830f83c9feb696e1de6323
+      facts:
+        - id: sha256:7a3f1a99a120f7ea78a436fb4d73b9fa7401fcb381b621ddf48c65f4a8df33c4
+          kind: file
+          path: .archiview/modules/architecture-change-view.yaml
+          start_line: 1
+          end_line: 38
+          text: >
+            schema_version: 1
+
+            id: architecture-change-view
+
+            title: Контракты и просмотр архитектуры
+
+            kind: module
+
+            extensions:
+              archiview.roles: [app]
+            purpose: Объединять ведение контрактов и просмотр изменений в
+            приложении ArchiView,
+              где команда может сопоставить состояние проекта с ответственностью его модулей.
+            responsibilities:
+              R1: Поставлять агентам канонические правила ведения контрактов и средства чтения контекста каталога.
+              R2: Давать агенту возможность установить, каким каталогам требуется создание, перенос или
+                исправление контракта.
+              R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с результатами
+                проверок и теми доказательствами, на которых основаны выводы.
+              R4: Автоматически поддерживать переносимую историю проверок, в которой видна актуальность
+                выводов для отдельного модуля и его поддерева.
+              R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                и DeepSeek Harness с общими контрактами и форматом истории проекта.
+            boundaries:
+              B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                Просмотр не изменяет исходники проекта.
+              B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за пределами
+                ArchiView и относятся к ast-index.
+            invariants:
+              I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+              I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот корень
+                от хоста; явно настроенный для модельных инструментов корень ограничивает их чтение.
+              I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                факты и отчёты не переписываются при переносе проекта.
+              I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта modules.tree
+                связывает его id с каталогом проекта. Эвристические оценки и текущий код не разрешают её расширять.
+              I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+              I6: Обе интеграции получают правила ведения контрактов из канонического скилла пакета.
+              I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+              I7: Панель обращается к агенту только по явному поручению пользователя проанализировать модуль
+                или исправить замечание.
+        - id: sha256:1a7feb56e9e52cc450306c4ed6067c61829ca9ed40888b9b32c84d75bdecaf1a
+          kind: file
+          path: .archiview/modules/architecture-core.yaml
+          start_line: 1
+          end_line: 28
+          text: >
+            schema_version: 1
+
+            id: architecture-core
+
+            title: Корень исходников ArchiView
+
+            kind: group
+
+            extensions:
+              archiview.roles: [root]
+            purpose: Объединять серверные модули ArchiView вокруг общей модели
+            проекта, чтобы разные
+              способы доступа давали согласованные контракты, изменения и результаты проверок.
+            responsibilities:
+              R11: Задавать границу между моделью проекта, прикладными операциями и внешними адаптерами.
+            boundaries:
+              B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис принимает данные
+                проекта и возвращает результат независимо от транспорта, хоста и способа отображения.
+              B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                доказывает его выполнения.
+              B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и проверка
+                контрактов доступны независимо от MCP, HTTP и хоста.
+            invariants:
+              I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+              I2: Неполнота обхода и доказательств сообщается явно.
+              I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую ответственность.
+              I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+              I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+              I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты описывают
+                состояние исходников и контрактов из того же индекса Git.
+        - id: sha256:c3087f2f0d1cec9294d578e00085768178f5ad58f2b954713bae515cabc93ddb
+          kind: file
+          path: .archiview/modules/archiview-reviews.yaml
+          start_line: 1
+          end_line: 19
+          text: >
+            schema_version: 1
+
+            id: archiview-reviews
+
+            title: Содержимое архитектурной проверки
+
+            kind: module
+
+            extensions:
+              archiview.roles: [data-types, domain]
+            purpose: Описывать проверку по контрактам и доказательствам
+            выбранных снимков и проверять её целостность.
+
+            responsibilities:
+              R1: Определять состав манифеста, проверяемые пункты и структуру результата.
+              R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно структурную оценку.
+            boundaries:
+              B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого модуля.
+            invariants:
+              I1: Структурная проверка оставляет смысловые пункты непроверенными.
+              I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+              I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
+                Замечание также может ссылаться на границу или инвариант предка из сохранённого
+                контекста проверяемого модуля, не добавляя проверку всего предка.
+        - id: sha256:51945e74b2e35f6548cae0cd7d48532841315880228621478ad4d280a41f51c4
+          kind: file
+          path: src/contracts/types.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            export type Section = "responsibilities" | "boundaries" |
+            "invariants";
+
+
+            export interface Contract {
+              schema_version: number;
+              id: string;
+              title: string;
+              kind: string;
+              purpose: string;
+              responsibilities: Record<string, string>;
+              boundaries: Record<string, string>;
+              invariants: Record<string, string>;
+              rationale?: string;
+              owners?: string[];
+              tags?: string[];
+              references?: { title: string; uri: string }[];
+              extensions?: Record<string, unknown>;
+            }
+
+
+            export interface ContractDocument {
+              state: string;
+              text: string | null;
+              format?: string;
+              contract?: Contract | null;
+              errors?: string[];
+              action?: string;
+            }
+        - id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+          kind: file
+          path: src/reviews/bundle.ts
+          start_line: 1
+          end_line: 188
+          text: >
+            import type { SnapshotData, SnapshotModule, Snapshot,
+            ComparisonModule } from "../snapshots/types.js";
+
+            import type {
+              Side, ReviewBundle, ReviewReport, ReviewManifest, ClauseReference, ClauseInput,
+              ClauseCheck, Finding, EvidenceReference,
+            } from "./types.js";
+
+            /**
+             * Проверка структуры и связи отчёта со снимками. Не выводит семантику кода:
+             * пункты ответственности получают not_checked, а наблюдения — явное ограничение.
+             * Полноценный внешний анализ использует тот же формат и сохранённые доказательства.
+             */
+            import { randomUUID } from "node:crypto";
+
+            import path from "node:path";
+
+            import { canonical, digest } from "../serialization/digest.js";
+
+            import { validateReview } from "./schema.js";
+
+            import { snapshotDigest } from "../snapshots/identity.js";
+
+
+            /** Версия включает алгоритм структурной проверки; настройки
+            участвуют в manifest. */
+
+            export const ANALYZER = { name: "archiview-structure", version:
+            "1.0.2",
+              config_digest: digest({ semantic: false, inherited: ["boundaries", "invariants"] }) };
+
+            /** Точная ссылка на сохранённое содержание, независимо от
+            пользовательской метки. */
+
+            export const snapshotReference = (snapshot: Snapshot | null |
+            undefined) => snapshot ?
+              { id: snapshot.id, digest: snapshot.digest ?? snapshotDigest(snapshot) } : null;
+
+            /**
+             * Собственная проверка содержит только локальный контракт. Режим effective
+             * нужен для проверки целостности прежних неизменяемых отчётов с пунктами предков.
+             */
+            export function effectiveClauses(snapshot: SnapshotData | null,
+            directory: string | null | undefined, side: Side, contractScope =
+            "effective"): ClauseInput[] {
+              if (!["own", "effective"].includes(contractScope)) throw new Error("Unsupported contract scope");
+              if (!snapshot || directory == null) return [];
+              const parents = new Set([directory]);
+              let parent = directory;
+              while (contractScope === "effective" && parent !== ".") { parent = path.posix.dirname(parent); parents.add(parent); }
+              return snapshot.modules.filter((m) => parents.has(m.directory) && m.document.state === "documented" && m.document.contract)
+                .flatMap((m) => (["responsibilities", "boundaries", "invariants"] as const)
+                  .filter((section) => section !== "responsibilities" || m.directory === directory)
+                  .flatMap((section) => Object.entries(m.document.contract![section]).map(([id, text]) => ({
+                    reference: { snapshot: side, module_id: m.document.contract!.id, section, id }, text,
+                  }))));
+            }
+
+
+            type ReviewedModule = Pick<ComparisonModule, "moduleId" |
+            "baselinePath" | "currentPath" | "before" | "after">;
+
+
+            /** Манифест отделяет собственный чеклист от сохранённого контекста
+            предков. */
+
+            export function reviewManifest(before: Snapshot | null, after:
+            Snapshot, module: ReviewedModule, analyzer = ANALYZER, contractScope
+            = "own"): ReviewManifest {
+              return { schema_version: 1, comparison: { baseline: snapshotReference(before), current: snapshotReference(after) },
+                module: { id: module.moduleId ?? null, baseline_path: module.baselinePath ?? null, current_path: module.currentPath ?? null },
+                analyzer, scope: "module", ...(contractScope === "own" ? { contract_scope: "own" } : {}), contracts: {
+                  baseline: effectiveClauses(before, module.baselinePath, "baseline", contractScope),
+                  current: effectiveClauses(after, module.currentPath, "current", contractScope),
+                }, instructions: "Проверять структуру контрактов; смысл кода не анализировать.", context: {} };
+            }
+
+
+            /**
+             * База и текущее состояние проверяются отдельно. Повторная проверка текущего
+             * кода по базовому пункту нужна лишь при изменении или удалении этого пункта;
+             * старый формат сохраняет первоначальные требования к набору проверок.
+             */
+            export function requiredClauseChecks(manifest: ReviewManifest,
+            hasCurrent: boolean) {
+              const baseline = manifest.contracts?.baseline ?? [];
+              const current = manifest.contracts?.current ?? [];
+              const previousRequirements = manifest.contract_scope === "own" ? baseline.filter((item) =>
+                !current.some((other) => other.reference.module_id === item.reference.module_id &&
+                  other.reference.section === item.reference.section && other.reference.id === item.reference.id && other.text === item.text)) : baseline;
+              return [...baseline.map((item) => ({ item, subject: "baseline" as const })),
+                ...current.map((item) => ({ item, subject: "current" as const })),
+                ...(hasCurrent ? previousRequirements.map((item) => ({ item, subject: "current" as const })) : [])];
+            }
+
+
+            /** Новый локальный чеклист не может расширяться пунктами чужого
+            контракта. */
+
+            export function validateContractScope(report: ReviewReport,
+            manifest: ReviewManifest,
+              snapshots?: { baseline: SnapshotData | null; current: SnapshotData }) {
+              const scope = manifest.contract_scope ?? "effective";
+              if (!["own", "effective"].includes(scope)) throw new Error("Unsupported contract scope");
+              if (scope === "own" && report.checks.some((check) => check.contract.module_id !== report.module.id))
+                throw new Error("Own review checks must reference the module contract");
+              const clauses = new Set([...manifest.contracts.baseline, ...manifest.contracts.current].map((item) => canonical(item.reference)));
+              if (report.checks.some((check) => !clauses.has(canonical(check.contract))))
+                throw new Error("Review check references a clause outside the manifest");
+              const localConstraint = (clause: ClauseReference) => {
+                if (clause.module_id === report.module.id) return true;
+                if (!["boundaries", "invariants"].includes(clause.section)) return false;
+                const directory = report.module[`${clause.snapshot}_path`];
+                const ancestor = snapshots?.[clause.snapshot]?.modules.find((module) =>
+                  module.document.state === "documented" && module.document.contract?.id === clause.module_id);
+                return Boolean(directory && ancestor && ancestor.directory !== directory &&
+                  (ancestor.directory === "." || directory.startsWith(ancestor.directory + "/")));
+              };
+              if (scope === "own" && report.findings.some((finding) => finding.clauses.length &&
+                !finding.clauses.some(localConstraint)))
+                throw new Error("Own review finding must reference the module contract or an ancestor boundary");
+              return scope;
+            }
+
+
+            /** Формирует честный частичный отчёт без подмены анализа наличием
+            документов. */
+
+            export function createStructuralReview(before: Snapshot | null,
+            after: Snapshot, module: ReviewedModule, { contractScope = "own" }:
+            {contractScope?:string} = {}): ReviewBundle {
+              const manifest = reviewManifest(before, after, module, ANALYZER, contractScope);
+              const limitations = ["Семантика кода не анализировалась. Соответствие обязанностям, границам и инвариантам требует отдельного анализа.",
+                ...before?.evidenceLimitations ?? [], ...after.evidenceLimitations ?? []];
+              const findings: Finding[] = [];
+              const checks: ClauseCheck[] = [];
+              const fact = (snapshot: Snapshot | null, side: Side, kind: string, file: string): EvidenceReference[] => (snapshot?.facts ?? [])
+                .filter((f) => f.kind === kind && f.path === file).map((f) => ({ snapshot: side, fact_id: f.id }));
+              for (const [snapshot, side, entry] of ([[before, "baseline", module.before], [after, "current", module.after]] as const)) {
+                if (!entry) continue;
+                if (!entry.document.contract || entry.document.state !== "documented") {
+                  const evidence = fact(snapshot, side, "module", entry.directory);
+                  const migrated = side === "baseline" && entry.document.state !== "invalid" && module.after?.document.state === "documented" && module.after.document.contract;
+                  if (migrated) evidence.push(...fact(after, "current", "module", module.after!.directory));
+                  if (evidence.length) findings.push({ id: "contract-" + side,
+                    kind: entry.document.state === "invalid" ? "contract_conflict" : "missing_contract",
+                    certainty: "confirmed", severity: migrated ? "info" : "warning", lifecycle: migrated ? "resolved" : "unknown",
+                    summary: (side === "baseline" ? "В базовом снимке: " : "") + (entry.document.state === "invalid" ? "контракт не соответствует схеме v1." :
+                      "нет действующего контракта модуля."),
+                    details: migrated ? "В текущем снимке появился контракт модуля. Соответствие кода его пунктам требует проверки." :
+                      entry.document.errors?.join("\n") ?? "Проверьте запись модуля в .archiview/modules.tree и его YAML-контракт.",
+                    clauses: [], evidence });
+                  else limitations.push(side + ": снимок прежнего формата не содержит фактов о модуле.");
+                }
+              }
+              for (const { item, subject } of requiredClauseChecks(manifest, Boolean(module.after))) {
+                checks.push({ id: "check-" + (checks.length + 1), contract: item.reference,
+                  subject, verdict: "not_checked", explanation: "Структурный анализ не определяет соответствие кода этому пункту.", evidence: [] });
+              }
+              const observed = (entry: SnapshotModule | null | undefined) => entry ? { summary: "Обнаружено собственных исходных файлов: " + entry.sourceFiles +
+                ". Ответственность из кода не выводилась.", responsibilities: [] } : null;
+              const report: ReviewReport = { schema_version: 1, id: "review-" + randomUUID(), module: manifest.module,
+                comparison: manifest.comparison,
+                analysis: { created_at: new Date().toISOString(), analyzer: ANALYZER,
+                  input_digest: digest(manifest), scope: "module", coverage: { status: "partial", limitations } },
+                observed: { baseline: observed(module.before), current: observed(module.after) }, checks, findings,
+                assessment: {
+                  current: { verdict: !module.after ? "not_applicable" : findings.some((f) => f.id === "contract-current") ? "needs_review" : "inconclusive",
+                    summary: !module.after ? "Модуль отсутствует в текущем снимке." : "Структура проверена; соответствие кода контракту не установлено." },
+                  change: { verdict: !before ? "not_applicable" : "inconclusive",
+                    summary: !before ? "Первый анализ без базового снимка." : "Изменения файлов зафиксированы; оценка ответственности требует анализа кода." },
+                } };
+              validateReviewBundle({ report, manifest, baseline: before, current: after });
+              return { report, manifest, baseline: before, current: after };
+            }
+
+
+            /** Проверяет происхождение отчёта: хеши, пути, пункты контрактов и
+            каждый факт. */
+
+            export function validateReviewBundle(bundle: ReviewBundle) {
+              const { report, manifest, baseline, current } = bundle;
+              validateReview(report);
+              if (!manifest || digest(manifest) !== report.analysis.input_digest) throw new Error("Review input digest mismatch");
+              validateContractScope(report, manifest, bundle);
+              if (digest(manifest.comparison) !== digest(report.comparison) || digest(manifest.module) !== digest(report.module) ||
+                  digest(manifest.analyzer) !== digest(report.analysis.analyzer) || manifest.scope !== report.analysis.scope) throw new Error("Review manifest mismatch");
+              if (report.analysis.model && (digest(manifest.model) !== digest(report.analysis.model) || manifest.prompt_digest !== report.analysis.prompt_digest)) throw new Error("Review model inputs mismatch");
+              if (!current || (baseline && baseline.root !== current.root)) throw new Error("Foreign review snapshot");
+              for (const [side, snapshot] of ([["baseline", baseline], ["current", current]] as const)) {
+                const reference = report.comparison[side];
+                if ((snapshot == null) !== (reference === null)) throw new Error("Missing " + side + " snapshot");
+                if (snapshot && (snapshot.id !== reference?.id || snapshotDigest(snapshot) !== reference?.digest)) throw new Error("Review snapshot digest mismatch: " + side);
+                const directory = report.module[`${side}_path`];
+                const module = snapshot?.modules.find((m) => m.directory === directory);
+                if (directory !== null && !module) throw new Error("Review module path is missing: " + side);
+                if (module?.document.contract && report.module.id !== null && module.document.contract.id !== report.module.id) throw new Error("Review module identity mismatch");
+                if (digest(manifest.contracts?.[side]) !== digest(effectiveClauses(snapshot, directory, side,
+                  manifest.contract_scope ?? "effective"))) throw new Error("Effective contracts mismatch: " + side);
+              }
+              const resolveClause = (ref: ClauseReference) => {
+                const snapshot = ref.snapshot === "baseline" ? baseline : current;
+                const matches = snapshot?.modules.filter((m) => m.document.state === "documented" && m.document.contract?.id === ref.module_id) ?? [];
+                if (matches.length !== 1 || !Object.hasOwn(matches[0].document.contract![ref.section], ref.id)) throw new Error("Unresolved contract clause: " + ref.module_id + "/" + ref.id);
+              };
+              const resolveEvidence = (ref: EvidenceReference) => {
+                const snapshot = ref.snapshot === "baseline" ? baseline : current;
+                const matches = snapshot?.facts?.filter((f) => f.id === ref.fact_id) ?? [];
+                if (matches.length !== 1 || typeof matches[0].text !== "string") throw new Error("Unresolved evidence: " + ref.fact_id);
+                const { id, ...fact } = matches[0];
+                if (digest(fact) !== id) throw new Error("Evidence content digest mismatch");
+              };
+              for (const check of report.checks) {
+                resolveClause(check.contract);
+                if (report.module[`${check.subject}_path`] === null) throw new Error("Check subject is absent");
+                check.evidence.forEach(resolveEvidence);
+              }
+              for (const finding of report.findings) { finding.clauses.forEach(resolveClause); finding.evidence.forEach(resolveEvidence); }
+              for (const observed of Object.values(report.observed)) observed?.responsibilities.forEach((r) => r.evidence.forEach(resolveEvidence));
+              for (const { item, subject } of requiredClauseChecks(manifest, report.module.current_path !== null)) {
+                if (!report.checks.some((c) => c.subject === subject && digest(c.contract) === digest(item.reference))) throw new Error("Missing explicit clause check: " + item.reference.id);
+              }
+              return bundle;
+            }
+        - id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+          kind: file
+          path: src/reviews/schema.ts
+          start_line: 1
+          end_line: 63
+          text: >
+            import { fail, string, object, enumeration, nullable, array, shape,
+            strings, references, extensions } from "../serialization/schema.js";
+
+
+            import type { Validator } from "../serialization/schema.js";
+
+
+            import type { ReviewReport } from "./types.js";
+
+
+            const hash: Validator = (v, at) =>
+            /^sha256:[a-f0-9]{64}$/.test(String(v)) ? undefined : fail(at,
+            "ожидается sha256:<64 hex>");
+
+            const version = enumeration(1);
+
+            const side = enumeration("baseline", "current");
+
+            const section = enumeration("responsibilities", "boundaries",
+            "invariants");
+
+            const relativePath: Validator = (value, at) => {
+              string(value, at);
+              const v = value as string;
+              if (v !== "." && (v.startsWith("/") || /[\\:]/.test(String(v)) ||
+                  v.split("/").some((part) => ["", ".", ".."].includes(part)))) fail(at, "нужен путь относительно проекта");
+            };
+
+            const timestamp: Validator = (value, at) => {
+              string(value, at);
+              const v = value as string;
+              if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/.test(String(v)) || !Number.isFinite(Date.parse(v))) fail(at, "нужно время UTC");
+            };
+
+            const evidence = shape({ snapshot: side, fact_id: string });
+
+            const clause = shape({ snapshot: side, module_id: string, section,
+            id: string });
+
+            const snapshot = shape({ id: string, digest: hash });
+
+            const observation = shape({ summary: string, responsibilities:
+            array(shape({ text: string, evidence: array(evidence, 1) })) });
+
+            const assessment = shape({ verdict: enumeration("consistent",
+            "violation", "needs_review", "inconclusive", "not_applicable"),
+            summary: string });
+
+
+            /** Полная схема отчёта; успешные выводы требуют явных
+            доказательств. */
+
+            export function validateReview(input: unknown): ReviewReport {
+              const value = input as ReviewReport;
+              shape({ schema_version: version, id: string,
+                module: shape({ id: nullable(string), baseline_path: nullable(relativePath), current_path: nullable(relativePath) }),
+                comparison: shape({ baseline: nullable(snapshot), current: snapshot }),
+                analysis: shape({ created_at: timestamp, analyzer: shape({ name: string, version: string, config_digest: hash }),
+                  input_digest: hash, scope: enumeration("module", "changes"), coverage: shape({
+                    status: enumeration("complete", "partial", "unavailable"), limitations: strings }) },
+                { model: shape({ provider: string, id: string }, { revision: string, parameters: object }), prompt_digest: hash }),
+                observed: shape({ baseline: nullable(observation), current: nullable(observation) }),
+                checks: array(shape({ id: string, contract: clause, subject: side,
+                  verdict: enumeration("consistent", "violation", "uncertain", "not_checked", "not_applicable"),
+                  explanation: string, evidence: array(evidence) })),
+                // contract_change читается только для сохранения совместимости с неизменяемой историей.
+                findings: array(shape({ id: string, kind: enumeration("boundary_violation", "invariant_violation",
+                  "undeclared_responsibility", "responsibility_gap", "contract_conflict", "contract_change", "missing_contract"),
+                  certainty: enumeration("confirmed", "suspected"), severity: enumeration("info", "warning", "error"),
+                  lifecycle: enumeration("introduced", "persisting", "resolved", "unknown"), summary: string,
+                  clauses: array(clause), evidence: array(evidence, 1) },
+                { details: string, recommendation: string, related_modules: strings })),
+                assessment: shape({ current: assessment, change: assessment }) }, { references, extensions })(value, "review");
+              if (value.module.baseline_path === null && value.module.current_path === null) fail("review.module", "оба пути отсутствуют");
+              for (const s of ["baseline", "current"] as const) {
+                if ((value.module[`${s}_path`] === null) !== (value.observed[s] === null)) fail("review.observed." + s, "не совпадает с наличием модуля");
+              }
+              if (value.comparison.baseline === null && (value.module.baseline_path !== null || value.assessment.change.verdict !== "not_applicable")) fail("review.comparison", "первый анализ не имеет базы и оценки изменения");
+              if (Boolean(value.analysis.model) !== Boolean(value.analysis.prompt_digest)) fail("review.analysis", "model и prompt_digest нужны вместе");
+              if (value.analysis.coverage.status !== "complete" && !value.analysis.coverage.limitations.length) fail("review.analysis.coverage", "укажите ограничения анализа");
+              for (const key of ["checks", "findings"] as const) {
+                if (new Set(value[key].map((item) => item.id)).size !== value[key].length) fail("review." + key, "повторяющийся id");
+              }
+              for (const check of value.checks) if (["consistent", "violation"].includes(check.verdict) && !check.evidence.length) fail("review.checks." + check.id, "нужны доказательства");
+              return value;
+            }
+        - id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
+          kind: file
+          path: src/reviews/types.ts
+          start_line: 1
+          end_line: 130
+          text: >
+            import type { Section } from "../contracts/types.js";
+
+            import type { Snapshot, SnapshotReference } from
+            "../snapshots/types.js";
+
+
+            export type Side = "baseline" | "current";
+
+
+            export type AssessmentSide = "current" | "change";
+
+
+            export interface ClauseReference {
+              snapshot: Side;
+              module_id: string;
+              section: Section;
+              id: string;
+            }
+
+
+            export interface ClauseInput {
+              reference: ClauseReference;
+              text: string;
+            }
+
+
+            export interface EvidenceReference {
+              snapshot: Side;
+              fact_id: string;
+            }
+
+
+            export interface Analyzer {
+              name: string;
+              version: string;
+              config_digest: string;
+            }
+
+
+            export interface FreshnessReason {
+              code: string;
+              side?: string;
+              potential_influence?: { scope: string; module_id?: string; path?: string }[];
+            }
+
+
+            export interface Coverage {
+              status: string;
+              limitations: string[];
+              reasons?: FreshnessReason[];
+            }
+
+
+            export interface Model {
+              provider: string;
+              id: string;
+              revision?: string;
+              parameters?: Record<string, unknown>;
+            }
+
+
+            export interface ReviewManifest {
+              schema_version: number;
+              comparison: Record<Side, SnapshotReference | null>;
+              module: {
+                id: string | null;
+                baseline_path: string | null;
+                current_path: string | null;
+              };
+              analyzer: Analyzer;
+              scope: string;
+              contract_scope?: string;
+              contracts: Record<Side, ClauseInput[]>;
+              instructions: string;
+              context: Record<string, unknown>;
+              model?: Model;
+              prompt_digest?: string;
+              review_scope?: string;
+            }
+
+
+            export interface Observation {
+              summary: string;
+              responsibilities: { text: string; evidence: EvidenceReference[] }[];
+            }
+
+
+            export interface ClauseCheck {
+              id: string;
+              contract: ClauseReference;
+              subject: Side;
+              verdict: string;
+              explanation: string;
+              evidence: EvidenceReference[];
+            }
+
+
+            export interface Finding {
+              id: string;
+              kind: string;
+              certainty: string;
+              severity: string;
+              lifecycle: string;
+              summary: string;
+              clauses: ClauseReference[];
+              evidence: EvidenceReference[];
+              details?: string;
+              recommendation?: string;
+              related_modules?: string[];
+            }
+
+
+            export interface Assessment {
+              verdict: string;
+              summary: string;
+            }
+
+
+            export interface ReviewReport {
+              schema_version: number;
+              id: string;
+              module: ReviewManifest["module"];
+              comparison: ReviewManifest["comparison"];
+              analysis: {
+                created_at: string;
+                analyzer: Analyzer;
+                input_digest: string;
+                scope: string;
+                coverage: Coverage;
+                model?: Model;
+                prompt_digest?: string;
+              };
+              observed: Record<Side, Observation | null>;
+              checks: ClauseCheck[];
+              findings: Finding[];
+              assessment: Record<AssessmentSide, Assessment>;
+              references?: { title: string; uri: string }[];
+              extensions?: Record<string, unknown>;
+            }
+
+
+            export interface ReviewBundle {
+              report: ReviewReport;
+              manifest: ReviewManifest;
+              baseline: Snapshot | null;
+              current: Snapshot;
+            }
+        - id: sha256:9e7834c6f33641bbe191264d9e290882fc90255a8d5195f1c020b832a42e8a56
+          kind: file
+          path: src/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+        - id: sha256:a43ef3e9a7072d2666c010e5c43cabb7e14d271805e8ddad532a1d47cbd6f5a9
+          kind: file
+          path: src/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+        - id: sha256:a2f3cce99e1ca7491a01705ef004f88712a751312ba721477ec32bfc1e6dfcbb
+          kind: file
+          path: src/snapshots/identity.ts
+          start_line: 1
+          end_line: 16
+          text: >
+            import { createHash } from "node:crypto";
+
+            import { digest as contentDigest } from
+            "../serialization/digest.js";
+
+            import type { Snapshot } from "./types.js";
+
+
+            /** Стабильная контрольная сумма структуры, не зависящая от времени
+            индексации. */
+
+            export function structureHash(value: string | Buffer) {
+              return createHash("sha256").update(value).digest("hex");
+            }
+
+
+            /** Метки и время не меняют содержание снимка; факты и неполнота
+            входят в отпечаток. */
+
+            export function snapshotDigest(snapshot: Snapshot) {
+              return contentDigest({ root: snapshot.root, modules: snapshot.modules,
+                facts: snapshot.facts ?? [], complete: snapshot.complete,
+                diagnostics: snapshot.diagnostics, evidenceLimitations: snapshot.evidenceLimitations ?? [] });
+            }
+        - id: sha256:cadc09b0e8edfeb439ff8bf54ae57c3a0703b2ae0b5a951c957b45a2509fd8a9
+          kind: file
+          path: src/snapshots/types.ts
+          start_line: 1
+          end_line: 137
+          text: >
+            import type { ContractDocument } from "../contracts/types.js";
+
+
+            export interface SourceFile {
+              path: string;
+              hash: string | null;
+              error?: string;
+            }
+
+
+            export interface FileRecord extends SourceFile {
+              text?: string;
+            }
+
+
+            export interface Fact {
+              id: string;
+              kind: string;
+              path: string;
+              text: string;
+              start_line?: number;
+              end_line?: number;
+            }
+
+
+            export interface SnapshotModule {
+              directory: string;
+              documentPath: string;
+              document: ContractDocument;
+              files: SourceFile[];
+              sourceFiles: number;
+              fingerprint: string;
+            }
+
+
+            export interface Snapshot {
+              schema_version: number;
+              root: string;
+              id: string;
+              digest: string;
+              capturedAt: string;
+              fingerprint: string;
+              kind: string;
+              label: string;
+              revision?: string;
+              baseRevision?: string | null;
+              subject?: string;
+              isHead?: boolean;
+              complete: boolean;
+              diagnostics: string[];
+              modules: SnapshotModule[];
+              facts: Fact[];
+              evidenceLimitations: string[];
+              scoped?: boolean;
+              scope_digest?: string;
+            }
+
+
+            export interface SnapshotOptions {
+              maxFiles?: number;
+              snapshotRoot?: string;
+              revision?: string;
+            }
+
+
+            export type ChangeStatus = "initial" | "new" | "changed" | "removed"
+            | "unchanged";
+
+
+            export interface FileChange {
+              path: string;
+              status: ChangeStatus;
+            }
+
+
+            export interface ComparisonModule {
+              directory: string;
+              key: string;
+              sourceFiles: number;
+              filesChanged: number;
+              descendantChanges: number;
+              name: string;
+              moduleId?: string | null;
+              module_id?: string;
+              title?: string;
+              baselinePath: string | null;
+              currentPath: string | null;
+              moved: boolean;
+              status: ChangeStatus;
+              documentState: string;
+              documentChanged: boolean;
+              files: FileChange[];
+              before: SnapshotModule | null;
+              after: SnapshotModule | null;
+            }
+
+
+            export interface Comparison {
+              before: {
+                id: string;
+                label: string;
+                kind: string;
+                digest?: string;
+                capturedAt?: string;
+              };
+              after: { id: string; digest: string; capturedAt: string };
+              counts: Record<string, number>;
+              schema_version: number;
+              id: string;
+              root: string;
+              complete: boolean;
+              diagnostics: string[];
+              modules: ComparisonModule[];
+            }
+
+
+            export interface SnapshotReference {
+              id: string;
+              digest: string;
+            }
+
+
+            export type ScopedSnapshot = Pick<
+              Snapshot,
+              | "schema_version"
+              | "id"
+              | "digest"
+              | "kind"
+              | "revision"
+              | "complete"
+              | "modules"
+              | "facts"
+              | "diagnostics"
+              | "evidenceLimitations"
+            > & { scoped: boolean; scope_digest?: string };
+
+
+            export type SnapshotData = Snapshot | ScopedSnapshot;
+
+
+            export interface GitRevision {
+              id: string;
+              revision: string;
+              parentRevision: string | null;
+              isHead: boolean;
+              kind: string;
+              capturedAt: string;
+              date: string;
+              subject: string;
+              label: string;
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      scope_digest: sha256:cbbee42aeb77f3a8730028ce94243e7f123cb011b86e9fa15540a89cea1ae7bd
+    current:
+      schema_version: 2
+      id: launch-4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+      digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      kind: launch
+      complete: true
+      modules:
+        - directory: .
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-change-view
+
+              title: Контракты и просмотр архитектуры
+
+              kind: module
+
+              extensions:
+                archiview.roles: [app]
+              purpose: Объединять ведение контрактов и просмотр изменений в
+              приложении ArchiView,
+                где команда может сопоставить состояние проекта с ответственностью его модулей.
+              responsibilities:
+                R1: Поставлять агентам канонические правила ведения контрактов и средства чтения контекста каталога.
+                R2: Давать агенту возможность установить, каким каталогам требуется создание, перенос или
+                  исправление контракта.
+                R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с результатами
+                  проверок и теми доказательствами, на которых основаны выводы.
+                R4: Автоматически поддерживать переносимую историю проверок, в которой видна актуальность
+                  выводов для отдельного модуля и его поддерева.
+                R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                  и DeepSeek Harness с общими контрактами и форматом истории проекта.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                  Просмотр не изменяет исходники проекта.
+                B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за пределами
+                  ArchiView и относятся к ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот корень
+                  от хоста; явно настроенный для модельных инструментов корень ограничивает их чтение.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                  внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                  факты и отчёты не переписываются при переносе проекта.
+                I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта modules.tree
+                  связывает его id с каталогом проекта. Эвристические оценки и текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+                I6: Обе интеграции получают правила ведения контрактов из канонического скилла пакета.
+                I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+                I7: Панель обращается к агенту только по явному поручению пользователя проанализировать модуль
+                  или исправить замечание.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: architecture-change-view
+              title: Контракты и просмотр архитектуры
+              kind: module
+              extensions:
+                archiview.roles:
+                  - app
+              purpose: Объединять ведение контрактов и просмотр изменений в приложении
+                ArchiView, где команда может сопоставить состояние проекта с
+                ответственностью его модулей.
+              responsibilities:
+                R1: Поставлять агентам канонические правила ведения контрактов и средства чтения
+                  контекста каталога.
+                R2: Давать агенту возможность установить, каким каталогам требуется создание,
+                  перенос или исправление контракта.
+                R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с
+                  результатами проверок и теми доказательствами, на которых
+                  основаны выводы.
+                R4: Автоматически поддерживать переносимую историю проверок, в которой видна
+                  актуальность выводов для отдельного модуля и его поддерева.
+                R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                  и DeepSeek Harness с общими контрактами и форматом истории
+                  проекта.
+              boundaries:
+                B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+                  инструментами. Просмотр не изменяет исходники проекта.
+                B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+                  пределами ArchiView и относятся к ast-index.
+              invariants:
+                I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+                  строгим TypeScript перед сборкой; классы сохраняют
+                  единственную ответственность внутри границ своих модулей.
+                I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+                  корень от хоста; явно настроенный для модельных инструментов
+                  корень ограничивает их чтение.
+                I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+                  .archiview внутри корня проекта. Эта папка исключена из
+                  анализа исходников; прежние сохранённые факты и отчёты не
+                  переписываются при переносе проекта.
+                I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
+                  modules.tree связывает его id с каталогом проекта.
+                  Эвристические оценки и текущий код не разрешают её расширять.
+                I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+                I6: Обе интеграции получают правила ведения контрактов из канонического скилла
+                  пакета.
+                I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
+                  кодом. Панель и агент сохраняют принадлежность модуля его
+                  репозиторию.
+                I7: Панель обращается к агенту только по явному поручению пользователя
+                  проанализировать модуль или исправить замечание.
+          documentPath: .archiview/modules/architecture-change-view.yaml
+          files:
+            - path: .archiview/modules/architecture-change-view.yaml
+              hash: 8bbcbfb87ffc05afb0ebc8fedfce12ec44e75b15
+          sourceFiles: 0
+          fingerprint: ec7bc4e0681ec4a2da64cc46062f1564816306a55dbe2cfa709af5340fec53db
+        - directory: src
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: architecture-core
+
+              title: Корень исходников ArchiView
+
+              kind: group
+
+              extensions:
+                archiview.roles: [root]
+              purpose: Объединять серверные модули ArchiView вокруг общей модели
+              проекта, чтобы разные
+                способы доступа давали согласованные контракты, изменения и результаты проверок.
+              responsibilities:
+                R11: Задавать границу между моделью проекта, прикладными операциями и внешними адаптерами.
+              boundaries:
+                B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис принимает данные
+                  проекта и возвращает результат независимо от транспорта, хоста и способа отображения.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                  доказывает его выполнения.
+                B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и проверка
+                  контрактов доступны независимо от MCP, HTTP и хоста.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                  .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                  либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+                I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты описывают
+                  состояние исходников и контрактов из того же индекса Git.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: architecture-core
+              title: Корень исходников ArchiView
+              kind: group
+              extensions:
+                archiview.roles:
+                  - root
+              purpose: Объединять серверные модули ArchiView вокруг общей модели проекта,
+                чтобы разные способы доступа давали согласованные контракты,
+                изменения и результаты проверок.
+              responsibilities:
+                R11: Задавать границу между моделью проекта, прикладными операциями и внешними
+                  адаптерами.
+              boundaries:
+                B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
+                  принимает данные проекта и возвращает результат независимо от
+                  транспорта, хоста и способа отображения.
+                B2: Семантический вывод ответственности выполняет агент или внешний анализатор.
+                  Наличие контракта не доказывает его выполнения.
+                B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
+                  проверка контрактов доступны независимо от MCP, HTTP и хоста.
+              invariants:
+                I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+                  сборка и папки .archiview не расширяют анализ. Запись данных
+                  допускается в .archiview корня проекта либо явно выбранном
+                  внешнем хранилище; ссылки не меняют эту область.
+                I2: Неполнота обхода и доказательств сообщается явно.
+                I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
+                  ответственность.
+                I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+                  файлах.
+                I5: Структурное различие контрактов не создаёт замечание; оценка нарушения
+                  требует отдельного анализа.
+                I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
+                  описывают состояние исходников и контрактов из того же индекса
+                  Git.
+          documentPath: .archiview/modules/architecture-core.yaml
+          files:
+            - path: .archiview/modules/architecture-core.yaml
+              hash: df81843e61d1f575eaaccc087310d9dcd0110a08
+          sourceFiles: 0
+          fingerprint: eecfabfb38329cca2e2994535554778f663bba1a6a1c6300baa06c8cb68b0834
+        - directory: src/contracts
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-contracts
+
+              title: Контракты каталогов
+
+              kind: module
+
+              extensions:
+                archiview.roles: [domain]
+              purpose: Читать декларации ответственности и находить каталоги
+              исходников, которым нужен контракт.
+
+              responsibilities:
+                R1: Проверять карту каталогов и соответствие идентификатора каждого YAML-контракта записи в карте, сообщать об отсутствующих и повреждённых описаниях.
+                R2: Предоставлять инвентаризацию каталогов по репозиториям и находить цепочку контрактов для пути файла или каталога.
+              boundaries:
+                B1: Предметные выводы по реализации и публикация отчётов принадлежат другим модулям.
+              invariants:
+                I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается диагностика.
+                I2: Наличие документа подтверждает только его структурное состояние.
+                I3: Контракт и его предки читаются из карты репозитория исходника. Идентификаторы модулей уникальны в пределах одной карты.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-contracts
+              title: Контракты каталогов
+              kind: module
+              extensions:
+                archiview.roles:
+                  - domain
+              purpose: Читать декларации ответственности и находить каталоги исходников,
+                которым нужен контракт.
+              responsibilities:
+                R1: Проверять карту каталогов и соответствие идентификатора каждого
+                  YAML-контракта записи в карте, сообщать об отсутствующих и
+                  повреждённых описаниях.
+                R2: Предоставлять инвентаризацию каталогов по репозиториям и находить цепочку
+                  контрактов для пути файла или каталога.
+              boundaries:
+                B1: Предметные выводы по реализации и публикация отчётов принадлежат другим
+                  модулям.
+              invariants:
+                I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается
+                  диагностика.
+                I2: Наличие документа подтверждает только его структурное состояние.
+                I3: Контракт и его предки читаются из карты репозитория исходника.
+                  Идентификаторы модулей уникальны в пределах одной карты.
+          documentPath: .archiview/modules/archiview-contracts.yaml
+          files:
+            - path: .archiview/modules/archiview-contracts.yaml
+              hash: 76641eefe8a3115e527ca1550bdb2e72d7d53a6a
+            - path: src/contracts/types.ts
+              hash: a74de37c7c75214b6c65e0a790b9c71022a5e8db
+          sourceFiles: 6
+          fingerprint: fa97dd6ffd3df28e95f5fad8da4e56eeab094ba12749c464bb5e98881dcf7e9f
+        - directory: src/reviews
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-reviews
+
+              title: Содержимое архитектурной проверки
+
+              kind: module
+
+              extensions:
+                archiview.roles: [data-types, domain]
+              purpose: Описывать проверку по контрактам и доказательствам
+              выбранных снимков и проверять её целостность.
+
+              responsibilities:
+                R1: Определять состав манифеста, проверяемые пункты и структуру результата.
+                R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно структурную оценку.
+              boundaries:
+                B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого модуля.
+              invariants:
+                I1: Структурная проверка оставляет смысловые пункты непроверенными.
+                I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+                I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
+                  Замечание также может ссылаться на границу или инвариант предка из сохранённого
+                  контекста проверяемого модуля, не добавляя проверку всего предка.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-reviews
+              title: Содержимое архитектурной проверки
+              kind: module
+              extensions:
+                archiview.roles:
+                  - data-types
+                  - domain
+              purpose: Описывать проверку по контрактам и доказательствам выбранных снимков и
+                проверять её целостность.
+              responsibilities:
+                R1: Определять состав манифеста, проверяемые пункты и структуру результата.
+                R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно
+                  структурную оценку.
+              boundaries:
+                B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого
+                  модуля.
+              invariants:
+                I1: Структурная проверка оставляет смысловые пункты непроверенными.
+                I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+                I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
+                  Замечание также может ссылаться на границу или инвариант
+                  предка из сохранённого контекста проверяемого модуля, не
+                  добавляя проверку всего предка.
+          documentPath: .archiview/modules/archiview-reviews.yaml
+          files:
+            - path: .archiview/modules/archiview-reviews.yaml
+              hash: bdf93ee82c46df2070578466e634fe0aa5f07736
+            - path: src/reviews/bundle.ts
+              hash: 90285eae895337b40a3f739c3148ff0188675996
+            - path: src/reviews/schema.ts
+              hash: 678680f955a6d28156bd33dbb48844c53b480ed2
+            - path: src/reviews/types.ts
+              hash: e8b0c54a7ca64f46ed4caa5a7d5ee22f3953b8dc
+          sourceFiles: 3
+          fingerprint: 2a2fea22a81e531adb7ab6efa584ba058f37c1da4f211e63e99917fcf6c4f476
+        - directory: src/serialization
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-serialization
+
+              title: Кодирование данных
+
+              kind: module
+
+              extensions:
+                archiview.roles: [serialization]
+              purpose: Предоставлять общее чтение YAML, средства проверки
+              структуры и канонические отпечатки внешних данных.
+
+              responsibilities:
+                R1: Читать однозначные JSON-совместимые значения из YAML и предоставлять примитивы проверки их структуры.
+                R2: Канонизировать значения и вычислять согласованный SHA-256 по байтам UTF-8.
+              boundaries:
+                B1: Схемы конкретных контрактов и проверок определяются их владельцами.
+              invariants:
+                I1: Порядок ключей словаря не влияет на каноническую форму. Порядок массива сохраняется.
+                I2: Неоднозначные ключи, ссылки YAML и недопустимые типы отклоняются до использования данных.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-serialization
+              title: Кодирование данных
+              kind: module
+              extensions:
+                archiview.roles:
+                  - serialization
+              purpose: Предоставлять общее чтение YAML, средства проверки структуры и
+                канонические отпечатки внешних данных.
+              responsibilities:
+                R1: Читать однозначные JSON-совместимые значения из YAML и предоставлять
+                  примитивы проверки их структуры.
+                R2: Канонизировать значения и вычислять согласованный SHA-256 по байтам UTF-8.
+              boundaries:
+                B1: Схемы конкретных контрактов и проверок определяются их владельцами.
+              invariants:
+                I1: Порядок ключей словаря не влияет на каноническую форму. Порядок массива
+                  сохраняется.
+                I2: Неоднозначные ключи, ссылки YAML и недопустимые типы отклоняются до
+                  использования данных.
+          documentPath: .archiview/modules/archiview-serialization.yaml
+          files:
+            - path: .archiview/modules/archiview-serialization.yaml
+              hash: 98d749a75d47207124e25ca215520aae1978fb91
+            - path: src/serialization/digest.ts
+              hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+            - path: src/serialization/schema.ts
+              hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+          sourceFiles: 3
+          fingerprint: 45fce546e006eadbbb2c6abc3c61377793349ff8285526b3755956f22a3d8f88
+        - directory: src/snapshots
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-snapshots
+
+              title: Снимки и сравнение
+
+              kind: module
+
+              extensions:
+                archiview.roles: [domain]
+              purpose: Фиксировать состояние исходников и сравнивать собственные
+              файлы, контракты и расположение модулей.
+
+              responsibilities:
+                R1: Собирать снимки рабочего дерева, коммита и индекса Git с происхождением файлов и наблюдаемых фактов.
+                R2: Сопоставлять версии модулей и вычислять различия файлов и композиции дерева.
+              boundaries:
+                B1: Публикация, оценка проверок и выбор представления принадлежат хранилищу, модели отчётов и прикладной сессии.
+              invariants:
+                I1: Идентичность содержимого включает факты и неполноту, время захвата и пользовательская метка её не меняют.
+                I2: Сравнение сохраняет удалённые модули и различает изменение собственных файлов и изменение потомков.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-snapshots
+              title: Снимки и сравнение
+              kind: module
+              extensions:
+                archiview.roles:
+                  - domain
+              purpose: Фиксировать состояние исходников и сравнивать собственные файлы,
+                контракты и расположение модулей.
+              responsibilities:
+                R1: Собирать снимки рабочего дерева, коммита и индекса Git с происхождением
+                  файлов и наблюдаемых фактов.
+                R2: Сопоставлять версии модулей и вычислять различия файлов и композиции дерева.
+              boundaries:
+                B1: Публикация, оценка проверок и выбор представления принадлежат хранилищу,
+                  модели отчётов и прикладной сессии.
+              invariants:
+                I1: Идентичность содержимого включает факты и неполноту, время захвата и
+                  пользовательская метка её не меняют.
+                I2: Сравнение сохраняет удалённые модули и различает изменение собственных
+                  файлов и изменение потомков.
+          documentPath: .archiview/modules/archiview-snapshots.yaml
+          files:
+            - path: .archiview/modules/archiview-snapshots.yaml
+              hash: 729614d43b6c368f1bbd8d8586ff2d6b02f2eac7
+            - path: src/snapshots/identity.ts
+              hash: a397fd9979b0ca0911893b78d4ec4d0f951e078d
+            - path: src/snapshots/types.ts
+              hash: fbced32fb23a0c6279f89c6f24263b0c638385a2
+          sourceFiles: 6
+          fingerprint: a7ae5e2c4183bbf605ea242852545aff2d282b5955830f83c9feb696e1de6323
+      facts:
+        - id: sha256:7a3f1a99a120f7ea78a436fb4d73b9fa7401fcb381b621ddf48c65f4a8df33c4
+          kind: file
+          path: .archiview/modules/architecture-change-view.yaml
+          start_line: 1
+          end_line: 38
+          text: >
+            schema_version: 1
+
+            id: architecture-change-view
+
+            title: Контракты и просмотр архитектуры
+
+            kind: module
+
+            extensions:
+              archiview.roles: [app]
+            purpose: Объединять ведение контрактов и просмотр изменений в
+            приложении ArchiView,
+              где команда может сопоставить состояние проекта с ответственностью его модулей.
+            responsibilities:
+              R1: Поставлять агентам канонические правила ведения контрактов и средства чтения контекста каталога.
+              R2: Давать агенту возможность установить, каким каталогам требуется создание, перенос или
+                исправление контракта.
+              R3: Предоставлять пользователю изменения для выбранной пары снимков вместе с результатами
+                проверок и теми доказательствами, на которых основаны выводы.
+              R4: Автоматически поддерживать переносимую историю проверок, в которой видна актуальность
+                выводов для отдельного модуля и его поддерева.
+              R7: Поставлять одно приложение для самостоятельного запуска и для работы в Codex
+                и DeepSeek Harness с общими контрактами и форматом истории проекта.
+            boundaries:
+              B1: Запись и содержательный анализ контрактов выполняет агент своими файловыми инструментами.
+                Просмотр не изменяет исходники проекта.
+              B2: Извлечение символов, разрешение зависимостей и индексация AST находятся за пределами
+                ArchiView и относятся к ast-index.
+            invariants:
+              I5: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются строгим TypeScript перед сборкой; классы сохраняют единственную ответственность внутри границ своих модулей.
+              I1: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот корень
+                от хоста; явно настроенный для модельных инструментов корень ограничивает их чтение.
+              I2: Снимки и результаты анализа по умолчанию находятся в переносимой папке .archiview
+                внутри корня проекта. Эта папка исключена из анализа исходников; прежние сохранённые
+                факты и отчёты не переписываются при переносе проекта.
+              I3: Устойчивую ответственность задаёт контракт в .archiview/modules; карта modules.tree
+                связывает его id с каталогом проекта. Эвристические оценки и текущий код не разрешают её расширять.
+              I4: Структурная проверка не выдаёт наличие файла за семантическое соответствие.
+              I6: Обе интеграции получают правила ведения контрактов из канонического скилла пакета.
+              I8: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
+              I7: Панель обращается к агенту только по явному поручению пользователя проанализировать модуль
+                или исправить замечание.
+        - id: sha256:1a7feb56e9e52cc450306c4ed6067c61829ca9ed40888b9b32c84d75bdecaf1a
+          kind: file
+          path: .archiview/modules/architecture-core.yaml
+          start_line: 1
+          end_line: 28
+          text: >
+            schema_version: 1
+
+            id: architecture-core
+
+            title: Корень исходников ArchiView
+
+            kind: group
+
+            extensions:
+              archiview.roles: [root]
+            purpose: Объединять серверные модули ArchiView вокруг общей модели
+            проекта, чтобы разные
+              способы доступа давали согласованные контракты, изменения и результаты проверок.
+            responsibilities:
+              R11: Задавать границу между моделью проекта, прикладными операциями и внешними адаптерами.
+            boundaries:
+              B1: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис принимает данные
+                проекта и возвращает результат независимо от транспорта, хоста и способа отображения.
+              B2: Семантический вывод ответственности выполняет агент или внешний анализатор. Наличие контракта не
+                доказывает его выполнения.
+              B5: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и проверка
+                контрактов доступны независимо от MCP, HTTP и хоста.
+            invariants:
+              I1: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости, сборка и папки
+                .archiview не расширяют анализ. Запись данных допускается в .archiview корня проекта
+                либо явно выбранном внешнем хранилище; ссылки не меняют эту область.
+              I2: Неполнота обхода и доказательств сообщается явно.
+              I3: Снимки и отчёты не заменяют контракт модуля и не согласуют новую ответственность.
+              I4: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых файлах.
+              I5: Структурное различие контрактов не создаёт замечание; оценка нарушения требует отдельного анализа.
+              I6: Успешная проверка индекса означает, что подготовленные к коммиту отчёты описывают
+                состояние исходников и контрактов из того же индекса Git.
+        - id: sha256:c3087f2f0d1cec9294d578e00085768178f5ad58f2b954713bae515cabc93ddb
+          kind: file
+          path: .archiview/modules/archiview-reviews.yaml
+          start_line: 1
+          end_line: 19
+          text: >
+            schema_version: 1
+
+            id: archiview-reviews
+
+            title: Содержимое архитектурной проверки
+
+            kind: module
+
+            extensions:
+              archiview.roles: [data-types, domain]
+            purpose: Описывать проверку по контрактам и доказательствам
+            выбранных снимков и проверять её целостность.
+
+            responsibilities:
+              R1: Определять состав манифеста, проверяемые пункты и структуру результата.
+              R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно структурную оценку.
+            boundaries:
+              B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого модуля.
+            invariants:
+              I1: Структурная проверка оставляет смысловые пункты непроверенными.
+              I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
+              I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
+                Замечание также может ссылаться на границу или инвариант предка из сохранённого
+                контекста проверяемого модуля, не добавляя проверку всего предка.
+        - id: sha256:51945e74b2e35f6548cae0cd7d48532841315880228621478ad4d280a41f51c4
+          kind: file
+          path: src/contracts/types.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            export type Section = "responsibilities" | "boundaries" |
+            "invariants";
+
+
+            export interface Contract {
+              schema_version: number;
+              id: string;
+              title: string;
+              kind: string;
+              purpose: string;
+              responsibilities: Record<string, string>;
+              boundaries: Record<string, string>;
+              invariants: Record<string, string>;
+              rationale?: string;
+              owners?: string[];
+              tags?: string[];
+              references?: { title: string; uri: string }[];
+              extensions?: Record<string, unknown>;
+            }
+
+
+            export interface ContractDocument {
+              state: string;
+              text: string | null;
+              format?: string;
+              contract?: Contract | null;
+              errors?: string[];
+              action?: string;
+            }
+        - id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
+          kind: file
+          path: src/reviews/bundle.ts
+          start_line: 1
+          end_line: 188
+          text: >
+            import type { SnapshotData, SnapshotModule, Snapshot,
+            ComparisonModule } from "../snapshots/types.js";
+
+            import type {
+              Side, ReviewBundle, ReviewReport, ReviewManifest, ClauseReference, ClauseInput,
+              ClauseCheck, Finding, EvidenceReference,
+            } from "./types.js";
+
+            /**
+             * Проверка структуры и связи отчёта со снимками. Не выводит семантику кода:
+             * пункты ответственности получают not_checked, а наблюдения — явное ограничение.
+             * Полноценный внешний анализ использует тот же формат и сохранённые доказательства.
+             */
+            import { randomUUID } from "node:crypto";
+
+            import path from "node:path";
+
+            import { canonical, digest } from "../serialization/digest.js";
+
+            import { validateReview } from "./schema.js";
+
+            import { snapshotDigest } from "../snapshots/identity.js";
+
+
+            /** Версия включает алгоритм структурной проверки; настройки
+            участвуют в manifest. */
+
+            export const ANALYZER = { name: "archiview-structure", version:
+            "1.0.2",
+              config_digest: digest({ semantic: false, inherited: ["boundaries", "invariants"] }) };
+
+            /** Точная ссылка на сохранённое содержание, независимо от
+            пользовательской метки. */
+
+            export const snapshotReference = (snapshot: Snapshot | null |
+            undefined) => snapshot ?
+              { id: snapshot.id, digest: snapshot.digest ?? snapshotDigest(snapshot) } : null;
+
+            /**
+             * Собственная проверка содержит только локальный контракт. Режим effective
+             * нужен для проверки целостности прежних неизменяемых отчётов с пунктами предков.
+             */
+            export function effectiveClauses(snapshot: SnapshotData | null,
+            directory: string | null | undefined, side: Side, contractScope =
+            "effective"): ClauseInput[] {
+              if (!["own", "effective"].includes(contractScope)) throw new Error("Unsupported contract scope");
+              if (!snapshot || directory == null) return [];
+              const parents = new Set([directory]);
+              let parent = directory;
+              while (contractScope === "effective" && parent !== ".") { parent = path.posix.dirname(parent); parents.add(parent); }
+              return snapshot.modules.filter((m) => parents.has(m.directory) && m.document.state === "documented" && m.document.contract)
+                .flatMap((m) => (["responsibilities", "boundaries", "invariants"] as const)
+                  .filter((section) => section !== "responsibilities" || m.directory === directory)
+                  .flatMap((section) => Object.entries(m.document.contract![section]).map(([id, text]) => ({
+                    reference: { snapshot: side, module_id: m.document.contract!.id, section, id }, text,
+                  }))));
+            }
+
+
+            type ReviewedModule = Pick<ComparisonModule, "moduleId" |
+            "baselinePath" | "currentPath" | "before" | "after">;
+
+
+            /** Манифест отделяет собственный чеклист от сохранённого контекста
+            предков. */
+
+            export function reviewManifest(before: Snapshot | null, after:
+            Snapshot, module: ReviewedModule, analyzer = ANALYZER, contractScope
+            = "own"): ReviewManifest {
+              return { schema_version: 1, comparison: { baseline: snapshotReference(before), current: snapshotReference(after) },
+                module: { id: module.moduleId ?? null, baseline_path: module.baselinePath ?? null, current_path: module.currentPath ?? null },
+                analyzer, scope: "module", ...(contractScope === "own" ? { contract_scope: "own" } : {}), contracts: {
+                  baseline: effectiveClauses(before, module.baselinePath, "baseline", contractScope),
+                  current: effectiveClauses(after, module.currentPath, "current", contractScope),
+                }, instructions: "Проверять структуру контрактов; смысл кода не анализировать.", context: {} };
+            }
+
+
+            /**
+             * База и текущее состояние проверяются отдельно. Повторная проверка текущего
+             * кода по базовому пункту нужна лишь при изменении или удалении этого пункта;
+             * старый формат сохраняет первоначальные требования к набору проверок.
+             */
+            export function requiredClauseChecks(manifest: ReviewManifest,
+            hasCurrent: boolean) {
+              const baseline = manifest.contracts?.baseline ?? [];
+              const current = manifest.contracts?.current ?? [];
+              const previousRequirements = manifest.contract_scope === "own" ? baseline.filter((item) =>
+                !current.some((other) => other.reference.module_id === item.reference.module_id &&
+                  other.reference.section === item.reference.section && other.reference.id === item.reference.id && other.text === item.text)) : baseline;
+              return [...baseline.map((item) => ({ item, subject: "baseline" as const })),
+                ...current.map((item) => ({ item, subject: "current" as const })),
+                ...(hasCurrent ? previousRequirements.map((item) => ({ item, subject: "current" as const })) : [])];
+            }
+
+
+            /** Новый локальный чеклист не может расширяться пунктами чужого
+            контракта. */
+
+            export function validateContractScope(report: ReviewReport,
+            manifest: ReviewManifest,
+              snapshots?: { baseline: SnapshotData | null; current: SnapshotData }) {
+              const scope = manifest.contract_scope ?? "effective";
+              if (!["own", "effective"].includes(scope)) throw new Error("Unsupported contract scope");
+              if (scope === "own" && report.checks.some((check) => check.contract.module_id !== report.module.id))
+                throw new Error("Own review checks must reference the module contract");
+              const clauses = new Set([...manifest.contracts.baseline, ...manifest.contracts.current].map((item) => canonical(item.reference)));
+              if (report.checks.some((check) => !clauses.has(canonical(check.contract))))
+                throw new Error("Review check references a clause outside the manifest");
+              const localConstraint = (clause: ClauseReference) => {
+                if (clause.module_id === report.module.id) return true;
+                if (!["boundaries", "invariants"].includes(clause.section)) return false;
+                const directory = report.module[`${clause.snapshot}_path`];
+                const ancestor = snapshots?.[clause.snapshot]?.modules.find((module) =>
+                  module.document.state === "documented" && module.document.contract?.id === clause.module_id);
+                return Boolean(directory && ancestor && ancestor.directory !== directory &&
+                  (ancestor.directory === "." || directory.startsWith(ancestor.directory + "/")));
+              };
+              if (scope === "own" && report.findings.some((finding) => finding.clauses.length &&
+                !finding.clauses.some(localConstraint)))
+                throw new Error("Own review finding must reference the module contract or an ancestor boundary");
+              return scope;
+            }
+
+
+            /** Формирует честный частичный отчёт без подмены анализа наличием
+            документов. */
+
+            export function createStructuralReview(before: Snapshot | null,
+            after: Snapshot, module: ReviewedModule, { contractScope = "own" }:
+            {contractScope?:string} = {}): ReviewBundle {
+              const manifest = reviewManifest(before, after, module, ANALYZER, contractScope);
+              const limitations = ["Семантика кода не анализировалась. Соответствие обязанностям, границам и инвариантам требует отдельного анализа.",
+                ...before?.evidenceLimitations ?? [], ...after.evidenceLimitations ?? []];
+              const findings: Finding[] = [];
+              const checks: ClauseCheck[] = [];
+              const fact = (snapshot: Snapshot | null, side: Side, kind: string, file: string): EvidenceReference[] => (snapshot?.facts ?? [])
+                .filter((f) => f.kind === kind && f.path === file).map((f) => ({ snapshot: side, fact_id: f.id }));
+              for (const [snapshot, side, entry] of ([[before, "baseline", module.before], [after, "current", module.after]] as const)) {
+                if (!entry) continue;
+                if (!entry.document.contract || entry.document.state !== "documented") {
+                  const evidence = fact(snapshot, side, "module", entry.directory);
+                  const migrated = side === "baseline" && entry.document.state !== "invalid" && module.after?.document.state === "documented" && module.after.document.contract;
+                  if (migrated) evidence.push(...fact(after, "current", "module", module.after!.directory));
+                  if (evidence.length) findings.push({ id: "contract-" + side,
+                    kind: entry.document.state === "invalid" ? "contract_conflict" : "missing_contract",
+                    certainty: "confirmed", severity: migrated ? "info" : "warning", lifecycle: migrated ? "resolved" : "unknown",
+                    summary: (side === "baseline" ? "В базовом снимке: " : "") + (entry.document.state === "invalid" ? "контракт не соответствует схеме v1." :
+                      "нет действующего контракта модуля."),
+                    details: migrated ? "В текущем снимке появился контракт модуля. Соответствие кода его пунктам требует проверки." :
+                      entry.document.errors?.join("\n") ?? "Проверьте запись модуля в .archiview/modules.tree и его YAML-контракт.",
+                    clauses: [], evidence });
+                  else limitations.push(side + ": снимок прежнего формата не содержит фактов о модуле.");
+                }
+              }
+              for (const { item, subject } of requiredClauseChecks(manifest, Boolean(module.after))) {
+                checks.push({ id: "check-" + (checks.length + 1), contract: item.reference,
+                  subject, verdict: "not_checked", explanation: "Структурный анализ не определяет соответствие кода этому пункту.", evidence: [] });
+              }
+              const observed = (entry: SnapshotModule | null | undefined) => entry ? { summary: "Обнаружено собственных исходных файлов: " + entry.sourceFiles +
+                ". Ответственность из кода не выводилась.", responsibilities: [] } : null;
+              const report: ReviewReport = { schema_version: 1, id: "review-" + randomUUID(), module: manifest.module,
+                comparison: manifest.comparison,
+                analysis: { created_at: new Date().toISOString(), analyzer: ANALYZER,
+                  input_digest: digest(manifest), scope: "module", coverage: { status: "partial", limitations } },
+                observed: { baseline: observed(module.before), current: observed(module.after) }, checks, findings,
+                assessment: {
+                  current: { verdict: !module.after ? "not_applicable" : findings.some((f) => f.id === "contract-current") ? "needs_review" : "inconclusive",
+                    summary: !module.after ? "Модуль отсутствует в текущем снимке." : "Структура проверена; соответствие кода контракту не установлено." },
+                  change: { verdict: !before ? "not_applicable" : "inconclusive",
+                    summary: !before ? "Первый анализ без базового снимка." : "Изменения файлов зафиксированы; оценка ответственности требует анализа кода." },
+                } };
+              validateReviewBundle({ report, manifest, baseline: before, current: after });
+              return { report, manifest, baseline: before, current: after };
+            }
+
+
+            /** Проверяет происхождение отчёта: хеши, пути, пункты контрактов и
+            каждый факт. */
+
+            export function validateReviewBundle(bundle: ReviewBundle) {
+              const { report, manifest, baseline, current } = bundle;
+              validateReview(report);
+              if (!manifest || digest(manifest) !== report.analysis.input_digest) throw new Error("Review input digest mismatch");
+              validateContractScope(report, manifest, bundle);
+              if (digest(manifest.comparison) !== digest(report.comparison) || digest(manifest.module) !== digest(report.module) ||
+                  digest(manifest.analyzer) !== digest(report.analysis.analyzer) || manifest.scope !== report.analysis.scope) throw new Error("Review manifest mismatch");
+              if (report.analysis.model && (digest(manifest.model) !== digest(report.analysis.model) || manifest.prompt_digest !== report.analysis.prompt_digest)) throw new Error("Review model inputs mismatch");
+              if (!current || (baseline && baseline.root !== current.root)) throw new Error("Foreign review snapshot");
+              for (const [side, snapshot] of ([["baseline", baseline], ["current", current]] as const)) {
+                const reference = report.comparison[side];
+                if ((snapshot == null) !== (reference === null)) throw new Error("Missing " + side + " snapshot");
+                if (snapshot && (snapshot.id !== reference?.id || snapshotDigest(snapshot) !== reference?.digest)) throw new Error("Review snapshot digest mismatch: " + side);
+                const directory = report.module[`${side}_path`];
+                const module = snapshot?.modules.find((m) => m.directory === directory);
+                if (directory !== null && !module) throw new Error("Review module path is missing: " + side);
+                if (module?.document.contract && report.module.id !== null && module.document.contract.id !== report.module.id) throw new Error("Review module identity mismatch");
+                if (digest(manifest.contracts?.[side]) !== digest(effectiveClauses(snapshot, directory, side,
+                  manifest.contract_scope ?? "effective"))) throw new Error("Effective contracts mismatch: " + side);
+              }
+              const resolveClause = (ref: ClauseReference) => {
+                const snapshot = ref.snapshot === "baseline" ? baseline : current;
+                const matches = snapshot?.modules.filter((m) => m.document.state === "documented" && m.document.contract?.id === ref.module_id) ?? [];
+                if (matches.length !== 1 || !Object.hasOwn(matches[0].document.contract![ref.section], ref.id)) throw new Error("Unresolved contract clause: " + ref.module_id + "/" + ref.id);
+              };
+              const resolveEvidence = (ref: EvidenceReference) => {
+                const snapshot = ref.snapshot === "baseline" ? baseline : current;
+                const matches = snapshot?.facts?.filter((f) => f.id === ref.fact_id) ?? [];
+                if (matches.length !== 1 || typeof matches[0].text !== "string") throw new Error("Unresolved evidence: " + ref.fact_id);
+                const { id, ...fact } = matches[0];
+                if (digest(fact) !== id) throw new Error("Evidence content digest mismatch");
+              };
+              for (const check of report.checks) {
+                resolveClause(check.contract);
+                if (report.module[`${check.subject}_path`] === null) throw new Error("Check subject is absent");
+                check.evidence.forEach(resolveEvidence);
+              }
+              for (const finding of report.findings) { finding.clauses.forEach(resolveClause); finding.evidence.forEach(resolveEvidence); }
+              for (const observed of Object.values(report.observed)) observed?.responsibilities.forEach((r) => r.evidence.forEach(resolveEvidence));
+              for (const { item, subject } of requiredClauseChecks(manifest, report.module.current_path !== null)) {
+                if (!report.checks.some((c) => c.subject === subject && digest(c.contract) === digest(item.reference))) throw new Error("Missing explicit clause check: " + item.reference.id);
+              }
+              return bundle;
+            }
+        - id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
+          kind: file
+          path: src/reviews/schema.ts
+          start_line: 1
+          end_line: 63
+          text: >
+            import { fail, string, object, enumeration, nullable, array, shape,
+            strings, references, extensions } from "../serialization/schema.js";
+
+
+            import type { Validator } from "../serialization/schema.js";
+
+
+            import type { ReviewReport } from "./types.js";
+
+
+            const hash: Validator = (v, at) =>
+            /^sha256:[a-f0-9]{64}$/.test(String(v)) ? undefined : fail(at,
+            "ожидается sha256:<64 hex>");
+
+            const version = enumeration(1);
+
+            const side = enumeration("baseline", "current");
+
+            const section = enumeration("responsibilities", "boundaries",
+            "invariants");
+
+            const relativePath: Validator = (value, at) => {
+              string(value, at);
+              const v = value as string;
+              if (v !== "." && (v.startsWith("/") || /[\\:]/.test(String(v)) ||
+                  v.split("/").some((part) => ["", ".", ".."].includes(part)))) fail(at, "нужен путь относительно проекта");
+            };
+
+            const timestamp: Validator = (value, at) => {
+              string(value, at);
+              const v = value as string;
+              if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/.test(String(v)) || !Number.isFinite(Date.parse(v))) fail(at, "нужно время UTC");
+            };
+
+            const evidence = shape({ snapshot: side, fact_id: string });
+
+            const clause = shape({ snapshot: side, module_id: string, section,
+            id: string });
+
+            const snapshot = shape({ id: string, digest: hash });
+
+            const observation = shape({ summary: string, responsibilities:
+            array(shape({ text: string, evidence: array(evidence, 1) })) });
+
+            const assessment = shape({ verdict: enumeration("consistent",
+            "violation", "needs_review", "inconclusive", "not_applicable"),
+            summary: string });
+
+
+            /** Полная схема отчёта; успешные выводы требуют явных
+            доказательств. */
+
+            export function validateReview(input: unknown): ReviewReport {
+              const value = input as ReviewReport;
+              shape({ schema_version: version, id: string,
+                module: shape({ id: nullable(string), baseline_path: nullable(relativePath), current_path: nullable(relativePath) }),
+                comparison: shape({ baseline: nullable(snapshot), current: snapshot }),
+                analysis: shape({ created_at: timestamp, analyzer: shape({ name: string, version: string, config_digest: hash }),
+                  input_digest: hash, scope: enumeration("module", "changes"), coverage: shape({
+                    status: enumeration("complete", "partial", "unavailable"), limitations: strings }) },
+                { model: shape({ provider: string, id: string }, { revision: string, parameters: object }), prompt_digest: hash }),
+                observed: shape({ baseline: nullable(observation), current: nullable(observation) }),
+                checks: array(shape({ id: string, contract: clause, subject: side,
+                  verdict: enumeration("consistent", "violation", "uncertain", "not_checked", "not_applicable"),
+                  explanation: string, evidence: array(evidence) })),
+                // contract_change читается только для сохранения совместимости с неизменяемой историей.
+                findings: array(shape({ id: string, kind: enumeration("boundary_violation", "invariant_violation",
+                  "undeclared_responsibility", "responsibility_gap", "contract_conflict", "contract_change", "missing_contract"),
+                  certainty: enumeration("confirmed", "suspected"), severity: enumeration("info", "warning", "error"),
+                  lifecycle: enumeration("introduced", "persisting", "resolved", "unknown"), summary: string,
+                  clauses: array(clause), evidence: array(evidence, 1) },
+                { details: string, recommendation: string, related_modules: strings })),
+                assessment: shape({ current: assessment, change: assessment }) }, { references, extensions })(value, "review");
+              if (value.module.baseline_path === null && value.module.current_path === null) fail("review.module", "оба пути отсутствуют");
+              for (const s of ["baseline", "current"] as const) {
+                if ((value.module[`${s}_path`] === null) !== (value.observed[s] === null)) fail("review.observed." + s, "не совпадает с наличием модуля");
+              }
+              if (value.comparison.baseline === null && (value.module.baseline_path !== null || value.assessment.change.verdict !== "not_applicable")) fail("review.comparison", "первый анализ не имеет базы и оценки изменения");
+              if (Boolean(value.analysis.model) !== Boolean(value.analysis.prompt_digest)) fail("review.analysis", "model и prompt_digest нужны вместе");
+              if (value.analysis.coverage.status !== "complete" && !value.analysis.coverage.limitations.length) fail("review.analysis.coverage", "укажите ограничения анализа");
+              for (const key of ["checks", "findings"] as const) {
+                if (new Set(value[key].map((item) => item.id)).size !== value[key].length) fail("review." + key, "повторяющийся id");
+              }
+              for (const check of value.checks) if (["consistent", "violation"].includes(check.verdict) && !check.evidence.length) fail("review.checks." + check.id, "нужны доказательства");
+              return value;
+            }
+        - id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
+          kind: file
+          path: src/reviews/types.ts
+          start_line: 1
+          end_line: 130
+          text: >
+            import type { Section } from "../contracts/types.js";
+
+            import type { Snapshot, SnapshotReference } from
+            "../snapshots/types.js";
+
+
+            export type Side = "baseline" | "current";
+
+
+            export type AssessmentSide = "current" | "change";
+
+
+            export interface ClauseReference {
+              snapshot: Side;
+              module_id: string;
+              section: Section;
+              id: string;
+            }
+
+
+            export interface ClauseInput {
+              reference: ClauseReference;
+              text: string;
+            }
+
+
+            export interface EvidenceReference {
+              snapshot: Side;
+              fact_id: string;
+            }
+
+
+            export interface Analyzer {
+              name: string;
+              version: string;
+              config_digest: string;
+            }
+
+
+            export interface FreshnessReason {
+              code: string;
+              side?: string;
+              potential_influence?: { scope: string; module_id?: string; path?: string }[];
+            }
+
+
+            export interface Coverage {
+              status: string;
+              limitations: string[];
+              reasons?: FreshnessReason[];
+            }
+
+
+            export interface Model {
+              provider: string;
+              id: string;
+              revision?: string;
+              parameters?: Record<string, unknown>;
+            }
+
+
+            export interface ReviewManifest {
+              schema_version: number;
+              comparison: Record<Side, SnapshotReference | null>;
+              module: {
+                id: string | null;
+                baseline_path: string | null;
+                current_path: string | null;
+              };
+              analyzer: Analyzer;
+              scope: string;
+              contract_scope?: string;
+              contracts: Record<Side, ClauseInput[]>;
+              instructions: string;
+              context: Record<string, unknown>;
+              model?: Model;
+              prompt_digest?: string;
+              review_scope?: string;
+            }
+
+
+            export interface Observation {
+              summary: string;
+              responsibilities: { text: string; evidence: EvidenceReference[] }[];
+            }
+
+
+            export interface ClauseCheck {
+              id: string;
+              contract: ClauseReference;
+              subject: Side;
+              verdict: string;
+              explanation: string;
+              evidence: EvidenceReference[];
+            }
+
+
+            export interface Finding {
+              id: string;
+              kind: string;
+              certainty: string;
+              severity: string;
+              lifecycle: string;
+              summary: string;
+              clauses: ClauseReference[];
+              evidence: EvidenceReference[];
+              details?: string;
+              recommendation?: string;
+              related_modules?: string[];
+            }
+
+
+            export interface Assessment {
+              verdict: string;
+              summary: string;
+            }
+
+
+            export interface ReviewReport {
+              schema_version: number;
+              id: string;
+              module: ReviewManifest["module"];
+              comparison: ReviewManifest["comparison"];
+              analysis: {
+                created_at: string;
+                analyzer: Analyzer;
+                input_digest: string;
+                scope: string;
+                coverage: Coverage;
+                model?: Model;
+                prompt_digest?: string;
+              };
+              observed: Record<Side, Observation | null>;
+              checks: ClauseCheck[];
+              findings: Finding[];
+              assessment: Record<AssessmentSide, Assessment>;
+              references?: { title: string; uri: string }[];
+              extensions?: Record<string, unknown>;
+            }
+
+
+            export interface ReviewBundle {
+              report: ReviewReport;
+              manifest: ReviewManifest;
+              baseline: Snapshot | null;
+              current: Snapshot;
+            }
+        - id: sha256:9e7834c6f33641bbe191264d9e290882fc90255a8d5195f1c020b832a42e8a56
+          kind: file
+          path: src/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+        - id: sha256:a43ef3e9a7072d2666c010e5c43cabb7e14d271805e8ddad532a1d47cbd6f5a9
+          kind: file
+          path: src/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+        - id: sha256:a2f3cce99e1ca7491a01705ef004f88712a751312ba721477ec32bfc1e6dfcbb
+          kind: file
+          path: src/snapshots/identity.ts
+          start_line: 1
+          end_line: 16
+          text: >
+            import { createHash } from "node:crypto";
+
+            import { digest as contentDigest } from
+            "../serialization/digest.js";
+
+            import type { Snapshot } from "./types.js";
+
+
+            /** Стабильная контрольная сумма структуры, не зависящая от времени
+            индексации. */
+
+            export function structureHash(value: string | Buffer) {
+              return createHash("sha256").update(value).digest("hex");
+            }
+
+
+            /** Метки и время не меняют содержание снимка; факты и неполнота
+            входят в отпечаток. */
+
+            export function snapshotDigest(snapshot: Snapshot) {
+              return contentDigest({ root: snapshot.root, modules: snapshot.modules,
+                facts: snapshot.facts ?? [], complete: snapshot.complete,
+                diagnostics: snapshot.diagnostics, evidenceLimitations: snapshot.evidenceLimitations ?? [] });
+            }
+        - id: sha256:cadc09b0e8edfeb439ff8bf54ae57c3a0703b2ae0b5a951c957b45a2509fd8a9
+          kind: file
+          path: src/snapshots/types.ts
+          start_line: 1
+          end_line: 137
+          text: >
+            import type { ContractDocument } from "../contracts/types.js";
+
+
+            export interface SourceFile {
+              path: string;
+              hash: string | null;
+              error?: string;
+            }
+
+
+            export interface FileRecord extends SourceFile {
+              text?: string;
+            }
+
+
+            export interface Fact {
+              id: string;
+              kind: string;
+              path: string;
+              text: string;
+              start_line?: number;
+              end_line?: number;
+            }
+
+
+            export interface SnapshotModule {
+              directory: string;
+              documentPath: string;
+              document: ContractDocument;
+              files: SourceFile[];
+              sourceFiles: number;
+              fingerprint: string;
+            }
+
+
+            export interface Snapshot {
+              schema_version: number;
+              root: string;
+              id: string;
+              digest: string;
+              capturedAt: string;
+              fingerprint: string;
+              kind: string;
+              label: string;
+              revision?: string;
+              baseRevision?: string | null;
+              subject?: string;
+              isHead?: boolean;
+              complete: boolean;
+              diagnostics: string[];
+              modules: SnapshotModule[];
+              facts: Fact[];
+              evidenceLimitations: string[];
+              scoped?: boolean;
+              scope_digest?: string;
+            }
+
+
+            export interface SnapshotOptions {
+              maxFiles?: number;
+              snapshotRoot?: string;
+              revision?: string;
+            }
+
+
+            export type ChangeStatus = "initial" | "new" | "changed" | "removed"
+            | "unchanged";
+
+
+            export interface FileChange {
+              path: string;
+              status: ChangeStatus;
+            }
+
+
+            export interface ComparisonModule {
+              directory: string;
+              key: string;
+              sourceFiles: number;
+              filesChanged: number;
+              descendantChanges: number;
+              name: string;
+              moduleId?: string | null;
+              module_id?: string;
+              title?: string;
+              baselinePath: string | null;
+              currentPath: string | null;
+              moved: boolean;
+              status: ChangeStatus;
+              documentState: string;
+              documentChanged: boolean;
+              files: FileChange[];
+              before: SnapshotModule | null;
+              after: SnapshotModule | null;
+            }
+
+
+            export interface Comparison {
+              before: {
+                id: string;
+                label: string;
+                kind: string;
+                digest?: string;
+                capturedAt?: string;
+              };
+              after: { id: string; digest: string; capturedAt: string };
+              counts: Record<string, number>;
+              schema_version: number;
+              id: string;
+              root: string;
+              complete: boolean;
+              diagnostics: string[];
+              modules: ComparisonModule[];
+            }
+
+
+            export interface SnapshotReference {
+              id: string;
+              digest: string;
+            }
+
+
+            export type ScopedSnapshot = Pick<
+              Snapshot,
+              | "schema_version"
+              | "id"
+              | "digest"
+              | "kind"
+              | "revision"
+              | "complete"
+              | "modules"
+              | "facts"
+              | "diagnostics"
+              | "evidenceLimitations"
+            > & { scoped: boolean; scope_digest?: string };
+
+
+            export type SnapshotData = Snapshot | ScopedSnapshot;
+
+
+            export interface GitRevision {
+              id: string;
+              revision: string;
+              parentRevision: string | null;
+              isHead: boolean;
+              kind: string;
+              capturedAt: string;
+              date: string;
+              subject: string;
+              label: string;
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      scope_digest: sha256:e0d92c1944d6eedc2b13e48c79db2559fa24a87df6fee8487cec8ac069ff5cc8
+    input_digest: sha256:5e63856685d3f2f4a01bf0071d2133e08aa5e37bb5132bafe10d558de134d85e
+    result_digest: sha256:f535757d7fbbec5d8bb92217571aea69fbf606d055c06901789a585ca9fa0fc6
+    content_digest: sha256:6dbc69df4366a9227d083607f33e6efb3e350bf876a6ee70a88d09199c094a1a
+    registration_order: 105

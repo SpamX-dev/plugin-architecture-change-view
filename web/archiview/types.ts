@@ -15,7 +15,7 @@ export type Freshness = Pick<AggregateAssessment, "status"> & {
   conflict?: boolean; current_violation?: boolean; coverage?: Coverage; reasons?: Reason[];
 };
 export type Finding = Pick<SavedFinding, "id" | "severity" | "summary" | "clauses" | "evidence"> & Partial<SavedFinding> & { assessmentOnly?: boolean };
-export type ReviewBundle = Pick<ModuleReview, "contracts"> & Partial<Pick<ModuleReview, "reviewFile" | "stale" | "dependencies">> & {
+export type ReviewBundle = Pick<ModuleReview, "contracts"> & Partial<Pick<ModuleReview, "reviewFile" | "stale" | "dependencies" | "referencedContracts">> & {
   freshness?: Partial<Record<"current" | "change", Freshness>>;
   facts: Record<Side, (Pick<Fact, "id" | "path"> & Partial<Fact>)[]>;
   report: Pick<ReviewReport, "id" | "module" | "assessment" | "observed" | "checks"> & {
