@@ -124,6 +124,7 @@ test("Git HEAD restores historical modules and respects Git CRLF normalization",
   const { root } = await fixture(t, {
     ".gitattributes": "* text=auto eol=lf\n", "module.md": "Root\n",
     "src/module.md": "Source\n", "src/main.js": "export const main = 1;\n",
+    "skills/example/SKILL.md": "Version one\n",
   });
   await run("git", ["init", "--quiet", "--initial-branch=main"], { cwd: root, windowsHide: true });
   assert.equal(await captureGitHead(root), null);
@@ -136,6 +137,9 @@ test("Git HEAD restores historical modules and respects Git CRLF normalization",
   await writeFile(path.join(root, "src/module.md"), "Source\r\n");
   const current = await captureWorkingTree(root);
   assert.ok(compareSnapshots(before, current).modules.every((module) => module.status === "unchanged"));
+  for (const snapshot of [before!, current]) {
+    assert.ok(!snapshot.modules.some((module) => module.directory.startsWith("skills")));
+  }
   const nested = await captureGitHead(path.join(root, "src"));
   assert.equal(nested!.modules.length, 1);
   assert.equal(nested!.modules[0].document.text, "Source\n");

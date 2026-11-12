@@ -30,7 +30,7 @@ const installed = await buildDistribution(root, "codex", async (output) => {
   await mkdir(new URL("dist/", output), { recursive: true });
   await writeFile(new URL("dist/panel.html", output), panelHtml);
   await build({
-    entryPoints: { server: fileURLToPath(new URL("src/server.ts", root)), cli: fileURLToPath(new URL("src/archiview/packaged-cli.ts", root)) },
+    entryPoints: { server: fileURLToPath(new URL("src/mcp/server.ts", root)), cli: fileURLToPath(new URL("src/archiview/packaged-cli.ts", root)) },
     outdir: fileURLToPath(new URL("src/", output)), outExtension: { ".js": ".mjs" },
     bundle: true, platform: "node", target: "node22", format: "esm",
     banner: { js: 'import { createRequire as archiviewCreateRequire } from "node:module"; const require = archiviewCreateRequire(import.meta.url);' },

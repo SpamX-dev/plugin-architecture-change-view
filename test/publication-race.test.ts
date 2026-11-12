@@ -64,7 +64,7 @@ test('a second process captures and records the live tree after the previous ref
   await writeFile(file, 'export const value = 2;');
 
   // A separate CLI must wait before capturing/observing, including during its startup publication.
-  const cli = new URL('../src/cli.ts', import.meta.url);
+  const cli = new URL('../src/archiview/cli.ts', import.meta.url);
   const child = promisify(execFile)(process.execPath, ['--import', import.meta.resolve('tsx'),
     fileURLToPath(cli), '--root', root, '--build-report', '--port', 'unused'], { windowsHide: true });
   try {

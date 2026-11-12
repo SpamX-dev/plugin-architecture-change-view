@@ -180,7 +180,7 @@ test("analysis exports exactly the selected view, imports through CLI once, and 
   assert.equal((await app.analysis.status(request.id)).status, "prepared");
   assert.equal((await app.reports.list()).entries.length, 0);
   await writeFile(path.join(directory, "result.yaml"), stringify(completedFixture(input), { aliasDuplicateObjects: false }));
-  const args = ["--import", import.meta.resolve("tsx"), fileURLToPath(new URL("../src/cli.ts", import.meta.url)), "--root", root, "--complete-analysis", request.id];
+  const args = ["--import", import.meta.resolve("tsx"), fileURLToPath(new URL("../src/archiview/cli.ts", import.meta.url)), "--root", root, "--complete-analysis", request.id];
   await promisify(execFile)(process.execPath, args);
   await promisify(execFile)(process.execPath, args);
   const entries = (await app.reports.list()).entries;

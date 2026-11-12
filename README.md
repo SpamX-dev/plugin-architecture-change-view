@@ -235,7 +235,7 @@ archiview --root D:\projects\MyProject --check-index
 ## MCP и скилл
 
 ~~~powershell
-node --import tsx src/server.ts --root D:/path/to/project
+node --import tsx src/mcp/server.ts --root D:/path/to/project
 ~~~
 
 Корень задаётся --root, PLUGIN_ARCHITECTURE_CHANGE_VIEW_ROOT или cwd процесса.

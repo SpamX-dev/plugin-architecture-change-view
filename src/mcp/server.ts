@@ -12,14 +12,15 @@ import { CallToolRequestSchema, ListToolsRequestSchema,
   ListResourcesRequestSchema, ReadResourceRequestSchema,
   ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { parse } from "yaml";
-import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from "./contracts/inventory.js";
-import { createCodexPanel, PANEL_URI, PANEL_TOOL, PROJECT_INPUT } from "./codex/panel.js";
-import { createProjectBinding } from "./application/project.js";
-import { createCodexProjectBinding } from "./codex/project-context.js";
-import { UI_TOOLS, UI_TOOL_METHODS } from "./codex/ui-tools.js";
+import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from "../contracts/inventory.js";
+import { createCodexPanel, PANEL_URI, PANEL_TOOL, PROJECT_INPUT } from "../codex/panel.js";
+import { createProjectBinding } from "../application/project.js";
+import { createCodexProjectBinding } from "../codex/project-context.js";
+import { UI_TOOLS, UI_TOOL_METHODS } from "../codex/ui-tools.js";
+import { packageUrl } from "../runtime/package-paths.js";
 
 /** Версионированная метаинформация пакета для MCP initialize. */
-const packageValue: unknown = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+const packageValue: unknown = JSON.parse(await readFile(new URL("package.json", packageUrl), "utf8"));
 if (!packageValue || typeof packageValue !== "object" || !("name" in packageValue) || typeof packageValue.name !== "string" ||
     !("version" in packageValue) || typeof packageValue.version !== "string") throw new Error("Invalid package metadata");
 const packageInfo = { name: packageValue.name, version: packageValue.version };
@@ -52,8 +53,7 @@ async function serve() {
     if (!/^\.[a-z0-9]+$/i.test(extension)) throw new Error("Invalid source extension");
     extensions.add(extension.toLowerCase());
   }
-  const text = await readFile(new URL(
-    "../skills/module-boundaries/SKILL.md", import.meta.url), "utf8");
+  const text = await readFile(new URL("skills/module-boundaries/SKILL.md", packageUrl), "utf8");
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);
   if (!frontmatter) throw new Error("Skill frontmatter is missing");
   const metadataValue: unknown = parse(frontmatter[1]);

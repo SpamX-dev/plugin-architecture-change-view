@@ -65,6 +65,24 @@ test("reads root-to-target contracts without hiding a missing child description"
   await assert.rejects(moduleContext(root, root), /must be relative/);
 });
 
+test("a resource contract includes its skill directory without including other skills", async (t) => {
+  const root = await project(t, {
+    "skills/example/SKILL.md": "# Instructions",
+    "skills/other/SKILL.md": "# Other instructions",
+  });
+  assert.deepEqual((await moduleInventory(root)).modules, []);
+  await writeFile(path.join(root, "skills/example/arch.yaml"), [
+    "schema_version: 1", "id: example", "title: Example", "kind: module",
+    "purpose: Provide instructions", "responsibilities: { R1: Define the instructions }",
+    "boundaries: {}", "invariants: {}", "extensions: { archiview.roles: [resources] }",
+  ].join("\n"));
+  const inventory = await moduleInventory(root);
+  assert.equal(inventory.sourceFiles, 0);
+  assert.deepEqual(inventory.modules.map(({ directory }) => directory), [".", "skills", "skills/example"]);
+  const skill = inventory.modules.find(({ directory }) => directory === "skills/example");
+  assert.deepEqual(skill?.contract?.extensions?.["archiview.roles"], ["resources"]);
+});
+
 test("respects Git ignores, includes untracked source and skips deleted tracked files", async (t) => {
   const root = await project(t, {
     ".gitignore": "ignored/\n", "ignored/generated.ts": "ignored",

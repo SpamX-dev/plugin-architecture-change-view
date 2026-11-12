@@ -12,7 +12,7 @@ function packageDirectory(moduleUrl: string): URL {
 }
 
 export const packageUrl = packageDirectory(import.meta.url);
-const sourceCli = new URL("src/cli.ts", packageUrl);
+const sourceCli = new URL("src/archiview/cli.ts", packageUrl);
 const sourceCheckout = existsSync(sourceCli);
 export const webAssetUrl = new URL(sourceCheckout ? "dist/web/archiview/" : "web/archiview/", packageUrl);
 

@@ -19,7 +19,7 @@ test("serves a matching skill descriptor and read-only module tools over stdio",
   await writeFile(path.join(root, "src/main.js"), "export const main = 1;");
   const client = new Client({ name: "module-test", version: "1.0.0" });
   const transport = new StdioClientTransport({ command: process.execPath,
-    args: ["--import", import.meta.resolve("tsx"), fileURLToPath(new URL("../src/server.ts", import.meta.url)), "--root", root],
+    args: ["--import", import.meta.resolve("tsx"), fileURLToPath(new URL("../src/mcp/server.ts", import.meta.url)), "--root", root],
     stderr: "pipe" });
   t.after(() => client.close());
   await client.connect(transport);

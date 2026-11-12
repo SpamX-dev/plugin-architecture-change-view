@@ -80,7 +80,7 @@ async function sourceCliOrigin(defer: DeferCleanup, project: string) {
     await cp(path.resolve(name), path.join(checkout, name), { recursive: true });
   }
   await symlink(path.resolve("node_modules"), path.join(checkout, "node_modules"), process.platform === "win32" ? "junction" : "dir");
-  const args = ["--import", "tsx", "src/cli.ts", "--root", project];
+  const args = ["--import", "tsx", "src/archiview/cli.ts", "--root", project];
   await promisify(execFile)(process.execPath, [...args, "--build-report", "--port", "unused"], { cwd: checkout, windowsHide: true });
   await assert.rejects(stat(path.join(checkout, "dist")), { code: "ENOENT" });
   const invalid = path.join(checkout, "web", "invalid.ts");

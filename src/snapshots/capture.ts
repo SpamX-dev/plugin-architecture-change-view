@@ -88,7 +88,7 @@ async function fileHash(file: string) {
 }
 
 /**
- * Строит модули по каталогам исходников и module.md, включая предков.
+ * Строит модули по каталогам исходников и контрактов, включая предков.
  * Вспомогательные файлы принадлежат ближайшему модулю; они тоже влияют на статус.
  */
 function assemble(root: string, records: FileRecord[], metadata: {kind:string;label:string;revision?:string}, diagnostics: string[]): Snapshot {
@@ -114,7 +114,7 @@ function assemble(root: string, records: FileRecord[], metadata: {kind:string;la
     while (!modules.has(owner)) owner = path.posix.dirname(owner);
     const module = modules.get(owner)!;
     module.files.push({ path: record.path, hash: record.hash, error: record.error });
-    if (SOURCE_EXTENSIONS.has(path.posix.extname(record.path).toLowerCase())) {
+    if (isSource(record.path)) {
       module.sourceFiles += 1;
     }
     if (record.path === module.documentPath) {

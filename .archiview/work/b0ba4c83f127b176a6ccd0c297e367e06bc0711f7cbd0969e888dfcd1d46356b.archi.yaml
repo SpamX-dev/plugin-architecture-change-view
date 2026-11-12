@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-contracts
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: e77da4079f7320c365f7a5addf25dd61809df6c201f8b6c7049e080c92e8903b
+check_hash: ca2af714370a7ad7351098fb4ecb98adb72ea8d864581a4e8e813ce722ab20d6
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,278 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: bfb846c109324f147062e6958a3f80a595f8741a
+      id: 0b96b3b9d93dff79913dc90e292caef48df01eaf
     state:
       exists: true
       directory: src/contracts
-      self_digest: sha256:acc222d355af47f92d1b7f4f28d0296c1ce972056836422b17929c18110685ea
-      subtree_digest: sha256:0b66d24746ecad0184181da06370cb678b33092cceef9217add9e14570d7d24b
+      self_digest: sha256:397998cc033a7209df19d19fda768cc7b38ad7798843e1181cbbf4378748a321
+      subtree_digest: sha256:cfcc6deb9c8777bb6a2c22010dc48abb04178ce8c58bef106643f304451a76e7
   current:
     exists: true
     directory: src/contracts
-    self_digest: sha256:397998cc033a7209df19d19fda768cc7b38ad7798843e1181cbbf4378748a321
-    subtree_digest: sha256:cfcc6deb9c8777bb6a2c22010dc48abb04178ce8c58bef106643f304451a76e7
+    self_digest: sha256:1c7c6f47bc960a4738442ff73ec5b6939bd7250f3c8553f931df087dab836cb8
+    subtree_digest: sha256:817a4133c0eee87f945ad72b4c8bd490a2a51acdfdcff02d1fbb252f77138480
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
-  module_id: archiview-contracts
-  directory: src/contracts
-  parent_id: architecture-core
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: archiview-contracts
-    directory: src/contracts
-    own_files:
-      - path: src/contracts/document.ts
-        digest: sha256:b17ec27a8dca7030a52ab3451316027cc6f8aa65c82be429cfb6c7f711eb8f9f
-        normalization: text-lf/v1
-      - path: src/contracts/inventory.ts
-        digest: sha256:e66d6dde36db5c9b2b6424c8d1d9a4f07f7b1b06da5bb7807dfcca5ba58ad1fa
-        normalization: text-lf/v1
-      - path: src/contracts/types.ts
-        digest: sha256:54e1cfc7cc572da2ccbf5ebfb0286cd4a294ab359de667d708d81e2599db919d
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: archiview-contracts
-      title: Контракты каталогов
-      kind: module
-      purpose: Читать декларации ответственности и находить каталоги исходников,
-        которым нужен контракт.
-      responsibilities:
-        R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих,
-          повреждённых и прежних описаний.
-        R2: Находить исходники проекта и предоставлять инвентаризацию каталогов и
-          цепочки родительских контрактов.
-      boundaries:
-        B1: Предметные выводы по реализации и публикация отчётов принадлежат другим
-          модулям.
-      invariants:
-        I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается
-          диагностика.
-        I2: Наличие документа подтверждает только его структурное состояние.
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
-          адаптерам. Извлечение символов, разрешение зависимостей и индексация
-          AST принадлежат ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
-          текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Прикладные операции находятся в application; HTTP и CLI в archiview
-          являются адаптерами, отображение принадлежит web.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B3
-        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
-          от модели инструменты UI без HTTP-сервера.
-      - module_id: architecture-core
-        section: boundaries
-        id: B4
-        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
-          скилл хоста, получая прикладные операции из application.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-  technical_digest: sha256:acc222d355af47f92d1b7f4f28d0296c1ce972056836422b17929c18110685ea
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: archiview-contracts
-    directory: src/contracts
-    own_files:
-      - path: src/contracts/document.ts
-        digest: sha256:b17ec27a8dca7030a52ab3451316027cc6f8aa65c82be429cfb6c7f711eb8f9f
-        normalization: text-lf/v1
-      - path: src/contracts/inventory.ts
-        digest: sha256:e66d6dde36db5c9b2b6424c8d1d9a4f07f7b1b06da5bb7807dfcca5ba58ad1fa
-        normalization: text-lf/v1
-      - path: src/contracts/types.ts
-        digest: sha256:54e1cfc7cc572da2ccbf5ebfb0286cd4a294ab359de667d708d81e2599db919d
-        normalization: text-lf/v1
-    contract:
-      id: archiview-contracts
-      kind: module
-      purpose: Читать декларации ответственности и находить каталоги исходников,
-        которым нужен контракт.
-      responsibilities:
-        R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих,
-          повреждённых и прежних описаний.
-        R2: Находить исходники проекта и предоставлять инвентаризацию каталогов и
-          цепочки родительских контрактов.
-      boundaries:
-        B1: Предметные выводы по реализации и публикация отчётов принадлежат другим
-          модулям.
-      invariants:
-        I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается
-          диагностика.
-        I2: Наличие документа подтверждает только его структурное состояние.
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Экспорт скиллов в Codex и публикация скилла в dsh принадлежат отдельным
-          адаптерам. Извлечение символов, разрешение зависимостей и индексация
-          AST принадлежат ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
-          текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Прикладные операции находятся в application; HTTP и CLI в archiview
-          являются адаптерами, отображение принадлежит web.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B3
-        text: Адаптер Codex находится в codex; вызывает прикладной сервис через скрытые
-          от модели инструменты UI без HTTP-сервера.
-      - module_id: architecture-core
-        section: boundaries
-        id: B4
-        text: Адаптер dsh находится в dsh; регистрирует инструменты, маршруты панели и
-          скилл хоста, получая прикладные операции из application.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-    children: []
-  self_digest: sha256:d95fe2ac1d400df3730cf753401c064ddbc6bad107745799896c558e5cc93325
-  subtree:
-    self: sha256:acc222d355af47f92d1b7f4f28d0296c1ce972056836422b17929c18110685ea
-    children: []
-  subtree_digest: sha256:0b66d24746ecad0184181da06370cb678b33092cceef9217add9e14570d7d24b
-  semantic_subtree:
-    self: sha256:d95fe2ac1d400df3730cf753401c064ddbc6bad107745799896c558e5cc93325
-    children: []
-  semantic_subtree_digest: sha256:63281d6732210befcc2d2d6a4960fd0a67abbc0363bf91737e159211269d0f05
-current:
   module_id: archiview-contracts
   directory: src/contracts
   parent_id: architecture-core
@@ -546,12 +290,297 @@ current:
     self: sha256:da710106bcc449a27c6aa3ee67856f791fc39fa3602cb534d3726f70eacb4b64
     children: []
   semantic_subtree_digest: sha256:eb88190779b564cb192d1cf24f3326ba4bb6069f943aaa55b38d52af225db00c
+current:
+  module_id: archiview-contracts
+  directory: src/contracts
+  parent_id: architecture-core
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-contracts
+    directory: src/contracts
+    own_files:
+      - path: src/contracts/document.ts
+        digest: sha256:b17ec27a8dca7030a52ab3451316027cc6f8aa65c82be429cfb6c7f711eb8f9f
+        normalization: text-lf/v1
+      - path: src/contracts/inventory.ts
+        digest: sha256:e66d6dde36db5c9b2b6424c8d1d9a4f07f7b1b06da5bb7807dfcca5ba58ad1fa
+        normalization: text-lf/v1
+      - path: src/contracts/roles.ts
+        digest: sha256:95d27e977ea3be51d67b77530f47a943445017646de2230b29c66f4b2170512c
+        normalization: text-lf/v1
+      - path: src/contracts/types.ts
+        digest: sha256:54e1cfc7cc572da2ccbf5ebfb0286cd4a294ab359de667d708d81e2599db919d
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-contracts
+      title: Контракты каталогов
+      kind: module
+      extensions:
+        archiview.roles:
+          - domain
+      purpose: Читать декларации ответственности и находить каталоги исходников,
+        которым нужен контракт.
+      responsibilities:
+        R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих,
+          повреждённых и прежних описаний.
+        R2: Находить каталоги по исходному коду или контракту и предоставлять
+          инвентаризацию каталогов и цепочки родительских контрактов.
+      boundaries:
+        B1: Предметные выводы по реализации и публикация отчётов принадлежат другим
+          модулям.
+      invariants:
+        I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается
+          диагностика.
+        I2: Наличие документа подтверждает только его структурное состояние.
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: architecture-core
+        section: boundaries
+        id: B1
+        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
+          принимает данные проекта и возвращает результат независимо от
+          транспорта, хоста и способа отображения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: Семантический вывод ответственности выполняет агент или внешний
+          анализатор. Наличие контракта не доказывает его выполнения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B5
+        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
+          проверка контрактов доступны независимо от MCP, HTTP и хоста.
+      - module_id: architecture-core
+        section: invariants
+        id: I1
+        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+          сборка и папки .archiview не расширяют анализ. Запись данных
+          допускается в .archiview корня проекта либо явно выбранном внешнем
+          хранилище; ссылки не меняют эту область.
+      - module_id: architecture-core
+        section: invariants
+        id: I2
+        text: Неполнота обхода и доказательств сообщается явно.
+      - module_id: architecture-core
+        section: invariants
+        id: I3
+        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
+          ответственность.
+      - module_id: architecture-core
+        section: invariants
+        id: I4
+        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+          файлах.
+      - module_id: architecture-core
+        section: invariants
+        id: I5
+        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
+          требует отдельного анализа.
+      - module_id: architecture-core
+        section: invariants
+        id: I6
+        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
+          описывают состояние исходников и контрактов из того же индекса Git.
+  technical_digest: sha256:1c7c6f47bc960a4738442ff73ec5b6939bd7250f3c8553f931df087dab836cb8
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-contracts
+    directory: src/contracts
+    own_files:
+      - path: src/contracts/document.ts
+        digest: sha256:b17ec27a8dca7030a52ab3451316027cc6f8aa65c82be429cfb6c7f711eb8f9f
+        normalization: text-lf/v1
+      - path: src/contracts/inventory.ts
+        digest: sha256:e66d6dde36db5c9b2b6424c8d1d9a4f07f7b1b06da5bb7807dfcca5ba58ad1fa
+        normalization: text-lf/v1
+      - path: src/contracts/roles.ts
+        digest: sha256:95d27e977ea3be51d67b77530f47a943445017646de2230b29c66f4b2170512c
+        normalization: text-lf/v1
+      - path: src/contracts/types.ts
+        digest: sha256:54e1cfc7cc572da2ccbf5ebfb0286cd4a294ab359de667d708d81e2599db919d
+        normalization: text-lf/v1
+    contract:
+      id: archiview-contracts
+      kind: module
+      purpose: Читать декларации ответственности и находить каталоги исходников,
+        которым нужен контракт.
+      responsibilities:
+        R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих,
+          повреждённых и прежних описаний.
+        R2: Находить каталоги по исходному коду или контракту и предоставлять
+          инвентаризацию каталогов и цепочки родительских контрактов.
+      boundaries:
+        B1: Предметные выводы по реализации и публикация отчётов принадлежат другим
+          модулям.
+      invariants:
+        I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается
+          диагностика.
+        I2: Наличие документа подтверждает только его структурное состояние.
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: architecture-core
+        section: boundaries
+        id: B1
+        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
+          принимает данные проекта и возвращает результат независимо от
+          транспорта, хоста и способа отображения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: Семантический вывод ответственности выполняет агент или внешний
+          анализатор. Наличие контракта не доказывает его выполнения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B5
+        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
+          проверка контрактов доступны независимо от MCP, HTTP и хоста.
+      - module_id: architecture-core
+        section: invariants
+        id: I1
+        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
+          сборка и папки .archiview не расширяют анализ. Запись данных
+          допускается в .archiview корня проекта либо явно выбранном внешнем
+          хранилище; ссылки не меняют эту область.
+      - module_id: architecture-core
+        section: invariants
+        id: I2
+        text: Неполнота обхода и доказательств сообщается явно.
+      - module_id: architecture-core
+        section: invariants
+        id: I3
+        text: Снимки и отчёты не заменяют arch.yaml и не согласуют новую
+          ответственность.
+      - module_id: architecture-core
+        section: invariants
+        id: I4
+        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
+          файлах.
+      - module_id: architecture-core
+        section: invariants
+        id: I5
+        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
+          требует отдельного анализа.
+      - module_id: architecture-core
+        section: invariants
+        id: I6
+        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
+          описывают состояние исходников и контрактов из того же индекса Git.
+    children: []
+  self_digest: sha256:f83454dcb36030c84360ee30a0260485a59ae625360261946cdebb5e5efd590d
+  subtree:
+    self: sha256:1c7c6f47bc960a4738442ff73ec5b6939bd7250f3c8553f931df087dab836cb8
+    children: []
+  subtree_digest: sha256:817a4133c0eee87f945ad72b4c8bd490a2a51acdfdcff02d1fbb252f77138480
+  semantic_subtree:
+    self: sha256:f83454dcb36030c84360ee30a0260485a59ae625360261946cdebb5e5efd590d
+    children: []
+  semantic_subtree_digest: sha256:413b826b2585b0b242bc18bdabdbb1b88d36393bd9db11a9edfae0a39b3305e5
 change:
   existence: retained
   own: true
-  own_code: true
+  own_code: false
   own_contract: true
-  inherited_constraints: false
+  inherited_constraints: true
   descendants: false
   child_composition: false
   moved: false
@@ -560,490 +589,23 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 175
-  comparison_key: sha256:2fea9cca47a1d27655a79a1b74928d6f318cf29dbe4eacdbb43a237f73e3c2c5
+  generation: 182
+  comparison_key: sha256:c18ab19c9fc847b2d20d35c6fdeabc6597b1f373315df10da5a976f8126344a1
   baseline:
     metadata:
-      id: git-bfb846c109324f147062e6958a3f80a595f8741a
-      digest: sha256:d87f8c9379db5508ecaf9d66c58131944de3103df4c39619e355ada3c61ea5e1
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-11T23:04:49.259Z
-      kind: git
-      revision: bfb846c109324f147062e6958a3f80a595f8741a
-      label: HEAD
-      fingerprint: 96185156859f077fae699bc6a4b300a57b6dad7a1d5c358051e176d442f249fe
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-      isHead: true
-    module_index: 6
-    module:
-      directory: src/contracts
-      documentPath: src/contracts/arch.yaml
-      document:
-        state: documented
-        text: >
-          schema_version: 1
-
-          id: archiview-contracts
-
-          title: Контракты каталогов
-
-          kind: module
-
-          purpose: Читать декларации ответственности и находить каталоги
-          исходников, которым нужен контракт.
-
-          responsibilities:
-            R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих, повреждённых и прежних описаний.
-            R2: Находить исходники проекта и предоставлять инвентаризацию каталогов и цепочки родительских контрактов.
-          boundaries:
-            B1: Предметные выводы по реализации и публикация отчётов принадлежат другим модулям.
-          invariants:
-            I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается диагностика.
-            I2: Наличие документа подтверждает только его структурное состояние.
-        format: arch.yaml
-        contract:
-          schema_version: 1
-          id: archiview-contracts
-          title: Контракты каталогов
-          kind: module
-          purpose: Читать декларации ответственности и находить каталоги исходников,
-            которым нужен контракт.
-          responsibilities:
-            R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих,
-              повреждённых и прежних описаний.
-            R2: Находить исходники проекта и предоставлять инвентаризацию каталогов и
-              цепочки родительских контрактов.
-          boundaries:
-            B1: Предметные выводы по реализации и публикация отчётов принадлежат другим
-              модулям.
-          invariants:
-            I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается
-              диагностика.
-            I2: Наличие документа подтверждает только его структурное состояние.
-      files:
-        - path: src/contracts/arch.yaml
-          hash: 936c6c27bf854ae972d649f7ae3b4ae1ef09d0f3
-        - path: src/contracts/document.ts
-          hash: 18d6c09222c227700960ffc98245ef80f2414b61
-        - path: src/contracts/inventory.ts
-          hash: 0b0694a0b6faf32def39d0b2cc9dea35347685e4
-        - path: src/contracts/types.ts
-          hash: 29fa269fd73546e156e3823120aea919e87966e9
-      sourceFiles: 3
-      fingerprint: 835924669d8bdea48c7a9c1107328f62f8de21abe821f3c991e8df72dd4f9f48
-    facts:
-      - index: 53
-        fact:
-          id: sha256:45b96c9506fe251fa4147e12577534e3fc83fe78b8ccd442e8ac543f442bfa39
-          kind: file
-          path: src/contracts/arch.yaml
-          start_line: 1
-          end_line: 14
-          text: >
-            schema_version: 1
-
-            id: archiview-contracts
-
-            title: Контракты каталогов
-
-            kind: module
-
-            purpose: Читать декларации ответственности и находить каталоги
-            исходников, которым нужен контракт.
-
-            responsibilities:
-              R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих, повреждённых и прежних описаний.
-              R2: Находить исходники проекта и предоставлять инвентаризацию каталогов и цепочки родительских контрактов.
-            boundaries:
-              B1: Предметные выводы по реализации и публикация отчётов принадлежат другим модулям.
-            invariants:
-              I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается диагностика.
-              I2: Наличие документа подтверждает только его структурное состояние.
-      - index: 54
-        fact:
-          id: sha256:09362b417e4542becf90188faa42b5122c22e4a1526d78060be5133ae789f066
-          kind: file
-          path: src/contracts/document.ts
-          start_line: 1
-          end_line: 32
-          text: >
-            import { fail, string, object, enumeration, shape, strings,
-            references, extensions } from "../serialization/schema.js";
-
-
-            import type { Validator } from "../serialization/schema.js";
-
-
-            import type { Contract, ContractDocument } from "./types.js";
-
-            import { errorDetails } from "../runtime/errors.js";
-
-            import { parseYaml } from "../serialization/yaml.js";
-
-
-            const clauses = (min: number): Validator => (v, at) => {
-              object(v, at);
-              if (Object.keys(v as object).length < min) fail(at, "нужен хотя бы один пункт");
-              for (const [key, text] of Object.entries(v as Record<string, unknown>)) { string(key, at); string(text, at + "." + key); }
-            };
-
-
-            /** Контракт не содержит путь, историю или результаты анализа; они
-            принадлежат снимкам. */
-
-            export function validateArch(input: unknown): Contract {
-              const value = input as Contract;
-              shape({ schema_version: enumeration(1), id: string, title: string, kind: enumeration("module", "group"),
-                purpose: string, responsibilities: clauses(1), boundaries: clauses(0), invariants: clauses(0) },
-              { rationale: string, owners: strings, tags: strings, references, extensions })(value, "arch");
-              return value;
-            }
-
-
-            /** Старый файл возвращается только как материал немедленного
-            переноса, не как контракт. */
-
-            export function contractDocument(text: string | null | undefined,
-            format = "arch.yaml"): ContractDocument {
-              if (!text?.trim()) return { state: "empty", text: text ?? null, format, contract: null };
-              if (format === "module.md") return { state: "migration_required", text, format, contract: null,
-                action: "Немедленно перенесите ответственность в arch.yaml, проверьте его и удалите module.md." };
-              try { return { state: "documented", text, format, contract: parseYaml(text, validateArch) }; }
-              catch (cause) { const error = errorDetails(cause); return { state: "invalid", text, format, contract: null, errors: [error.message] }; }
-            }
-      - index: 55
-        fact:
-          id: sha256:6877396f525f57b2af8507d892ceb767d5c2f90606f7e19607c59a000c854474
-          kind: file
-          path: src/contracts/inventory.ts
-          start_line: 1
-          end_line: 266
-          text: |
-            interface InventoryModule {directory:string;document:string;status:string;text?:string|null;format?:string;contract?:Contract|null;errors?:string[];action?:string;migration?:{document:string;text:string};sourceFiles?:number;required?:boolean;files?:string[];preparation?:string}
-            import type { Contract } from "./types.js";
-            import { errorDetails } from "../runtime/errors.js";
-            /**
-             * Читает дерево исходников и контракты arch.yaml внутри одного корня проекта.
-             * Не разбирает AST и не выводит ответственность эвристически. Git используется
-             * для учёта ignore-правил; вне репозитория применяется ограниченный обход.
-             */
-            import { execFile } from "node:child_process";
-            import { lstat, readdir, readFile, realpath } from "node:fs/promises";
-            import path from "node:path";
-            import { promisify } from "node:util";
-            import { contractDocument } from "./document.js";
-            import { STATE_DIRECTORY, within } from "../project/paths.js";
-
-            /** Каталоги зависимостей и результатов сборки, исключаемые из обоих обходов. */
-            const EXCLUDED = new Set([
-              STATE_DIRECTORY,
-              ".git", ".hg", ".svn", "node_modules", "target", "dist", "build", "coverage",
-              ".venv", "venv", "__pycache__", ".next", ".nuxt", ".cache", "obj",
-            ]);
-            /** Расширения исходного кода; список можно дополнить при запуске сервера. */
-            export const SOURCE_EXTENSIONS = new Set((
-              ".c .h .cc .cpp .cxx .hpp .hxx .cs .fs .fsx .vb .java .kt .kts .scala " +
-              ".swift .m .mm .js .jsx .mjs .cjs .ts .tsx .mts .cts .py .pyi .go .rs " +
-              ".rb .php .lua .gd .sh .bash .zsh .ps1 .psm1 .pl .pm .r .sql .proto " +
-              ".dart .zig .ex .exs .erl .hrl .clj .cljs .cljc .vue .svelte .css .scss " +
-              ".less .html .htm .bsl .os .wsdl .xsd"
-            ).split(" "));
-            /** Асинхронный запуск Git без оболочки и интерполяции пользовательских строк. */
-            const runFile = promisify(execFile);
-            /** Максимальный размер одного описания, читаемого в контекст агента. */
-            const MAX_DOCUMENT_BYTES = 128 * 1024;
-
-            /** Приводит путь к относительному формату ответа MCP независимо от платформы. */
-            function portable(value: string) {
-              return value.split(path.sep).join("/") || ".";
-            }
-
-            /**
-             * Отсекает внешние пути, исключённые каталоги и символические ссылки.
-             * Отсутствующий после Git-фильтра файл считается удалённым, а не исходником.
-             */
-            export async function regularProjectFile(root: string, relative: string) {
-              if (excludedProjectPath(relative)) return false;
-              const candidate = path.resolve(root, relative);
-              if (!within(root, candidate)) return false;
-              try {
-                const resolved = await realpath(candidate);
-                if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) return false;
-                const info = await lstat(candidate);
-                return info.isFile() && !info.isSymbolicLink();
-              } catch (errorCause) { const error = errorDetails(errorCause);
-                if (error.code === "ENOENT") return false;
-                throw error;
-              }
-            }
-
-            /**
-             * Получает учитываемые файлы и признак полноты. Ошибка Git внутри репозитория
-             * не маскируется полным результатом обхода: причина возвращается диагностикой.
-             */
-            export async function projectFiles(root: string, maxFiles: number) {
-              const diagnostics = [];
-              let gitRoot;
-              try {
-                gitRoot = await runFile("git", ["rev-parse", "--show-toplevel"], {
-                  cwd: root, timeout: 15000, windowsHide: true,
-                });
-              } catch (errorCause) { const error = errorDetails(errorCause);
-                if (error.code !== "ENOENT" &&
-                    !String(error.stderr).includes("not a git repository")) {
-                  diagnostics.push("Git discovery failed: " + error.message);
-                }
-              }
-              if (gitRoot) {
-                try {
-                  const output = await runFile("git",
-                    ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "."],
-                    { cwd: root, timeout: 15000, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
-                  const files = [...new Set(output.stdout.split("\0").filter((file) => file && !excludedProjectPath(file)))];
-                  const limited = files.length > maxFiles;
-                  if (limited) diagnostics.push("File limit reached: " + maxFiles);
-                  return { files: files.slice(0, maxFiles), discovery: "git",
-                    complete: !limited, diagnostics };
-                } catch (errorCause) { const error = errorDetails(errorCause);
-                  diagnostics.push("Git file listing failed: " + error.message);
-                }
-              }
-              const files = [];
-              const pending = [root];
-              while (pending.length > 0 && files.length < maxFiles) {
-                const directory = pending.pop()!;
-                let entries;
-                try {
-                  entries = await readdir(directory, { withFileTypes: true });
-                } catch (errorCause) { const error = errorDetails(errorCause);
-                  diagnostics.push("Cannot list " + portable(path.relative(root, directory)) +
-                    ": " + error.message);
-                  continue;
-                }
-                entries.sort((left, right) => left.name.localeCompare(right.name));
-                for (let index = 0; index < entries.length; index += 1) {
-                  const entry = entries[index];
-                  if (excludedProjectPath(entry.name)) continue;
-                  const candidate = path.join(directory, entry.name);
-                  if (entry.isDirectory()) pending.push(candidate);
-                  else if (entry.isFile() || (entry.isSymbolicLink() && ["arch.yaml", "module.md"].includes(entry.name))) {
-                    files.push(path.relative(root, candidate));
-                  }
-                  if (files.length >= maxFiles) {
-                    if (index < entries.length - 1 || pending.length > 0) {
-                      diagnostics.push("File limit reached: " + maxFiles);
-                    }
-                    break;
-                  }
-                }
-              }
-              return { files, discovery: "filesystem", complete: diagnostics.length === 0,
-                diagnostics };
-            }
-
-            /** Общая политика исключения путей для рабочего дерева и исторических снимков. */
-            export function excludedProjectPath(relative: string) {
-              return relative.split(/[\\/]/).some((part) => EXCLUDED.has(process.platform === "win32" ? part.toLowerCase() : part));
-            }
-
-            async function existingEntry(file: string) {
-              try { return await lstat(file); }
-              catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
-            }
-
-            /**
-             * Читает один контракт, различая отсутствие, пустой текст и ошибку чтения.
-             * Внешняя ссылка и чрезмерно большой документ отвергаются явно.
-             */
-            async function documentAt(root: string, directory: string): Promise<InventoryModule> {
-              let file = path.join(directory, "arch.yaml");
-              let info = await existingEntry(file);
-              const legacy = path.join(directory, "module.md");
-              if (!info) {
-                info = await existingEntry(legacy);
-                if (!info) return { directory: portable(path.relative(root, directory)),
-                  document: portable(path.relative(root, file)), status: "missing" };
-                file = legacy;
-              }
-              if (!info.isFile()) throw new Error("Contract must be a regular file");
-              if (info.size > MAX_DOCUMENT_BYTES) throw new Error("Contract exceeds 128 KiB");
-              const resolved = await realpath(file);
-              if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) throw new Error("Contract resolves outside project sources");
-              const text = await readFile(file, "utf8");
-              let { state, ...parsed } = contractDocument(text, path.basename(file));
-              if (file !== legacy) {
-                const legacyInfo = await existingEntry(legacy);
-                if (legacyInfo) {
-                  if (!legacyInfo.isFile() || legacyInfo.size > MAX_DOCUMENT_BYTES) throw new Error("Invalid legacy contract");
-                  parsed.migration = { document: portable(path.relative(root, legacy)), text: await readFile(legacy, "utf8") };
-                  parsed.action = "Сверьте arch.yaml и module.md, сохраните все принятые ограничения и удалите module.md после проверки.";
-                  if (state === "documented") state = "migration_required";
-                }
-              }
-              return { directory: portable(path.relative(root, directory)), document: portable(path.relative(root, file)),
-                status: state, ...parsed };
-            }
-
-            /**
-             * Возвращает покрытие каждого каталога дерева исходников, включая предков.
-             * Старые module.md требуют переноса; их наличие не считается покрытием.
-             */
-            export async function moduleInventory(projectRoot: string, options: {extensions?: Set<string>;maxFiles?: number} = {}) {
-              const root = await realpath(projectRoot);
-              const extensions = options.extensions ?? SOURCE_EXTENSIONS;
-              const maxFiles = options.maxFiles ?? 50000;
-              const listed = await projectFiles(root, maxFiles);
-              const directories = new Map();
-              const sourcePaths = [];
-              let sourceFiles = 0;
-              for (const file of listed.files) {
-                const source = extensions.has(path.extname(file).toLowerCase());
-                const documented = ["arch.yaml", "module.md"].includes(path.basename(file));
-                if (!source && !documented) continue;
-                try {
-                  if (!await regularProjectFile(root, file) &&
-                      !(documented && (await existingEntry(path.join(root, file)))?.isSymbolicLink())) continue;
-                } catch (errorCause) { const error = errorDetails(errorCause);
-                  listed.complete = false;
-                  listed.diagnostics.push(file + ": " + error.message);
-                  continue;
-                }
-                let directory = path.dirname(file);
-                if (source) { sourceFiles += 1; sourcePaths.push(portable(file)); }
-                while (true) {
-                  const record = directories.get(directory) ?? { sourceFiles: 0 };
-                  if (source) record.sourceFiles += 1;
-                  directories.set(directory, record);
-                  if (directory === ".") break;
-                  directory = path.dirname(directory);
-                }
-              }
-              const modules: InventoryModule[] = [];
-              for (const [directory, counts] of [...directories].sort(([a], [b]) =>
-                a.localeCompare(b))) {
-                try {
-                  const { text, ...document } = await documentAt(root, path.resolve(root, directory));
-                  modules.push({ ...document, sourceFiles: counts.sourceFiles,
-                    required: counts.sourceFiles > 0 });
-                } catch (errorCause) { const error = errorDetails(errorCause);
-                  listed.complete = false;
-                  listed.diagnostics.push(directory + ": " + error.message);
-                  modules.push({ directory: portable(directory), document: portable(
-                    path.join(directory, "arch.yaml")), status: "unreadable",
-                    sourceFiles: counts.sourceFiles, required: counts.sourceFiles > 0 });
-                }
-              }
-              const ids = new Map<string, InventoryModule[]>();
-              for (const module of modules) {
-                if (!module.contract) continue;
-                const id = module.contract.id;
-                if (!ids.has(id)) ids.set(id, []);
-                ids.get(id)!.push(module);
-              }
-              for (const [id, entries] of ids) if (entries.length > 1) {
-                for (const entry of entries) {
-                  entry.status = "invalid";
-                  entry.errors = [...entry.errors ?? [], "Повторяющийся id модуля: " + id];
-                }
-              }
-              for (const module of modules) {
-                module.files = sourcePaths.filter((file) => path.posix.dirname(file) === module.directory);
-                module.preparation = module.status === "migration_required" ? "migrate" :
-                  ["missing", "empty"].includes(module.status) ? "analyze_and_write" :
-                    module.status === "documented" ? "ready" : "repair";
-              }
-              return { schema_version: 1, root, complete: listed.complete,
-                discovery: listed.discovery, sourceFiles, modules,
-                diagnostics: listed.diagnostics,
-                preparation: "До просмотра и изменения кода перенесите все module.md в arch.yaml. Если обоих файлов нет, изучите исходники и родительские контракты, затем запишите arch.yaml. Не оставляйте отсутствие контракта конечным результатом." };
-            }
-
-            /**
-             * Возвращает цепочку контрактов от корня до целевого каталога, включая пропуски.
-             * Абсолютный путь, выход через .. и ссылка за пределы проекта отклоняются.
-             */
-            export async function moduleContext(projectRoot: string, directory = ".") {
-              const root = await realpath(projectRoot);
-              if (path.isAbsolute(directory)) throw new Error("directory must be relative");
-              const requested = path.resolve(root, directory);
-              if (!within(root, requested)) throw new Error("directory is outside project");
-              if (excludedProjectPath(path.relative(root, requested))) throw new Error("directory is excluded from project sources");
-              const target = await realpath(requested);
-              if (!within(root, target)) throw new Error("directory resolves outside project");
-              if (!(await lstat(target)).isDirectory()) throw new Error("directory is not a directory");
-              const chain = [];
-              let current = requested;
-              while (true) {
-                const physical = current === requested ? target : await realpath(current);
-                if (!within(root, physical)) throw new Error("directory resolves outside project");
-                if (excludedProjectPath(path.relative(root, physical))) throw new Error("directory is excluded from project sources");
-                chain.push(await documentAt(root, current));
-                if (current === root) break;
-                current = path.dirname(current);
-              }
-              return { schema_version: 1, root, directory: portable(path.relative(root, requested)),
-                contracts: chain.reverse() };
-            }
-      - index: 56
-        fact:
-          id: sha256:11588e68d2f6a09f72b5abaff75ab7a091d96675269170d939cc098373df1765
-          kind: file
-          path: src/contracts/types.ts
-          start_line: 1
-          end_line: 28
-          text: >
-            export type Section = "responsibilities" | "boundaries" |
-            "invariants";
-
-
-            export interface Contract {
-              schema_version: number;
-              id: string;
-              title: string;
-              kind: string;
-              purpose: string;
-              responsibilities: Record<string, string>;
-              boundaries: Record<string, string>;
-              invariants: Record<string, string>;
-              rationale?: string;
-              owners?: string[];
-              tags?: string[];
-              references?: { title: string; uri: string }[];
-              extensions?: Record<string, unknown>;
-            }
-
-
-            export interface ContractDocument {
-              state: string;
-              text: string | null;
-              format?: string;
-              contract?: Contract | null;
-              errors?: string[];
-              action?: string;
-              migration?: { document: string; text: string };
-            }
-      - index: 173
-        fact:
-          id: sha256:4e90c8adc8c22fe5ce597fb5dea716cf0c4621642602010f13adf44986d8f5be
-          kind: module
-          path: src/contracts
-          text: '{"contract":"documented","format":"arch.yaml","sources":["src/contracts/document.ts","src/contracts/inventory.ts","src/contracts/types.ts"]}'
-  current:
-    metadata:
-      id: working-e31d891e8f1dec834749e6c266ea5dbb1efd664f35b597ff7a235b605348f923
+      id: git-0b96b3b9d93dff79913dc90e292caef48df01eaf
       digest: sha256:e31d891e8f1dec834749e6c266ea5dbb1efd664f35b597ff7a235b605348f923
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-11T23:05:36.751Z
-      kind: working
-      label: Рабочее дерево
+      capturedAt: 2026-11-12T00:31:54.269Z
+      kind: git
+      revision: 0b96b3b9d93dff79913dc90e292caef48df01eaf
+      label: HEAD
       fingerprint: 095b729cc6824d5689ecda2dec975727705423f316b2d49fc04e1437cd52a405
       complete: true
       diagnostics: []
       evidenceLimitations: []
+      isHead: true
     module_index: 6
     module:
       directory: src/contracts
@@ -1531,14 +1093,517 @@ publication:
           kind: module
           path: src/contracts
           text: '{"contract":"documented","format":"arch.yaml","sources":["src/contracts/document.ts","src/contracts/inventory.ts","src/contracts/roles.ts","src/contracts/types.ts"]}'
+  current:
+    metadata:
+      id: working-ecbeed389470865132b216322c10f6abf09865de6694cf1f019a01cd455c2d2c
+      digest: sha256:ecbeed389470865132b216322c10f6abf09865de6694cf1f019a01cd455c2d2c
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-12T00:32:39.863Z
+      kind: working
+      label: Рабочее дерево
+      fingerprint: 9fcb9410353c7d4930e13803fa291c5376e4daa3aa7b64d096674b7d5935ef1f
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+    module_index: 8
+    module:
+      directory: src/contracts
+      documentPath: src/contracts/arch.yaml
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-contracts
+
+          title: Контракты каталогов
+
+          kind: module
+
+          extensions:
+            archiview.roles: [domain]
+          purpose: Читать декларации ответственности и находить каталоги
+          исходников, которым нужен контракт.
+
+          responsibilities:
+            R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих, повреждённых и прежних описаний.
+            R2: Находить каталоги по исходному коду или контракту и предоставлять инвентаризацию каталогов и цепочки родительских контрактов.
+          boundaries:
+            B1: Предметные выводы по реализации и публикация отчётов принадлежат другим модулям.
+          invariants:
+            I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается диагностика.
+            I2: Наличие документа подтверждает только его структурное состояние.
+        format: arch.yaml
+        contract:
+          schema_version: 1
+          id: archiview-contracts
+          title: Контракты каталогов
+          kind: module
+          extensions:
+            archiview.roles:
+              - domain
+          purpose: Читать декларации ответственности и находить каталоги исходников,
+            которым нужен контракт.
+          responsibilities:
+            R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих,
+              повреждённых и прежних описаний.
+            R2: Находить каталоги по исходному коду или контракту и предоставлять
+              инвентаризацию каталогов и цепочки родительских контрактов.
+          boundaries:
+            B1: Предметные выводы по реализации и публикация отчётов принадлежат другим
+              модулям.
+          invariants:
+            I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается
+              диагностика.
+            I2: Наличие документа подтверждает только его структурное состояние.
+      files:
+        - path: src/contracts/arch.yaml
+          hash: fd21f9d0d360391e7cbdab0f6c6706c6397a2529
+        - path: src/contracts/document.ts
+          hash: 18d6c09222c227700960ffc98245ef80f2414b61
+        - path: src/contracts/inventory.ts
+          hash: 0b0694a0b6faf32def39d0b2cc9dea35347685e4
+        - path: src/contracts/roles.ts
+          hash: 529c8e4d8b20be02d13d27727191efa08dd09388
+        - path: src/contracts/types.ts
+          hash: 29fa269fd73546e156e3823120aea919e87966e9
+      sourceFiles: 4
+      fingerprint: 395bbdd1153bc7ea19f968a0a85fcfec1daef0f5e7c64b1afdb7c4f7e720b91c
+    facts:
+      - index: 55
+        fact:
+          id: sha256:228facfe38a1f8e36a7b4b5d606df2b59f27d2019d227e5c17f5d14c9ee9b225
+          kind: file
+          path: src/contracts/arch.yaml
+          start_line: 1
+          end_line: 16
+          text: >
+            schema_version: 1
+
+            id: archiview-contracts
+
+            title: Контракты каталогов
+
+            kind: module
+
+            extensions:
+              archiview.roles: [domain]
+            purpose: Читать декларации ответственности и находить каталоги
+            исходников, которым нужен контракт.
+
+            responsibilities:
+              R1: Проверять структуру arch.yaml и сохранять состояние отсутствующих, повреждённых и прежних описаний.
+              R2: Находить каталоги по исходному коду или контракту и предоставлять инвентаризацию каталогов и цепочки родительских контрактов.
+            boundaries:
+              B1: Предметные выводы по реализации и публикация отчётов принадлежат другим модулям.
+            invariants:
+              I1: Пути чтения ограничены выбранным проектом, при неполном обходе возвращается диагностика.
+              I2: Наличие документа подтверждает только его структурное состояние.
+      - index: 56
+        fact:
+          id: sha256:09362b417e4542becf90188faa42b5122c22e4a1526d78060be5133ae789f066
+          kind: file
+          path: src/contracts/document.ts
+          start_line: 1
+          end_line: 32
+          text: >
+            import { fail, string, object, enumeration, shape, strings,
+            references, extensions } from "../serialization/schema.js";
+
+
+            import type { Validator } from "../serialization/schema.js";
+
+
+            import type { Contract, ContractDocument } from "./types.js";
+
+            import { errorDetails } from "../runtime/errors.js";
+
+            import { parseYaml } from "../serialization/yaml.js";
+
+
+            const clauses = (min: number): Validator => (v, at) => {
+              object(v, at);
+              if (Object.keys(v as object).length < min) fail(at, "нужен хотя бы один пункт");
+              for (const [key, text] of Object.entries(v as Record<string, unknown>)) { string(key, at); string(text, at + "." + key); }
+            };
+
+
+            /** Контракт не содержит путь, историю или результаты анализа; они
+            принадлежат снимкам. */
+
+            export function validateArch(input: unknown): Contract {
+              const value = input as Contract;
+              shape({ schema_version: enumeration(1), id: string, title: string, kind: enumeration("module", "group"),
+                purpose: string, responsibilities: clauses(1), boundaries: clauses(0), invariants: clauses(0) },
+              { rationale: string, owners: strings, tags: strings, references, extensions })(value, "arch");
+              return value;
+            }
+
+
+            /** Старый файл возвращается только как материал немедленного
+            переноса, не как контракт. */
+
+            export function contractDocument(text: string | null | undefined,
+            format = "arch.yaml"): ContractDocument {
+              if (!text?.trim()) return { state: "empty", text: text ?? null, format, contract: null };
+              if (format === "module.md") return { state: "migration_required", text, format, contract: null,
+                action: "Немедленно перенесите ответственность в arch.yaml, проверьте его и удалите module.md." };
+              try { return { state: "documented", text, format, contract: parseYaml(text, validateArch) }; }
+              catch (cause) { const error = errorDetails(cause); return { state: "invalid", text, format, contract: null, errors: [error.message] }; }
+            }
+      - index: 57
+        fact:
+          id: sha256:6877396f525f57b2af8507d892ceb767d5c2f90606f7e19607c59a000c854474
+          kind: file
+          path: src/contracts/inventory.ts
+          start_line: 1
+          end_line: 266
+          text: |
+            interface InventoryModule {directory:string;document:string;status:string;text?:string|null;format?:string;contract?:Contract|null;errors?:string[];action?:string;migration?:{document:string;text:string};sourceFiles?:number;required?:boolean;files?:string[];preparation?:string}
+            import type { Contract } from "./types.js";
+            import { errorDetails } from "../runtime/errors.js";
+            /**
+             * Читает дерево исходников и контракты arch.yaml внутри одного корня проекта.
+             * Не разбирает AST и не выводит ответственность эвристически. Git используется
+             * для учёта ignore-правил; вне репозитория применяется ограниченный обход.
+             */
+            import { execFile } from "node:child_process";
+            import { lstat, readdir, readFile, realpath } from "node:fs/promises";
+            import path from "node:path";
+            import { promisify } from "node:util";
+            import { contractDocument } from "./document.js";
+            import { STATE_DIRECTORY, within } from "../project/paths.js";
+
+            /** Каталоги зависимостей и результатов сборки, исключаемые из обоих обходов. */
+            const EXCLUDED = new Set([
+              STATE_DIRECTORY,
+              ".git", ".hg", ".svn", "node_modules", "target", "dist", "build", "coverage",
+              ".venv", "venv", "__pycache__", ".next", ".nuxt", ".cache", "obj",
+            ]);
+            /** Расширения исходного кода; список можно дополнить при запуске сервера. */
+            export const SOURCE_EXTENSIONS = new Set((
+              ".c .h .cc .cpp .cxx .hpp .hxx .cs .fs .fsx .vb .java .kt .kts .scala " +
+              ".swift .m .mm .js .jsx .mjs .cjs .ts .tsx .mts .cts .py .pyi .go .rs " +
+              ".rb .php .lua .gd .sh .bash .zsh .ps1 .psm1 .pl .pm .r .sql .proto " +
+              ".dart .zig .ex .exs .erl .hrl .clj .cljs .cljc .vue .svelte .css .scss " +
+              ".less .html .htm .bsl .os .wsdl .xsd"
+            ).split(" "));
+            /** Асинхронный запуск Git без оболочки и интерполяции пользовательских строк. */
+            const runFile = promisify(execFile);
+            /** Максимальный размер одного описания, читаемого в контекст агента. */
+            const MAX_DOCUMENT_BYTES = 128 * 1024;
+
+            /** Приводит путь к относительному формату ответа MCP независимо от платформы. */
+            function portable(value: string) {
+              return value.split(path.sep).join("/") || ".";
+            }
+
+            /**
+             * Отсекает внешние пути, исключённые каталоги и символические ссылки.
+             * Отсутствующий после Git-фильтра файл считается удалённым, а не исходником.
+             */
+            export async function regularProjectFile(root: string, relative: string) {
+              if (excludedProjectPath(relative)) return false;
+              const candidate = path.resolve(root, relative);
+              if (!within(root, candidate)) return false;
+              try {
+                const resolved = await realpath(candidate);
+                if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) return false;
+                const info = await lstat(candidate);
+                return info.isFile() && !info.isSymbolicLink();
+              } catch (errorCause) { const error = errorDetails(errorCause);
+                if (error.code === "ENOENT") return false;
+                throw error;
+              }
+            }
+
+            /**
+             * Получает учитываемые файлы и признак полноты. Ошибка Git внутри репозитория
+             * не маскируется полным результатом обхода: причина возвращается диагностикой.
+             */
+            export async function projectFiles(root: string, maxFiles: number) {
+              const diagnostics = [];
+              let gitRoot;
+              try {
+                gitRoot = await runFile("git", ["rev-parse", "--show-toplevel"], {
+                  cwd: root, timeout: 15000, windowsHide: true,
+                });
+              } catch (errorCause) { const error = errorDetails(errorCause);
+                if (error.code !== "ENOENT" &&
+                    !String(error.stderr).includes("not a git repository")) {
+                  diagnostics.push("Git discovery failed: " + error.message);
+                }
+              }
+              if (gitRoot) {
+                try {
+                  const output = await runFile("git",
+                    ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "."],
+                    { cwd: root, timeout: 15000, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
+                  const files = [...new Set(output.stdout.split("\0").filter((file) => file && !excludedProjectPath(file)))];
+                  const limited = files.length > maxFiles;
+                  if (limited) diagnostics.push("File limit reached: " + maxFiles);
+                  return { files: files.slice(0, maxFiles), discovery: "git",
+                    complete: !limited, diagnostics };
+                } catch (errorCause) { const error = errorDetails(errorCause);
+                  diagnostics.push("Git file listing failed: " + error.message);
+                }
+              }
+              const files = [];
+              const pending = [root];
+              while (pending.length > 0 && files.length < maxFiles) {
+                const directory = pending.pop()!;
+                let entries;
+                try {
+                  entries = await readdir(directory, { withFileTypes: true });
+                } catch (errorCause) { const error = errorDetails(errorCause);
+                  diagnostics.push("Cannot list " + portable(path.relative(root, directory)) +
+                    ": " + error.message);
+                  continue;
+                }
+                entries.sort((left, right) => left.name.localeCompare(right.name));
+                for (let index = 0; index < entries.length; index += 1) {
+                  const entry = entries[index];
+                  if (excludedProjectPath(entry.name)) continue;
+                  const candidate = path.join(directory, entry.name);
+                  if (entry.isDirectory()) pending.push(candidate);
+                  else if (entry.isFile() || (entry.isSymbolicLink() && ["arch.yaml", "module.md"].includes(entry.name))) {
+                    files.push(path.relative(root, candidate));
+                  }
+                  if (files.length >= maxFiles) {
+                    if (index < entries.length - 1 || pending.length > 0) {
+                      diagnostics.push("File limit reached: " + maxFiles);
+                    }
+                    break;
+                  }
+                }
+              }
+              return { files, discovery: "filesystem", complete: diagnostics.length === 0,
+                diagnostics };
+            }
+
+            /** Общая политика исключения путей для рабочего дерева и исторических снимков. */
+            export function excludedProjectPath(relative: string) {
+              return relative.split(/[\\/]/).some((part) => EXCLUDED.has(process.platform === "win32" ? part.toLowerCase() : part));
+            }
+
+            async function existingEntry(file: string) {
+              try { return await lstat(file); }
+              catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
+            }
+
+            /**
+             * Читает один контракт, различая отсутствие, пустой текст и ошибку чтения.
+             * Внешняя ссылка и чрезмерно большой документ отвергаются явно.
+             */
+            async function documentAt(root: string, directory: string): Promise<InventoryModule> {
+              let file = path.join(directory, "arch.yaml");
+              let info = await existingEntry(file);
+              const legacy = path.join(directory, "module.md");
+              if (!info) {
+                info = await existingEntry(legacy);
+                if (!info) return { directory: portable(path.relative(root, directory)),
+                  document: portable(path.relative(root, file)), status: "missing" };
+                file = legacy;
+              }
+              if (!info.isFile()) throw new Error("Contract must be a regular file");
+              if (info.size > MAX_DOCUMENT_BYTES) throw new Error("Contract exceeds 128 KiB");
+              const resolved = await realpath(file);
+              if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) throw new Error("Contract resolves outside project sources");
+              const text = await readFile(file, "utf8");
+              let { state, ...parsed } = contractDocument(text, path.basename(file));
+              if (file !== legacy) {
+                const legacyInfo = await existingEntry(legacy);
+                if (legacyInfo) {
+                  if (!legacyInfo.isFile() || legacyInfo.size > MAX_DOCUMENT_BYTES) throw new Error("Invalid legacy contract");
+                  parsed.migration = { document: portable(path.relative(root, legacy)), text: await readFile(legacy, "utf8") };
+                  parsed.action = "Сверьте arch.yaml и module.md, сохраните все принятые ограничения и удалите module.md после проверки.";
+                  if (state === "documented") state = "migration_required";
+                }
+              }
+              return { directory: portable(path.relative(root, directory)), document: portable(path.relative(root, file)),
+                status: state, ...parsed };
+            }
+
+            /**
+             * Возвращает покрытие каждого каталога дерева исходников, включая предков.
+             * Старые module.md требуют переноса; их наличие не считается покрытием.
+             */
+            export async function moduleInventory(projectRoot: string, options: {extensions?: Set<string>;maxFiles?: number} = {}) {
+              const root = await realpath(projectRoot);
+              const extensions = options.extensions ?? SOURCE_EXTENSIONS;
+              const maxFiles = options.maxFiles ?? 50000;
+              const listed = await projectFiles(root, maxFiles);
+              const directories = new Map();
+              const sourcePaths = [];
+              let sourceFiles = 0;
+              for (const file of listed.files) {
+                const source = extensions.has(path.extname(file).toLowerCase());
+                const documented = ["arch.yaml", "module.md"].includes(path.basename(file));
+                if (!source && !documented) continue;
+                try {
+                  if (!await regularProjectFile(root, file) &&
+                      !(documented && (await existingEntry(path.join(root, file)))?.isSymbolicLink())) continue;
+                } catch (errorCause) { const error = errorDetails(errorCause);
+                  listed.complete = false;
+                  listed.diagnostics.push(file + ": " + error.message);
+                  continue;
+                }
+                let directory = path.dirname(file);
+                if (source) { sourceFiles += 1; sourcePaths.push(portable(file)); }
+                while (true) {
+                  const record = directories.get(directory) ?? { sourceFiles: 0 };
+                  if (source) record.sourceFiles += 1;
+                  directories.set(directory, record);
+                  if (directory === ".") break;
+                  directory = path.dirname(directory);
+                }
+              }
+              const modules: InventoryModule[] = [];
+              for (const [directory, counts] of [...directories].sort(([a], [b]) =>
+                a.localeCompare(b))) {
+                try {
+                  const { text, ...document } = await documentAt(root, path.resolve(root, directory));
+                  modules.push({ ...document, sourceFiles: counts.sourceFiles,
+                    required: counts.sourceFiles > 0 });
+                } catch (errorCause) { const error = errorDetails(errorCause);
+                  listed.complete = false;
+                  listed.diagnostics.push(directory + ": " + error.message);
+                  modules.push({ directory: portable(directory), document: portable(
+                    path.join(directory, "arch.yaml")), status: "unreadable",
+                    sourceFiles: counts.sourceFiles, required: counts.sourceFiles > 0 });
+                }
+              }
+              const ids = new Map<string, InventoryModule[]>();
+              for (const module of modules) {
+                if (!module.contract) continue;
+                const id = module.contract.id;
+                if (!ids.has(id)) ids.set(id, []);
+                ids.get(id)!.push(module);
+              }
+              for (const [id, entries] of ids) if (entries.length > 1) {
+                for (const entry of entries) {
+                  entry.status = "invalid";
+                  entry.errors = [...entry.errors ?? [], "Повторяющийся id модуля: " + id];
+                }
+              }
+              for (const module of modules) {
+                module.files = sourcePaths.filter((file) => path.posix.dirname(file) === module.directory);
+                module.preparation = module.status === "migration_required" ? "migrate" :
+                  ["missing", "empty"].includes(module.status) ? "analyze_and_write" :
+                    module.status === "documented" ? "ready" : "repair";
+              }
+              return { schema_version: 1, root, complete: listed.complete,
+                discovery: listed.discovery, sourceFiles, modules,
+                diagnostics: listed.diagnostics,
+                preparation: "До просмотра и изменения кода перенесите все module.md в arch.yaml. Если обоих файлов нет, изучите исходники и родительские контракты, затем запишите arch.yaml. Не оставляйте отсутствие контракта конечным результатом." };
+            }
+
+            /**
+             * Возвращает цепочку контрактов от корня до целевого каталога, включая пропуски.
+             * Абсолютный путь, выход через .. и ссылка за пределы проекта отклоняются.
+             */
+            export async function moduleContext(projectRoot: string, directory = ".") {
+              const root = await realpath(projectRoot);
+              if (path.isAbsolute(directory)) throw new Error("directory must be relative");
+              const requested = path.resolve(root, directory);
+              if (!within(root, requested)) throw new Error("directory is outside project");
+              if (excludedProjectPath(path.relative(root, requested))) throw new Error("directory is excluded from project sources");
+              const target = await realpath(requested);
+              if (!within(root, target)) throw new Error("directory resolves outside project");
+              if (!(await lstat(target)).isDirectory()) throw new Error("directory is not a directory");
+              const chain = [];
+              let current = requested;
+              while (true) {
+                const physical = current === requested ? target : await realpath(current);
+                if (!within(root, physical)) throw new Error("directory resolves outside project");
+                if (excludedProjectPath(path.relative(root, physical))) throw new Error("directory is excluded from project sources");
+                chain.push(await documentAt(root, current));
+                if (current === root) break;
+                current = path.dirname(current);
+              }
+              return { schema_version: 1, root, directory: portable(path.relative(root, requested)),
+                contracts: chain.reverse() };
+            }
+      - index: 58
+        fact:
+          id: sha256:7a7fd95353874efb8f688982a1950ee579cf5df310ce7da534188099994e7fbf
+          kind: file
+          path: src/contracts/roles.ts
+          start_line: 1
+          end_line: 12
+          text: >
+            import type { Contract } from "./types.js";
+
+
+            export const ROLE_EXTENSION = "archiview.roles";
+
+
+            /** Читает заявленные роли; отсутствие разметки не требует вывода по
+            коду или предкам. */
+
+            export function declaredRoles(contract?: Pick<Contract,
+            "extensions"> | null): string[] {
+              const value = contract?.extensions?.[ROLE_EXTENSION];
+              if (!Array.isArray(value) || !value.every((role): role is string =>
+                typeof role === "string" && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(role))) return [];
+              return [...new Set(value)];
+            }
+      - index: 59
+        fact:
+          id: sha256:11588e68d2f6a09f72b5abaff75ab7a091d96675269170d939cc098373df1765
+          kind: file
+          path: src/contracts/types.ts
+          start_line: 1
+          end_line: 28
+          text: >
+            export type Section = "responsibilities" | "boundaries" |
+            "invariants";
+
+
+            export interface Contract {
+              schema_version: number;
+              id: string;
+              title: string;
+              kind: string;
+              purpose: string;
+              responsibilities: Record<string, string>;
+              boundaries: Record<string, string>;
+              invariants: Record<string, string>;
+              rationale?: string;
+              owners?: string[];
+              tags?: string[];
+              references?: { title: string; uri: string }[];
+              extensions?: Record<string, unknown>;
+            }
+
+
+            export interface ContractDocument {
+              state: string;
+              text: string | null;
+              format?: string;
+              contract?: Contract | null;
+              errors?: string[];
+              action?: string;
+              migration?: { document: string; text: string };
+            }
+      - index: 180
+        fact:
+          id: sha256:8a69f9e8863c99056cdbff44a7d18d19fb4c02bdf389db2fbdb6a74b2788d871
+          kind: module
+          path: src/contracts
+          text: '{"contract":"documented","format":"arch.yaml","sources":["src/contracts/document.ts","src/contracts/inventory.ts","src/contracts/roles.ts","src/contracts/types.ts"]}'
 review_status:
   self:
     current:
       status: stale
       reasons:
         - code: own_code
+        - code: own_contract
         - code: dependency_input
         - code: own_code
+        - code: own_contract
+        - code: dependency_input
       verdict: null
       verdicts: []
       review_ids:
@@ -1565,6 +1630,7 @@ review_status:
       status: stale
       reasons:
         - code: own_code
+        - code: own_contract
         - code: dependency_input
         - code: baseline_identity
         - code: own_code
@@ -1572,6 +1638,8 @@ review_status:
         - code: dependency_input
           side: baseline
         - code: own_code
+        - code: own_contract
+        - code: dependency_input
         - code: baseline_identity
         - code: own_code
           side: baseline

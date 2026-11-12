@@ -1,0 +1,643 @@
+schema_version: 2
+kind: archi
+module_id: archiview-module-boundaries-skill
+project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+check_hash: ea6169064167d22988c8a5b1133c2cab07d8d6d375c7a4522edc980ed2a10d33
+input_manifest:
+  domain: archiview/module-check/v1
+  project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+  module_id: archiview-module-boundaries-skill
+  baseline:
+    identity:
+      kind: git
+      id: 0b96b3b9d93dff79913dc90e292caef48df01eaf
+    state:
+      exists: false
+  current:
+    exists: true
+    directory: skills/module-boundaries
+    self_digest: sha256:01293987a435136b672847f3bf62dfb9c8bc97159aa17a4a61267d7dda78ca38
+    subtree_digest: sha256:c3bdc00c18d572b82782b9fdd3b7df67f35e86822c597fb1f57c06c75ea833de
+  analyzer:
+    name: archiview-structure
+    version: 1.0.2
+    config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+baseline: null
+current:
+  module_id: archiview-module-boundaries-skill
+  directory: skills/module-boundaries
+  parent_id: archiview-skills
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-module-boundaries-skill
+    directory: skills/module-boundaries
+    own_files:
+      - path: skills/module-boundaries/SKILL.md
+        digest: sha256:2e47db26ef502a11a2cfac8e872fc97dd874ce692133c597f566adae73996e66
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-module-boundaries-skill
+      title: Правила ведения контрактов
+      kind: module
+      extensions:
+        archiview.roles:
+          - resources
+      purpose: Давать агенту инструкции для работы с ответственностью каталогов проекта.
+      responsibilities:
+        R1: Определять, как агент создаёт и пересматривает контракты, выбирает роли и
+          учитывает границы предков.
+        R2: Описывать, как агент проверяет контракт по доказательствам выбранного снимка
+          и оформляет результат.
+      boundaries:
+        B1: Адаптеры отвечают за публикацию инструкций в своих хостах.
+      invariants:
+        I1: Скилл содержит имя и описание для обнаружения и единый текст правил для всех
+          способов публикации.
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: archiview-skills
+        section: boundaries
+        id: B1
+        text: Умение определяет свои инструкции. Сборка и адаптеры используют материалы
+          из этого набора.
+      - module_id: archiview-skills
+        section: invariants
+        id: I1
+        text: Канонический текст каждого умения доступен в файле SKILL.md его каталога.
+  technical_digest: sha256:01293987a435136b672847f3bf62dfb9c8bc97159aa17a4a61267d7dda78ca38
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-module-boundaries-skill
+    directory: skills/module-boundaries
+    own_files:
+      - path: skills/module-boundaries/SKILL.md
+        digest: sha256:2e47db26ef502a11a2cfac8e872fc97dd874ce692133c597f566adae73996e66
+        normalization: text-lf/v1
+    contract:
+      id: archiview-module-boundaries-skill
+      kind: module
+      purpose: Давать агенту инструкции для работы с ответственностью каталогов проекта.
+      responsibilities:
+        R1: Определять, как агент создаёт и пересматривает контракты, выбирает роли и
+          учитывает границы предков.
+        R2: Описывать, как агент проверяет контракт по доказательствам выбранного снимка
+          и оформляет результат.
+      boundaries:
+        B1: Адаптеры отвечают за публикацию инструкций в своих хостах.
+      invariants:
+        I1: Скилл содержит имя и описание для обнаружения и единый текст правил для всех
+          способов публикации.
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
+          инструментами. Просмотр не изменяет исходники проекта.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
+          пределами ArchiView и относятся к ast-index.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I1
+        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
+          корень от хоста; явно настроенный для модельных инструментов корень
+          ограничивает их чтение.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I2
+        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
+          .archiview внутри корня проекта. Эта папка исключена из анализа
+          исходников; прежние сохранённые факты и отчёты не переписываются при
+          переносе проекта.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I3
+        text: arch.yaml содержит устойчивую ответственность; эвристические оценки и
+          текущий код не разрешают её расширять.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I4
+        text: Структурная проверка не выдаёт наличие файла за семантическое
+          соответствие.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I5
+        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
+          строгим TypeScript перед сборкой; классы сохраняют единственную
+          ответственность внутри границ своих модулей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I6
+        text: Обе интеграции получают правила ведения контрактов из канонического скилла
+          пакета.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I7
+        text: Панель обращается к агенту только по явному поручению пользователя
+          проанализировать модуль или исправить замечание.
+      - module_id: archiview-skills
+        section: boundaries
+        id: B1
+        text: Умение определяет свои инструкции. Сборка и адаптеры используют материалы
+          из этого набора.
+      - module_id: archiview-skills
+        section: invariants
+        id: I1
+        text: Канонический текст каждого умения доступен в файле SKILL.md его каталога.
+    children: []
+  self_digest: sha256:504e8f02fc8f9d50c2b5fd23c5a145878f45e660db55a2dfc4cd0a7c25bc7321
+  subtree:
+    self: sha256:01293987a435136b672847f3bf62dfb9c8bc97159aa17a4a61267d7dda78ca38
+    children: []
+  subtree_digest: sha256:c3bdc00c18d572b82782b9fdd3b7df67f35e86822c597fb1f57c06c75ea833de
+  semantic_subtree:
+    self: sha256:504e8f02fc8f9d50c2b5fd23c5a145878f45e660db55a2dfc4cd0a7c25bc7321
+    children: []
+  semantic_subtree_digest: sha256:62d7a7f33839061979762674dba69bc946674de3774a5b9058ef67a5cd0b31bc
+change:
+  existence: added
+  own: true
+  own_code: true
+  own_contract: true
+  inherited_constraints: true
+  descendants: false
+  child_composition: false
+  moved: false
+structure:
+  complete: true
+  diagnostics: []
+  document_state: documented
+publication:
+  generation: 182
+  comparison_key: sha256:c18ab19c9fc847b2d20d35c6fdeabc6597b1f373315df10da5a976f8126344a1
+  baseline: null
+  current:
+    metadata:
+      id: working-ecbeed389470865132b216322c10f6abf09865de6694cf1f019a01cd455c2d2c
+      digest: sha256:ecbeed389470865132b216322c10f6abf09865de6694cf1f019a01cd455c2d2c
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-12T00:32:39.863Z
+      kind: working
+      label: Рабочее дерево
+      fingerprint: 9fcb9410353c7d4930e13803fa291c5376e4daa3aa7b64d096674b7d5935ef1f
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+    module_index: 3
+    module:
+      directory: skills/module-boundaries
+      documentPath: skills/module-boundaries/arch.yaml
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-module-boundaries-skill
+
+          title: Правила ведения контрактов
+
+          kind: module
+
+          extensions:
+            archiview.roles: [resources]
+          purpose: Давать агенту инструкции для работы с ответственностью
+          каталогов проекта.
+
+          responsibilities:
+            R1: Определять, как агент создаёт и пересматривает контракты, выбирает роли и учитывает границы предков.
+            R2: Описывать, как агент проверяет контракт по доказательствам выбранного снимка и оформляет результат.
+          boundaries:
+            B1: Адаптеры отвечают за публикацию инструкций в своих хостах.
+          invariants:
+            I1: Скилл содержит имя и описание для обнаружения и единый текст правил для всех способов публикации.
+        format: arch.yaml
+        contract:
+          schema_version: 1
+          id: archiview-module-boundaries-skill
+          title: Правила ведения контрактов
+          kind: module
+          extensions:
+            archiview.roles:
+              - resources
+          purpose: Давать агенту инструкции для работы с ответственностью каталогов
+            проекта.
+          responsibilities:
+            R1: Определять, как агент создаёт и пересматривает контракты, выбирает роли и
+              учитывает границы предков.
+            R2: Описывать, как агент проверяет контракт по доказательствам выбранного снимка
+              и оформляет результат.
+          boundaries:
+            B1: Адаптеры отвечают за публикацию инструкций в своих хостах.
+          invariants:
+            I1: Скилл содержит имя и описание для обнаружения и единый текст правил для всех
+              способов публикации.
+      files:
+        - path: skills/module-boundaries/arch.yaml
+          hash: bd41509e7f4e7922fc5bdcedd46dd364a0b4c897
+        - path: skills/module-boundaries/SKILL.md
+          hash: 4bcd3de03f4dcd386b36113ebab9162ee00766fb
+      sourceFiles: 0
+      fingerprint: fbdaa1cf562a8b4d46c4b4c0c17b0c4cb73f3d7a67cd323ed8ca99b8095fa9f7
+    facts:
+      - index: 29
+        fact:
+          id: sha256:f063db03d7929fb1b3bea870b22e319ac0d95cbf66ce137ed44a24d0381ca292
+          kind: file
+          path: skills/module-boundaries/SKILL.md
+          start_line: 1
+          end_line: 123
+          text: >
+            ---
+
+            name: module-boundaries
+
+            description: "Вести arch.yaml при работе с исходниками и просмотре
+            архитектуры: сразу переносить module.md, анализировать код при
+            отсутствии контракта, соблюдать границы каталогов и предков."
+
+            ---
+
+
+            # Ответственность каталогов
+
+
+            Структура репозитория задаёт карту системы. Единственный действующий
+            контракт
+
+            каталога — arch.yaml по схеме v1. module.md не является
+            альтернативным форматом.
+
+
+            ## Подготовка контрактов
+
+
+            1. Сначала вызови module_inventory для анализируемого проекта. Для
+            целевых
+               каталогов прочитай module_context и границы всех предков от корня.
+            2. Если есть module.md, немедленно перенеси его смысл в arch.yaml.
+            Сохрани
+               обязанности, границы и ограничения, присвой устойчивые идентификаторы модулю
+               и пунктам. Проверь новый YAML, затем удали module.md. Не поддерживай две копии.
+               Если оба файла уже существуют, сначала сверь их: расхождение не разрешается
+               молчаливым выбором одной версии или потерей старого ограничения.
+            3. Если нет ни arch.yaml, ни module.md, изучи код каталога и его
+            поддерева,
+               публичные входы, зависимости, тесты и контракты предков. По результату анализа
+               запиши arch.yaml. Имя папки, перечень файлов и шаблонный текст не заменяют
+               анализа. Наличие противоречивого кода не разрешает новую обязанность.
+            4. Пустой или невалидный arch.yaml исправь до продолжения работы.
+            Отсутствие
+               контракта не оставляй конечным результатом инвентаризации.
+            5. При подготовке просмотра подготовь контракты всего выбранного
+            дерева,
+               включая контейнеры исходников, тесты и скрипты. Если у каталога ресурсов есть
+               собственная архитектурная обязанность, опиши её в arch.yaml. Контракт включит
+               каталог в дерево, даже если в нём только инструкции или другие материалы.
+               При локальном изменении кода подготовь затронутые каталоги и их предков.
+               Зависимости и сгенерированные результаты сборки исключаются. Не создавай
+               пустые будущие каталоги.
+            6. Перенос формата и создание отсутствующего контракта на основе
+            анализа входят
+               в этот workflow и не требуют отдельного подтверждения. Расширение ранее
+               принятой ответственности требует согласования, если оно уже не разрешено
+               текущей задачей пользователя.
+
+            ## Содержание arch.yaml v1
+
+
+            Обязательны schema_version: 1, id, title, kind (module или group),
+            purpose,
+
+            responsibilities, boundaries, invariants. Последние три поля —
+            словари
+
+            «устойчивый идентификатор пункта → строка». responsibilities
+            содержит минимум
+
+            один пункт; boundaries и invariants могут быть пустыми словарями.
+
+            Необязательны rationale, owners и tags (массивы строк), references
+            (массив
+
+            объектов title/uri), extensions (словарь с ключами вида
+            organization.field).
+
+            Неизвестные поля, повторяющиеся YAML-ключи, aliases и произвольные
+            теги запрещены.
+
+
+            - id уникален в проекте и сохраняется при перемещении каталога.
+
+            - Идентификаторы пунктов сохраняются при уточнении, не
+            переиспользуются для
+              другого требования. Путь и родитель выводятся из расположения файла.
+            - Каждый каталог исходников имеет свой arch.yaml. Предок не заменяет
+            ребёнка.
+              Контекст предков учитывается при размещении модулей; соответствие состава
+              назначению и границам проверяется в композиции родителя. Собственный чеклист
+              ребёнка содержит только пункты его arch.yaml. Изменение контекста предка само
+              по себе не инвалидирует локальную проверку ребёнка.
+            - В контракте родителя опиши общий результат в purpose, его
+            собственные обязанности в
+              responsibilities и правила взаимодействия дочерних модулей в boundaries или invariants.
+              Конкретную операцию декларирует в своём arch.yaml модуль, который за неё отвечает.
+              При переносе операции между детьми контракт родителя меняется только тогда, когда меняется
+              его собственная обязанность, обещанный результат или правило взаимодействия.
+            - При пересмотре сверь убираемые пункты с контрактами исполнителей и
+            сохрани у владельца
+              требования, которые до этого были записаны только у предка.
+            - Для kind: group без собственного кода укажи, какой результат даёт
+            объединение модулей.
+
+            - Для `extensions.archiview.roles` выбирай роли по собственным
+            обязанностям модуля.
+              `domain` охватывает предметные правила и прикладные сценарии. `app` указывай,
+              если модуль объединяет части в приложение и отвечает за него целиком.
+              `root` указывай, когда каталог отвечает за состав дерева исходников и границы
+              взаимодействия модулей. Если прежняя точка входа в корне указывает на другую роль,
+              проверь её реализацию и вызывающие стороны. Зафиксируй расхождение с назначением
+              каталога и при согласованном переносе обнови точки запуска вместе с контрактами.
+              `resources` указывай у владельца содержания или состава поставляемых материалов.
+              У каталога скиллов проверь, отвечает ли он за набор умений, у отдельного скилла —
+              за текст инструкций. Сборку и публикацию ресурса описывай у их исполнителей.
+              Если единственное основание для метки — операция ребёнка, оставь её у ребёнка.
+              Если у группы нет собственной роли, опусти поле. При совпадении ролей проверь,
+              какую отдельную операцию выполняет каждый модуль. См. [справочник ролей](../../docs/module-roles.md).
+            - Фиксируй устойчивые обязанности. Не включай даты, историю, TODO,
+            проценты,
+              результаты проверок, статусы реализации и перечни текущих классов и файлов.
+            - Не расширяй границы, чтобы оправдать уже написанное изменение.
+
+
+            ## Снимки и проверки
+
+
+            ArchiView автоматически строит технические *.archi.yaml и уплотняет
+            отчёты
+
+            в <root>/.archiview/work. Реальные содержательные попытки хранятся в
+
+            *.review.yaml с неизменяемыми входами и доказательствами; текущая
+            актуальность
+
+            вычисляется отдельно для самого модуля, поддерева и оценки
+            изменения.
+
+            Локальные snapshots исключаются из Git. Для переноса сохраняй
+            project.json,
+
+            .gitignore и work; абсолютный корень в прежних снимках является
+            происхождением
+
+            истории, а не путём чтения исходников после переноса.
+
+
+            Перед содержательной проверкой экспортируй входы через
+
+            archiview --root ROOT --export-review-input MODULE_ID --output FILE.
+
+            Перечень используемых зависимостей передавай через --dependencies
+            FILE;
+
+            --dependencies-complete используй только после проверки полноты
+            перечня.
+
+            Заполни модель, prompt, проверки пунктов и доказательства;
+            импортируй через
+
+            --import-review FILE --build-report. Не меняй сохранённые входы под
+            готовый вывод:
+
+            при изменении области экспортируй их заново. Перед коммитом выполняй
+            --check-index
+
+            после добавления исходников и уплотнённых данных в индекс Git.
+            Формат обмена:
+
+            plugin-architecture-change-view/docs/report-format-v2.md.
+
+            Текущее соответствие и оценка изменения — отдельные результаты.
+            Пустой список
+
+            замечаний не доказывает успешную проверку. Непроверенные пункты
+            обозначай
+
+            not_checked, ограничения — в analysis.coverage. Не выдавай
+            структурную проверку
+
+            за анализ смысла кода. Прежний снимок не переписывается при миграции
+            контрактов.
+
+            В зависимости включай реально используемый контракт/API.
+            Расположение каталога
+
+            внутри другого модуля и чтение контекста, тестов или потребителей не
+            означают
+
+            зависимость собственной проверки от всего их поддерева реализации.
+
+
+            ## Работа с инструментами
+
+
+            MCP публикует этот файл как skill://module-boundaries.
+
+
+            - module_inventory: покрытие исходных каталогов, ошибки схемы,
+            повторяющиеся id,
+              собственные исходники и preparation: ready, migrate, analyze_and_write, repair.
+            - module_context: цепочка контрактов от корня до directory, включая
+            пропуски и
+              старый текст только как материал переноса.
+
+            Инструменты читают проект. Агент выполняет анализ и запись своими
+            файловыми
+
+            инструментами. При недоступном сервере прочитай дерево и контракты
+            напрямую и
+
+            продолжи подготовку. complete: false не доказывает полноту
+            найденного дерева.
+
+            После записи повтори инвентаризацию, проверь отсутствие module.md в
+            выбранном
+
+            дереве и соответствие реализации контрактам. Полная спецификация
+            находится в
+
+            plugin-architecture-change-view/docs/arch-review-format-v1.md.
+      - index: 30
+        fact:
+          id: sha256:bb49cbb12a1f9c53402832a3fc5fb6281f847ee7058dc649aaa1a101820db955
+          kind: file
+          path: skills/module-boundaries/arch.yaml
+          start_line: 1
+          end_line: 15
+          text: >
+            schema_version: 1
+
+            id: archiview-module-boundaries-skill
+
+            title: Правила ведения контрактов
+
+            kind: module
+
+            extensions:
+              archiview.roles: [resources]
+            purpose: Давать агенту инструкции для работы с ответственностью
+            каталогов проекта.
+
+            responsibilities:
+              R1: Определять, как агент создаёт и пересматривает контракты, выбирает роли и учитывает границы предков.
+              R2: Описывать, как агент проверяет контракт по доказательствам выбранного снимка и оформляет результат.
+            boundaries:
+              B1: Адаптеры отвечают за публикацию инструкций в своих хостах.
+            invariants:
+              I1: Скилл содержит имя и описание для обнаружения и единый текст правил для всех способов публикации.
+      - index: 175
+        fact:
+          id: sha256:98ca32cda88fd91995f7eb24fcdbc0335555b251e0f34a0e612c2196c2490525
+          kind: module
+          path: skills/module-boundaries
+          text: '{"contract":"documented","format":"arch.yaml","sources":[]}'
+review_status:
+  self:
+    current:
+      current_violation: false
+      status: not_reviewed
+      reasons: []
+      verdict: null
+      review_ids: []
+      conflict: false
+      coverage:
+        status: unavailable
+        limitations:
+          - Содержательная проверка отсутствует.
+    change:
+      current_violation: false
+      status: not_reviewed
+      reasons: []
+      verdict: null
+      review_ids: []
+      conflict: false
+      coverage:
+        status: unavailable
+        limitations:
+          - Содержательная проверка отсутствует.
+    conflict: false
+    coverage:
+      current:
+        status: unavailable
+        limitations:
+          - Содержательная проверка отсутствует.
+      change:
+        status: unavailable
+        limitations:
+          - Содержательная проверка отсутствует.
+  subtree:
+    current:
+      status: not_reviewed
+      counts:
+        fresh: 0
+        stale: 0
+        unknown: 0
+        not_reviewed: 1
+      conflict: false
+      current_violation: false
+      coverage:
+        status: unavailable
+        limitations:
+          - Содержательная проверка отсутствует.
+        reasons: []
+    change:
+      status: not_reviewed
+      counts:
+        fresh: 0
+        stale: 0
+        unknown: 0
+        not_reviewed: 1
+      conflict: false
+      current_violation: false
+      coverage:
+        status: unavailable
+        limitations:
+          - Содержательная проверка отсутствует.
+        reasons: []
+  explicit_subtree:
+    current:
+      current_violation: false
+      status: not_reviewed
+      reasons: []
+      verdict: null
+      review_ids: []
+      conflict: false
+      coverage:
+        status: unavailable
+        limitations:
+          - Содержательная проверка отсутствует.
+    change:
+      current_violation: false
+      status: not_reviewed
+      reasons: []
+      verdict: null
+      review_ids: []
+      conflict: false
+      coverage:
+        status: unavailable
+        limitations:
+          - Содержательная проверка отсутствует.
