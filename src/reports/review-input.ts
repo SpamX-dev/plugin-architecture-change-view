@@ -92,7 +92,7 @@ export function createReviewInput(projectId: string, baseline: Snapshot | null, 
   bundle.report.id = options.reviewId ?? "review-" + randomUUID();
   bundle.report.analysis.analyzer = { name: "agent-review", version: "1", config_digest: digest({ method: "agent" }) };
   bundle.manifest.analyzer = structuredClone(bundle.report.analysis.analyzer);
-  bundle.manifest.instructions = "Проверить только собственную ответственность, границы, инварианты и свою композицию. Контракты предков служат контекстом и не добавляют пункты в чеклист. Зависимости задавать по реально использованному контракту/API, не по расположению каталога. Заполнить модель, prompt и результаты.";
+  bundle.manifest.instructions = "Проверить собственную ответственность, границы и инварианты модуля, включая соответствие его реализации и контракта границам предков. Пункты предков не добавлять в собственный чеклист; противоречия отразить в замечаниях со ссылками на сохранённые ограничения и доказательства. Локальное изменение само по себе не требует пересмотра предков. Зависимости задавать по реально использованному контракту/API, не по расположению каталога. Заполнить модель, prompt и результаты.";
   bundle.manifest.review_scope = options.scope ?? "self";
   bundle.report.analysis.input_digest = digest(bundle.manifest);
   const inputs = createInputs(baseline, current, id, options, true, context);

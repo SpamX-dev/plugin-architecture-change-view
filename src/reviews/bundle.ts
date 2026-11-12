@@ -69,7 +69,8 @@ export function requiredClauseChecks(manifest: ReviewManifest, hasCurrent: boole
 }
 
 /** Новый локальный чеклист не может расширяться пунктами чужого контракта. */
-export function validateContractScope(report: ReviewReport, manifest: ReviewManifest) {
+export function validateContractScope(report: ReviewReport, manifest: ReviewManifest,
+  snapshots?: { baseline: SnapshotData | null; current: SnapshotData }) {
   const scope = manifest.contract_scope ?? "effective";
   if (!["own", "effective"].includes(scope)) throw new Error("Unsupported contract scope");
   if (scope === "own" && report.checks.some((check) => check.contract.module_id !== report.module.id))
@@ -77,9 +78,18 @@ export function validateContractScope(report: ReviewReport, manifest: ReviewMani
   const clauses = new Set([...manifest.contracts.baseline, ...manifest.contracts.current].map((item) => canonical(item.reference)));
   if (report.checks.some((check) => !clauses.has(canonical(check.contract))))
     throw new Error("Review check references a clause outside the manifest");
+  const localConstraint = (clause: ClauseReference) => {
+    if (clause.module_id === report.module.id) return true;
+    if (!["boundaries", "invariants"].includes(clause.section)) return false;
+    const directory = report.module[`${clause.snapshot}_path`];
+    const ancestor = snapshots?.[clause.snapshot]?.modules.find((module) =>
+      module.document.state === "documented" && module.document.contract?.id === clause.module_id);
+    return Boolean(directory && ancestor && ancestor.directory !== directory &&
+      (ancestor.directory === "." || directory.startsWith(ancestor.directory + "/")));
+  };
   if (scope === "own" && report.findings.some((finding) => finding.clauses.length &&
-    !finding.clauses.some((clause) => clause.module_id === report.module.id)))
-    throw new Error("Own review finding must reference the module contract");
+    !finding.clauses.some(localConstraint)))
+    throw new Error("Own review finding must reference the module contract or an ancestor boundary");
   return scope;
 }
 
@@ -135,7 +145,7 @@ export function validateReviewBundle(bundle: ReviewBundle) {
   const { report, manifest, baseline, current } = bundle;
   validateReview(report);
   if (!manifest || digest(manifest) !== report.analysis.input_digest) throw new Error("Review input digest mismatch");
-  validateContractScope(report, manifest);
+  validateContractScope(report, manifest, bundle);
   if (digest(manifest.comparison) !== digest(report.comparison) || digest(manifest.module) !== digest(report.module) ||
       digest(manifest.analyzer) !== digest(report.analysis.analyzer) || manifest.scope !== report.analysis.scope) throw new Error("Review manifest mismatch");
   if (report.analysis.model && (digest(manifest.model) !== digest(report.analysis.model) || manifest.prompt_digest !== report.analysis.prompt_digest)) throw new Error("Review model inputs mismatch");

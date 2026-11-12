@@ -71,6 +71,18 @@ function inputFreshness(previous: ReviewState | null, current: ReviewState | nul
     coverage: { status: limitations.length ? "partial" : "complete", limitations, reasons: [...coverageReasons, ...unknown] } };
 }
 
+/**
+ * Сохранённый формат own содержит контекст детей для доказательств и валидации.
+ * При сравнении локального анализа он не становится входом родителя: проверяются
+ * собственный код, контракт и явно использованные зависимости. История не меняется.
+ */
+function localInput(input: ReviewState | null, snapshot: SnapshotData | null): ReviewState | null {
+  if (!input) return null;
+  return { ...input, state: input.state ? { ...input.state, children: [] } : null,
+    complete: snapshot?.complete !== false && (!input.exists || Boolean(input.state?.contract) &&
+      input.state?.own_files.every((file) => !file.error && file.normalization === "text-lf/v1") === true) };
+}
+
 /** Все проекции одной оценки используют те же состояния зафиксированных снимков. */
 export function freshness(entry: ReviewEntry, baseline: SnapshotData | null, current: SnapshotData, context: ModuleStateContext): ReviewFreshness {
   if (!entry?.inputs || entry.schema_version !== REPORT_SCHEMA_VERSION || entry.inputs.schema_version !== 1) {
@@ -82,13 +94,17 @@ export function freshness(entry: ReviewEntry, baseline: SnapshotData | null, cur
   const options = { scope: entry.inputs.scope, dependencies: selectors,
     dependencyCoverage: entry.inputs.current.dependency_coverage, contractScope: entry.inputs.contract_scope ?? "effective" };
   const actual = createInputs(baseline, current, entry.module_id, options, isSemanticReview(entry), context);
-  const own = inputFreshness(entry.inputs.current, actual.current);
-  const change = inputFreshness(entry.inputs.current, actual.current);
+  const local = entry.inputs.contract_scope === "own" && entry.inputs.scope === "self";
+  const previousCurrent = local ? localInput(entry.inputs.current, entry.current) : entry.inputs.current;
+  const actualCurrent = local ? localInput(actual.current, current) : actual.current;
+  const own = inputFreshness(previousCurrent, actualCurrent);
+  const change = structuredClone(own);
   if (canonical(entry.inputs.baseline_identity) !== canonical(actual.baseline_identity)) {
     change.status = "stale"; change.reasons.push({ code: "baseline_identity" });
   }
   if (entry.inputs.baseline || actual.baseline) {
-    const baselineStatus = inputFreshness(entry.inputs.baseline, actual.baseline);
+    const baselineStatus = inputFreshness(local ? localInput(entry.inputs.baseline, entry.baseline) : entry.inputs.baseline,
+      local ? localInput(actual.baseline, baseline) : actual.baseline);
     change.reasons.push(...baselineStatus.reasons.map((reason) => ({ ...reason, side: "baseline" })));
     change.coverage = combineCoverage([change.coverage, baselineStatus.coverage]);
     if (baselineStatus.status === "stale") change.status = "stale";

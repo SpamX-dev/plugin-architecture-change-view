@@ -2,7 +2,7 @@ import type { ComparisonView, ModuleSummary } from "./types.js";
 import { byId, el, icon } from "./dom.js";
 import { badge, labels } from "./change-status.js";
 import { findingBug, moduleFindingCount, treeFindingCounts } from "./findings.js";
-import { freshnessLabel } from "./review-status.js";
+import { moduleAnalysisStatus } from "./review-status.js";
 import { roleBadge } from "./role-badge.js";
 
 import { treeParents } from "./module-path.js";
@@ -271,17 +271,12 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
         count.title = "Изменённые вложенные модули";
         row.append(count);
       }
-      if (module.reviewStatus) {
-        // Проверка и оценка изменения независимы: значок предупреждает, если
-        // перепроверки требует хотя бы одна из двух оценок поддерева.
-        const subtree = module.reviewStatus.subtree;
-        const values = [subtree.current, subtree.change].filter(Boolean);
-        const tone = values.find((value) => value.status === "stale") ? "stale" :
-          values.find((value) => value.status !== "fresh")?.status ?? "fresh";
-        const review = el("span", "review-marker " + tone,
-          values.some((value) => value.conflict || value.current_violation) ? "!" : tone === "fresh" ? "◉" : "◷");
-        review.title = "Поддерево · проверка: " + freshnessLabel(subtree.current, { compact: true }) +
-          " · оценка изменения: " + freshnessLabel(subtree.change, { compact: true });
+      const analysis = moduleAnalysisStatus(module, isExpanded ? "self" : "subtree");
+      if (analysis) {
+        const review = el("span", "review-marker", "◷");
+        review.title = analysis;
+        review.setAttribute("role", "img");
+        review.setAttribute("aria-label", analysis);
         row.append(review);
       }
       row.append(badge(module.status, true, module.descendantChanges));

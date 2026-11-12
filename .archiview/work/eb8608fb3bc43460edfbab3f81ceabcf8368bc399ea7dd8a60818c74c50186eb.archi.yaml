@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-storage
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: a7deffca86b2208c61609538a4a25d281cecf0245113aa21cab3facfbb42909e
+check_hash: 02b03116d3b7ced097d1a3fea3130316fce5199b3bdc04bf46686200d5a80ae4
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,12 +10,12 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 51aa8ad0dfed371a56e70b0ff66f9e265e9ea93b
+      id: 3e8fe85137b67f3b6c24e9f39c60ba301eee281b
     state:
       exists: true
       directory: src/storage
-      self_digest: sha256:1a9c2dd15c2691b93b3c82ee394610815f14b34089105ff63c507dda58aab996
-      subtree_digest: sha256:369319242626532e4e3ca97474cbd47e9ad1825f525612c51926017833c01110
+      self_digest: sha256:f9a0944f54caf35244d282d8e6a34d23cfa55380199471d14a04374855442fdd
+      subtree_digest: sha256:23ad0a9c674ac435c1ce8ff24a6f8440f66d82bc47816c14be42fd096f348986
   current:
     exists: true
     directory: src/storage
@@ -35,8 +35,11 @@ baseline:
     module_id: archiview-storage
     directory: src/storage
     own_files:
+      - path: src/storage/archive-cache.ts
+        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
+        normalization: text-lf/v1
       - path: src/storage/change-history.ts
-        digest: sha256:828148dafcb5fe7dca3b3f8717834d2f13ee603be1b474d8f1817cffc9d1a457
+        digest: sha256:204091cd08272608b421a0d2d14abd1172a7a6e256e629b843f8b6fec829f766
         normalization: text-lf/v1
       - path: src/storage/file-lock.ts
         digest: sha256:5326b3dcf7873d6cedf969c1fc7160cabea70c353ffa1bb5437ac96412c3c3bd
@@ -51,13 +54,13 @@ baseline:
         digest: sha256:3c6f797876a3bda8886fc2fc67c03131512daa00f3c7509271194df52c1c9603
         normalization: text-lf/v1
       - path: src/storage/report-store.ts
-        digest: sha256:b122edc896280160d15e30bc61538ad776d4a6fb49aff6f820b0809244957cb2
+        digest: sha256:aeab652f6ba2c607f249936e398a0581783ce738b6574c15a43a85ac2802bcda
         normalization: text-lf/v1
       - path: src/storage/review-store.ts
-        digest: sha256:0ff25a905016ccd38c3259b95b4284d2bdf278a05c6ea204c402e322a826f42e
+        digest: sha256:c6ba5d0337bb07708e14df1fd87dfc6afc0b6a0448f650e6bf1e742d5941ce6f
         normalization: text-lf/v1
       - path: src/storage/snapshot-store.ts
-        digest: sha256:3ce7e885849f2f9de45443bb204859056a69f67a3d156ecb1efd4897fbfc534b
+        digest: sha256:027a6aee11b865d7060e4c31fa557fd7d0b1006332388116a8c10d318a5cfa0d
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -87,6 +90,9 @@ baseline:
           доказательства.
         I4: Чтение опубликованной пары и доказательств одного модуля доступно из
           переносимого work; читатель не смешивает данные разных публикаций.
+        I5: При повторном обновлении сессия использует проверенные архивные записи
+          повторно и обнаруживает добавление, изменение, замену и удаление
+          файлов другими процессами.
     document_state: documented
     inherited:
       - module_id: architecture-change-view
@@ -191,15 +197,18 @@ baseline:
         id: I6
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:1a9c2dd15c2691b93b3c82ee394610815f14b34089105ff63c507dda58aab996
+  technical_digest: sha256:f9a0944f54caf35244d282d8e6a34d23cfa55380199471d14a04374855442fdd
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-storage
     directory: src/storage
     own_files:
+      - path: src/storage/archive-cache.ts
+        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
+        normalization: text-lf/v1
       - path: src/storage/change-history.ts
-        digest: sha256:828148dafcb5fe7dca3b3f8717834d2f13ee603be1b474d8f1817cffc9d1a457
+        digest: sha256:204091cd08272608b421a0d2d14abd1172a7a6e256e629b843f8b6fec829f766
         normalization: text-lf/v1
       - path: src/storage/file-lock.ts
         digest: sha256:5326b3dcf7873d6cedf969c1fc7160cabea70c353ffa1bb5437ac96412c3c3bd
@@ -214,13 +223,13 @@ baseline:
         digest: sha256:3c6f797876a3bda8886fc2fc67c03131512daa00f3c7509271194df52c1c9603
         normalization: text-lf/v1
       - path: src/storage/report-store.ts
-        digest: sha256:b122edc896280160d15e30bc61538ad776d4a6fb49aff6f820b0809244957cb2
+        digest: sha256:aeab652f6ba2c607f249936e398a0581783ce738b6574c15a43a85ac2802bcda
         normalization: text-lf/v1
       - path: src/storage/review-store.ts
-        digest: sha256:0ff25a905016ccd38c3259b95b4284d2bdf278a05c6ea204c402e322a826f42e
+        digest: sha256:c6ba5d0337bb07708e14df1fd87dfc6afc0b6a0448f650e6bf1e742d5941ce6f
         normalization: text-lf/v1
       - path: src/storage/snapshot-store.ts
-        digest: sha256:3ce7e885849f2f9de45443bb204859056a69f67a3d156ecb1efd4897fbfc534b
+        digest: sha256:027a6aee11b865d7060e4c31fa557fd7d0b1006332388116a8c10d318a5cfa0d
         normalization: text-lf/v1
     contract:
       id: archiview-storage
@@ -245,6 +254,9 @@ baseline:
           доказательства.
         I4: Чтение опубликованной пары и доказательств одного модуля доступно из
           переносимого work; читатель не смешивает данные разных публикаций.
+        I5: При повторном обновлении сессия использует проверенные архивные записи
+          повторно и обнаруживает добавление, изменение, замену и удаление
+          файлов другими процессами.
     inherited:
       - module_id: architecture-change-view
         section: boundaries
@@ -349,15 +361,15 @@ baseline:
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
     children: []
-  self_digest: sha256:35c314e4f1b59a194f647c263bb8b8af9dd46b39f61eede884beb1373aa6dc04
+  self_digest: sha256:61631e618727ba1913d187bbbd5f7cebb19e3f921435a2fe24e786091b0c8c1f
   subtree:
-    self: sha256:1a9c2dd15c2691b93b3c82ee394610815f14b34089105ff63c507dda58aab996
+    self: sha256:f9a0944f54caf35244d282d8e6a34d23cfa55380199471d14a04374855442fdd
     children: []
-  subtree_digest: sha256:369319242626532e4e3ca97474cbd47e9ad1825f525612c51926017833c01110
+  subtree_digest: sha256:23ad0a9c674ac435c1ce8ff24a6f8440f66d82bc47816c14be42fd096f348986
   semantic_subtree:
-    self: sha256:35c314e4f1b59a194f647c263bb8b8af9dd46b39f61eede884beb1373aa6dc04
+    self: sha256:61631e618727ba1913d187bbbd5f7cebb19e3f921435a2fe24e786091b0c8c1f
     children: []
-  semantic_subtree_digest: sha256:8216bd3b35ff053d6c721030cdaecb2158587567523a65f9b7e5857fee1b5eb5
+  semantic_subtree_digest: sha256:e8e750ded63f4e96a5b2e4e1747c88536e511a9e9a8d74652bf0a0b17f16fbe5
 current:
   module_id: archiview-storage
   directory: src/storage
@@ -705,9 +717,9 @@ current:
   semantic_subtree_digest: sha256:e8e750ded63f4e96a5b2e4e1747c88536e511a9e9a8d74652bf0a0b17f16fbe5
 change:
   existence: retained
-  own: true
-  own_code: true
-  own_contract: true
+  own: false
+  own_code: false
+  own_contract: false
   inherited_constraints: false
   descendants: false
   child_composition: false
@@ -717,19 +729,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 198
-  comparison_key: sha256:9ac68e1abe969973126f51be9b60be1b1940477c23b8e7553e4c5a6815e3d374
+  generation: 206
+  comparison_key: sha256:84003c283e284f83ac2a4ca9c0e12f7742afa72c48260fa7e911d6cdc19a20ff
   baseline:
     metadata:
-      id: git-51aa8ad0dfed371a56e70b0ff66f9e265e9ea93b
-      digest: sha256:fd99619f9d0888f33a3f69199c58b5be78f7adc2984e4d332594c90f18951a55
+      id: git-3e8fe85137b67f3b6c24e9f39c60ba301eee281b
+      digest: sha256:c4ec7768d1f23595cb71fe541809009cd8cd025ac3a318a9324416c02fd1498f
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T03:02:04.210Z
+      capturedAt: 2026-11-12T03:57:29.181Z
       kind: git
-      revision: 51aa8ad0dfed371a56e70b0ff66f9e265e9ea93b
+      revision: 3e8fe85137b67f3b6c24e9f39c60ba301eee281b
       label: HEAD
-      fingerprint: 69b926dc066185d566b94702c44c53a05ac923a608af0cfb03a8e49ab127b80f
+      fingerprint: c0c1c49913b0267ed3b3f3cd920822eefedf8a520907188804fe7e5c411736aa
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -765,6 +777,7 @@ publication:
             I2: Перенос сохраняет происхождение и содержимое неизменяемых попыток. Чтение и запись ограничены допустимой файловой областью.
             I3: При уплотнении истории сохраняются содержательные проверки и их доказательства.
             I4: Чтение опубликованной пары и доказательств одного модуля доступно из переносимого work; читатель не смешивает данные разных публикаций.
+            I5: При повторном обновлении сессия использует проверенные архивные записи повторно и обнаруживает добавление, изменение, замену и удаление файлов другими процессами.
         format: yaml
         contract:
           schema_version: 1
@@ -794,12 +807,17 @@ publication:
               доказательства.
             I4: Чтение опубликованной пары и доказательств одного модуля доступно из
               переносимого work; читатель не смешивает данные разных публикаций.
+            I5: При повторном обновлении сессия использует проверенные архивные записи
+              повторно и обнаруживает добавление, изменение, замену и удаление
+              файлов другими процессами.
       documentPath: .archiview/modules/archiview-storage.yaml
       files:
         - path: .archiview/modules/archiview-storage.yaml
-          hash: bc1af871605a16d5f26f3fa66a3020f4962d3ff2
+          hash: b6129b39e8c028928a0671b371b14f7ea77067d3
+        - path: src/storage/archive-cache.ts
+          hash: 96569512c8a0253811f3cabfd8f0c14467dc2e43
         - path: src/storage/change-history.ts
-          hash: 8d561885a1425cb820e6ec34c5f296df9c8d2b20
+          hash: e59ebce1e51a389044b589cd8ca5ff1e5e14ab2d
         - path: src/storage/file-lock.ts
           hash: 05ae4ec78f2a160ec200df7e9242f8dda15f9233
         - path: src/storage/publication.ts
@@ -809,21 +827,21 @@ publication:
         - path: src/storage/report-index.ts
           hash: 3ab00a02253f058616a834cf521ff6f6f1547457
         - path: src/storage/report-store.ts
-          hash: 45132d8d0a4d4eec570a5fb9960b299b0ee2102b
+          hash: 6971288390cf92f86727398db552be08479c82dc
         - path: src/storage/review-store.ts
-          hash: 2cb0f5c1bfdaf8a06bdba38af1ff3376eded3cf4
+          hash: f61569616aac854fba804b9946d3036a76992266
         - path: src/storage/snapshot-store.ts
-          hash: 536a62d53071b2174e2c72d84db92915b57ca292
-      sourceFiles: 8
-      fingerprint: 7962bb3a131e4e774bc291f593931594ca8d991c2d6bec65d9959aa7aceeb039
+          hash: c4624cf7e86a55d7138d7f8fb46ec29ee000bc8d
+      sourceFiles: 9
+      fingerprint: bee48866ba30803eca724d15dc2eafeca4649de21e6fe7aec7b674c114b1bfb7
     facts:
       - index: 20
         fact:
-          id: sha256:5833cc87144817ca038baf51a4a586c1672b074e03fc4f0c9a81b21be850a5cb
+          id: sha256:9a7f0b4b5dbb2e4732c6656ef6e9ad43308e58d69b28050f7b04bbbbd3403303
           kind: file
           path: .archiview/modules/archiview-storage.yaml
           start_line: 1
-          end_line: 20
+          end_line: 21
           text: >
             schema_version: 1
 
@@ -850,15 +868,56 @@ publication:
               I2: Перенос сохраняет происхождение и содержимое неизменяемых попыток. Чтение и запись ограничены допустимой файловой областью.
               I3: При уплотнении истории сохраняются содержательные проверки и их доказательства.
               I4: Чтение опубликованной пары и доказательств одного модуля доступно из переносимого work; читатель не смешивает данные разных публикаций.
+              I5: При повторном обновлении сессия использует проверенные архивные записи повторно и обнаруживает добавление, изменение, замену и удаление файлов другими процессами.
       - index: 120
         fact:
-          id: sha256:5c5a314853de2e6d112228ad5a1d4ce2cc6e7cb221db8efee2efa35efaf341f7
+          id: sha256:977bedbee85921d429787b879f897c1671f4db89f61aa159b490b0cc97bfa9af
+          kind: file
+          path: src/storage/archive-cache.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            import { lstat } from "node:fs/promises";
+
+
+            /** A store owns its cache. Directory listings decide membership on
+            every scan. */
+
+            export class ArchiveCache<T> {
+              readonly #files = new Map<string, { version: string; value: T }>();
+
+              async read(file: string, load: () => Promise<T>, key = file): Promise<T> {
+                const version = await fileVersion(file);
+                const cached = this.#files.get(key);
+                if (cached?.version === version) return cached.value;
+                const value = await load();
+                if (await fileVersion(file) !== version) throw new Error("Archive file changed while being read: " + file);
+                this.#files.set(key, { version, value });
+                return value;
+              }
+
+              retain(keys: Set<string>) {
+                for (const key of this.#files.keys()) if (!keys.has(key)) this.#files.delete(key);
+              }
+            }
+
+
+            async function fileVersion(file: string) {
+              const info = await lstat(file, { bigint: true });
+              if (!info.isFile()) throw new Error("Archive file must be an ordinary file: " + file);
+              return [info.dev, info.ino, info.size, info.ctimeNs, info.mtimeNs].join("/");
+            }
+      - index: 121
+        fact:
+          id: sha256:33c6a59ed60e889f8b5d5133eabdc5a4e2996fe38b2367471efd84508a30d4bf
           kind: file
           path: src/storage/change-history.ts
           start_line: 1
-          end_line: 275
+          end_line: 296
           text: >
             import { withFileLock } from "./file-lock.js";
+
+            import { ArchiveCache } from "./archive-cache.js";
 
             import type { Snapshot } from "../snapshots/types.js";
 
@@ -905,6 +964,8 @@ publication:
             | null };
 
             export class ChangeHistory {
+              readonly #records = new ArchiveCache<ChangeRecord>();
+              readonly #cursors = new ArchiveCache<unknown>();
               readonly snapshotStore: import("./snapshot-store.js").SnapshotStore;
               readonly directory: string;
               constructor(snapshotStore: import("./snapshot-store.js").SnapshotStore) {
@@ -930,7 +991,7 @@ publication:
                 const newest = records.sort((a, b) => b.sequence - a.sequence);
                 const selected = limit === null ? newest : newest.slice(0, limit);
                 const hasMore = selected.length < newest.length;
-                return { changes: selected.sort(chronological), hasMore,
+                return { changes: structuredClone(selected.sort(chronological)), hasMore,
                   nextBeforeSequence: hasMore ? Math.min(...selected.map((record) => record.sequence)) : null,
                   diagnostics: state.diagnostics };
               }
@@ -941,7 +1002,7 @@ publication:
                 await this.snapshotStore.open();
                 const file = path.join(this.directory, id + ".yaml");
                 await this.snapshotStore.assertLocation(file);
-                try { return this.#validateRecord(await this.#yaml(file)); }
+                try { return structuredClone(await this.#readRecord(file)); }
                 catch (errorCause) { const error = errorDetails(errorCause); if (error.code === "ENOENT") return null; throw error; }
               }
 
@@ -964,7 +1025,7 @@ publication:
                   this.#revision(baseRevision);
                   const state = await this.#read();
                   this.#writable(state);
-                  const observed = (record: ChangeRecord | null, created: boolean) => ({ record, created,
+                  const observed = (record: ChangeRecord | null, created: boolean) => ({ record: structuredClone(record), created,
                     ...(includeHistory ? { history: this.#history(state, baseRevision) } : {}) });
                   let cursor = await this.#cursor(state);
                   const same = cursor?.digest === current.digest && cursor?.headRevision === baseRevision;
@@ -1000,7 +1061,7 @@ publication:
                     this.#snapshot(snapshot);
                     const id = "change-" + digest({ source, baseRevision, id: snapshot.id, digest: snapshot.digest, capturedAt: snapshot.capturedAt }).slice(7);
                     const existing = state.changes.find((record) => record.id === id);
-                    if (existing) { changes.push(existing); continue; }
+                    if (existing) { changes.push(structuredClone(existing)); continue; }
                     const record = this.#record(snapshot, baseRevision, ++sequence, id, { imported: true, source });
                     await this.#save(record);
                     state.changes.push(record);
@@ -1050,6 +1111,15 @@ publication:
                   recordId: record.id, sequence: record.sequence, capturedAt: record.capturedAt };
               }
 
+              async #readRecord(file: string) {
+                await this.snapshotStore.assertLocation(file);
+                return this.#records.read(file, async () => {
+                  const record = this.#validateRecord(await this.#yaml(file));
+                  if (path.basename(file) !== record.id + ".yaml") throw new Error("Change history filename mismatch");
+                  return record;
+                });
+              }
+
               /** Проверяет сохранённую историю до записи; повреждение не превращается в пустую историю. */
               async #read() {
                 const state: ChangeState = { changes: [], diagnostics: [] };
@@ -1059,11 +1129,11 @@ publication:
                   if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("Invalid change history directory");
                   names = await readdir(this.directory);
                 } catch (errorCause) { const error = errorDetails(errorCause); if (error.code === "ENOENT") return state; throw error; }
-                for (const name of names.sort()) {
-                  if (!name.startsWith("change-") || !name.endsWith(".yaml")) continue;
+                const files = names.sort().filter(name => name.startsWith("change-") && name.endsWith(".yaml"));
+                this.#records.retain(new Set(files.map(name => path.join(this.directory, name))));
+                for (const name of files) {
                   try {
-                    const record = this.#validateRecord(await this.#yaml(path.join(this.directory, name)));
-                    if (name !== record.id + ".yaml") throw new Error("Change history filename mismatch");
+                    const record = await this.#readRecord(path.join(this.directory, name));
                     if (state.changes.some((entry) => entry.sequence === record.sequence)) throw new Error("Duplicate change sequence");
                     state.changes.push(record);
                   } catch (errorCause) { const error = errorDetails(errorCause); state.diagnostics.push(name + ": " + error.message); }
@@ -1079,7 +1149,7 @@ publication:
               async #cursor(state: ChangeState) {
                 let cursor: ChangeCursor | null = null;
                 try {
-                  cursor = await this.#yaml(path.join(this.directory, ".cursor.yaml")) as ChangeCursor;
+                  cursor = await this.#readCursor() as ChangeCursor;
                   this.#revision(cursor.headRevision);
                   if (cursor.schema_version !== 1 || !/^sha256:[a-f0-9]{64}$/.test(cursor.digest) || !Number.isSafeInteger(cursor.sequence) || cursor.sequence < 0 ||
                       (cursor.recordId !== null && !ID.test(cursor.recordId)) || typeof cursor.capturedAt !== "string" || !Number.isFinite(Date.parse(cursor.capturedAt))) throw new Error("Invalid change history cursor");
@@ -1101,11 +1171,20 @@ publication:
               }
 
               async #save(record: ChangeRecord) {
-                await this.#atomic(path.join(this.directory, record.id + ".yaml"), stringify(record, { aliasDuplicateObjects: false }), true);
+                const file = path.join(this.directory, record.id + ".yaml");
+                await this.#atomic(file, stringify(record, { aliasDuplicateObjects: false }), true);
+                await this.#readRecord(file);
+              }
+
+              async #readCursor() {
+                const file = path.join(this.directory, ".cursor.yaml");
+                await this.snapshotStore.assertLocation(file);
+                return this.#cursors.read(file, () => this.#yaml(file));
               }
 
               async #writeCursor(cursor: ChangeCursor) {
                 await this.#atomic(path.join(this.directory, ".cursor.yaml"), stringify(cursor), false);
+                await this.#readCursor();
               }
 
               /** Immutable событие публикуется hard link; cursor заменяется готовым файлом. */
@@ -1157,7 +1236,7 @@ publication:
               diagnostics: string[];
               errors?: string[];
             }
-      - index: 121
+      - index: 122
         fact:
           id: sha256:c37f80c2e1ffe956b77c423b4544590cd63291e0515ae4279c1cdc26cccb0f25
           kind: file
@@ -1263,7 +1342,7 @@ publication:
                 await rm(candidate, { force: true });
               }
             }
-      - index: 122
+      - index: 123
         fact:
           id: sha256:382d9e76e9a5fd903d96e28d0d0e991cc1882d719b28e0020648e35c983f4ff4
           kind: file
@@ -1381,7 +1460,7 @@ publication:
               }
               return {...result, current: result.current};
             }
-      - index: 123
+      - index: 124
         fact:
           id: sha256:414b5bd97583415e7762bc68210fd31459421d1df6848a1911a65a574c4e65e4
           kind: file
@@ -1523,7 +1602,7 @@ publication:
                 hasReviews: (id: string) => versions.has(moduleReportName(id) + ".review.yaml"),
                 id: "published-" + digest([root, work, version, [...versions], generation, selected[0].publication!.comparison_key]).slice(7, 31) };
             }
-      - index: 124
+      - index: 125
         fact:
           id: sha256:87bd143a25f7a51c0f2dc5ad47465d541fef19af6ec95a413369442338d56278
           kind: file
@@ -1636,15 +1715,17 @@ publication:
                 await rm(temporary, { recursive: true, force: true });
               }
             }
-      - index: 125
+      - index: 126
         fact:
-          id: sha256:d09fa89d50882aec0c754b1294c8a9ee872c3ba453f7cda014135d34b5ed7385
+          id: sha256:1d33b1fd46862c4c6a972d3cf57d47516ee566a4ae13808af81bd0cd774a04a1
           kind: file
           path: src/storage/report-store.ts
           start_line: 1
-          end_line: 487
+          end_line: 530
           text: >
             import { withFileLock } from "./file-lock.js";
+
+            import { ArchiveCache } from "./archive-cache.js";
 
             import { parseReportYaml } from "../serialization/yaml.js";
 
@@ -1678,7 +1759,7 @@ publication:
 
             import { canonical, digest } from "../serialization/digest.js";
 
-            import { readReviewBundle } from "./review-store.js";
+            import { readBounded, readReviewBundle } from "./review-store.js";
 
             import { compareSnapshots } from "../snapshots/comparison.js";
 
@@ -1781,6 +1862,9 @@ publication:
 
 
             export class ReportStore {
+              readonly #publishedFiles = new ArchiveCache<CheckedFile>();
+              readonly #rawFiles = new ArchiveCache<CheckedFile>();
+              readonly #legacyFiles = new ArchiveCache<string>();
               root: string; directory: string; work: string; raw: string; control: string;
               constructor(public snapshotStore: SnapshotStore) {
                 this.snapshotStore = snapshotStore;
@@ -1940,9 +2024,36 @@ publication:
                   entries: state.entries, reports: state.reports, diagnostics: state.diagnostics, comparison: state.comparison };
               }
 
+              async #checkedFile(file: string, published: boolean) {
+                await this.snapshotStore.assertLocation(file);
+                const name = path.basename(file);
+                const cache = published ? this.#publishedFiles : this.#rawFiles;
+                // During journal recovery, the validated staging files move together into work.
+                const key = published ? name : file;
+                return cache.read(file, async (): Promise<CheckedFile> => {
+                  const data = await readYaml<TechnicalReport | ReviewHistory>(file);
+                  if (name !== moduleReportName(data.module_id) + (data.kind === "archi" ? ".archi.yaml" : ".review.yaml")) throw new Error("Module filename mismatch");
+                  const directoryHash = path.basename(path.dirname(file));
+                  if (data.kind === "archi") {
+                    validateStoredReport(data);
+                    if (data.project_id !== digest(this.snapshotStore.snapshotRoot)) throw new Error("Foreign technical report project");
+                    if (published) {
+                      if (!data.publication) throw new Error("Published technical report lacks snapshot fragments");
+                      return { kind: "published", report: data };
+                    }
+                    if (data.check_hash !== directoryHash) throw new Error("Raw check directory mismatch");
+                    return { kind: "raw", key: data.check_hash + "/" + data.module_id };
+                  }
+                  const entries = validateHistoryFile(data, name, this.snapshotStore.snapshotRoot);
+                  if (!published && entries.some(entry => entry.check_hash !== directoryHash)) throw new Error("Raw check directory mismatch");
+                  return { kind: "reviews", entries, fingerprint: digest(entries) };
+                }, key);
+              }
+
               /** Общий reader объединяет work и raw: work остаётся первичным после clone. */
               async #read(workDirectory = this.work, includeRaw = true) {
-                const state: StoreState = { entries: [], reports: [], diagnostics: [], workErrors: [], integrityErrors: [], rawArchi: new Set(), comparison: null };
+                const state: StoreState = { entries: [], reports: [], diagnostics: [], workErrors: [], integrityErrors: [], rawArchi: new Set(), rawReviews: new Map(), comparison: null };
+                const publishedNames = new Set<string>(), rawPaths = new Set<string>();
                 const readDirectory = async (directory: string, published: boolean) => {
                   await this.snapshotStore.assertLocation(directory);
                   let names;
@@ -1956,23 +2067,17 @@ publication:
                     try {
                       if (!item.isFile() || item.isSymbolicLink()) throw new Error("Report must be an ordinary file");
                       const file = path.join(directory, item.name);
-                      await this.snapshotStore.assertLocation(file);
-                      const data = await readYaml<TechnicalReport | ReviewHistory>(file);
-                      if (item.name !== moduleReportName(data.module_id) + (data.kind === "archi" ? ".archi.yaml" : ".review.yaml")) throw new Error("Module filename mismatch");
-                      if (data.kind === "archi") {
-                        validateStoredReport(data);
-                        if (published && !data.publication) throw new Error("Published technical report lacks snapshot fragments");
-                        if (data.project_id !== digest(this.snapshotStore.snapshotRoot)) throw new Error("Foreign technical report project");
-                        if (!published && data.check_hash !== path.basename(directory)) throw new Error("Raw check directory mismatch");
-                        if (published) {
-                          state.reports.push(data);
-                          state.diagnostics.push(...data.storage_diagnostics ?? []);
-                        } else state.rawArchi.add(data.check_hash + "/" + data.module_id);
+                      if (published) publishedNames.add(item.name);
+                      else rawPaths.add(file);
+                      const checked = await this.#checkedFile(file, published);
+                      if (checked.kind === "published") {
+                        state.reports.push(structuredClone(checked.report));
+                        state.diagnostics.push(...checked.report.storage_diagnostics ?? []);
+                      } else if (checked.kind === "raw") {
+                        state.rawArchi.add(checked.key);
                       } else {
-                        for (const entry of validateHistoryFile(data, item.name, this.snapshotStore.snapshotRoot)) {
-                          if (!published && entry.check_hash !== path.basename(directory)) throw new Error("Raw check directory mismatch");
-                          this.#add(state, entry, true);
-                        }
+                        if (!published) state.rawReviews.set(file, checked.fingerprint);
+                        for (const entry of checked.entries) this.#add(state, entry, true);
                       }
                     } catch (errorCause) { const error = errorDetails(errorCause);
                       const message = path.relative(this.directory, path.join(directory, item.name)) + ": " + error.message;
@@ -1983,6 +2088,7 @@ publication:
                   }
                 };
                 await readDirectory(workDirectory, true);
+                this.#publishedFiles.retain(publishedNames);
                 try { state.comparison = reconstruct(state.reports); } catch (errorCause) { const error = errorDetails(errorCause);
                   const message = "work publication: " + error.message;
                   state.diagnostics.push(message); state.workErrors.push(message);
@@ -1999,6 +2105,7 @@ publication:
                   if (/^[a-f0-9]{64}$/.test(directory.name) && directory.isDirectory() && !directory.isSymbolicLink()) await readDirectory(path.join(this.raw, directory.name), false);
                 }
                 state.entries.sort((a, b) => (a.registration_order ?? 0) - (b.registration_order ?? 0));
+                if (includeRaw) this.#rawFiles.retain(rawPaths);
                 try { validateReviewRelations(state.entries); } catch (errorCause) { const error = errorDetails(errorCause);
                   state.diagnostics.push(error.message); state.integrityErrors.push(error.message);
                 }
@@ -2029,6 +2136,7 @@ publication:
               }
 
               async #legacy(state: StoreState) {
+                const paths = new Set<string>();
                 const legacy = path.join(this.directory, "reviews");
                 await this.snapshotStore.assertLocation(legacy);
                 let names: import("node:fs").Dirent[] = [];
@@ -2038,7 +2146,10 @@ publication:
                   try {
                     const directory = path.join(legacy, item.name);
                     await this.snapshotStore.assertLocation(directory);
-                    const bundle = await readReviewBundle(directory);
+                    const bundle = await readReviewBundle(directory, file => {
+                      paths.add(file);
+                      return this.#legacyFiles.read(file, () => readBounded(file));
+                    });
                     this.#assertProject(bundle.current);
                     if (bundle.report.analysis.analyzer.name === "archiview-structure") continue;
                     if (this.#alreadyMigrated(state, bundle)) continue;
@@ -2048,6 +2159,7 @@ publication:
                     if (error.message.startsWith("Review ID collision:")) throw error;
                   }
                 }
+                this.#legacyFiles.retain(paths);
               }
 
               /** Управляемый блок не заменяет пользовательские правила .gitignore. */
@@ -2068,8 +2180,10 @@ publication:
                 await this.snapshotStore.assertLocation(directory);
                 await mkdir(directory, { recursive: true });
                 const file = path.join(directory, moduleReportName(report.module_id) + ".archi.yaml");
-                try { validateStoredReport(await readYaml<TechnicalReport | ReviewHistory>(file)); }
-                catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "ENOENT") throw error; await this.#atomic(file, stringify(report, { aliasDuplicateObjects: false })); }
+                try { await this.#checkedFile(file, false); return; }
+                catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
+                await this.#atomic(file, stringify(report, { aliasDuplicateObjects: false }));
+                await this.#checkedFile(file, false);
               }
 
               /** Создаёт полную следующую публикацию и журнал, позволяющий завершить замену после сбоя. */
@@ -2092,9 +2206,12 @@ publication:
                 for (const same of rawGroups.values()) {
                   const entry = same[0];
                   const directory = path.join(this.raw, entry.check_hash);
+                  const file = path.join(directory, moduleReportName(entry.module_id) + ".review.yaml");
+                  if (state.rawReviews.get(file) === digest(same)) continue;
                   await this.snapshotStore.assertLocation(directory);
                   await mkdir(directory, { recursive: true });
-                  await this.#atomic(path.join(directory, moduleReportName(entry.module_id) + ".review.yaml"), stringify({ schema_version: REPORT_SCHEMA_VERSION, kind: "review_history", module_id: entry.module_id, entries: same }, { aliasDuplicateObjects: false }));
+                  await this.#atomic(file, stringify({ schema_version: REPORT_SCHEMA_VERSION, kind: "review_history", module_id: entry.module_id, entries: same }, { aliasDuplicateObjects: false }));
+                  await this.#checkedFile(file, false);
                 }
                 const id = randomUUID();
                 const pending = ".publication-" + id;
@@ -2176,6 +2293,11 @@ publication:
             }
 
 
+            type CheckedFile =
+              | { kind: "published"; report: TechnicalReport }
+              | { kind: "raw"; key: string }
+              | { kind: "reviews"; entries: ReviewEntry[]; fingerprint: string };
+
             interface StoreState {
               entries: ReviewEntry[];
               reports: TechnicalReport[];
@@ -2183,13 +2305,14 @@ publication:
               workErrors: string[];
               integrityErrors: string[];
               rawArchi: Set<string>;
+              rawReviews: Map<string, string>;
               comparison: PublishedComparison | null;
               publishedEntries?: string;
               publishedDiagnostics?: string;
             }
-      - index: 126
+      - index: 127
         fact:
-          id: sha256:d98e2fa3634ba635373c762cdf7a02f09fd7ae5deafa6a739e91cb596535f852
+          id: sha256:843e48d70fc0e8cd877807beba991a9a9aba56ed506d44f57b6f9a6f7dfaf9f0
           kind: file
           path: src/storage/review-store.ts
           start_line: 1
@@ -2231,7 +2354,7 @@ publication:
 
             /** Читает ограниченный файл пакета, не следуя файловым ссылкам. */
 
-            async function readBounded(file: string) {
+            export async function readBounded(file: string) {
               const info = await lstat(file);
               if (!info.isFile() || info.isSymbolicLink() || info.size > 64 * 1024 * 1024) throw new Error("Invalid review bundle file");
               return readFile(file, "utf8");
@@ -2241,12 +2364,12 @@ publication:
             /** Загружает переносимый пакет анализа и проверяет сохранённые
             доказательства. */
 
-            export async function readReviewBundle(directory: string):
-            Promise<ReviewBundle> {
-              const report = parseYaml(await readBounded(path.join(directory, "review.yaml")), validateReview);
-              const manifest: ReviewManifest = JSON.parse(await readBounded(path.join(directory, "input.json")));
-              const current: Snapshot = JSON.parse(await readBounded(path.join(directory, "current.json")));
-              const baseline: Snapshot | null = report.comparison.baseline ? JSON.parse(await readBounded(path.join(directory, "baseline.json"))) : null;
+            export async function readReviewBundle(directory: string, read =
+            readBounded): Promise<ReviewBundle> {
+              const report = parseYaml(await read(path.join(directory, "review.yaml")), validateReview);
+              const manifest: ReviewManifest = JSON.parse(await read(path.join(directory, "input.json")));
+              const current: Snapshot = JSON.parse(await read(path.join(directory, "current.json")));
+              const baseline: Snapshot | null = report.comparison.baseline ? JSON.parse(await read(path.join(directory, "baseline.json"))) : null;
               return validateReviewBundle({ report, manifest, baseline, current });
             }
 
@@ -2307,15 +2430,17 @@ publication:
                 return { bundles, diagnostics };
               }
             }
-      - index: 127
+      - index: 128
         fact:
-          id: sha256:8303e94623209df3be6566f5f22110e239d4628be2d4b616e154cc4f3ea0d756
+          id: sha256:806c7727f1fc22f1b74c2f0ace44fb0e061ad3f3b3c408204a481a89bb7f54c5
           kind: file
           path: src/storage/snapshot-store.ts
           start_line: 1
-          end_line: 203
+          end_line: 213
           text: >
             import type { Snapshot } from "../snapshots/types.js";
+
+            import { ArchiveCache } from "./archive-cache.js";
 
             import { errorDetails } from "../runtime/errors.js";
 
@@ -2395,6 +2520,7 @@ publication:
             истории. */
 
             export class SnapshotStore {
+              readonly #savedFiles = new ArchiveCache<Snapshot>();
               /** Настоящий корень исходников: только он используется для файловых операций. */
               root;
               /** Физическое размещение данных, исключаемое из исходного дерева. */
@@ -2506,15 +2632,23 @@ publication:
                 try { entries = await readdir(this.directory); }
                 catch (errorCause) { const error = errorDetails(errorCause); if (error.code === "ENOENT") return []; throw error; }
                 const snapshots: Snapshot[] = [];
-                for (const file of entries.filter((name) => /^saved-[a-f0-9]{24}\.json$/.test(name))) {
-                  snapshots.push(validate(JSON.parse((await readStoredFile(path.join(this.directory, file))).toString("utf8")), this.snapshotRoot));
-                }
+                const paths = entries.filter(name => /^saved-[a-f0-9]{24}\.json$/.test(name)).map(name => path.join(this.directory, name));
                 const raw = path.join(this.directory, "snapshots");
                 await this.assertLocation(raw);
                 let savedFiles: string[] = [];
                 try { savedFiles = await readdir(raw); } catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "ENOENT") throw error; }
                 for (const file of savedFiles.filter((name) => /^saved-[a-f0-9]{24}\.yaml$/.test(name))) {
-                  snapshots.push(parseYaml((await readStoredFile(path.join(raw, file))).toString("utf8"), (value) => validate(value as Snapshot, this.snapshotRoot)));
+                  paths.push(path.join(raw, file));
+                }
+                this.#savedFiles.retain(new Set(paths));
+                for (const file of paths) {
+                  await this.assertLocation(file);
+                  const saved = await this.#savedFiles.read(file, async () => {
+                    const text = (await readStoredFile(file)).toString("utf8");
+                    return file.endsWith(".json") ? validate(JSON.parse(text), this.snapshotRoot) :
+                      parseYaml(text, value => validate(value, this.snapshotRoot));
+                  });
+                  snapshots.push(structuredClone(saved));
                 }
                 // Опубликованные фрагменты восстанавливают выбранную базу даже без локальных snapshots.
                 if (includePublished) {
@@ -2546,22 +2680,22 @@ publication:
                 return saved;
               }
             }
-      - index: 199
+      - index: 200
         fact:
-          id: sha256:fe464e5d98008d8095af4a0eda3d64d2e72341d5ee39f21abbd2c4b25feaaea4
+          id: sha256:99d44984f6b436afba50859493b76dcc44e240408e9c7a04fd4fab7c5e08e122
           kind: module
           path: src/storage
-          text: '{"contract":"documented","format":"yaml","sources":["src/storage/change-history.ts","src/storage/file-lock.ts","src/storage/publication.ts","src/storage/published-reader.ts","src/storage/report-index.ts","src/storage/report-store.ts","src/storage/review-store.ts","src/storage/snapshot-store.ts"]}'
+          text: '{"contract":"documented","format":"yaml","sources":["src/storage/archive-cache.ts","src/storage/change-history.ts","src/storage/file-lock.ts","src/storage/publication.ts","src/storage/published-reader.ts","src/storage/report-index.ts","src/storage/report-store.ts","src/storage/review-store.ts","src/storage/snapshot-store.ts"]}'
   current:
     metadata:
-      id: working-c4ec7768d1f23595cb71fe541809009cd8cd025ac3a318a9324416c02fd1498f
-      digest: sha256:c4ec7768d1f23595cb71fe541809009cd8cd025ac3a318a9324416c02fd1498f
+      id: launch-4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+      digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T03:16:12.801Z
-      kind: working
-      label: Рабочее дерево
-      fingerprint: c0c1c49913b0267ed3b3f3cd920822eefedf8a520907188804fe7e5c411736aa
+      capturedAt: 2026-11-12T04:02:54.300Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
       complete: true
       diagnostics: []
       evidenceLimitations: []

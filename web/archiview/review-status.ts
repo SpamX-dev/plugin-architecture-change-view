@@ -1,5 +1,14 @@
 import type { Freshness, Coverage, Reason, ReviewBundle } from "./types.js";
 
+/** Поддерево добавляет сигнал только свёрнутой строке; карточка показывает собственный анализ. */
+export function moduleAnalysisStatus(module: {
+  reviewStatus?: { self?: { current?: Freshness }; subtree?: { current?: Freshness } } | null;
+}, scope: "self" | "subtree" = "self") {
+  const statuses = [module.reviewStatus?.self?.current,
+    ...(scope === "subtree" ? [module.reviewStatus?.subtree?.current] : [])];
+  return statuses.some((value) => value?.status !== "fresh" || value.conflict) ? "Требует анализа" : null;
+}
+
 /** Сравнение известных входов не обещает полного покрытия или положительного вердикта. */
 export function freshnessLabel(value: Freshness | null | undefined, { compact = false } = {}) {
   if (!value) return "проверки нет";

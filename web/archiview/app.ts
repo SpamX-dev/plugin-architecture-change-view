@@ -3,13 +3,13 @@ import { errorCode, errorMessage } from "./types.js";
 import { byId, el, icon, notice } from "./dom.js";
 import { renderContractHeading, savedClauseMatchesContract } from "./contract.js";
 import { badge } from "./change-status.js";
-import { freshnessLabel } from "./review-status.js";
+import { moduleAnalysisStatus } from "./review-status.js";
 import { renderReview } from "./review.js";
 import { findingBug, moduleFindingCount } from "./findings.js";
 import { moduleTrail } from "./module-path.js";
 import { createModuleTree } from "./module-tree.js";
 import { createAnalysisControls } from "./analysis-controls.js";
-import { renderTimeline, timelineDate, timelineLabel } from "./timeline.js";
+import { renderTimeline, timelineDate } from "./timeline.js";
 import { renderDocument, renderHistoricalClause, renderFiles } from "./module-document.js";
 import { renderProjectSelection } from "./project-selection.js";
 
@@ -103,22 +103,17 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     const documentLabel = module.documentState === "invalid" ? "Ошибка формата" : module.documentState === "missing" ? "Описание отсутствует" :
       module.documentState === "empty" ? "Описание пустое" :
         module.documentChanged ? "Описание изменено" : "Описание без изменений";
+    const analysis = moduleAnalysisStatus(module);
     for (const [label, value] of [["Контракт", documentLabel],
       ["Файлы", module.filesChanged + " изменено"],
-      ["Подмодули", module.descendantChanges + " с изменениями"]]) {
+      ["Подмодули", module.descendantChanges + " с изменениями"],
+      ...(analysis ? [["Анализ", analysis]] : [])]) {
       const item = el("div", "meta-item");
       item.append(el("span", "meta-label", label), el("span", "meta-value", value));
+      if (label === "Анализ") item.id = "review-status";
       meta.append(item);
     }
     byId("copy-path").disabled = false;
-    // Собственная проверка и оценка изменения, затем то же для поддерева.
-    // Статусы объединяются только подписью: актуальность входов не подменяется.
-    const reviewStatuses = module.reviewStatus ? "Модуль · проверка: " +
-      freshnessLabel(module.reviewStatus.self.current, { compact: true }) + " · оценка изменения: " +
-      freshnessLabel(module.reviewStatus.self.change, { compact: true }) + " · Поддерево · проверка: " +
-      freshnessLabel(module.reviewStatus.subtree.current, { compact: true }) + " · оценка изменения: " +
-      freshnessLabel(module.reviewStatus.subtree.change, { compact: true }) : "Содержательной проверки нет";
-    byId("review-status").textContent = reviewStatuses;
     byId("files-count").textContent = String(module.filesChanged);
     byId("files-count").hidden = module.filesChanged === 0;
     renderFindingCount(module);
@@ -127,10 +122,10 @@ export async function startApp({ client, bridge, host, chooseProject }: {
   }
 
   function renderFindingCount(module: Pick<ModuleSummary, "review" | "reviewStatus">) {
-    const findings = module.review?.findings;
+    const findings = moduleFindingCount(module);
     const tab = byId("tab-findings");
     tab.textContent = "Замечания" + (findings ? " · " + findings : "");
-    if (moduleFindingCount(module) || (!module.review && module.reviewStatus?.self.current.current_violation)) tab.prepend(findingBug());
+    if (findings || (!module.review && module.reviewStatus?.self.current.current_violation)) tab.prepend(findingBug());
   }
 
   /** Загружает детали из того же снимка сравнения, что и дерево слева. */
@@ -238,8 +233,6 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     if (selected.document.contract) renderContractHeading(heading, selected.document, {
       contractDiff: state.detail.contractDiff, titleElement: byId("module-title"), groupElement: byId("module-heading-content"),
     });
-    byId("document-version").textContent = state.detail.status === "removed" ? "Из базы сравнения" :
-      currentView().published ? "Сохранённое состояние" : timelineLabel(currentView().target ?? { id: "current" });
     if (state.tab === "document") renderDocument(panel, state.detail, currentView(), selectModule, openReviewFinding);
     else if (["checks", "findings"].includes(state.tab)) {
       // Копирование доступно самостоятельной странице; встроенный хост без
@@ -319,7 +312,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
       byId("module-subtitle").hidden = true;
       byId("module-contract-heading").hidden = true;
       byId("copy-path").disabled = true;
-      for (const id of ["breadcrumbs", "module-status", "module-meta", "review-status"] as const) byId(id).replaceChildren();
+      for (const id of ["breadcrumbs", "module-status", "module-meta"] as const) byId(id).replaceChildren();
       byId("document-panel").replaceChildren(el("div", "loading-state", "Читаем репозиторий…"));
     }
     button.classList.add("is-loading");

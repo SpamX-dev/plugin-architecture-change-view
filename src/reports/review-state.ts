@@ -52,8 +52,8 @@ function dependencyInput(selector: DependencySelector, snapshot: SnapshotData | 
 
 /**
  * Техническая модель сохраняет прежнее происхождение и контекст снимка.
- * Новая собственная оценка использует отдельную проекцию без пунктов предков;
- * совместимость с назначением родителя проверяется в композиции родителя.
+ * Собственный чеклист не содержит пунктов предков. Их границы и контракты детей
+ * сохраняются как контекст; актуальность локального анализа оценивается отдельно.
  */
 function reviewProjection(state: ModuleState, contractScope: string) {
   const projection = structuredClone(state.self);

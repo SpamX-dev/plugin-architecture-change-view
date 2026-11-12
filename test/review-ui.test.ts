@@ -3,6 +3,7 @@ import type { Check, ClauseReference, Contract, Finding, Observation, ReviewBund
 import assert from "node:assert/strict";
 import test from "node:test";
 import { compareContracts } from "../src/snapshots/contract-diff.js";
+import { moduleAnalysisStatus } from "../web/archiview/review-status.js";
 import { ownClauseGroups, reviewVersions, observedVersionGroups, evidenceLabel,
   reviewFindingItems, freshnessLabel, clauseFindingTargets, moduleFindingCount, treeFindingCounts,
   findingFixPrompt, savedClauseText, savedClauseMatchesContract, clauseSectionLabel, reviewFreshnessStates } from "../web/archiview/review.js";
@@ -193,6 +194,35 @@ test("a finding replaces the duplicate assessment without losing its owning clau
   assert.equal(items[0].clauses[0].module_id, "parent");
   assert.deepEqual(bundle, original);
   assert.equal(freshnessLabel({ status: "fresh", current_violation: true }), "проверенные входы не изменились");
+});
+
+test("own analysis stays separate from hidden descendants in a collapsed tree row", () => {
+  for (const status of ["stale", "unknown", "not_reviewed"]) {
+    assert.equal(moduleAnalysisStatus({ reviewStatus: { self: { current: { status } },
+      subtree: { current: { status: "fresh" } } } }), "Требует анализа", "module: " + status);
+    const module = { reviewStatus: { self: { current: { status: "fresh" } }, subtree: { current: { status } } } };
+    assert.equal(moduleAnalysisStatus(module), null, "own analysis: " + status);
+    assert.equal(moduleAnalysisStatus(module, "subtree"), "Требует анализа", "collapsed: " + status);
+  }
+  for (const area of ["self", "subtree"] as const) {
+    const reviewStatus = { self: { current: { status: "fresh", conflict: false } },
+      subtree: { current: { status: "fresh", conflict: false } } };
+    reviewStatus[area].current.conflict = true;
+    assert.equal(moduleAnalysisStatus({ reviewStatus }), area === "self" ? "Требует анализа" : null, area + " conflict");
+    assert.equal(moduleAnalysisStatus({ reviewStatus }, "subtree"), "Требует анализа", area + " collapsed conflict");
+  }
+  assert.equal(moduleAnalysisStatus({}), "Требует анализа");
+  assert.equal(moduleAnalysisStatus({ reviewStatus: null }), "Требует анализа");
+});
+
+test("a changed comparison base or known violation does not invalidate current module analysis", () => {
+  const current = { status: "fresh", conflict: false, current_violation: true,
+    coverage: { status: "partial", limitations: ["Ограниченная область проверки."] } };
+  const change = { status: "stale", conflict: true };
+  const module = { reviewStatus: { self: { current, change }, subtree: { current, change } } };
+  const original = structuredClone(module);
+  assert.equal(moduleAnalysisStatus(module), null);
+  assert.deepEqual(module, original);
 });
 
 test("current inputs and the change assessment keep independent freshness, reasons and conflict", () => {

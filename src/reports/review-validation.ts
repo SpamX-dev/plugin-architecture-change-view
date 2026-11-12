@@ -69,7 +69,7 @@ export function validateReviewEntry(input: unknown): ReviewEntry {
   validateReview(entry.report);
   if (entry.report.module.id !== null && entry.module_id !== entry.report.module.id) throw new Error("Review module identity mismatch");
   if (!entry.inputs || entry.inputs.schema_version !== 1 || !["self", "subtree"].includes(entry.inputs.scope)) throw new Error("Unsupported review inputs");
-  const contractScope = validateContractScope(entry.report, entry.manifest);
+  const contractScope = validateContractScope(entry.report, entry.manifest, entry);
   if ((entry.inputs.contract_scope ?? "effective") !== contractScope) throw new Error("Review contract scope mismatch");
   if (digest(entry.inputs.current) !== entry.inputs.current_digest ||
     digest({ baseline_identity: entry.inputs.baseline_identity, baseline: entry.inputs.baseline, current: entry.inputs.current }) !== entry.inputs.change_digest) throw new Error("Review assessment input digest mismatch");

@@ -122,16 +122,55 @@ test("descendant implementation changes parent technical hash and leaves own rev
   assert.equal(tree.get("parent")!.subtree.current.counts!.not_reviewed, 1);
 });
 
-test("direct child contract invalidates composition but a deep child contract does not invalidate all ancestors", () => {
+test("child contract changes affect the subtree while preserving the parent's own review and saved proof", () => {
   const definitions = definition();
   const before = snapshot(definitions);
   const parent = reviewed(null, before, "parent");
+  const child = reviewed(null, before, "child");
+  const subtree = reviewed(null, before, "parent", { scope: "subtree" });
+  const preserved = digest(parent);
+  assert.ok(parent.inputs.current.state!.children.length, "the saved context remains verifiable");
   definitions[3].contract.responsibilities.R2 = "Публиковать состояние.";
   assert.equal(reviewFreshness(parent, null, snapshot(definitions)).current.status, "fresh");
   definitions[2].contract.responsibilities.R2 = "Объединять данные подмодулей.";
+  const after = snapshot(definitions);
+  assert.equal(reviewFreshness(parent, null, after).current.status, "fresh");
+  assert.equal(reviewFreshness(child, null, after).current.status, "stale");
+  assert.equal(reviewFreshness(subtree, null, after).current.status, "stale");
+  const tree = aggregateTreeStatuses([parent, child], null, after);
+  assert.equal(tree.get("parent")!.self.current.status, "fresh");
+  assert.equal(tree.get("parent")!.subtree.current.status, "stale");
+  assert.equal(technical(before, after, "parent").change.child_composition, true);
+  assert.equal(validateReviewEntry(parent), parent);
+  assert.equal(digest(parent), preserved);
+});
+
+test("adding, moving, removing or breaking a child does not require rechecking unchanged parent inputs", () => {
+  const edits: [string, (modules: ReturnType<typeof definition>) => void][] = [
+    ["add", (modules) => { const added = structuredClone(modules[2]); added.id = added.contract.id = "added";
+      added.directory = "parent/added"; modules.push(added); }],
+    ["move", (modules) => { modules[2].directory = "parent/moved"; modules[3].directory = "parent/moved/grand"; }],
+    ["remove", (modules) => { modules.splice(2, 2); }],
+    ["invalid contract", (modules) => { modules[2].documentState = "invalid"; }],
+  ];
+  for (const [label, edit] of edits) {
+    const definitions = definition();
+    const parent = reviewed(null, snapshot(definitions), "parent");
+    edit(definitions);
+    const freshness = reviewFreshness(parent, null, snapshot(definitions)).current;
+    assert.equal(freshness.status, "fresh", label);
+    assert.deepEqual(freshness.reasons, [], label);
+  }
+});
+
+test("an explicitly used child contract remains a dependency of the parent's own review", () => {
+  const definitions = definition();
+  const parent = reviewed(null, snapshot(definitions), "parent", {
+    dependencies: [{ kind: "contract", module_id: "child" }] });
+  definitions[2].contract.boundaries.B2 = "Не изменять состояние потребителя.";
   const freshness = reviewFreshness(parent, null, snapshot(definitions)).current;
   assert.equal(freshness.status, "stale");
-  assert.ok(freshness.reasons.some((reason) => reason.code === "child_composition"));
+  assert.ok(freshness.reasons.some((reason) => reason.code === "dependency_input"));
 });
 
 test("parent context invalidates the parent's own review without invalidating child review", () => {
@@ -201,6 +240,27 @@ test("own review cannot add a parent clause or change its scope under preserved 
   const altered = structuredClone(draft);
   delete altered.inputs.contract_scope;
   assert.throws(() => createReviewEntry(altered), /contract scope mismatch/);
+});
+
+test("own review can report a violation of an ancestor boundary without adding the ancestor checklist", () => {
+  const draft = reviewed(null, snapshot(), "child", { draft: true });
+  const fact = draft.current.facts.find((item) => item.path === "parent/child/child.js")!;
+  draft.report.findings.push({ id: "ancestor-boundary", kind: "responsibility_gap", severity: "error",
+    certainty: "confirmed", lifecycle: "introduced", summary: "Реализация нарушает верхнюю границу.",
+    clauses: [{ snapshot: "current", module_id: "root", section: "boundaries", id: "B1" }],
+    evidence: [{ snapshot: "current", fact_id: fact.id }] });
+  draft.report.assessment.current = { verdict: "violation", summary: "Есть нарушение верхней границы." };
+  const entry = createReviewEntry(draft);
+  assert.equal(validateReviewEntry(entry), entry);
+  assert.ok(entry.report.checks.every((check) => check.contract.module_id === "child"));
+  assert.equal(entry.report.findings[0].clauses[0].module_id, "root");
+  const foreign = structuredClone(draft);
+  foreign.report.findings[0].clauses[0].module_id = "provider";
+  assert.throws(() => createReviewEntry(foreign), /Own review finding/);
+  const responsibility = structuredClone(draft);
+  responsibility.report.findings[0].clauses[0] = {
+    snapshot: "current", module_id: "root", section: "responsibilities", id: "R1" };
+  assert.throws(() => createReviewEntry(responsibility), /Own review finding/);
 });
 
 test("parent placement violation remains at the parent and does not become child violation", () => {

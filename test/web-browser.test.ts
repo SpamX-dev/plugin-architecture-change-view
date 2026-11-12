@@ -14,6 +14,7 @@ import { chromium } from "playwright";
 import { build } from "esbuild";
 import { stringify } from "yaml";
 import { createArchiView } from "../src/archiview/http.js";
+import type { ComparisonView } from "../src/application/api.js";
 import { createArchiViewSession } from "../src/application/session.js";
 import { createRouteTable } from "../src/dsh/routes.js";
 import { createReviewInput } from "../src/reports/review-input.js";
@@ -125,6 +126,9 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   await feature.waitFor();
   await feature.click();
   await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
+  assert.equal(await page.locator("#module-meta #review-status .meta-value").innerText(), "Требует анализа");
+  assert.equal(await feature.locator(".review-marker").getAttribute("title"), "Требует анализа");
+  assert.equal(await page.locator('.tree-row[data-key="."] .review-marker').getAttribute("title"), "Требует анализа");
   await page.getByRole("tab", { name: /^Файлы/ }).click();
   await page.locator("#document-panel").getByText("feature.ts", { exact: true }).waitFor();
   await page.getByRole("tab", { name: "Контракт", exact: true }).click();
@@ -148,7 +152,7 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   await timeline.selectOption("current");
   try {
     assert.equal(new URL((await nextComparison).url()).searchParams.get("published"), "true");
-    await page.locator("#document-version").filter({ hasText: /^Сохранённое состояние$/ }).waitFor();
+    await page.locator("#updated").filter({ hasText: /^Сохранено/ }).waitFor();
     assert.equal(await page.locator(".tree-row.selected").getAttribute("data-key"), "src");
   } finally {
     releaseLive();
@@ -160,10 +164,57 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   await page.screenshot({ path: path.join(artifacts, "web-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Модули", exact: true }).waitFor();
-  await page.locator("#review-status").waitFor({ state: "visible" });
-  assert.match(await page.locator("#review-status").innerText(), /Модуль.*Поддерево/);
+  await page.locator("#module-meta #review-status").waitFor({ state: "visible" });
+  assert.equal(await page.locator("#review-status .meta-value").innerText(), "Требует анализа");
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
   await page.screenshot({ path: path.join(artifacts, "web-mobile.png"), fullPage: true });
+  // Own reviews remain independent: a parent relays a pending child only while collapsed.
+  let childRequiresAnalysis = true;
+  await page.route(url => url.pathname === "/api/comparison", async route => {
+    const response = await route.fetch();
+    const view: ComparisonView = await response.json();
+    for (const module of view.modules) {
+      for (const scope of [module.reviewStatus!.self, module.reviewStatus!.subtree]) {
+        Object.assign(scope.current, { status: "fresh", conflict: false });
+        Object.assign(scope.change, { status: "stale", conflict: true });
+      }
+      if (childRequiresAnalysis) {
+        module.reviewStatus!.subtree.current.status = "stale";
+        if (module.directory === "src") module.reviewStatus!.self.current.status = "stale";
+      }
+    }
+    await route.fulfill({ response, json: view });
+  });
+  await page.getByRole("button", { name: "Обновить", exact: true }).click();
+  await page.waitForFunction(() => !(document.querySelector("#refresh") as HTMLButtonElement).disabled);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const parentRow = page.locator('.tree-row[data-key="."]');
+  assert.equal(await parentRow.getAttribute("aria-expanded"), "true");
+  assert.equal(await parentRow.locator(".review-marker").count(), 0);
+  assert.equal(await feature.locator(".review-marker").getAttribute("title"), "Требует анализа");
+  await parentRow.click();
+  await page.getByRole("heading", { name: "Новый заголовок проекта", exact: true }).waitFor();
+  assert.equal(await page.locator("#review-status").count(), 0, "the parent's card only shows its own analysis");
+  await parentRow.locator("[data-toggle]").click();
+  assert.equal(await parentRow.getAttribute("aria-expanded"), "false");
+  assert.equal(await parentRow.locator(".review-marker").getAttribute("title"), "Требует анализа");
+  await page.screenshot({ path: path.join(artifacts, "web-analysis-collapsed.png"), fullPage: true });
+  await page.getByRole("searchbox").fill("Функция браузера");
+  assert.equal(await parentRow.getAttribute("aria-expanded"), "true");
+  assert.equal(await parentRow.locator(".review-marker").count(), 0, "search reveals the pending child");
+  await page.getByRole("searchbox").fill("");
+  assert.equal(await parentRow.getAttribute("aria-expanded"), "false");
+  assert.equal(await parentRow.locator(".review-marker").count(), 1);
+  await parentRow.locator("[data-toggle]").click();
+  assert.equal(await parentRow.locator(".review-marker").count(), 0);
+  assert.equal(await feature.locator(".review-marker").count(), 1);
+  await page.screenshot({ path: path.join(artifacts, "web-analysis-expanded.png"), fullPage: true });
+  // An outdated comparison assessment alone does not demand current-input analysis.
+  childRequiresAnalysis = false;
+  await page.getByRole("button", { name: "Обновить", exact: true }).click();
+  await page.waitForFunction(() => !(document.querySelector("#refresh") as HTMLButtonElement).disabled);
+  assert.equal(await page.locator("#review-status").count(), 0);
+  assert.equal(await page.locator(".tree-row .review-marker").count(), 0);
   assert.deepEqual(errors, []);
 });
 
