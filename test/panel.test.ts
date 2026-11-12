@@ -245,7 +245,19 @@ test("analysis rejects unknown view/module, missing contracts, changed inputs an
   assert.equal((await prepare(app, missing)).status, 422);
 });
 
-test("dependency export extends the original snapshot without replacing the first input or reading changed files", async (t) => {
+test("CLI rejects dependency collection flags before reading a selector file or creating an export", async (t) => {
+  const root = await panelFixture(t);
+  const output = path.join(root, "disabled-export.yaml");
+  const cli = fileURLToPath(new URL("../src/archiview/cli.ts", import.meta.url));
+  for (const flags of [["--dependencies", path.join(root, "missing-selectors.yaml")], ["--dependencies-complete"]]) {
+    await assert.rejects(promisify(execFile)(process.execPath,
+      ["--import", "tsx", cli, "--root", root, "--export-review-input", "child", "--output", output, ...flags], { windowsHide: true }),
+      (error: Error & { stderr?: string }) => /Сбор зависимостей через LLM отключён/.test(error.stderr ?? ""));
+    await assert.rejects(stat(output), { code: "ENOENT" });
+  }
+});
+
+test("analysis rejects LLM dependency collection and re-exports original own inputs without changing proof", async (t) => {
   const root = await panelFixture(t);
   const app = await serve(t, root);
   const view = await ((await fetch(app.url + "/api/comparison?baseline=initial")).json() as Promise<ComparisonResponse>);
@@ -253,9 +265,12 @@ test("dependency export extends the original snapshot without replacing the firs
   const directory = path.join(root, ".archiview/snapshots/analysis", request.id);
   const original = await readFile(path.join(directory, "input.yaml"), "utf8");
   await writeFile(path.join(root, "child/code.js"), "export const value = 99;\n");
-  const exported = await app.analysis.prepare(request.id, [], true);
+  await assert.rejects(app.analysis.prepare(request.id, [{ kind: "file", path: "child/code.js" }]), /LLM отключён/);
+  await assert.rejects(app.analysis.prepare(request.id, [], true), /LLM отключён/);
+  const exported = await app.analysis.prepare(request.id, []);
   const input = parse(await readFile(exported, "utf8"));
-  assert.equal(input.inputs.current.dependency_coverage.status, "complete");
+  assert.deepEqual(input.inputs.current.dependencies, []);
+  assert.equal(input.inputs.current.dependency_coverage.status, "unknown");
   assert.ok(input.current.facts.some((fact: Fact) => fact.text === "export const value = 1;\n"));
   assert.equal(await readFile(path.join(directory, "input.yaml"), "utf8"), original);
   await writeFile(path.join(directory, "result.yaml"), stringify(completedFixture(input), { aliasDuplicateObjects: false }));
@@ -267,7 +282,7 @@ test("a prepared review accepts a result above 32 MiB within its input-relative 
   const app = await serve(t, root);
   const view = await app.getComparison({ baseline: "initial" });
   const request = await app.prepareAnalysis({ view: view.id, path: "child" });
-  const exported = await app.analysis.prepare(request.id, [], true);
+  const exported = await app.analysis.prepare(request.id, []);
   const input = parse(await readFile(exported, "utf8"));
   const result = path.join(path.dirname(exported), "result.yaml");
   const inputBytes = (await stat(exported)).size;
@@ -298,5 +313,5 @@ test("request metadata keeps its own size limit while saved snapshots have a lar
   await truncate(path.join(directory, "scope.json"), 32 * 1024 * 1024 + 1);
   await assert.rejects(app.analysis.complete(request.id), /Недопустимый файл анализа/);
   await truncate(path.join(directory, "snapshots.json"), 256 * 1024 * 1024 + 1);
-  await assert.rejects(app.analysis.prepare(request.id, [], true), /Недопустимый файл анализа/);
+  await assert.rejects(app.analysis.prepare(request.id, []), /Недопустимый файл анализа/);
 });

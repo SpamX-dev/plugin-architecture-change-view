@@ -163,14 +163,15 @@ test("adding, moving, removing or breaking a child does not require rechecking u
   }
 });
 
-test("an explicitly used child contract remains a dependency of the parent's own review", () => {
+test("a child dependency saved by an LLM no longer invalidates the parent's own review", () => {
   const definitions = definition();
   const parent = reviewed(null, snapshot(definitions), "parent", {
     dependencies: [{ kind: "contract", module_id: "child" }] });
   definitions[2].contract.boundaries.B2 = "Не изменять состояние потребителя.";
   const freshness = reviewFreshness(parent, null, snapshot(definitions)).current;
-  assert.equal(freshness.status, "stale");
-  assert.ok(freshness.reasons.some((reason) => reason.code === "dependency_input"));
+  assert.equal(freshness.status, "fresh");
+  assert.deepEqual(freshness.reasons, []);
+  assert.ok(freshness.coverage.reasons!.some((reason) => reason.code === "dependency_tracking_disabled"));
 });
 
 test("parent context invalidates the parent's own review without invalidating child review", () => {
@@ -275,14 +276,14 @@ test("parent placement violation remains at the parent and does not become child
   assert.equal(tree.get("child")!.self.current.current_violation, false);
 });
 
-test("module dependency follows its own inputs rather than its parent's context", () => {
+test("saved LLM module dependencies do not track implementation or parent context changes", () => {
   const definitions = definition();
   const current = snapshot(definitions);
   const consumer = reviewed(null, current, "child", { dependencies: [{ kind: "module", module_id: "provider" }] });
   definitions[0].contract.boundaries.B2 = "Другой контекст для размещения модулей.";
   assert.equal(reviewFreshness(consumer, null, snapshot(definitions)).current.status, "fresh");
   definitions[4].sources["provider.js"] = "export const value = 2;\n";
-  assert.equal(reviewFreshness(consumer, null, snapshot(definitions)).current.status, "stale");
+  assert.equal(reviewFreshness(consumer, null, snapshot(definitions)).current.status, "fresh");
 });
 
 test("title metadata is technical change without invalidating semantic own/composition", () => {
@@ -297,21 +298,31 @@ test("title metadata is technical change without invalidating semantic own/compo
   assert.equal(technical(before, after, "child").change.own_contract, true);
 });
 
-test("contract, actual API file and implementation dependencies have distinct scopes", () => {
+test("all saved LLM dependency kinds remain proof metadata without invalidating current analysis", () => {
   const definitions = definition();
   const before = snapshot(definitions);
   const contract = reviewed(null, before, "child", { dependencies: [{ kind: "contract", module_id: "provider" }] });
   const api = reviewed(null, before, "child", { dependencies: [{ kind: "api", path: "provider/api.d.ts" }] });
   const implementation = reviewed(null, before, "child", { dependencies: [{ kind: "module", module_id: "provider" }] });
+  const file = reviewed(null, before, "child", { dependencies: [{ kind: "file", path: "provider/provider.js" }] });
+  const preserved = digest([contract, api, implementation, file]);
   definitions[4].sources["provider.js"] = "export const value = 2;\n";
   let after = snapshot(definitions);
   assert.equal(reviewFreshness(contract, null, after).current.status, "fresh");
   assert.equal(reviewFreshness(api, null, after).current.status, "fresh");
-  assert.equal(reviewFreshness(implementation, null, after).current.status, "stale");
+  assert.equal(reviewFreshness(implementation, null, after).current.status, "fresh");
+  assert.equal(reviewFreshness(file, null, after).current.status, "fresh");
   definitions[4].sources["api.d.ts"] = "export declare const value: string;\n";
   after = snapshot(definitions);
-  assert.equal(reviewFreshness(api, null, after).current.status, "stale");
+  assert.equal(reviewFreshness(api, null, after).current.status, "fresh");
   assert.equal(reviewFreshness(contract, null, after).current.status, "fresh");
+  definitions[4].contract.boundaries.B2 = "Новая граница поставщика.";
+  after = snapshot(definitions);
+  for (const entry of [contract, api, implementation, file]) {
+    assert.equal(reviewFreshness(entry, null, after).current.status, "fresh");
+    assert.equal(validateReviewEntry(entry), entry);
+  }
+  assert.equal(digest([contract, api, implementation, file]), preserved);
 });
 
 test("legacy semantic bundle keeps every proof and defaults unknown dependency coverage", () => {
@@ -358,16 +369,18 @@ test("unknown dependency coverage is separate from matching and changed checked 
   assert.equal(matching.change.status, "fresh");
   assert.deepEqual(matching.current.reasons, []);
   assert.equal(matching.current.coverage.status, "partial");
-  assert.ok(matching.current.coverage.reasons!.some((reason) => reason.code === "dependency_coverage_unknown"));
+  assert.ok(matching.current.coverage.reasons!.some((reason) => reason.code === "dependency_tracking_disabled"));
   // Необъявленная область не была проверенным входом: ограничение остаётся в полноте.
   definitions[0].sources["settings.yaml"] = "mode: other\n";
   assert.equal(reviewFreshness(entry, null, snapshot(definitions)).current.status, "fresh");
-  // Изменение объявленной реализации по-прежнему инвалидирует сохранённый вывод.
+  // Сохранённые LLM-селекторы не участвуют в сравнении, собственный код участвует.
   definitions[4].sources["provider.js"] = "export const value = 2;\n";
   const changed = reviewFreshness(entry, null, snapshot(definitions)).current;
-  assert.equal(changed.status, "stale");
+  assert.equal(changed.status, "fresh");
   assert.equal(changed.coverage.status, "partial");
-  assert.ok(changed.reasons.some((reason) => reason.code === "dependency_input"));
+  assert.deepEqual(changed.reasons, []);
+  definitions[2].sources["child.js"] = "export const child = 2;\n";
+  assert.equal(reviewFreshness(entry, null, snapshot(definitions)).current.status, "stale");
   assert.equal(digest(entry), savedDigest);
 });
 
@@ -388,19 +401,19 @@ test("partial coverage propagates separately from fresh inputs and confirmed vio
   assert.equal(root.status, "fresh");
   assert.deepEqual(root.counts, { fresh: 5, stale: 0, unknown: 0, not_reviewed: 0 });
   assert.equal(root.coverage.status, "partial");
-  assert.ok(root.coverage.reasons!.some((reason) => reason.code === "dependency_coverage_unknown"));
+  assert.ok(root.coverage.reasons!.some((reason) => reason.code === "dependency_tracking_disabled"));
   assert.equal(root.current_violation, true);
 });
 
-test("unavailable declared dependencies and incomplete snapshots remain incomparable", () => {
+test("unavailable LLM dependencies do not block analysis but incomplete own snapshots still do", () => {
   const current = snapshot();
   const draft = reviewed(null, current, "child", { draft: true,
     dependencies: [{ kind: "file", path: "absent/api.d.ts" }] });
   draft.report.analysis.coverage = { status: "partial", limitations: ["Вход зависимости недоступен."] };
   const unavailable = reviewFreshness(createReviewEntry(draft), null, current).current;
-  assert.equal(unavailable.status, "unknown");
+  assert.equal(unavailable.status, "fresh");
   assert.equal(unavailable.coverage.status, "partial");
-  assert.ok(unavailable.reasons.some((reason) => reason.code === "dependency_unresolved"));
+  assert.deepEqual(unavailable.reasons, []);
   const complete = reviewed(null, current, "child");
   const incomplete = reviewFreshness(complete, null, snapshot(definition(), { complete: false })).current;
   assert.equal(incomplete.status, "unknown");
@@ -497,6 +510,44 @@ test("native snapshot parsed contract must agree with preserved YAML text", () =
   const { scope_digest, ...content } = draft.current;
   draft.current.scope_digest = digest(content);
   assert.throws(() => createReviewEntry(draft), /contract text disagrees/);
+});
+
+test("compatible partial and full current reviews do not conflict over prose or coverage", () => {
+  const current = snapshot();
+  const full = reviewed(null, current, "child", { dependencies: [{ kind: "contract", module_id: "provider" }] });
+  const draft = reviewed(null, current, "child", { draft: true });
+  draft.report.analysis.coverage = { status: "partial", limitations: ["Проверен только R1."] };
+  draft.report.assessment.current.summary = "Целевая проверка подтверждает R1.";
+  draft.report.observed.current = { summary: "Иное описание тех же наблюдений.", responsibilities: [] };
+  for (const check of draft.report.checks) {
+    check.explanation = "Иное пояснение к пункту.";
+    if (check.contract.id !== "R1") { check.verdict = "not_checked"; check.evidence = []; }
+  }
+  const partial = createReviewEntry(draft);
+  const preserved = digest([full, partial]);
+  const aggregate = aggregateReviewStatus([full, partial], null, current, "child").current;
+  assert.equal(aggregate.status, "fresh");
+  assert.equal(aggregate.conflict, false);
+  assert.equal(aggregate.verdict, "consistent");
+  assert.equal(aggregate.review_ids?.length, 2);
+  assert.equal(aggregate.coverage.status, "partial");
+  assert.equal(digest([full, partial]), preserved);
+});
+
+test("opposite clause conclusions conflict even when both overall verdicts agree", () => {
+  const current = snapshot();
+  const attempts = [false, true].map(extraViolation => {
+    const draft = reviewed(null, current, "child", { draft: true });
+    draft.report.assessment.current = { verdict: "violation", summary: "Обнаружено нарушение." };
+    for (const check of draft.report.checks) {
+      if (check.subject === "current" && (check.contract.id === "B1" || extraViolation && check.contract.id === "R1"))
+        check.verdict = "violation";
+    }
+    return createReviewEntry(draft);
+  });
+  const aggregate = aggregateReviewStatus(attempts, null, current, "child").current;
+  assert.equal(aggregate.conflict, true);
+  assert.equal(aggregate.verdict, "inconclusive");
 });
 
 test("conflicting applicable reviews remain visible and explicit resolution preserves history", () => {

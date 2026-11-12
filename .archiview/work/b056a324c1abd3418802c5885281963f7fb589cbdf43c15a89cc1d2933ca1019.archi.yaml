@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-reports
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 71053249c92ea13170e87a05558ff1b4be963c498b5b31fee2b41e13a3c4bb7a
+check_hash: 2b867dc8cafe312f0997be597e765a419c4fd217c9f12c5b1669ea094583ad55
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,7 +10,7 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      id: b23283774c6463600f966355f5329f9f7684aacb
     state:
       exists: true
       directory: src/reports
@@ -19,8 +19,8 @@ input_manifest:
   current:
     exists: true
     directory: src/reports
-    self_digest: sha256:460d7a6c81daada5b211c69f4b3b2c0137819656af026d2e3cadbabcb7589a0e
-    subtree_digest: sha256:cdb1ab7de3731f5fefa0b94b9815af416bcb7a88481a4d824ba94974c1f361c2
+    self_digest: sha256:c57a8be43c9cec2a7f6bdf98f6e28e1f7a9e1b33194cd2027215964349c84dc1
+    subtree_digest: sha256:af4aee47b7ddfa5d70b86d0b574928b237e78e1cbd54c2086fee4473b770aab3
   analyzer:
     name: archiview-structure
     version: 1.0.2
@@ -391,7 +391,7 @@ current:
     directory: src/reports
     own_files:
       - path: src/reports/freshness.ts
-        digest: sha256:6534ec7983f6ccf3db9f48077c112ab4a5e953f844ec9f5e07eb23f66a7e1a58
+        digest: sha256:3458889535854a06b8d5684f00eb51ce68ca3f2c0a19c625233d94f37a03f254
         normalization: text-lf/v1
       - path: src/reports/model.ts
         digest: sha256:12ba092a91d7b312bd379613fc3b0011d16cfbd2e508cea7d916503d9a7e84da
@@ -406,7 +406,7 @@ current:
         digest: sha256:88a50147c9ae9f777a751a3c03e3c8ea29b7a38981e92f29cdb2793f4b8e248d
         normalization: text-lf/v1
       - path: src/reports/review-input.ts
-        digest: sha256:4ad2b754399c14705b649ea2a7ba5c2d4a6f10f1ca67d5bc103eaa1c9e6c73b7
+        digest: sha256:7255834b8d4a98fbc4577ace4562f4bc850a3efa2bf8d74a2f07e37a434a1b8c
         normalization: text-lf/v1
       - path: src/reports/review-state.ts
         digest: sha256:fd5a149e8e522d249fa64ef96bd9b75dece904d3eb4011c8d5c84714f4712bac
@@ -418,7 +418,7 @@ current:
         digest: sha256:a2b0abf0aa5f9830f1c1bc0a4df70bba9435175687a3e66baa13ad51f1b26086
         normalization: text-lf/v1
       - path: src/reports/tree-status.ts
-        digest: sha256:19ddce56f522059632c314859f49f7be79af466ead1ff204a6fd3f870d119961
+        digest: sha256:fa34a21aaa1a002fe18cf3a5d900a0d0e145d71a75612e4b3865fb5b6f41ba9e
         normalization: text-lf/v1
       - path: src/reports/types.ts
         digest: sha256:e4ef04a51b3b2edbd7b900fa720c395828cc31f21e92e659f417ce74c70db967
@@ -445,14 +445,19 @@ current:
           вычисляются раздельно.
         I2: Кеш подготовленной модели ограничен выбранной парой снимков и изолирован от
           последующих изменений входов.
-        I3: Актуальность определяется по входам проверки с учётом использованных
-          зависимостей. Полнота проверки и полнота перечня зависимостей
-          оцениваются отдельно от актуальности.
+        I3: Актуальность определяется по собственным входам проверки и явно выбранному
+          поддереву. Зависимости из LLM-отчётов сохраняются как происхождение
+          доказательств, но не отслеживаются; их изменения и недоступность не
+          инвалидируют анализ. Отключённое слежение обозначается ограничением
+          полноты независимо от актуальности. Различия формулировок и покрытия
+          совместимых проверок текущего состояния не создают конфликт; конфликт
+          отражает противоположные определённые выводы или статусы одного
+          замечания.
         I4: Изменения детей и их контрактов сами по себе не инвалидируют локальную
-          собственную оценку родителя. При её сопоставлении учитываются свой
-          код, контракт и явно использованные зависимости; контекст детей в
-          сохранённых входах остаётся неизменным материалом проверки. Проверка
-          поддерева и его агрегация учитывают изменения потомков отдельно.
+          собственную оценку родителя. При её сопоставлении учитываются свой код
+          и контракт; контекст детей в сохранённых входах остаётся неизменным
+          материалом проверки. Проверка поддерева и его агрегация учитывают
+          изменения потомков отдельно.
     document_state: documented
     inherited:
       - module_id: architecture-change-view
@@ -557,7 +562,7 @@ current:
         id: I6
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:460d7a6c81daada5b211c69f4b3b2c0137819656af026d2e3cadbabcb7589a0e
+  technical_digest: sha256:c57a8be43c9cec2a7f6bdf98f6e28e1f7a9e1b33194cd2027215964349c84dc1
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -565,7 +570,7 @@ current:
     directory: src/reports
     own_files:
       - path: src/reports/freshness.ts
-        digest: sha256:6534ec7983f6ccf3db9f48077c112ab4a5e953f844ec9f5e07eb23f66a7e1a58
+        digest: sha256:3458889535854a06b8d5684f00eb51ce68ca3f2c0a19c625233d94f37a03f254
         normalization: text-lf/v1
       - path: src/reports/model.ts
         digest: sha256:12ba092a91d7b312bd379613fc3b0011d16cfbd2e508cea7d916503d9a7e84da
@@ -580,7 +585,7 @@ current:
         digest: sha256:88a50147c9ae9f777a751a3c03e3c8ea29b7a38981e92f29cdb2793f4b8e248d
         normalization: text-lf/v1
       - path: src/reports/review-input.ts
-        digest: sha256:4ad2b754399c14705b649ea2a7ba5c2d4a6f10f1ca67d5bc103eaa1c9e6c73b7
+        digest: sha256:7255834b8d4a98fbc4577ace4562f4bc850a3efa2bf8d74a2f07e37a434a1b8c
         normalization: text-lf/v1
       - path: src/reports/review-state.ts
         digest: sha256:fd5a149e8e522d249fa64ef96bd9b75dece904d3eb4011c8d5c84714f4712bac
@@ -592,7 +597,7 @@ current:
         digest: sha256:a2b0abf0aa5f9830f1c1bc0a4df70bba9435175687a3e66baa13ad51f1b26086
         normalization: text-lf/v1
       - path: src/reports/tree-status.ts
-        digest: sha256:19ddce56f522059632c314859f49f7be79af466ead1ff204a6fd3f870d119961
+        digest: sha256:fa34a21aaa1a002fe18cf3a5d900a0d0e145d71a75612e4b3865fb5b6f41ba9e
         normalization: text-lf/v1
       - path: src/reports/types.ts
         digest: sha256:e4ef04a51b3b2edbd7b900fa720c395828cc31f21e92e659f417ce74c70db967
@@ -614,14 +619,19 @@ current:
           вычисляются раздельно.
         I2: Кеш подготовленной модели ограничен выбранной парой снимков и изолирован от
           последующих изменений входов.
-        I3: Актуальность определяется по входам проверки с учётом использованных
-          зависимостей. Полнота проверки и полнота перечня зависимостей
-          оцениваются отдельно от актуальности.
+        I3: Актуальность определяется по собственным входам проверки и явно выбранному
+          поддереву. Зависимости из LLM-отчётов сохраняются как происхождение
+          доказательств, но не отслеживаются; их изменения и недоступность не
+          инвалидируют анализ. Отключённое слежение обозначается ограничением
+          полноты независимо от актуальности. Различия формулировок и покрытия
+          совместимых проверок текущего состояния не создают конфликт; конфликт
+          отражает противоположные определённые выводы или статусы одного
+          замечания.
         I4: Изменения детей и их контрактов сами по себе не инвалидируют локальную
-          собственную оценку родителя. При её сопоставлении учитываются свой
-          код, контракт и явно использованные зависимости; контекст детей в
-          сохранённых входах остаётся неизменным материалом проверки. Проверка
-          поддерева и его агрегация учитывают изменения потомков отдельно.
+          собственную оценку родителя. При её сопоставлении учитываются свой код
+          и контракт; контекст детей в сохранённых входах остаётся неизменным
+          материалом проверки. Проверка поддерева и его агрегация учитывают
+          изменения потомков отдельно.
     inherited:
       - module_id: architecture-change-view
         section: boundaries
@@ -726,20 +736,20 @@ current:
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
     children: []
-  self_digest: sha256:73ec567c50d15ff48175a4e09b63374d98047d1b46fe00b4a929e3f4aa54f83c
+  self_digest: sha256:b63c797042b84f83ce2e2a4594c335c22cf4d5b7f3f7768ed031aababf45eecc
   subtree:
-    self: sha256:460d7a6c81daada5b211c69f4b3b2c0137819656af026d2e3cadbabcb7589a0e
+    self: sha256:c57a8be43c9cec2a7f6bdf98f6e28e1f7a9e1b33194cd2027215964349c84dc1
     children: []
-  subtree_digest: sha256:cdb1ab7de3731f5fefa0b94b9815af416bcb7a88481a4d824ba94974c1f361c2
+  subtree_digest: sha256:af4aee47b7ddfa5d70b86d0b574928b237e78e1cbd54c2086fee4473b770aab3
   semantic_subtree:
-    self: sha256:73ec567c50d15ff48175a4e09b63374d98047d1b46fe00b4a929e3f4aa54f83c
+    self: sha256:b63c797042b84f83ce2e2a4594c335c22cf4d5b7f3f7768ed031aababf45eecc
     children: []
-  semantic_subtree_digest: sha256:682dd9baa864676d547595f5059f07ecbc144a51ee6bb07733cdc5f4f151cb9b
+  semantic_subtree_digest: sha256:761dd8190fe4dc58d8f4b92233f8d6805b315653a1b5b2b29825cfa905748e19
 change:
   existence: retained
-  own: false
-  own_code: false
-  own_contract: false
+  own: true
+  own_code: true
+  own_contract: true
   inherited_constraints: false
   descendants: false
   child_composition: false
@@ -749,19 +759,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 214
-  comparison_key: sha256:d0d5058c2141c6691e994832d1dc4abb354d36b724779e8f140fc4c7b74669c0
+  generation: 221
+  comparison_key: sha256:53c5f0a3dced021795ded81c760ea2e2bb6057b0e82e4b2e0ec70f878b98c9e0
   baseline:
     metadata:
-      id: git-771efbf7a9efe9e9a863aa96537652f133bfd463
-      digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      id: git-b23283774c6463600f966355f5329f9f7684aacb
+      digest: sha256:ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T04:04:52.749Z
+      capturedAt: 2026-11-12T07:56:44.960Z
       kind: git
-      revision: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      revision: b23283774c6463600f966355f5329f9f7684aacb
       label: HEAD
-      fingerprint: 4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+      fingerprint: ba10bb733fada7376b4433ba75d4ed45c1d0157dae53a16b26da608173dfec87
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -2407,14 +2417,14 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/reports/freshness.ts","src/reports/model.ts","src/reports/module-state.ts","src/reports/review-entry.ts","src/reports/review-identity.ts","src/reports/review-input.ts","src/reports/review-state.ts","src/reports/review-validation.ts","src/reports/technical-report.ts","src/reports/tree-status.ts","src/reports/types.ts"]}'
   current:
     metadata:
-      id: working-ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
-      digest: sha256:ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
+      id: working-af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
+      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T07:11:32.874Z
+      capturedAt: 2026-11-12T07:56:47.009Z
       kind: working
       label: Рабочее дерево
-      fingerprint: ba10bb733fada7376b4433ba75d4ed45c1d0157dae53a16b26da608173dfec87
+      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -2445,10 +2455,14 @@ publication:
           invariants:
             I1: Оценки current и change, собственное состояние и состояние поддерева вычисляются раздельно.
             I2: Кеш подготовленной модели ограничен выбранной парой снимков и изолирован от последующих изменений входов.
-            I3: Актуальность определяется по входам проверки с учётом использованных зависимостей.
-              Полнота проверки и полнота перечня зависимостей оцениваются отдельно от актуальности.
+            I3: Актуальность определяется по собственным входам проверки и явно выбранному поддереву.
+              Зависимости из LLM-отчётов сохраняются как происхождение доказательств, но не отслеживаются;
+              их изменения и недоступность не инвалидируют анализ. Отключённое слежение обозначается
+              ограничением полноты независимо от актуальности.
+              Различия формулировок и покрытия совместимых проверок текущего состояния не создают конфликт;
+              конфликт отражает противоположные определённые выводы или статусы одного замечания.
             I4: Изменения детей и их контрактов сами по себе не инвалидируют локальную собственную оценку родителя.
-              При её сопоставлении учитываются свой код, контракт и явно использованные зависимости;
+              При её сопоставлении учитываются свой код и контракт;
               контекст детей в сохранённых входах остаётся неизменным материалом проверки.
               Проверка поддерева и его агрегация учитывают изменения потомков отдельно.
         format: yaml
@@ -2474,21 +2488,25 @@ publication:
               вычисляются раздельно.
             I2: Кеш подготовленной модели ограничен выбранной парой снимков и изолирован от
               последующих изменений входов.
-            I3: Актуальность определяется по входам проверки с учётом использованных
-              зависимостей. Полнота проверки и полнота перечня зависимостей
-              оцениваются отдельно от актуальности.
+            I3: Актуальность определяется по собственным входам проверки и явно выбранному
+              поддереву. Зависимости из LLM-отчётов сохраняются как
+              происхождение доказательств, но не отслеживаются; их изменения и
+              недоступность не инвалидируют анализ. Отключённое слежение
+              обозначается ограничением полноты независимо от актуальности.
+              Различия формулировок и покрытия совместимых проверок текущего
+              состояния не создают конфликт; конфликт отражает противоположные
+              определённые выводы или статусы одного замечания.
             I4: Изменения детей и их контрактов сами по себе не инвалидируют локальную
               собственную оценку родителя. При её сопоставлении учитываются свой
-              код, контракт и явно использованные зависимости; контекст детей в
-              сохранённых входах остаётся неизменным материалом проверки.
-              Проверка поддерева и его агрегация учитывают изменения потомков
-              отдельно.
+              код и контракт; контекст детей в сохранённых входах остаётся
+              неизменным материалом проверки. Проверка поддерева и его агрегация
+              учитывают изменения потомков отдельно.
       documentPath: .archiview/modules/archiview-reports.yaml
       files:
         - path: .archiview/modules/archiview-reports.yaml
-          hash: 2a67fde0477e4b5a538577e155ae7d1521f082d0
+          hash: d075efc3237d57405285a26a83fcea2872bca9bb
         - path: src/reports/freshness.ts
-          hash: fda13e1fec494a950ac997ce195af8b697e3023f
+          hash: 748760f096fb13196521c8d0b4c7fae9b91b4103
         - path: src/reports/model.ts
           hash: 71cfc8bfc541bb2b54ea27d0b5ab52884e0167d1
         - path: src/reports/module-state.ts
@@ -2498,7 +2516,7 @@ publication:
         - path: src/reports/review-identity.ts
           hash: 2f1e594bcfbad84c9609049696a40290631dd1ac
         - path: src/reports/review-input.ts
-          hash: e45e6ed50625e6f6eba4247a3003428b4bdcd498
+          hash: fe6e0448d1a2a50da3550b961720fd48c07f64a6
         - path: src/reports/review-state.ts
           hash: 91f614b58fa9436bfbc6d0807bbdf315626fdac1
         - path: src/reports/review-validation.ts
@@ -2506,19 +2524,19 @@ publication:
         - path: src/reports/technical-report.ts
           hash: bcadff9ee5c1a9dcb17ce24bc82408aea8d7a87d
         - path: src/reports/tree-status.ts
-          hash: 31229e223564deb6dbe635113f430a4f7093872f
+          hash: 06aa083fa9826b72ae8cc8208e2fe6663e4e7b0c
         - path: src/reports/types.ts
           hash: 74552d345c193aa498f7301d70959db992ad0bde
       sourceFiles: 11
-      fingerprint: 63e495ad62698275e9126bb1817642bf9af9975da464c416ee44c9e38345648e
+      fingerprint: 07ac1c1e9dc44b6aa099a091e7c40ecba2e86a91d133066421bd2138b9d2661a
     facts:
       - index: 15
         fact:
-          id: sha256:67b7c3a85f2b6f0fecf97b85e23fe3468d2979bf3b1944d37e1847f48a135c94
+          id: sha256:71df7a4e1f7c989f7f1c8e41c4355a774ac41b234f5fcbfde3c3e1001b74b634
           kind: file
           path: .archiview/modules/archiview-reports.yaml
           start_line: 1
-          end_line: 22
+          end_line: 26
           text: >
             schema_version: 1
 
@@ -2541,19 +2559,23 @@ publication:
             invariants:
               I1: Оценки current и change, собственное состояние и состояние поддерева вычисляются раздельно.
               I2: Кеш подготовленной модели ограничен выбранной парой снимков и изолирован от последующих изменений входов.
-              I3: Актуальность определяется по входам проверки с учётом использованных зависимостей.
-                Полнота проверки и полнота перечня зависимостей оцениваются отдельно от актуальности.
+              I3: Актуальность определяется по собственным входам проверки и явно выбранному поддереву.
+                Зависимости из LLM-отчётов сохраняются как происхождение доказательств, но не отслеживаются;
+                их изменения и недоступность не инвалидируют анализ. Отключённое слежение обозначается
+                ограничением полноты независимо от актуальности.
+                Различия формулировок и покрытия совместимых проверок текущего состояния не создают конфликт;
+                конфликт отражает противоположные определённые выводы или статусы одного замечания.
               I4: Изменения детей и их контрактов сами по себе не инвалидируют локальную собственную оценку родителя.
-                При её сопоставлении учитываются свой код, контракт и явно использованные зависимости;
+                При её сопоставлении учитываются свой код и контракт;
                 контекст детей в сохранённых входах остаётся неизменным материалом проверки.
                 Проверка поддерева и его агрегация учитывают изменения потомков отдельно.
       - index: 95
         fact:
-          id: sha256:40c903d75bbcaa0ba6451671cb45fafd890c2bc283098eacebafb2008feb479d
+          id: sha256:3290c839170bec94ebbbf063c025164600b896f79e41bd50864d883b62a9a455
           kind: file
           path: src/reports/freshness.ts
           start_line: 1
-          end_line: 115
+          end_line: 103
           text: >
             import type { Snapshot, SnapshotData } from "../snapshots/types.js";
 
@@ -2603,7 +2625,6 @@ publication:
               changed("inherited", "inherited_constraints");
               changed("children", "child_composition");
               if (canonical(previous?.subtree ?? null) !== canonical(current?.subtree ?? null)) reasons.push({ code: "subtree_inputs" });
-              if (canonical(previous?.dependencies ?? []) !== canonical(current?.dependencies ?? [])) reasons.push({ code: "dependency_input" });
               return reasons;
             }
 
@@ -2625,25 +2646,15 @@ publication:
 
 
             /**
-             * Сравнивает только проверяемые сохранённые входы. Неизвестная полнота списка
-             * зависимостей относится к coverage; unknown остаётся для входов, которые
-             * действительно невозможно сопоставить. Известное изменение сохраняет stale.
+             * Сравнивает собственные входы и явно выбранное поддерево. Зависимости из LLM-
+             * отчётов сохраняются как происхождение доказательств, но не отслеживаются.
              */
             function inputFreshness(previous: ReviewState | null, current:
             ReviewState | null): Freshness {
               const reasons = inputDifferences(previous, current);
               const unknown = [];
-              const limitations = [];
-              const coverageReasons = [];
-              if (previous?.dependency_coverage?.status !== "complete") {
-                coverageReasons.push({ code: "dependency_coverage_unknown",
-                  potential_influence: structuredClone(previous?.dependency_coverage?.potential_influence ?? [{ scope: "project" }]) });
-                limitations.push("Полнота зависимостей не подтверждена.");
-              }
-              if (previous?.dependencies.some((input) => !input.available) || current?.dependencies.some((input) => !input.available)) {
-                unknown.push({ code: "dependency_unresolved" });
-                limitations.push("Часть объявленных зависимостей недоступна для сравнения.");
-              }
+              const limitations = ["Отслеживание зависимостей LLM отключено; зависимости через AST пока не определяются."];
+              const coverageReasons = [{ code: "dependency_tracking_disabled" }];
               if (!previous?.complete || !current?.complete) unknown.push({ code: "input_coverage_incomplete" });
               if (!previous?.complete || !current?.complete) limitations.push("Сохранённые или текущие входные данные неполны.");
               return { status: reasons.length ? "stale" : unknown.length ? "unknown" : "fresh", reasons: [...reasons, ...unknown],
@@ -2654,7 +2665,7 @@ publication:
             /**
              * Сохранённый формат own содержит контекст детей для доказательств и валидации.
              * При сравнении локального анализа он не становится входом родителя: проверяются
-             * собственный код, контракт и явно использованные зависимости. История не меняется.
+             * собственный код и контракт. История не меняется.
              */
             function localInput(input: ReviewState | null, snapshot:
             SnapshotData | null): ReviewState | null {
@@ -2676,8 +2687,7 @@ publication:
                   coverage: { status: "unavailable", limitations: ["Нет проверяемого описания входов прежнего анализа."] } };
                 return { current: structuredClone(unavailable), change: structuredClone(unavailable) };
               }
-              const selectors = (entry.inputs.current.dependencies ?? []).map((dependency) => dependency.selector);
-              const options = { scope: entry.inputs.scope, dependencies: selectors,
+              const options = { scope: entry.inputs.scope, dependencies: [],
                 dependencyCoverage: entry.inputs.current.dependency_coverage, contractScope: entry.inputs.contract_scope ?? "effective" };
               const actual = createInputs(baseline, current, entry.module_id, options, isSemanticReview(entry), context);
               const local = entry.inputs.contract_scope === "own" && entry.inputs.scope === "self";
@@ -3079,7 +3089,7 @@ publication:
             }
       - index: 100
         fact:
-          id: sha256:404e7b87f18471334e28bb6958336e48cd02027d43aca329b9edd8780ea6763a
+          id: sha256:ee5e2243a7fce9eaf8731b0cabe605a1ea48f153bceff0ac39ac3b8c1775be27
           kind: file
           path: src/reports/review-input.ts
           start_line: 1
@@ -3195,7 +3205,7 @@ publication:
               bundle.report.id = options.reviewId ?? "review-" + randomUUID();
               bundle.report.analysis.analyzer = { name: "agent-review", version: "1", config_digest: digest({ method: "agent" }) };
               bundle.manifest.analyzer = structuredClone(bundle.report.analysis.analyzer);
-              bundle.manifest.instructions = "Проверить собственную ответственность, границы и инварианты модуля, включая соответствие его реализации и контракта границам предков. Пункты предков не добавлять в собственный чеклист; противоречия отразить в замечаниях со ссылками на сохранённые ограничения и доказательства. Локальное изменение само по себе не требует пересмотра предков. Зависимости задавать по реально использованному контракту/API, не по расположению каталога. Заполнить модель, prompt и результаты.";
+              bundle.manifest.instructions = "Проверить собственную ответственность, границы и инварианты модуля, включая соответствие его реализации и контракта границам предков. Пункты предков не добавлять в собственный чеклист; противоречия отразить в замечаниях со ссылками на сохранённые ограничения и доказательства. Локальное изменение само по себе не требует пересмотра предков. Определение зависимостей через LLM отключено: не добавлять dependencies и не заявлять полноту их перечня. Если сохранённых данных недостаточно, указать ограничение покрытия и not_checked. Заполнить модель, prompt и результаты.";
               bundle.manifest.review_scope = options.scope ?? "self";
               bundle.report.analysis.input_digest = digest(bundle.manifest);
               const inputs = createInputs(baseline, current, id, options, true, context);
@@ -3605,11 +3615,11 @@ publication:
             }
       - index: 104
         fact:
-          id: sha256:d831e50432e4f7a9f4f8613b7c7f29ac9b8134587254daf0d1f943e8560bca28
+          id: sha256:8eb024b00f22e7a6528d0949fd0d12b9eee2fe8f89d0f090754a8080b03aa411
           kind: file
           path: src/reports/tree-status.ts
           start_line: 1
-          end_line: 125
+          end_line: 134
           text: >
             import type { SnapshotData } from "../snapshots/types.js";
 
@@ -3619,7 +3629,7 @@ publication:
             import type { ReviewEntry, ReviewFreshness, AggregateAssessment,
             ReviewStatus, TreeReviewStatus } from "./types.js";
 
-            import { digest } from "../serialization/digest.js";
+            import { canonical, digest } from "../serialization/digest.js";
 
             import { ModuleStateContext } from "./module-state.js";
 
@@ -3630,23 +3640,30 @@ publication:
             "./freshness.js";
 
 
-            /** Другая база/оценка изменения не создаёт ложный конфликт
-            current-выводов. */
+            /** Разные формулировки и непроверенные пункты не противоречат
+            подтверждённому выводу. */
 
-            function assessmentResultDigest(report: ReviewReport, side:
-            AssessmentSide) {
-              const assessment = report.assessment[side];
-              if (side === "change") return digest({ assessment, observed: report.observed, checks: report.checks, findings: report.findings });
-
-              const current = (reference: { snapshot: string }) => reference.snapshot === "current";
-              const observation = report.observed.current;
-              const observed = observation && { ...observation, responsibilities: observation.responsibilities.map((item) =>
-                ({ ...item, evidence: item.evidence.filter(current) })) };
-              const checks = report.checks.filter((check) => check.subject === "current" && current(check.contract))
-                .map(({ id, evidence, ...check }) => ({ ...check, evidence: evidence.filter(current) }));
-              const findings = report.findings.filter((finding) => finding.lifecycle !== "resolved" && finding.evidence.some(current))
-                .map(({ id, lifecycle, clauses, evidence, ...finding }) => ({ ...finding, clauses: clauses.filter(current), evidence: evidence.filter(current) }));
-              return digest({ assessment, observed, checks, findings });
+            function currentAssessmentsConflict(reports: ReviewReport[]) {
+              const assertions = new Map<string, string>();
+              const record = (key: string, verdict: string) => {
+                const previous = assertions.get(key);
+                assertions.set(key, verdict);
+                return previous !== undefined && previous !== verdict;
+              };
+              const definite = (verdict: string) => ["consistent", "violation", "not_applicable"].includes(verdict);
+              for (const report of reports) {
+                const assessment = report.assessment.current.verdict;
+                if (definite(assessment) && record("assessment", assessment)) return true;
+                for (const check of report.checks) {
+                  if (check.subject !== "current" || check.contract.snapshot !== "current" || !definite(check.verdict)) continue;
+                  if (record("check:" + canonical(check.contract), check.verdict)) return true;
+                }
+                for (const finding of report.findings) {
+                  if (finding.kind === "contract_change" || !finding.evidence.some(ref => ref.snapshot === "current")) continue;
+                  if (record("finding:" + finding.id, finding.lifecycle === "resolved" ? "resolved" : "open")) return true;
+                }
+              }
+              return false;
             }
 
 
@@ -3661,8 +3678,9 @@ publication:
               const fresh = candidates.filter((candidate) => candidate.freshness[side].status === "fresh");
               const applicable = fresh.length ? fresh : candidates.filter((candidate) => candidate.freshness[side].status === "unknown");
               const selected = applicable.length ? applicable : candidates;
-              const resultKeys = new Set(applicable.map((candidate) => assessmentResultDigest(candidate.entry.report, side)));
-              const conflict = resultKeys.size > 1;
+              const reports = applicable.map((candidate) => candidate.entry.report);
+              const conflict = side === "current" ? currentAssessmentsConflict(reports) : new Set(reports.map(report =>
+                digest({ assessment: report.assessment.change, observed: report.observed, checks: report.checks, findings: report.findings }))).size > 1;
               const verdicts = [...new Set(applicable.map((candidate) => candidate.entry.report.assessment[side].verdict))];
               const coverage = combineCoverage(selected.flatMap((candidate) =>
                 [candidate.entry.report.analysis.coverage, candidate.freshness[side].coverage]));
@@ -4060,17 +4078,49 @@ publication:
 review_status:
   self:
     current:
-      status: fresh
-      reasons: []
-      verdict: violation
-      verdicts:
-        - violation
+      status: stale
+      reasons:
+        - code: own_code
+        - code: own_contract
+        - code: own_code
+        - code: own_contract
+        - code: own_code
+        - code: own_contract
+        - code: own_code
+        - code: own_contract
+        - code: own_code
+        - code: own_contract
+      verdict: null
+      verdicts: []
       review_ids:
+        - review-4da79e89-d30a-4e6f-884c-62812521daf7
+        - review-46b7a4ea-c7c9-4eac-8a53-ee66c5e9306a
+        - review-4d7d718f-293b-409a-a9d7-b1e851c3b261
+        - review-6fe4e919-62a3-4224-99c2-6029a0736d10
         - review-901d790d-62f0-4093-b738-7aa3c04f586e
       conflict: false
       coverage:
         status: partial
         limitations:
+          - Просмотрены владельцы типов, расчётов и валидации ядра и импорты
+            модулей. Проверены 35 тестов модели и публикации. Полнота перечня
+            внешних зависимостей и всех исторических форматов не
+            устанавливалась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходники и граф импортов восьми каталогов, девять наборов
+            тестов ядра, всего 84 сценария. Внешний процесс/носитель и
+            универсальная полнота зависимостей не проверены. Замечание к
+            восстановлению двух конкурирующих процессов относится к storage, а
+            не к данному модулю.
+          - Проведены статический анализ, контрольный расчёт статуса в памяти и
+            34 штатных теста модели. Проверка расхождения ID основана на коде
+            пути преобразования review-input. Полнота транзитивных зависимостей
+            не устанавливалась.
+          - Проверены сохранённый исходный код, расчёт статусов в памяти и
+            регрессии модели. Связи со всеми внешними потребителями не
+            перечислялись исчерпывающе.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -4085,24 +4135,86 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
-      current_violation: true
+          - code: dependency_tracking_disabled
+      current_violation: false
     change:
-      status: fresh
-      reasons: []
-      verdict: consistent
-      verdicts:
-        - consistent
+      status: stale
+      reasons:
+        - code: own_code
+        - code: own_contract
+        - code: baseline_identity
+        - code: module_existence
+          side: baseline
+        - code: module_path
+          side: baseline
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
+        - code: child_composition
+          side: baseline
+        - code: own_code
+        - code: own_contract
+        - code: baseline_identity
+        - code: module_existence
+          side: baseline
+        - code: module_path
+          side: baseline
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
+        - code: child_composition
+          side: baseline
+        - code: own_code
+        - code: own_contract
+        - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
+        - code: own_code
+        - code: own_contract
+        - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
+        - code: own_code
+        - code: own_contract
+        - code: baseline_identity
+      verdict: null
+      verdicts: []
       review_ids:
+        - review-4da79e89-d30a-4e6f-884c-62812521daf7
+        - review-46b7a4ea-c7c9-4eac-8a53-ee66c5e9306a
+        - review-4d7d718f-293b-409a-a9d7-b1e851c3b261
+        - review-6fe4e919-62a3-4224-99c2-6029a0736d10
         - review-901d790d-62f0-4093-b738-7aa3c04f586e
       conflict: false
       coverage:
         status: partial
         limitations:
+          - Просмотрены владельцы типов, расчётов и валидации ядра и импорты
+            модулей. Проверены 35 тестов модели и публикации. Полнота перечня
+            внешних зависимостей и всех исторических форматов не
+            устанавливалась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходники и граф импортов восьми каталогов, девять наборов
+            тестов ядра, всего 84 сценария. Внешний процесс/носитель и
+            универсальная полнота зависимостей не проверены. Замечание к
+            восстановлению двух конкурирующих процессов относится к storage, а
+            не к данному модулю.
+          - Проведены статический анализ, контрольный расчёт статуса в памяти и
+            34 штатных теста модели. Проверка расхождения ID основана на коде
+            пути преобразования review-input. Полнота транзитивных зависимостей
+            не устанавливалась.
+          - Проверены сохранённый исходный код, расчёт статусов в памяти и
+            регрессии модели. Связи со всеми внешними потребителями не
+            перечислялись исчерпывающе.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -4117,17 +4229,33 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
       current_violation: false
     conflict: false
     coverage:
       current:
         status: partial
         limitations:
+          - Просмотрены владельцы типов, расчётов и валидации ядра и импорты
+            модулей. Проверены 35 тестов модели и публикации. Полнота перечня
+            внешних зависимостей и всех исторических форматов не
+            устанавливалась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходники и граф импортов восьми каталогов, девять наборов
+            тестов ядра, всего 84 сценария. Внешний процесс/носитель и
+            универсальная полнота зависимостей не проверены. Замечание к
+            восстановлению двух конкурирующих процессов относится к storage, а
+            не к данному модулю.
+          - Проведены статический анализ, контрольный расчёт статуса в памяти и
+            34 штатных теста модели. Проверка расхождения ID основана на коде
+            пути преобразования review-input. Полнота транзитивных зависимостей
+            не устанавливалась.
+          - Проверены сохранённый исходный код, расчёт статусов в памяти и
+            регрессии модели. Связи со всеми внешними потребителями не
+            перечислялись исчерпывающе.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -4142,14 +4270,30 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
       change:
         status: partial
         limitations:
+          - Просмотрены владельцы типов, расчётов и валидации ядра и импорты
+            модулей. Проверены 35 тестов модели и публикации. Полнота перечня
+            внешних зависимостей и всех исторических форматов не
+            устанавливалась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходники и граф импортов восьми каталогов, девять наборов
+            тестов ядра, всего 84 сценария. Внешний процесс/носитель и
+            универсальная полнота зависимостей не проверены. Замечание к
+            восстановлению двух конкурирующих процессов относится к storage, а
+            не к данному модулю.
+          - Проведены статический анализ, контрольный расчёт статуса в памяти и
+            34 штатных теста модели. Проверка расхождения ID основана на коде
+            пути преобразования review-input. Полнота транзитивных зависимостей
+            не устанавливалась.
+          - Проверены сохранённый исходный код, расчёт статусов в памяти и
+            регрессии модели. Связи со всеми внешними потребителями не
+            перечислялись исчерпывающе.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -4164,48 +4308,14 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
   subtree:
     current:
-      status: fresh
+      status: stale
       counts:
-        fresh: 1
-        stale: 0
-        unknown: 0
-        not_reviewed: 0
-      conflict: false
-      current_violation: true
-      coverage:
-        status: partial
-        limitations:
-          - Прочитан весь собственный код и проверен каждый собственный пункт;
-            полнота внешних зависимостей не доказана, dependency_coverage
-            сохранён unknown.
-          - Семантическая проверка выполнена чтением кода и сохранённых фактов;
-            исчерпывающая проверка всех динамических режимов и живых хостов не
-            выполнялась.
-          - "Проверены непосредственная связь с architecture-core и полная
-            цепочка architecture-change-view/architecture-core: контракт,
-            реализация, роли и применимые границы; подробные доказательства в
-            boundary_core.json. Полнота внешних зависимостей остаётся
-            неизвестной."
-          - "Дополнительная проверка main: typecheck pass; общая suite 250
-            pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
-            Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
-        reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
-    change:
-      status: fresh
-      counts:
-        fresh: 1
-        stale: 0
+        fresh: 0
+        stale: 1
         unknown: 0
         not_reviewed: 0
       conflict: false
@@ -4213,6 +4323,25 @@ review_status:
       coverage:
         status: partial
         limitations:
+          - Просмотрены владельцы типов, расчётов и валидации ядра и импорты
+            модулей. Проверены 35 тестов модели и публикации. Полнота перечня
+            внешних зависимостей и всех исторических форматов не
+            устанавливалась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходники и граф импортов восьми каталогов, девять наборов
+            тестов ядра, всего 84 сценария. Внешний процесс/носитель и
+            универсальная полнота зависимостей не проверены. Замечание к
+            восстановлению двух конкурирующих процессов относится к storage, а
+            не к данному модулю.
+          - Проведены статический анализ, контрольный расчёт статуса в памяти и
+            34 штатных теста модели. Проверка расхождения ID основана на коде
+            пути преобразования review-input. Полнота транзитивных зависимостей
+            не устанавливалась.
+          - Проверены сохранённый исходный код, расчёт статусов в памяти и
+            регрессии модели. Связи со всеми внешними потребителями не
+            перечислялись исчерпывающе.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -4227,11 +4356,55 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
+    change:
+      status: stale
+      counts:
+        fresh: 0
+        stale: 1
+        unknown: 0
+        not_reviewed: 0
+      conflict: false
+      current_violation: false
+      coverage:
+        status: partial
+        limitations:
+          - Просмотрены владельцы типов, расчётов и валидации ядра и импорты
+            модулей. Проверены 35 тестов модели и публикации. Полнота перечня
+            внешних зависимостей и всех исторических форматов не
+            устанавливалась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходники и граф импортов восьми каталогов, девять наборов
+            тестов ядра, всего 84 сценария. Внешний процесс/носитель и
+            универсальная полнота зависимостей не проверены. Замечание к
+            восстановлению двух конкурирующих процессов относится к storage, а
+            не к данному модулю.
+          - Проведены статический анализ, контрольный расчёт статуса в памяти и
+            34 штатных теста модели. Проверка расхождения ID основана на коде
+            пути преобразования review-input. Полнота транзитивных зависимостей
+            не устанавливалась.
+          - Проверены сохранённый исходный код, расчёт статусов в памяти и
+            регрессии модели. Связи со всеми внешними потребителями не
+            перечислялись исчерпывающе.
+          - Полнота перечня внешних зависимостей не подтверждена.
+          - Прочитан весь собственный код и проверен каждый собственный пункт;
+            полнота внешних зависимостей не доказана, dependency_coverage
+            сохранён unknown.
+          - Семантическая проверка выполнена чтением кода и сохранённых фактов;
+            исчерпывающая проверка всех динамических режимов и живых хостов не
+            выполнялась.
+          - "Проверены непосредственная связь с architecture-core и полная
+            цепочка architecture-change-view/architecture-core: контракт,
+            реализация, роли и применимые границы; подробные доказательства в
+            boundary_core.json. Полнота внешних зависимостей остаётся
+            неизвестной."
+          - "Дополнительная проверка main: typecheck pass; общая suite 250
+            pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
+            Chrome. Живой native Codex loader не проверен."
+        reasons:
+          - code: dependency_tracking_disabled
   explicit_subtree:
     current:
       current_violation: false

@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-reviews
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 9a8affcfd2177b7c6bcba8386a419f3af2ae895829f8f2733e45167bc4455d28
+check_hash: 3f3e0f8a5f5b1c2ad398c23ac1470b8d501b5723dc04f80127f0218672e86685
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,7 +10,7 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      id: b23283774c6463600f966355f5329f9f7684aacb
     state:
       exists: true
       directory: src/reviews
@@ -631,19 +631,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 214
-  comparison_key: sha256:d0d5058c2141c6691e994832d1dc4abb354d36b724779e8f140fc4c7b74669c0
+  generation: 221
+  comparison_key: sha256:53c5f0a3dced021795ded81c760ea2e2bb6057b0e82e4b2e0ec70f878b98c9e0
   baseline:
     metadata:
-      id: git-771efbf7a9efe9e9a863aa96537652f133bfd463
-      digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      id: git-b23283774c6463600f966355f5329f9f7684aacb
+      digest: sha256:ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T04:04:52.749Z
+      capturedAt: 2026-11-12T07:56:44.960Z
       kind: git
-      revision: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      revision: b23283774c6463600f966355f5329f9f7684aacb
       label: HEAD
-      fingerprint: 4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+      fingerprint: ba10bb733fada7376b4433ba75d4ed45c1d0157dae53a16b26da608173dfec87
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -1238,14 +1238,14 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/reviews/bundle.ts","src/reviews/schema.ts","src/reviews/types.ts"]}'
   current:
     metadata:
-      id: working-ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
-      digest: sha256:ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
+      id: working-af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
+      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T07:11:32.874Z
+      capturedAt: 2026-11-12T07:56:47.009Z
       kind: working
       label: Рабочее дерево
-      fingerprint: ba10bb733fada7376b4433ba75d4ed45c1d0157dae53a16b26da608173dfec87
+      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -1865,24 +1865,49 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
       current_violation: false
     change:
-      status: fresh
-      reasons: []
-      verdict: consistent
-      verdicts:
-        - consistent
+      status: stale
+      reasons:
+        - code: own_code
+        - code: own_contract
+        - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
+        - code: own_code
+        - code: own_contract
+        - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
+        - code: baseline_identity
+      verdict: null
+      verdicts: []
       review_ids:
+        - review-dd19adff-aa9e-4d2c-85f1-c003d6584081
+        - review-e281e226-92cf-47ab-81fc-a39c62aefb05
         - review-c0c88b26-ee06-4e92-b541-affee1191d0c
       conflict: false
       coverage:
         status: partial
         limitations:
+          - Проверены код и семантика импорта прежнего формата. Семь штатных
+            тестов formats-reviews прошли. Приём строки вне области заключён из
+            кода валидатора. Полнота всех зависимостей последующего
+            использования отчёта не установлена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены обе области чеклиста и формат прежнего пакета.
+            Сопутствующие ссылки замечаний на связанные модули остаются
+            отдельной частью формата.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -1897,11 +1922,8 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
       current_violation: false
     conflict: false
     coverage:
@@ -1922,14 +1944,23 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
       change:
         status: partial
         limitations:
+          - Проверены код и семантика импорта прежнего формата. Семь штатных
+            тестов formats-reviews прошли. Приём строки вне области заключён из
+            кода валидатора. Полнота всех зависимостей последующего
+            использования отчёта не установлена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены обе области чеклиста и формат прежнего пакета.
+            Сопутствующие ссылки замечаний на связанные модули остаются
+            отдельной частью формата.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -1944,11 +1975,8 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
   subtree:
     current:
       status: fresh
@@ -1976,16 +2004,15 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
     change:
-      status: fresh
+      status: stale
       counts:
-        fresh: 1
-        stale: 0
+        fresh: 0
+        stale: 1
         unknown: 0
         not_reviewed: 0
       conflict: false
@@ -1993,6 +2020,16 @@ review_status:
       coverage:
         status: partial
         limitations:
+          - Проверены код и семантика импорта прежнего формата. Семь штатных
+            тестов formats-reviews прошли. Приём строки вне области заключён из
+            кода валидатора. Полнота всех зависимостей последующего
+            использования отчёта не установлена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены обе области чеклиста и формат прежнего пакета.
+            Сопутствующие ссылки замечаний на связанные модули остаются
+            отдельной частью формата.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -2007,11 +2044,8 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
   explicit_subtree:
     current:
       current_violation: false

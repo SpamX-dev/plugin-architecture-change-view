@@ -175,9 +175,13 @@ export class ReportStore {
       if (!state.rawArchi.has(report.check_hash + "/" + report.module_id)) await this.#rawArchi(report);
     }
     state.reports = [...old.values()];
-    // Не меняем файлы и время публикации, если входы, история и диагностика прежние.
+    const statuses = model.aggregateTreeStatuses(state.entries);
+    const statusesChanged = state.reports.some(report => statuses.has(report.module_id) &&
+      canonical(report.review_status) !== canonical(statuses.get(report.module_id)));
+    // Пересчитываем производные статусы и после изменения правил актуальности.
+    // Не меняем файлы и время публикации, если все вычисленные данные прежние.
     // Чтение под lock всё равно обнаруживает внешние импорты и повреждения work/raw.
-    if (technicalChanged || state.publishedEntries !== digest(state.entries) ||
+    if (technicalChanged || statusesChanged || state.publishedEntries !== digest(state.entries) ||
         state.publishedDiagnostics !== digest([...new Set(state.diagnostics)])) await this.#publish(state);
     const result = this.#result(state);
     return {...result, comparison: state.comparison!, statuses: state.entries.map((entry) => ({ module_id: entry.module_id, review_id: entry.review_id, ...model.reviewFreshness(entry) }))};

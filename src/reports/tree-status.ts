@@ -1,25 +1,33 @@
 import type { SnapshotData } from "../snapshots/types.js";
 import type { AssessmentSide, ReviewReport } from "../reviews/types.js";
 import type { ReviewEntry, ReviewFreshness, AggregateAssessment, ReviewStatus, TreeReviewStatus } from "./types.js";
-import { digest } from "../serialization/digest.js";
+import { canonical, digest } from "../serialization/digest.js";
 import { ModuleStateContext } from "./module-state.js";
 import { isSemanticReview, validateReviewRelations } from "./review-identity.js";
 import { combineCoverage, freshness as assessFreshness } from "./freshness.js";
 
-/** Другая база/оценка изменения не создаёт ложный конфликт current-выводов. */
-function assessmentResultDigest(report: ReviewReport, side: AssessmentSide) {
-  const assessment = report.assessment[side];
-  if (side === "change") return digest({ assessment, observed: report.observed, checks: report.checks, findings: report.findings });
-
-  const current = (reference: { snapshot: string }) => reference.snapshot === "current";
-  const observation = report.observed.current;
-  const observed = observation && { ...observation, responsibilities: observation.responsibilities.map((item) =>
-    ({ ...item, evidence: item.evidence.filter(current) })) };
-  const checks = report.checks.filter((check) => check.subject === "current" && current(check.contract))
-    .map(({ id, evidence, ...check }) => ({ ...check, evidence: evidence.filter(current) }));
-  const findings = report.findings.filter((finding) => finding.lifecycle !== "resolved" && finding.evidence.some(current))
-    .map(({ id, lifecycle, clauses, evidence, ...finding }) => ({ ...finding, clauses: clauses.filter(current), evidence: evidence.filter(current) }));
-  return digest({ assessment, observed, checks, findings });
+/** Разные формулировки и непроверенные пункты не противоречат подтверждённому выводу. */
+function currentAssessmentsConflict(reports: ReviewReport[]) {
+  const assertions = new Map<string, string>();
+  const record = (key: string, verdict: string) => {
+    const previous = assertions.get(key);
+    assertions.set(key, verdict);
+    return previous !== undefined && previous !== verdict;
+  };
+  const definite = (verdict: string) => ["consistent", "violation", "not_applicable"].includes(verdict);
+  for (const report of reports) {
+    const assessment = report.assessment.current.verdict;
+    if (definite(assessment) && record("assessment", assessment)) return true;
+    for (const check of report.checks) {
+      if (check.subject !== "current" || check.contract.snapshot !== "current" || !definite(check.verdict)) continue;
+      if (record("check:" + canonical(check.contract), check.verdict)) return true;
+    }
+    for (const finding of report.findings) {
+      if (finding.kind === "contract_change" || !finding.evidence.some(ref => ref.snapshot === "current")) continue;
+      if (record("finding:" + finding.id, finding.lifecycle === "resolved" ? "resolved" : "open")) return true;
+    }
+  }
+  return false;
 }
 
 /** Статус сохраняет все применимые попытки, включая несовпадающие выводы. */
@@ -29,8 +37,9 @@ function aggregateAssessment(candidates: {entry:ReviewEntry;freshness:ReviewFres
   const fresh = candidates.filter((candidate) => candidate.freshness[side].status === "fresh");
   const applicable = fresh.length ? fresh : candidates.filter((candidate) => candidate.freshness[side].status === "unknown");
   const selected = applicable.length ? applicable : candidates;
-  const resultKeys = new Set(applicable.map((candidate) => assessmentResultDigest(candidate.entry.report, side)));
-  const conflict = resultKeys.size > 1;
+  const reports = applicable.map((candidate) => candidate.entry.report);
+  const conflict = side === "current" ? currentAssessmentsConflict(reports) : new Set(reports.map(report =>
+    digest({ assessment: report.assessment.change, observed: report.observed, checks: report.checks, findings: report.findings }))).size > 1;
   const verdicts = [...new Set(applicable.map((candidate) => candidate.entry.report.assessment[side].verdict))];
   const coverage = combineCoverage(selected.flatMap((candidate) =>
     [candidate.entry.report.analysis.coverage, candidate.freshness[side].coverage]));

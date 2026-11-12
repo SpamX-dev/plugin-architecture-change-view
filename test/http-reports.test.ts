@@ -226,8 +226,7 @@ test("HTTP keeps parent self fresh while changed child invalidates subtree and p
   assert.equal(parent!.reviewStatus!.subtree.current.status, "stale");
   assert.equal(child!.reviewStatus!.self.current.status, "stale");
   const parentDetail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: changed.id, path: "." }))).json() as Promise<ModuleResponse>);
-  assert.equal(parentDetail.reviews[0].dependencies[0].contractOnly, true);
-  assert.equal(parentDetail.reviews[0].dependencies[0].providerStatus!.status, "stale");
+  assert.deepEqual(parentDetail.reviews[0].dependencies, []);
   const detail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: changed.id, path: "child" }))).json() as Promise<ModuleResponse>);
   assert.equal(detail.reviews[0].freshness.current.status, "stale");
   assert.ok(detail.reviews[0].facts.current.every((fact) => !fact.text.includes("value = 2")));
@@ -256,7 +255,7 @@ test("HTTP exposes matching inputs and dependency coverage independently without
   assert.equal(child!.reviewStatus!.self.current.current_violation, true);
   const detail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: "child" }))).json() as Promise<ModuleResponse>);
   assert.equal(detail.reviews[0].freshness.current.status, "fresh");
-  assert.ok(detail.reviews[0].freshness.current.coverage.reasons!.some((reason) => reason.code === "dependency_coverage_unknown"));
+  assert.ok(detail.reviews[0].freshness.current.coverage.reasons!.some((reason) => reason.code === "dependency_tracking_disabled"));
   assert.deepEqual(detail.reviews[0].report, review.report);
   await writeFile(path.join(root, "child/code.js"), "export const value = 2;\n");
   const changed = await ((await fetch(app.url + "/api/comparison?baseline=initial")).json() as Promise<ComparisonResponse>);

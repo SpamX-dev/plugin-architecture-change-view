@@ -104,6 +104,31 @@ function legacyReview(baseline: Snapshot | null, current: Snapshot, module: Comp
   return bundle;
 }
 
+test("unchanged rebuild replaces obsolete derived review statuses without rewriting attempts", async (t) => {
+  const { root, store, snapshotStore, baseline, current, comparison } = await fixture(t);
+  await store.rebuild(baseline, current, comparison.modules);
+  await store.saveReview(nativeReview(snapshotStore, baseline, current));
+  const technicalFile = path.join(store.work, moduleReportName("child") + ".archi.yaml");
+  const reviewFile = path.join(store.work, moduleReportName("child") + ".review.yaml");
+  const proof = await readFile(reviewFile, "utf8");
+  const previous = parseReportYaml<TechnicalReport>(await readFile(technicalFile, "utf8"));
+  previous.review_status!.self.current.status = "stale";
+  previous.review_status!.self.current.reasons = [{ code: "dependency_input" }];
+  await writeFile(technicalFile, stringify(previous, { aliasDuplicateObjects: false }));
+  await store.rebuild(baseline, current, comparison.modules);
+  const published = await createPublishedView({ root });
+  const status = published!.comparison.modules.find(module => module.moduleId === "child")!.reviewStatus!.self.current;
+  assert.equal(status.status, "fresh");
+  assert.deepEqual(status.reasons, []);
+  assert.ok(status.coverage.reasons!.some(reason => reason.code === "dependency_tracking_disabled"));
+  assert.equal(await readFile(reviewFile, "utf8"), proof);
+  const stable = await readFile(technicalFile, "utf8");
+  const work = await stat(store.work, { bigint: true });
+  await store.rebuild(baseline, current, comparison.modules);
+  assert.equal(await readFile(technicalFile, "utf8"), stable);
+  assert.equal((await stat(store.work, { bigint: true })).mtimeNs, work.mtimeNs);
+});
+
 test("publishes exact baseline/current snapshots and technical reports without LLM attempts", async (t) => {
   const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
   const result = await store.rebuild(baseline, current, comparison.modules);

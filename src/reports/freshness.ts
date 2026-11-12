@@ -27,7 +27,6 @@ function inputDifferences(previous: ReviewState | null, current: ReviewState | n
   changed("inherited", "inherited_constraints");
   changed("children", "child_composition");
   if (canonical(previous?.subtree ?? null) !== canonical(current?.subtree ?? null)) reasons.push({ code: "subtree_inputs" });
-  if (canonical(previous?.dependencies ?? []) !== canonical(current?.dependencies ?? [])) reasons.push({ code: "dependency_input" });
   return reasons;
 }
 
@@ -47,24 +46,14 @@ export function combineCoverage(values: Coverage[]): Coverage {
 }
 
 /**
- * Сравнивает только проверяемые сохранённые входы. Неизвестная полнота списка
- * зависимостей относится к coverage; unknown остаётся для входов, которые
- * действительно невозможно сопоставить. Известное изменение сохраняет stale.
+ * Сравнивает собственные входы и явно выбранное поддерево. Зависимости из LLM-
+ * отчётов сохраняются как происхождение доказательств, но не отслеживаются.
  */
 function inputFreshness(previous: ReviewState | null, current: ReviewState | null): Freshness {
   const reasons = inputDifferences(previous, current);
   const unknown = [];
-  const limitations = [];
-  const coverageReasons = [];
-  if (previous?.dependency_coverage?.status !== "complete") {
-    coverageReasons.push({ code: "dependency_coverage_unknown",
-      potential_influence: structuredClone(previous?.dependency_coverage?.potential_influence ?? [{ scope: "project" }]) });
-    limitations.push("Полнота зависимостей не подтверждена.");
-  }
-  if (previous?.dependencies.some((input) => !input.available) || current?.dependencies.some((input) => !input.available)) {
-    unknown.push({ code: "dependency_unresolved" });
-    limitations.push("Часть объявленных зависимостей недоступна для сравнения.");
-  }
+  const limitations = ["Отслеживание зависимостей LLM отключено; зависимости через AST пока не определяются."];
+  const coverageReasons = [{ code: "dependency_tracking_disabled" }];
   if (!previous?.complete || !current?.complete) unknown.push({ code: "input_coverage_incomplete" });
   if (!previous?.complete || !current?.complete) limitations.push("Сохранённые или текущие входные данные неполны.");
   return { status: reasons.length ? "stale" : unknown.length ? "unknown" : "fresh", reasons: [...reasons, ...unknown],
@@ -74,7 +63,7 @@ function inputFreshness(previous: ReviewState | null, current: ReviewState | nul
 /**
  * Сохранённый формат own содержит контекст детей для доказательств и валидации.
  * При сравнении локального анализа он не становится входом родителя: проверяются
- * собственный код, контракт и явно использованные зависимости. История не меняется.
+ * собственный код и контракт. История не меняется.
  */
 function localInput(input: ReviewState | null, snapshot: SnapshotData | null): ReviewState | null {
   if (!input) return null;
@@ -90,8 +79,7 @@ export function freshness(entry: ReviewEntry, baseline: SnapshotData | null, cur
       coverage: { status: "unavailable", limitations: ["Нет проверяемого описания входов прежнего анализа."] } };
     return { current: structuredClone(unavailable), change: structuredClone(unavailable) };
   }
-  const selectors = (entry.inputs.current.dependencies ?? []).map((dependency) => dependency.selector);
-  const options = { scope: entry.inputs.scope, dependencies: selectors,
+  const options = { scope: entry.inputs.scope, dependencies: [],
     dependencyCoverage: entry.inputs.current.dependency_coverage, contractScope: entry.inputs.contract_scope ?? "effective" };
   const actual = createInputs(baseline, current, entry.module_id, options, isSemanticReview(entry), context);
   const local = entry.inputs.contract_scope === "own" && entry.inputs.scope === "self";

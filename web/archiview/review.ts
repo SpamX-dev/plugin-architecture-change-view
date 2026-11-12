@@ -177,15 +177,6 @@ export function renderReview(panel: HTMLElement, detail: ModuleDetail, mode: str
       limitation === "Полнота зависимостей не подтверждена." ? "Не установлено, учтены ли все зависимости." : limitation));
     coverage.append(list); overview.append(coverage);
     body.append(reviewOrigin(bundle));
-    if (bundle.dependencies?.length) {
-      const dependencies = el("details", "coverage-note compact-note"), items = el("ul");
-      dependencies.append(el("summary", "", "Зависимости · " + bundle.dependencies.length));
-      for (const dependency of bundle.dependencies) items.append(el("li", "",
-        (dependency.selector.module_id ?? dependency.selector.path) + " · " +
-        (dependency.contractOnly ? "контракт/API · проверка поставщика: " + freshnessLabel(dependency.providerStatus) : "реализация") +
-        (!dependency.available ? " · недоступна" : "")));
-      dependencies.append(items); body.append(dependencies);
-    }
     if (mode === "findings") {
       const findings = reviewFindingItems(bundle);
       if (!findings.length) body.append(el("p", "empty-clauses", "Замечаний нет."));

@@ -1,4 +1,4 @@
-import type { DependencySelector, ReviewInput } from "../reports/types.js";
+import type { ReviewInput } from "../reports/types.js";
 /**
  * CLI локального просмотра, построения переносимых отчётов и обмена входами
  * с агентом. Проверка индекса читает staged-набор, остальные операции сохраняют
@@ -42,12 +42,14 @@ export async function runCli(prepareWeb?: () => Promise<void>) {
     output: { type: "string" }, dependencies: { type: "string" },
     "dependencies-complete": { type: "boolean" },
   } });
+  if (!values.help && (values.dependencies !== undefined || values["dependencies-complete"]))
+    throw new Error("Сбор зависимостей через LLM отключён; определение через AST не подключено.");
   if (values.help) {
     process.stdout.write("ArchiView — archiview [--root DIR] [--port 4317] [--state-dir DIR]\n" +
       "  --build-report                       Построить и уплотнить отчёты без сервера\n" +
       "  --import-review FILE_OR_BUNDLE       Импортировать YAML review или прежний пакет\n" +
       "  --complete-analysis REQUEST_ID       Проверить и импортировать result.yaml запроса панели\n" +
-      "  --prepare-analysis REQUEST_ID [--dependencies FILE] [--dependencies-complete]\n" +
+      "  --prepare-analysis REQUEST_ID        Повторить экспорт исходного снимка без зависимостей\n" +
       "  --export-review-input MODULE_ID --output FILE [--dependencies FILE] [--dependencies-complete]\n" +
       "  --check-index                        Проверить код и отчёты в подготовленном индексе Git\n");
   } else if (values["check-index"]) {
@@ -68,8 +70,7 @@ export async function runCli(prepareWeb?: () => Promise<void>) {
       process.stdout.write("Analysis imported: " + result.reviewId + "\n");
     }
     if (values["prepare-analysis"]) {
-      const dependencies = values.dependencies ? parseYaml(await readFile(values.dependencies, "utf8"), (value) => { if (!Array.isArray(value)) throw new Error("Dependencies must be a YAML sequence"); return value as DependencySelector[]; }) : [];
-      const file = await analysis.prepare(values["prepare-analysis"], dependencies, Boolean(values["dependencies-complete"]));
+      const file = await analysis.prepare(values["prepare-analysis"], []);
       process.stdout.write("Analysis input exported: " + file + "\n");
     }
     if (values["import-review"]) {
@@ -89,15 +90,8 @@ export async function runCli(prepareWeb?: () => Promise<void>) {
       if (!values.output) throw new Error("--export-review-input requires --output");
       const comparison = await reports.publishedComparison();
       if (!comparison) throw new Error("No complete published comparison");
-      const dependencies = values.dependencies ? parseYaml(await readFile(values.dependencies, "utf8"), (data) => {
-        if (!Array.isArray(data)) throw new Error("Dependencies must be a YAML sequence");
-        return data;
-      }) : [];
       const input = createReviewInput(digest(store.snapshotRoot), comparison.baseline, comparison.current,
-        values["export-review-input"], { dependencies, dependencyCoverage: {
-          status: values["dependencies-complete"] ? "complete" : "unknown",
-          potential_influence: values["dependencies-complete"] ? [] : [{ scope: "project" }],
-        } });
+        values["export-review-input"]);
       await writeFile(values.output, stringify(input, { aliasDuplicateObjects: false }), { flag: "wx" });
       process.stdout.write("Review input exported: " + values.output + "\n");
     }

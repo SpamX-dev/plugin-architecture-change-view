@@ -41,16 +41,6 @@ function referencedContracts(bundle: ReviewEntry) {
   return { baseline: clauses("baseline"), current: clauses("current") };
 }
 
-/** Контракт зависимости задаёт предпосылку; он не подтверждает проверенность поставщика. */
-function dependencyAssumptions(entry: ReviewEntry, modules: SessionView["modules"]) {
-  return (entry.inputs?.current.dependencies ?? []).map(({ selector, available }) => {
-    const provider = selector.module_id ? modules.find((module) => module.moduleId === selector.module_id) :
-      modules.find((module) => module.after?.files.some((file) => file.path === selector.path));
-    return { selector, available, contractOnly: ["contract", "api"].includes(selector.kind),
-      providerStatus: provider?.reviewStatus?.self.current ?? null };
-  });
-}
-
 /** Разбивает разницу на строки с координатами прежнего и текущего документов. */
 function documentDiff(before?: string | null, after?: string | null) {
   let oldLine = 1;
@@ -90,7 +80,7 @@ export function reviewSummary(matching: ReviewEntry[], model: ReportModel) {
 }
 
 export function moduleDetail(module: SessionView["modules"][number], matching: ReviewEntry[], model: ReportModel,
-  modules: SessionView["modules"], root: string, work: string): ModuleDetail {
+  _modules: SessionView["modules"], root: string, work: string): ModuleDetail {
   return structuredClone({ ...module, reviews: matching.map((bundle) => ({
     report: bundle.report, stale: model.reviewFreshness(bundle).current.status !== "fresh",
     // Путь берётся из фактического хранилища, включая явно заданное внешнее.
@@ -98,7 +88,7 @@ export function moduleDetail(module: SessionView["modules"][number], matching: R
     reviewFile: path.relative(root, path.join(work,
       moduleReportName(bundle.module_id) + ".review.yaml")).split(path.sep).join("/"),
     freshness: model.reviewFreshness(bundle),
-    dependencies: dependencyAssumptions(bundle, modules),
+    dependencies: [],
     facts: evidenceForReport(bundle),
     contracts: bundle.manifest.contracts,
     referencedContracts: referencedContracts(bundle),

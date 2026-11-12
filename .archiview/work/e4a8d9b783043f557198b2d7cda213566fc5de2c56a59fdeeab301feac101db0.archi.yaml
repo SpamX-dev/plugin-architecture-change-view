@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-node-runtime
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: e3ae94136b4181352e99a68ebd322dafdb32c55b5be9442268874f997d926ff0
+check_hash: 3315f0e2bee9561369ca780b2df5e9152e3d900721ebdd9a964cd8dc1c5f94f3
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,7 +10,7 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      id: b23283774c6463600f966355f5329f9f7684aacb
     state:
       exists: true
       directory: src/runtime
@@ -601,19 +601,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 214
-  comparison_key: sha256:d0d5058c2141c6691e994832d1dc4abb354d36b724779e8f140fc4c7b74669c0
+  generation: 221
+  comparison_key: sha256:53c5f0a3dced021795ded81c760ea2e2bb6057b0e82e4b2e0ec70f878b98c9e0
   baseline:
     metadata:
-      id: git-771efbf7a9efe9e9a863aa96537652f133bfd463
-      digest: sha256:09dcf64999e9acf41c913c125fa356dcf116a8fafb8fde32f94bdaa86e484b95
+      id: git-b23283774c6463600f966355f5329f9f7684aacb
+      digest: sha256:ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T04:04:52.749Z
+      capturedAt: 2026-11-12T07:56:44.960Z
       kind: git
-      revision: 771efbf7a9efe9e9a863aa96537652f133bfd463
+      revision: b23283774c6463600f966355f5329f9f7684aacb
       label: HEAD
-      fingerprint: 4f5cdf60b43e709e85f9674890262ca8148e4edd2eece8ea95ad828e97731d11
+      fingerprint: ba10bb733fada7376b4433ba75d4ed45c1d0157dae53a16b26da608173dfec87
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -777,14 +777,14 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/runtime/errors.ts","src/runtime/package-paths.ts"]}'
   current:
     metadata:
-      id: working-ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
-      digest: sha256:ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
+      id: working-af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
+      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T07:11:32.874Z
+      capturedAt: 2026-11-12T07:56:47.009Z
       kind: working
       label: Рабочее дерево
-      fingerprint: ba10bb733fada7376b4433ba75d4ed45c1d0157dae53a16b26da608173dfec87
+      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -973,24 +973,41 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
       current_violation: false
     change:
-      status: fresh
-      reasons: []
-      verdict: consistent
-      verdicts:
-        - consistent
+      status: stale
+      reasons:
+        - code: own_code
+        - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: own_code
+        - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: baseline_identity
+      verdict: null
+      verdicts: []
       review_ids:
+        - review-59ffdcc7-b2db-4853-baee-c574761ae067
+        - review-172f0533-1845-42dd-9046-cc7eacf4cd25
         - review-f8a8f2f2-ee4c-4849-b99c-58b80bac9a29
       conflict: false
       coverage:
         status: partial
         limitations:
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -1005,11 +1022,8 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
       current_violation: false
     conflict: false
     coverage:
@@ -1030,14 +1044,21 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
       change:
         status: partial
         limitations:
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -1052,11 +1073,8 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
   subtree:
     current:
       status: fresh
@@ -1084,16 +1102,15 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
     change:
-      status: fresh
+      status: stale
       counts:
-        fresh: 1
-        stale: 0
+        fresh: 0
+        stale: 1
         unknown: 0
         not_reviewed: 0
       conflict: false
@@ -1101,6 +1118,14 @@ review_status:
       coverage:
         status: partial
         limitations:
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -1115,11 +1140,8 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Полнота зависимостей не подтверждена.
         reasons:
-          - code: dependency_coverage_unknown
-            potential_influence:
-              - scope: project
+          - code: dependency_tracking_disabled
   explicit_subtree:
     current:
       current_violation: false
