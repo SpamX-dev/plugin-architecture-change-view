@@ -5,12 +5,10 @@ import type {
 } from "./types.js";
 import { errorDetails } from "../runtime/errors.js";
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 import { excludedProjectPath, projectFiles, regularProjectFile } from "../contracts/source-files.js";
-import { decodeContractText, listModuleContractPaths, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY, MODULE_TREE_FILE, readContractStorageFile } from "../contracts/module-tree.js";
+import { decodeContractText, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY, MODULE_TREE_FILE, readContractStorageFile } from "../contracts/module-tree.js";
 import { isSource, snapshotModules, type WorkingLayout } from "./module-layout.js";
 import { repositoryDirectoryOwnership } from "../project/workspace.js";
 import { digest as contentDigest } from "../serialization/digest.js";
@@ -26,7 +24,7 @@ function portable(value: string) {
 }
 
 /** Запускает только Git без оболочки, ограничивая время и объём ответа. */
-async function git(root: string, args: string[], input: string | Buffer = "", maxBytes = 16 * 1024 * 1024): Promise<Buffer> {
+export async function git(root: string, args: string[], input: string | Buffer = "", maxBytes = 16 * 1024 * 1024): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const child = spawn("git", args, { cwd: root, windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"] });
@@ -63,7 +61,17 @@ async function git(root: string, args: string[], input: string | Buffer = "", ma
   });
 }
 
-/** Определяет корень и алгоритм Git; отсутствие Git допускает файловые снимки. */
+/** Git expects C-quoted paths, separated by newlines, for --stdin-paths. */
+export async function gitFileHashes(root: string, paths: string[]) {
+  const quoted = paths.map(name => '"' + [...Buffer.from(name)].map(byte =>
+    byte < 32 || byte > 126 || byte === 34 || byte === 92
+      ? "\\" + byte.toString(8).padStart(3, "0") : String.fromCharCode(byte)).join("") + '"');
+  const hashes = (await git(root, ["hash-object", "--stdin-paths"], quoted.join("\n") + "\n")).toString().trim().split("\n");
+  if (hashes.length !== paths.length) throw new Error("Incomplete Git file hashes");
+  return hashes;
+}
+
+/** Определяет физический корень рабочего дерева Git. */
 async function gitInfo(root: string) {
   let repository;
   try {
@@ -72,27 +80,12 @@ async function gitInfo(root: string) {
     if (error.code === "ENOENT" || error.message.includes("not a git repository")) return null;
     throw error;
   }
-  const algorithm = (await git(root, ["rev-parse", "--show-object-format"]))
-    .toString().trim();
-  return { repository: await realpath(repository), algorithm };
+  return { repository: await realpath(repository) };
 }
 
-/** Вычисляет blob-отпечаток вне Git, не загружая крупные исходники в память. */
-async function fileHash(file: string) {
-  const before = await lstat(file);
-  const hash = createHash("sha1").update("blob " + before.size + "\0");
-  for await (const chunk of createReadStream(file)) hash.update(chunk);
-  const after = await lstat(file);
-  if (before.size !== after.size || before.mtimeMs !== after.mtimeMs) {
-    throw new Error("File changed while being captured");
-  }
-  return hash.digest("hex");
-}
-
-/** Hash the exact buffer retained as evidence using Git's filters when available. */
-async function capturedText(root: string, file: string, bytes: Buffer, decoded: string, inGit: boolean): Promise<FileRecord> {
-  const hash = inGit ? (await git(root, ["hash-object", "--stdin", "--path", file], bytes)).toString().trim() :
-    createHash("sha1").update("blob " + bytes.length + "\0").update(bytes).digest("hex");
+/** Hash the same bytes used as evidence, applying this path's Git filters. */
+async function capturedText(root: string, file: string, bytes: Buffer, decoded: string): Promise<FileRecord> {
+  const hash = (await git(root, ["hash-object", "--stdin", "--path", file], bytes)).toString().trim();
   return { path: file, hash, text: decoded.replace(/\r\n?/g, "\n") };
 }
 
@@ -138,6 +131,7 @@ async function assemble(root: string, records: FileRecord[], metadata: {kind:str
 export async function captureWorkingTree(projectRoot: string, options: SnapshotOptions = {}) {
   const root = await realpath(projectRoot);
   const info = await gitInfo(root);
+  if (!info) throw new Error("Для ArchiView требуется рабочее дерево Git");
   const working = { root, ownsDirectory: repositoryDirectoryOwnership(root) };
   const listed = await projectFiles(root, options.maxFiles ?? 50000, working.ownsDirectory);
   const diagnostics = [...listed.diagnostics];
@@ -150,14 +144,14 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
   // Capture only the registry and contract documents from the reserved metadata directory.
   // They belong to the source project even when report storage is configured elsewhere.
   const maxFiles = options.maxFiles ?? 50000;
-  files.push(MODULE_TREE_FILE);
-  try {
-    const contracts = await listModuleContractPaths(root);
-    const room = Math.max(0, maxFiles - (files.length - 1));
-    if (contracts.length > room) diagnostics.push("File limit reached: " + maxFiles);
-    files.push(...contracts.slice(0, room));
-  }
-  catch (cause) { diagnostics.push(MODULE_DIRECTORY + ": " + errorDetails(cause).message); }
+  const contractPaths = (await git(root, ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--",
+    MODULE_TREE_FILE, MODULE_DIRECTORY])).toString().split("\0");
+  const contracts = [...new Set(contractPaths)].filter(isContractStorage);
+  const room = Math.max(0, maxFiles - files.length);
+  const documents = contracts.filter(file => file !== MODULE_TREE_FILE);
+  if (documents.length > room) diagnostics.push("File limit reached: " + maxFiles);
+  if (contracts.includes(MODULE_TREE_FILE)) files.push(MODULE_TREE_FILE);
+  files.push(...documents.slice(0, room));
   files.sort();
   const records: FileRecord[] = [];
   const hashOnly: FileRecord[] = [];
@@ -173,7 +167,7 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
             if (bytes.length > evidenceBudget) throw new Error("Contract evidence budget exceeded");
             evidenceBudget -= bytes.length;
           }
-          return await capturedText(root, file, bytes, text, Boolean(info));
+          return await capturedText(root, file, bytes, text);
         }
         const fullPath = path.join(root, file);
         const size = (await lstat(fullPath)).size;
@@ -183,11 +177,11 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
           if (bytes.length !== size) throw new Error("File changed while being captured");
           const decoded = bytes.toString("utf8");
           if (!bytes.includes(0) && Buffer.from(decoded).equals(bytes)) {
-            return await capturedText(root, file, bytes, decoded, Boolean(info));
+            return await capturedText(root, file, bytes, decoded);
           }
         }
-        const record = { path: file, hash: info ? null : await fileHash(fullPath) };
-        if (info) hashOnly.push(record);
+        const record = { path: file, hash: null };
+        hashOnly.push(record);
         return record;
       } catch (errorCause) { const error = errorDetails(errorCause);
         diagnostics.push(file + ": " + error.message);
@@ -197,9 +191,7 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
     records.push(...batch.filter((record) => record !== null));
   }
   if (hashOnly.length) {
-    const paths = hashOnly.map((record) => JSON.stringify(record.path)).join("\n") + "\n";
-    const hashes = (await git(root, ["hash-object", "--stdin-paths"], paths)).toString().trim().split("\n");
-    if (hashes.length !== hashOnly.length) throw new Error("Incomplete Git file hashes");
+    const hashes = await gitFileHashes(root, hashOnly.map(record => record.path));
     hashOnly.forEach((record, i) => { record.hash = hashes[i]; });
   }
   const snapshotRoot = options.snapshotRoot ?? await readSnapshotRoot(root) ?? root;
@@ -248,7 +240,7 @@ export async function captureGitHead(projectRoot: string, options: SnapshotOptio
         diagnostics.push("Expected regular contract storage: " + file);
       continue;
     }
-    if (!excludedProjectPath(file) || isContractStorage(file)) records.push({ path: file, hash });
+    if (!excludedProjectPath(file) || isContractStorage(file)) records.push({ path: file, hash, ...(mode === "100755" ? { mode } : {}) });
   }
   const maxFiles = options.maxFiles ?? 50000;
   // The registry is required to interpret the captured files and does not consume a file slot.

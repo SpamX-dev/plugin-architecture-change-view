@@ -122,7 +122,21 @@ test("descendant implementation changes parent technical hash and leaves own rev
   assert.equal(tree.get("parent")!.subtree.current.counts!.not_reviewed, 1);
 });
 
-test("child contract changes affect the subtree while preserving the parent's own review and saved proof", () => {
+test("child verdicts on current and change belong to the child", () => {
+  const current = snapshot();
+  const parent = reviewed(current, current, "parent");
+  const child = reviewed(current, current, "child", { draft: true });
+  for (const side of ["current", "change"] as const) child.report.assessment[side].verdict = "violation";
+  const tree = aggregateTreeStatuses([parent, createReviewEntry(child)], current, current);
+  for (const side of ["current", "change"] as const) {
+    assert.equal(tree.get("child")!.self[side].current_violation, true);
+    assert.equal(tree.get("parent")!.self[side].verdict, "consistent");
+    assert.equal(tree.get("parent")!.self[side].current_violation, false);
+    assert.equal(tree.get("parent")!.subtree[side].current_violation, true);
+  }
+});
+
+test("only an immediate child's declared contract invalidates the parent's composition review", () => {
   const definitions = definition();
   const before = snapshot(definitions);
   const parent = reviewed(null, before, "parent");
@@ -134,18 +148,19 @@ test("child contract changes affect the subtree while preserving the parent's ow
   assert.equal(reviewFreshness(parent, null, snapshot(definitions)).current.status, "fresh");
   definitions[2].contract.responsibilities.R2 = "Объединять данные подмодулей.";
   const after = snapshot(definitions);
-  assert.equal(reviewFreshness(parent, null, after).current.status, "fresh");
+  assert.equal(reviewFreshness(parent, null, after).current.status, "stale");
   assert.equal(reviewFreshness(child, null, after).current.status, "stale");
   assert.equal(reviewFreshness(subtree, null, after).current.status, "stale");
   const tree = aggregateTreeStatuses([parent, child], null, after);
-  assert.equal(tree.get("parent")!.self.current.status, "fresh");
+  assert.equal(tree.get("parent")!.self.current.status, "stale");
+  assert.equal(tree.get("parent")!.self.current.current_violation, false);
   assert.equal(tree.get("parent")!.subtree.current.status, "stale");
   assert.equal(technical(before, after, "parent").change.child_composition, true);
   assert.equal(validateReviewEntry(parent), parent);
   assert.equal(digest(parent), preserved);
 });
 
-test("adding, moving, removing or breaking a child does not require rechecking unchanged parent inputs", () => {
+test("changing the direct composition requires checking the parent again", () => {
   const edits: [string, (modules: ReturnType<typeof definition>) => void][] = [
     ["add", (modules) => { const added = structuredClone(modules[2]); added.id = added.contract.id = "added";
       added.directory = "parent/added"; modules.push(added); }],
@@ -158,16 +173,16 @@ test("adding, moving, removing or breaking a child does not require rechecking u
     const parent = reviewed(null, snapshot(definitions), "parent");
     edit(definitions);
     const freshness = reviewFreshness(parent, null, snapshot(definitions)).current;
-    assert.equal(freshness.status, "fresh", label);
-    assert.deepEqual(freshness.reasons, [], label);
+    assert.equal(freshness.status, "stale", label);
+    assert.ok(freshness.reasons.some(reason => reason.code === "child_composition"), label);
   }
 });
 
-test("a child dependency saved by an LLM no longer invalidates the parent's own review", () => {
+test("a saved LLM dependency on a grandchild does not extend the parent's composition", () => {
   const definitions = definition();
   const parent = reviewed(null, snapshot(definitions), "parent", {
-    dependencies: [{ kind: "contract", module_id: "child" }] });
-  definitions[2].contract.boundaries.B2 = "Не изменять состояние потребителя.";
+    dependencies: [{ kind: "contract", module_id: "grand" }] });
+  definitions[3].contract.boundaries.B2 = "Не изменять состояние потребителя.";
   const freshness = reviewFreshness(parent, null, snapshot(definitions)).current;
   assert.equal(freshness.status, "fresh");
   assert.deepEqual(freshness.reasons, []);
@@ -438,6 +453,8 @@ test("native export is self contained and excludes unrelated and descendant impl
   assert.ok(entry.current.facts.some((fact) => fact.path === "parent/own.js"));
   assert.ok(entry.current.facts.some((fact) => fact.path === ".archiview/modules/child.yaml"));
   assert.ok(!entry.current.facts.some((fact) => fact.path === "parent/child/child.js"));
+  assert.ok(!entry.current.modules.some((module) => module.directory === "parent/child/grand"));
+  assert.ok(!entry.current.facts.some((fact) => fact.path === ".archiview/modules/grand.yaml"));
   assert.ok(!entry.current.modules.some((module) => module.directory === "provider"));
   const loaded = parseYaml(stringify(entry, { aliasDuplicateObjects: false }), (value) => validateReviewEntry(value as ReviewEntry));
   assert.equal(reviewFreshness(loaded, null, current).current.status, "fresh");

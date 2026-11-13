@@ -12,26 +12,37 @@ export function repositoryArguments(selected: string | null, args: Record<string
 /** Decode URL scalars for both HTTP adapters. Invalid booleans are rejected by the operation. */
 export function comparisonQueryArguments(args: Record<string, unknown>) {
   return { ...args, historyLimit: args.historyLimit === undefined ? undefined : Number(args.historyLimit),
+    watch: args.watch === "true" ? true : args.watch === "false" ? false : args.watch,
     published: args.published === "true" ? true : args.published === "false" ? false : args.published };
 }
 
 /** Decode external arguments once before invoking the transport-independent session. */
-export function callSessionOperation(session: SessionOperations, method: keyof SessionOperations, args: Record<string, unknown>) {
+export function callSessionOperation(session: SessionOperations, method: keyof SessionOperations, args: Record<string, unknown>, signal?: AbortSignal) {
   if (args.repository !== undefined && (typeof args.repository !== "string" || !args.repository))
     throw new ApplicationError("INVALID_ARGUMENT", "Некорректный идентификатор репозитория");
   const selector = args.repository === undefined ? {} : { repository: args.repository };
   switch (method) {
+    case "waitForChanges":
+      if (typeof args.cursor !== "string" || !/^[a-f0-9-]{36}\.\d+\.\d+$/.test(args.cursor)) throw new ApplicationError("INVALID_ARGUMENT", "Некорректная версия наблюдения");
+      return session.waitForChanges({ ...selector, cursor: args.cursor }, signal);
     case "getComparison": {
-      const { target, baseline, historyLimit, published } = args;
+      const { target, baseline, historyLimit, published, watch } = args;
       if ((target !== undefined && typeof target !== "string") ||
           (baseline !== undefined && typeof baseline !== "string") ||
           (historyLimit !== undefined && (typeof historyLimit !== "number" || !Number.isSafeInteger(historyLimit) || historyLimit < 1)) ||
-          (published !== undefined && typeof published !== "boolean")) {
+          (published !== undefined && typeof published !== "boolean") || (watch !== undefined && typeof watch !== "boolean")) {
         throw new ApplicationError("INVALID_ARGUMENT", "Некорректные параметры сравнения");
       }
-      return session.getComparison({ target, baseline, historyLimit, published, ...selector });
+      return session.getComparison({ target, baseline, historyLimit, published, ...(watch === undefined ? {} : { watch }), ...selector });
     }
+    case "getReviewStatuses":
+      if (typeof args.view !== "string") throw new ApplicationError("INVALID_ARGUMENT", "Нужен view");
+      return session.getReviewStatuses({view: args.view, ...selector});
     case "getModule":
+      if (args.analysis !== undefined && ![true, false, "true", "false"].includes(args.analysis as boolean | string))
+        throw new ApplicationError("INVALID_ARGUMENT", "Некорректный параметр analysis");
+      if (typeof args.view !== "string" || typeof args.path !== "string") throw new ApplicationError("INVALID_ARGUMENT", "Нужны view и path");
+      return session.getModule({view:args.view, path:args.path, analysis: args.analysis !== false && args.analysis !== "false", ...selector});
     case "prepareAnalysis":
     case "buildReview":
       if (typeof args.view !== "string" || typeof args.path !== "string")

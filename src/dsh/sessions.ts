@@ -97,9 +97,7 @@ export function createSessionRegistry({ createSession = createArchiViewSession, 
   /**
    * Закрывает реестр и дожидается уже начатых инициализаций.
    *
-   * Новые запросы после закрытия отклоняются, уже выданные сессии остаются
-   * рабочими до выгрузки процесса: прикладной сервис не держит сокетов и
-   * фоновых задач, поэтому отдельного закрытия ему не требуется.
+   * Закрывает наблюдение за файлами после завершения инициализации сессий.
    *
    * @returns {Promise<void>} завершение после расчёта всех обещаний.
    */
@@ -107,7 +105,10 @@ export function createSessionRegistry({ createSession = createArchiViewSession, 
     closed = true;
     const pending = [...entries.values()];
     entries.clear();
-    await Promise.allSettled(pending);
+    await Promise.allSettled(pending.map(async entry => {
+      const session = await entry;
+      if (session && typeof session === "object" && "close" in session && typeof session.close === "function") await session.close();
+    }));
   }
 
   return { get, has, size, dispose };

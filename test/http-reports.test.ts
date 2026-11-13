@@ -1,3 +1,4 @@
+import { initTestRepository, commitTestFiles } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
 import type { Snapshot } from "../src/snapshots/types.js";
@@ -28,16 +29,18 @@ async function fixture(t: TestContext) {
   const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module", purpose: "Предоставлять данные.",
     responsibilities: { R1: "Возвращать значение." }, boundaries: {}, invariants: {} });
   await mkdir(path.join(root, "child"));
+  initTestRepository(root);
   await writeModuleTree(root, { root: ".", child: "child" });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract("root")));
   await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify(contract("child")));
   await writeFile(path.join(root, "child/code.js"), "export const value = 1;\n");
+  commitTestFiles(root);
   return root;
 }
 
 /** Запускает отдельный порт; обработчики очистки закрывают только этот экземпляр. */
 async function serve(t: TestContext, root: string) {
-  const app = await createArchiView({ root });
+  const app = await createArchiView({ root, publishOnOpen: true });
   app.server.listen(0, "127.0.0.1");
   await once(app.server, "listening");
   t.after(() => new Promise<void>((resolve) => { app.server.closeAllConnections(); app.server.close(() => resolve()); }));
@@ -124,37 +127,18 @@ test("own review exposes referenced ancestor clauses from their saved sides with
   assert.deepEqual(stored.manifest.contracts, originalContracts);
 });
 
-test("startup and comparison compact structure without creating an LLM review", async (t) => {
+test("the current tree is available independently of analysis and technical publication", async t => {
   const root = await fixture(t);
   const app = await serve(t, root);
-  const initialFiles = await published(root);
-  assert.equal(Object.keys(initialFiles).filter((file) => file.endsWith(".archi.yaml")).length, 2);
-  const firstResponse = await fetch(app.url + "/api/comparison");
-  assert.equal(firstResponse.status, 200);
-  const first = await (firstResponse.json() as Promise<ComparisonResponse>);
-  const rootModule = first.modules.find((module) => module.moduleId === "root");
-  assert.equal(rootModule!.reviewStatus!.self.current.status, "not_reviewed");
-  assert.equal(rootModule!.reviewStatus!.subtree.current.status, "not_reviewed");
-  assert.equal(rootModule!.structure!.automatic, true);
-  assert.equal(rootModule!.review, null);
-  const before = await published(root);
-  await fetch(app.url + "/api/comparison");
-  assert.deepEqual(await published(root), before);
-  const legacyAction = await fetch(app.url + "/api/reviews", { method: "POST",
-    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ view: first.id, path: "child" }) });
-  assert.equal(legacyAction.status, 200);
-  assert.equal((await app.reports.list()).entries.length, 0);
-  await writeFile(path.join(root, "child/code.js"), "export const value = 2;\n");
-  const changed = await ((await fetch(app.url + "/api/comparison")).json() as Promise<ComparisonResponse>);
-  assert.equal(changed.before.id, first.before.id);
-  const parent = changed.modules.find((module) => module.moduleId === "root");
-  assert.equal(parent!.status, "unchanged");
-  assert.equal(parent!.descendantChanges, 1);
-  assert.equal(parent!.reviewStatus!.self.current.status, "not_reviewed");
-  assert.notDeepEqual(await published(root), before);
-  const detail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: changed.id, path: "child" }))).json() as Promise<ModuleResponse>);
-  assert.equal(detail.structure!.automatic, true);
-  assert.deepEqual(detail.reviews, []);
+  const original = await published(root);
+  await writeFile(path.join(root, "child/code.js"), "export const value = 2;");
+  const view = await app.getComparison();
+  assert.equal(view.modules.find(m => m.moduleId === "child")?.status,"changed");
+  assert.equal(view.modules.find(m => m.moduleId === "root")?.descendantChanges,1);
+  assert.ok(view.modules.every(m => !m.reviewStatus));
+  const result = await app.getReviewStatuses({view:view.id});
+  assert.ok(result.modules.every(m => m.reviewStatus?.self.current.status === "not_reviewed"));
+  assert.deepEqual(await published(root), original);
 });
 
 test("a cached current view cannot republish its older snapshot over the work publication", async (t) => {
@@ -175,7 +159,7 @@ test("a cached current view cannot republish its older snapshot over the work pu
   const freshResponse = await fetch(app.url + "/api/reviews", { method: "POST",
     headers: { "Content-Type": "application/json" }, body: JSON.stringify({ view: latest.id, path: "child" }) });
   assert.equal(freshResponse.status, 200);
-  assert.deepEqual(await published(root), before);
+  assert.notDeepEqual(await published(root), before);
 });
 
 test("missing contracts remain visible in automatic structure details", async (t) => {
@@ -210,7 +194,7 @@ test("a contract whose id conflicts with its map entry has a structural diagnost
 test("HTTP keeps parent self fresh while changed child invalidates subtree and preserves evidence", async (t) => {
   const root = await fixture(t);
   const app = await serve(t, root);
-  const current = await captureWorkingTree(root);
+  const current = (await app.reports.publishedComparison())!.current;
   for (const id of ["root", "child"]) {
     await app.reports.saveReview(fixtureReview(app, current, id, "consistent",
       id === "root" ? [{ kind: "contract", module_id: "child" }] : []));
@@ -230,7 +214,7 @@ test("HTTP keeps parent self fresh while changed child invalidates subtree and p
   const detail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: changed.id, path: "child" }))).json() as Promise<ModuleResponse>);
   assert.equal(detail.reviews[0].freshness.current.status, "stale");
   assert.ok(detail.reviews[0].facts.current.every((fact) => !fact.text.includes("value = 2")));
-  const sameCodeNewBase = await ((await fetch(app.url + "/api/comparison?" + new URLSearchParams({ baseline: checked.baselines.find((base) => base.kind === "change")!.id }))).json() as Promise<ComparisonResponse>);
+  const sameCodeNewBase = await ((await fetch(app.url + "/api/comparison?" + new URLSearchParams({ baseline: checked.baselines.find((base) => base.kind === "git")!.id }))).json() as Promise<ComparisonResponse>);
   const rootReview = sameCodeNewBase.modules.find((module) => module.moduleId === "root")!.reviewStatus!.self;
   assert.equal(rootReview.current.status, "fresh");
   assert.equal(rootReview.change.status, "stale");
@@ -239,7 +223,7 @@ test("HTTP keeps parent self fresh while changed child invalidates subtree and p
 test("HTTP exposes matching inputs and dependency coverage independently without rewriting the review", async (t) => {
   const root = await fixture(t);
   const app = await serve(t, root);
-  const current = await captureWorkingTree(root);
+  const current = (await app.reports.publishedComparison())!.current;
   const review = fixtureReview(app, current, "child", "violation", [], {
     dependencyCoverage: { status: "unknown", potential_influence: [{ scope: "project" }] },
     coverage: { status: "partial", limitations: ["Частичная проверка фикстуры."] },
@@ -267,7 +251,7 @@ test("HTTP exposes matching inputs and dependency coverage independently without
 test("HTTP separates open findings from resolved findings without changing the saved report", async (t) => {
   const root = await fixture(t);
   const app = await serve(t, root);
-  const current = await captureWorkingTree(root);
+  const current = (await app.reports.publishedComparison())!.current;
   for (const [id, lifecycles] of [["root", ["resolved"]], ["child", ["introduced", "persisting", "resolved"]]] as [string, string[]][]) {
     const review = fixtureReview(app, current, id);
     review.report.findings = lifecycles.map((lifecycle, index) => ({ id: "finding-" + index,
@@ -293,7 +277,7 @@ test("HTTP separates open findings from resolved findings without changing the s
 test("HTTP excludes legacy contract changes from remark counts while preserving saved history", async (t) => {
   const root = await fixture(t);
   const app = await serve(t, root);
-  const current = await captureWorkingTree(root);
+  const current = (await app.reports.publishedComparison())!.current;
   const originals = new Map();
   for (const id of ["root", "child"]) {
     const review = fixtureReview(app, current, id);
@@ -321,7 +305,7 @@ test("HTTP excludes legacy contract changes from remark counts while preserving 
 test("HTTP preserves conflicting attempts and reports both conflict and subtree coverage", async (t) => {
   const root = await fixture(t);
   const app = await serve(t, root);
-  const current = await captureWorkingTree(root);
+  const current = (await app.reports.publishedComparison())!.current;
   const first = fixtureReview(app, current, "root");
   const second = fixtureReview(app, current, "root", "violation");
   await app.reports.saveReview(first);

@@ -9,7 +9,7 @@ function changedFiles(before: SnapshotModule | null | undefined, after: Snapshot
   return [...new Set([...oldFiles.keys(), ...newFiles.keys()])].sort().flatMap((file: string) => {
     const previous = oldFiles.get(file);
     const current = newFiles.get(file);
-    if (previous && current && previous.hash === current.hash) return [];
+    if (previous && current && previous.hash === current.hash && previous.mode === current.mode) return [];
     return [{ path: file, status: !previous ? "new" : !current ? "removed" : "changed" }];
   });
 }
@@ -18,7 +18,7 @@ function changedFiles(before: SnapshotModule | null | undefined, after: Snapshot
  * Сравнивает объединение модулей двух снимков. Родитель сохраняет собственный
  * статус, а число изменённых потомков передаётся отдельным полем.
  */
-export function compareSnapshots(before: Snapshot | null, after: Snapshot, { projectRoot = after.root } = {}) {
+export function compareSnapshots(before: Snapshot | null, after: Snapshot, { projectRoot = after.root, emptyTree = false } = {}) {
   if (before && before.root !== after.root) throw new Error("Snapshots belong to different projects");
   const previous = new Map((before?.modules ?? []).map((module) => [module.directory, module]));
   const current = new Map(after.modules.map((module) => [module.directory, module]));
@@ -46,7 +46,7 @@ export function compareSnapshots(before: Snapshot | null, after: Snapshot, { pro
       title: entry.document.contract?.title,
       baselinePath: oldModule?.directory ?? null, currentPath: newModule?.directory ?? null,
       moved: Boolean(oldModule && newModule && oldModule.directory !== newModule.directory),
-      status: !before ? "initial" : !oldModule ? "new" : !newModule ? "removed" : files.length ? "changed" : "unchanged",
+      status: !before && !emptyTree ? "initial" : !oldModule ? "new" : !newModule ? "removed" : files.length ? "changed" : "unchanged",
       documentState: entry.document.state,
       documentChanged: JSON.stringify(oldModule?.document ?? { state: "missing", text: null }) !==
         JSON.stringify(newModule?.document ?? { state: "missing", text: null }),
@@ -76,7 +76,7 @@ export function compareSnapshots(before: Snapshot | null, after: Snapshot, { pro
   return { schema_version: 2, id: structureHash((before?.id ?? "initial") + after.digest).slice(0, 24),
     root: projectRoot, before: before ? { id: before.id, label: before.label, kind: before.kind,
       digest: before.digest ?? snapshotDigest(before), capturedAt: before.capturedAt } :
-      { id: "initial", label: "Первый анализ", kind: "initial" },
+      { id: "initial", label: emptyTree ? "Пустое дерево" : "Первый анализ", kind: "initial" },
     after: { id: after.id, digest: after.digest, capturedAt: after.capturedAt },
     complete: (before?.complete ?? true) && after.complete,
     diagnostics: [...before?.diagnostics ?? [], ...after.diagnostics],

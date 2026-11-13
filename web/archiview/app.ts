@@ -51,6 +51,12 @@ export async function startApp({ client, bridge, host, chooseProject }: {
   const tree = createModuleTree(() => state.view, () => state.selected, chooseTreeModule);
   const fixesByRepository = new Map<string, Map<string, FixRecord>>();
   let refreshing = false;
+  let subscription: AbortController | undefined;
+  let reviewError: string | undefined;
+  let statusLoaded = false;
+  let reviewDetail: ModuleDetail | undefined;
+  let detailRequest: ModuleDetail | undefined;
+  let detailError: string | undefined;
   let selectedClause: ClauseNavigation | undefined;
   function promptAction(): PromptAction | undefined {
     if (state.bridge?.send) return { mode: "send", deliver: state.bridge.send };
@@ -129,13 +135,14 @@ export async function startApp({ client, bridge, host, chooseProject }: {
   }
 
   /** Загружает детали из того же снимка сравнения, что и дерево слева. */
-  async function selectModule(directory: string, clause?: ClauseNavigation, reviewId?: string) {
+  async function selectModule(directory: string, clause?: ClauseNavigation, reviewId?: string, automatic = false) {
     const view = currentView();
     const module = view.modules.find((item) => item.key === directory) ?? view.modules.find((item) => item.directory === directory);
     if (!module) return;
     selectedClause = clause;
     state.selected = module.key;
     state.detail = null;
+    detailError = undefined;
     const token = ++state.selection;
     // URL sandbox-ресурса принадлежит хосту; about:srcdoc и opaque origins
     // запрещают replaceState. Обычная веб-страница сохраняет собственный hash.
@@ -145,16 +152,17 @@ export async function startApp({ client, bridge, host, chooseProject }: {
       history.replaceState(null, "", "#" + fragment);
     }
     renderHeading(module);
-    tree.reveal(module);
-    document.body.classList.remove("tree-open");
+    if (!automatic) {
+      tree.reveal(module);
+      document.body.classList.remove("tree-open");
+    }
     byId("document-panel").replaceChildren(el("div", "loading-state", "Читаем документ…"));
     try {
-      const detail = await client.getModule({ view: view.id, path: module.key, repository: view.workspace?.repository });
+      const detail = await client.getModule({ view: view.id, path: module.key, repository: view.workspace?.repository, ...(view.separateAnalysis ? {analysis:false} : {}) });
       if (token !== state.selection) return;
       state.detail = detail;
-      renderFindingCount(detail);
+      renderFindingCount(view.separateAnalysis ? module : detail);
       renderPanel({ reviewId });
-      if (clause && state.tab === "document") revealClause(clause, detail);
     } catch (error) {
       if (token === state.selection) renderFailure(error, async () => {
         if (token !== state.selection) return;
@@ -184,7 +192,6 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     else if (state.detail) {
       selectedClause = { reference, review };
       renderPanel();
-      revealClause(selectedClause, state.detail);
     }
   }
 
@@ -233,7 +240,41 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     if (selected.document.contract) renderContractHeading(heading, selected.document, {
       contractDiff: state.detail.contractDiff, titleElement: byId("module-title"), groupElement: byId("module-heading-content"),
     });
-    if (state.tab === "document") renderDocument(panel, state.detail, currentView(), selectModule, openReviewFinding);
+    const needsReview = viewNeedsReview();
+    if (needsReview && state.detail !== reviewDetail && state.tab !== "files") {
+      if (["checks", "findings"].includes(state.tab)) {
+        panel.replaceChildren(el("div", "loading-state", detailError ?? reviewError ?? "Загружаем анализ…"));
+        if (detailError || reviewError) {
+          const retry = el("button", "button button-quiet", "Повторить");
+          retry.onclick = () => {
+            detailError = undefined;
+            if (reviewError) void loadStatuses(currentView());
+            else renderPanel(navigation);
+          };
+          panel.append(retry);
+          return;
+        }
+      }
+      const detail = state.detail;
+      if (statusLoaded && !detailError && detailRequest !== detail) {
+        detailRequest = detail;
+        const view = currentView();
+        void client.getModule({view:view.id, path:detail.key, repository:view.workspace?.repository, analysis:true}).then(result => {
+          if (state.detail !== detail || state.view !== view) return;
+          state.detail = reviewDetail = result;
+          renderPanel(navigation);
+        }).catch(error => {
+          if (state.detail !== detail || state.view !== view) return;
+          detailError = errorMessage(error);
+          renderPanel(navigation);
+        }).finally(() => { if (detailRequest === detail) detailRequest = undefined; });
+      }
+      if (state.tab !== "document") return;
+    }
+    if (state.tab === "document") {
+      renderDocument(panel, state.detail, currentView(), selectModule, openReviewFinding);
+      if (selectedClause) revealClause(selectedClause, state.detail);
+    }
     else if (["checks", "findings"].includes(state.tab)) {
       // Копирование доступно самостоятельной странице; встроенный хост без
       // capability отправки показывает недоступное действие, не меняя транспорт.
@@ -254,7 +295,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
 
   /** Объясняет ошибку загрузки и предлагает повторить доступное действие. */
   function renderFailure(error: unknown, retryOperation: () => Promise<void>) {
-    if (errorCode(error) === "PROJECT_REQUIRED") return renderProjectSelection({
+    if (["PROJECT_REQUIRED", "PROJECT_UNAVAILABLE", "CODEX_CONTEXT_UNAVAILABLE"].includes(errorCode(error) ?? "")) return renderProjectSelection({
       projectHint: host === "codex" ? "Не удалось автоматически определить папку проекта. Укажите абсолютный путь к папке." : undefined,
       chooseProject,
       async openProject(projectRoot) { await client.setProject({ projectRoot }); await retryOperation(); },
@@ -267,9 +308,41 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     byId("document-panel").replaceChildren(box);
   }
 
-  async function showComparison(view: ComparisonView, historyLimit: number, key?: string, clause?: ClauseNavigation, reviewId?: string) {
+  function viewNeedsReview() {
+    const view = state.view;
+    if (!view?.separateAnalysis) return false;
+    if (state.tab === "checks" || state.tab === "findings") return true;
+    return state.tab === "document" && Boolean(view.modules.find(m => m.key === state.selected)?.review);
+  }
+
+  async function loadStatuses(view: ComparisonView) {
+    reviewError = undefined;
+    statusLoaded = false;
+    try {
+      const result = await client.getReviewStatuses({view:view.id, repository:view.workspace?.repository});
+      if (view !== state.view) return;
+      const byKey = new Map(result.modules.map(module => [module.key,module]));
+      for (const module of view.modules) Object.assign(module, byKey.get(module.key));
+      view.reviewDiagnostics = result.diagnostics;
+      statusLoaded = true;
+      tree.refreshStatuses();
+      const selected = view.modules.find(module => module.key === state.selected);
+      if (selected) renderHeading(selected);
+    } catch (error) {
+      if (view !== state.view) return;
+      reviewError = "Не удалось загрузить анализ: " + errorMessage(error);
+    }
+    if (view === state.view) {
+      byId("updated").textContent = (view.target.id === "current" ? "Обновлено " : "Состояние от ") + timelineDate(view.after.capturedAt) +
+        (reviewError ? " · " + reviewError : "");
+      if (state.detail) renderPanel();
+    }
+  }
+
+  async function showComparison(view: ComparisonView, historyLimit: number, key?: string, clause?: ClauseNavigation, reviewId?: string, automatic = false) {
     const sameRepository = state.view?.root === view.root;
     state.view = view;
+    statusLoaded = false; reviewError = detailError = undefined;
     state.target = view.target.id;
     state.historyLimit = historyLimit;
     state.findingFixes = fixesByRepository.get(view.root) ?? new Map();
@@ -286,23 +359,62 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     const owner = clause && view.modules.find((module) => module.moduleId === clause.reference.module_id);
     const selected = [owner?.key, key, sameRepository ? state.selected : undefined, "."].find((directory) =>
       view.modules.some((module) => module.key === directory)) ?? view.modules[0]?.key;
-    tree.showComparison(view, historyLimit);
+    tree.showComparison(view, historyLimit, automatic);
     refreshing = false;
-    if (selected !== undefined) await selectModule(selected, clause, reviewId);
+    if (view.separateAnalysis) {
+      byId("updated").textContent += " · Загружаем анализ…";
+      void loadStatuses(view);
+    }
+    if (selected !== undefined) await selectModule(selected, clause, reviewId, automatic);
   }
 
-  /** При переходе к текущему состоянию сначала показывает опубликованную структуру. */
+  // Keep one long poll per live view. Navigation owns cancellation; module and tab selection stay interactive.
+  async function followWorkingTree(initial: ComparisonView) {
+    if (!initial.watchCursor && !initial.watchError) return;
+    const controller = new AbortController();
+    subscription = controller;
+    const { signal } = controller;
+    const repository = initial.workspace?.repository;
+    let cursor = initial.watchCursor;
+    let retry = false;
+    while (!signal.aborted) {
+      try {
+        let reviewsChanged = false;
+        if (cursor && !retry) {
+          const event = await client.waitForChanges({ cursor, repository }, signal);
+          if (signal.aborted) return;
+          if (event.cursor === cursor) continue;
+          cursor = event.cursor;
+          reviewsChanged = event.reviewsChanged;
+        }
+        const view = await client.getComparison({ repository, target: "current", baseline: "auto", historyLimit: state.historyLimit, watch: true });
+        if (signal.aborted) return;
+        if (!view.watchCursor) throw new Error(view.watchError ?? "Наблюдение недоступно");
+        if (view.id !== state.view?.id || reviewsChanged || retry || !cursor) {
+          const previous = state.view?.modules.find(module => module.key === state.selected);
+          const followed = previous?.moduleId && view.modules.find(module => module.moduleId === previous.moduleId);
+          await showComparison(view, state.historyLimit, followed ? followed.key : undefined, selectedClause, undefined, true);
+        }
+        if (retry || !cursor) cursor = view.watchCursor;
+        retry = false;
+      } catch (error) {
+        if (signal.aborted) return;
+        byId("updated").textContent = "Автообновление временно недоступно · " + errorMessage(error);
+        retry = true;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  }
+
   async function refresh({ target = state.target, historyLimit = state.historyLimit, clause, repository = state.view?.workspace?.repository, key }: {
     target?: string; historyLimit?: number; clause?: ClauseNavigation; repository?: string; key?: string;
   } = {}) {
+    subscription?.abort();
     const token = ++state.refresh;
     const switching = state.view && repository !== state.view.workspace?.repository;
-    let saved = !switching && state.view?.published && target === state.target ? state.view : undefined;
-    refreshing = !saved;
-    if (!saved) {
-      ++state.selection;
-      state.detail = null;
-    }
+    refreshing = true;
+    ++state.selection;
+    state.detail = null;
     renderAnalysisControls();
     const button = byId("refresh");
     button.disabled = true;
@@ -317,37 +429,17 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     }
     button.classList.add("is-loading");
     try {
-      const args = { target, baseline: "auto", historyLimit, repository };
-      const preferPublished = target === "current" && (switching || state.view?.target.id !== "current");
-      const view = await client.getComparison(preferPublished ? { ...args, published: true } : args);
+      const args = { target, baseline: "auto", historyLimit, repository, ...(target === "current" ? { watch: true } : {}) };
+      const view = await client.getComparison(args);
       if (token !== state.refresh) return;
-      if (view.published) saved = view;
-      const shown = showComparison(view, historyLimit, key, clause);
-      const initialSelection = state.selection;
-      await shown;
-      if (!view.published || token !== state.refresh) return;
-      const live = await client.getComparison({ ...args, repository: view.workspace?.repository ?? repository });
-      if (token !== state.refresh) return;
-      const unchangedSelection = state.selection === initialSelection;
-      const selected = view.modules.find((module) => module.key === state.selected);
-      const liveModule = selected?.moduleId && live.modules.find((module) => module.moduleId === selected.moduleId);
-      // A deep link can refer to a module added since publication. An already selected
-      // module follows its stable ID if its directory moved or was reused.
-      const nextKey = unchangedSelection && key && key !== selected?.key && live.modules.some((module) => module.key === key) ? key :
-        liveModule ? liveModule.key : selected?.key;
-      const reviewId = byId("document-panel").querySelector<HTMLElement>(".review-body")?.dataset.reviewId;
-      await showComparison(live, historyLimit, nextKey, selectedClause, reviewId);
+      const previous = !switching && state.view?.modules.find(module => module.key === state.selected);
+      const followed = previous && previous.moduleId && view.modules.find(module => module.moduleId === previous.moduleId);
+      await showComparison(view, historyLimit, key ?? (followed ? followed.key : undefined), clause);
+      if (token === state.refresh && target === "current") void followWorkingTree(view);
     } catch (error) {
       if (token === state.refresh) {
         if (!state.view && repository !== undefined && errorCode(error) === "REPOSITORY_UNAVAILABLE") {
           await refresh();
-          return;
-        }
-        if (saved && state.view === saved) {
-          const warning = byId("warning");
-          byId("updated").textContent = "Сохранено " + timelineDate(saved.after.capturedAt);
-          warning.hidden = false;
-          warning.textContent = [...saved.diagnostics, ...saved.reviewDiagnostics, "Не удалось обновить рабочее дерево: " + errorMessage(error)].join("; ");
           return;
         }
         const selection = ++state.selection;
@@ -399,5 +491,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
       renderPanel();
     });
   }
+  window.addEventListener("pagehide", () => { ++state.refresh; subscription?.abort(); });
+  window.addEventListener("pageshow", event => { if (event.persisted) void refresh(); });
   await refresh(initialSelection());
 }

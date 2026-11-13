@@ -64,7 +64,7 @@ export async function runCli(prepareWeb?: () => Promise<void>) {
     });
     if (!batch && !values["import-review"]) return serve(workspace, port, prepareWeb);
     // Batch commands operate on their explicit --root. A workspace container has no shared history.
-    const { store, reports, analysis } = await workspace.session(".");
+    const { store, reports, analysis } = await workspace.session(".", !(values["build-report"] || values["export-review-input"]));
     if (values["complete-analysis"]) {
       const result = await analysis.complete(values["complete-analysis"]);
       process.stdout.write("Analysis imported: " + result.reviewId + "\n");

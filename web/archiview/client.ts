@@ -5,7 +5,7 @@ import { isRecord } from "./types.js";
 
 /** The transport boundary owns deserialization. The same DTOs are returned by both adapters. */
 export function createArchiViewClient({ mode, connection, fetcher = globalThis.fetch, base = "", sessionId = "" }: ClientOptions): ArchiViewClient {
-  async function request<T>(tool: string, verb: "GET" | "POST", route: string, args: object = {}, query = true, decode?: (value: Record<string, unknown>) => T): Promise<T> {
+  async function request<T>(tool: string, verb: "GET" | "POST", route: string, args: object = {}, query = true, decode?: (value: Record<string, unknown>) => T, signal?: AbortSignal): Promise<T> {
     let result: unknown;
     if (mode === "mcp") {
       const bridge = await connection;
@@ -21,7 +21,7 @@ export function createArchiViewClient({ mode, connection, fetcher = globalThis.f
       if (typeof repository === "string") params.set("repository", repository);
       if (sessionId !== "") params.set("session", sessionId);
       const search = params.toString();
-      const response = await fetcher(base + route + (search ? "?" + search : ""), verb === "GET" ? undefined : {
+      const response = await fetcher(base + route + (search ? "?" + search : ""), verb === "GET" ? (signal ? { signal } : undefined) : {
         method: verb, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
       result = await response.json();
@@ -34,6 +34,8 @@ export function createArchiViewClient({ mode, connection, fetcher = globalThis.f
   return {
     setProject: args => request("set_project", "POST", "/api/project", args),
     getComparison: (args = {}) => request("get_comparison", "GET", "/api/comparison", args),
+    waitForChanges: (args, signal) => request("wait_for_changes", "GET", "/api/changes", args, true, undefined, signal),
+    getReviewStatuses: args => request("get_review_statuses", "GET", "/api/review-statuses", args),
     getModule: args => request("get_module", "GET", "/api/module", args),
     prepareAnalysis: args => request("prepare_analysis", "POST", "/api/analysis", args, true, readPreparedAnalysis),
     getAnalysis: args => request("get_analysis", "GET", "/api/analysis/" + encodeURIComponent(args.id), args, false, readAnalysisStatus),

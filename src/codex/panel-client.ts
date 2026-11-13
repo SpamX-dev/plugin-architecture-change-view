@@ -14,8 +14,8 @@ async function initialResponse<T>(operation: Promise<T>, timeoutMs: number): Pro
 }
 
 /**
- * Адаптирует неизвестный root к старому PROJECT_REQUIRED. Явное отсутствие
- * проекта сохраняет PROJECT_UNAVAILABLE. Ввод и диалог проходят ту же проверку
+ * Адаптирует неизвестную или отсутствующую папку к форме PROJECT_REQUIRED.
+ * Ввод и диалог проходят ту же проверку
  * абсолютного существующего каталога; повторная смена привязанного корня запрещена.
  */
 export function createArchiViewClient(options: ClientOptions, { timeoutMs = 15000 } = {}) {
@@ -32,7 +32,7 @@ export function createArchiViewClient(options: ClientOptions, { timeoutMs = 1500
         if (!isRecord(result) || typeof result.root !== "string" || result.root.trim() === "") throw Object.assign(new Error("Не удалось определить папку проекта"), { code: "CODEX_CONTEXT_UNAVAILABLE" });
         initialized = true;
       } catch (error) {
-        if (errorCode(error) !== "CODEX_CONTEXT_UNAVAILABLE") throw error;
+        if (!["CODEX_CONTEXT_UNAVAILABLE", "PROJECT_UNAVAILABLE"].includes(errorCode(error) ?? "")) throw error;
         throw Object.assign(new Error(errorMessage(error)), { code: "PROJECT_REQUIRED" });
       }
     }

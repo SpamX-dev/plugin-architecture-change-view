@@ -7,8 +7,8 @@ import type { Comparison, ComparisonModule, Fact, Snapshot } from "../snapshots/
 import type { compareContracts, RoleChange } from "../snapshots/contract-diff.js";
 
 export interface RepositoryArgs { repository?: string }
-export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number; published?: boolean };
-export type ModuleArgs = RepositoryArgs & { view: string; path: string };
+export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number; published?: boolean; watch?: boolean };
+export type ModuleArgs = RepositoryArgs & { view: string; path: string; analysis?: boolean };
 export type SnapshotArgs = RepositoryArgs & { view: string; label?: string };
 
 export type TimelineEntry = Pick<Snapshot, "id" | "kind" | "label" | "revision" | "isHead" | "subject" | "baseRevision">
@@ -35,6 +35,9 @@ export type ModuleSummary = Omit<ComparisonModule, "before" | "after" | "files">
 export interface ComparisonView extends Pick<Comparison, "schema_version" | "id" | "root" | "complete" | "diagnostics" | "counts" | "before" | "after"> {
   /** Served from the last complete publication, before checking the working tree. */
   published?: true;
+  separateAnalysis?: true;
+  watchCursor?: string;
+  watchError?: string;
   workspace?: { root: string; repositories: string[]; repository: string };
   reviewDiagnostics: string[];
   modules: ModuleSummary[];
@@ -72,7 +75,9 @@ export interface ModuleDetail extends ComparisonModule, ModuleReviewState {
   contractDiff: ReturnType<typeof compareContracts>;
 }
 export interface SessionOperations {
+  waitForChanges(args: RepositoryArgs & { cursor: string }, signal?: AbortSignal): Promise<{ cursor: string; reviewsChanged: boolean }>;
   getComparison(args?: ComparisonArgs): Promise<ComparisonView>;
+  getReviewStatuses(args: RepositoryArgs & {view: string}): Promise<{modules: (ModuleReviewState & {key: string})[]; diagnostics: string[]}>;
   getModule(args: ModuleArgs): Promise<ModuleDetail>;
   prepareAnalysis(args: ModuleArgs): Promise<PreparedAnalysis>;
   getAnalysis(args: RepositoryArgs & { id: string }): Promise<AnalysisStatus>;

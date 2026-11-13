@@ -1,3 +1,4 @@
+import { initTestRepository } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { TestContext } from "node:test";
 /** История после наблюдения берётся из того же проверенного чтения без потери событий. */
@@ -22,6 +23,7 @@ async function fixture(t: TestContext, useGit = false) {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const root = path.join(directory, "source");
   await mkdir(root);
+  initTestRepository(root);
   await writeModuleTree(root, { root: "." });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify({ schema_version: 1, id: "root", title: "Root", kind: "module",
     purpose: "Читать записи.", responsibilities: { R1: "Читать записи." }, boundaries: {}, invariants: {} }));

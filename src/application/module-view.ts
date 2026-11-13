@@ -79,15 +79,15 @@ export function reviewSummary(matching: ReviewEntry[], model: ReportModel) {
     createdAt: latest.report.analysis.created_at } : null;
 }
 
-export function moduleDetail(module: SessionView["modules"][number], matching: ReviewEntry[], model: ReportModel,
+export function moduleDetail(module: SessionView["modules"][number], matching: ReviewEntry[], model: ReportModel | undefined,
   _modules: SessionView["modules"], root: string, work: string): ModuleDetail {
   return structuredClone({ ...module, reviews: matching.map((bundle) => ({
-    report: bundle.report, stale: model.reviewFreshness(bundle).current.status !== "fresh",
+    report: bundle.report, stale: model!.reviewFreshness(bundle).current.status !== "fresh",
     // Путь берётся из фактического хранилища, включая явно заданное внешнее.
     // ID попытки и замечания выбирают запись внутри общей истории модуля.
     reviewFile: path.relative(root, path.join(work,
       moduleReportName(bundle.module_id) + ".review.yaml")).split(path.sep).join("/"),
-    freshness: model.reviewFreshness(bundle),
+    freshness: model!.reviewFreshness(bundle),
     dependencies: [],
     facts: evidenceForReport(bundle),
     contracts: bundle.manifest.contracts,

@@ -1,9 +1,19 @@
 /** Assertions at protocol boundaries keep fixtures explicit without weakening application types. */
+import { execFileSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { stringify } from "yaml";
 export type { ComparisonView as ComparisonResponse, ModuleDetail as ModuleResponse } from "../src/application/api.js";
+
+export function initTestRepository(root: string) {
+  execFileSync("git", ["init", "-q", "--initial-branch=main", root], { windowsHide: true });
+}
+
+export function commitTestFiles(root: string) {
+  execFileSync("git", ["add", "."], { cwd:root, windowsHide:true });
+  execFileSync("git", ["-c","user.name=Test","-c","user.email=test@example.invalid","commit","-qm","Initial"], { cwd:root, windowsHide:true });
+}
 
 export async function writeModuleTree(root: string, directories: Record<string, string>) {
   await mkdir(path.join(root, ".archiview/modules"), { recursive: true });

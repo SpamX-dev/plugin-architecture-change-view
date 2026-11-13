@@ -19,7 +19,7 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
     return discovered.includes(".") ? [".", ...discovered.filter((candidate) => candidate !== ".")] : discovered;
   };
   let repositories = await orderedRepositories();
-  let hasRepositories = repositories.length > 0;
+  if (!repositories.length) throw new ApplicationError("REPOSITORY_UNAVAILABLE", "Для ArchiView требуется рабочее дерево Git");
   const sessions = new Map<string, ReturnType<typeof createArchiViewSession>>();
   const publishedViews = new Map<string, NonNullable<Awaited<ReturnType<typeof createPublishedView>>>>();
 
@@ -37,11 +37,11 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
   }
 
   async function projectPath(repository: string) {
-    if (!(hasRepositories ? repositories.includes(repository) : repository === ".")) {
+    if (!repositories.includes(repository)) {
       throw new ApplicationError("REPOSITORY_UNAVAILABLE", "Репозиторий не входит в выбранную рабочую папку");
     }
     // Revalidate the physical path even for a cached session: it can be moved or replaced.
-    const project = repositories.length ? await resolveWorkspaceRepository(root, repository) : await realpath(root);
+    const project = await resolveWorkspaceRepository(root, repository);
     if (path.relative(path.resolve(root, repository), project) !== "") throw new ApplicationError("NOT_FOUND", "Рабочая папка перемещена");
     return project;
   }
@@ -56,8 +56,8 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
     return current;
   }
 
-  async function open(repository: string) {
-    return liveSession(await projectPath(repository), repository, false);
+  async function open(repository: string, deferPublication = true) {
+    return liveSession(await projectPath(repository), repository, deferPublication);
   }
 
   // An unselected workspace can still open its healthy repositories when a sibling's history cannot be read.
@@ -70,7 +70,8 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
     throw firstError;
   }
 
-  const session = (repository?: string) => repository === undefined ? firstAvailable(open) : open(repository);
+  const session = (repository?: string, deferPublication = true) => repository === undefined
+    ? firstAvailable(id => open(id, deferPublication)) : open(repository, deferPublication);
   function selection(repository?: string) {
     if (repository === undefined && repositories.some((candidate) => candidate !== ".")) {
       throw new ApplicationError("INVALID_ARGUMENT", "Укажите репозиторий для операции с выбранным сравнением");
@@ -88,8 +89,10 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
   }
   const operations: SessionOperations = {
     async getComparison(args = {}) {
-      repositories = await orderedRepositories();
-      hasRepositories ||= repositories.length > 0;
+      if (!repositories.includes(".") || (args.repository !== undefined && !repositories.includes(args.repository))) {
+        repositories = await orderedRepositories();
+      }
+      if (!repositories.length) throw new ApplicationError("REPOSITORY_UNAVAILABLE", "В рабочей папке нет репозиториев Git");
       async function compare(repository: string) {
         const project = await projectPath(repository);
         let published;
@@ -109,6 +112,10 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
       if ((args.target ?? "current") !== "current" || (args.baseline ?? "auto") !== "auto") return compare(repositories[0] ?? ".");
       return firstAvailable(compare);
     },
+    async waitForChanges(args, signal) {
+      return (await open(selection(args.repository))).waitForChanges(args, signal);
+    },
+    async getReviewStatuses(args) { return (await viewSession(args.repository, args.view)).getReviewStatuses(args); },
     async getModule(args) {
       if (args.view.startsWith("published-")) {
         const project = await projectPath(selection(args.repository));
@@ -123,5 +130,8 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
     async buildReview(args) { return (await viewSession(args.repository, args.view)).buildReview(args); },
     async saveSnapshot(args) { return (await viewSession(args.repository, args.view)).saveSnapshot(args); },
   };
-  return { ...operations, session, root, get showWorkspace() { return repositories.some((candidate) => candidate !== "."); } };
+  async function close() {
+    await Promise.allSettled([...sessions.values()].map(async promise => (await promise).close()));
+  }
+  return { ...operations, session, root, close, get showWorkspace() { return repositories.some((candidate) => candidate !== "."); } };
 }

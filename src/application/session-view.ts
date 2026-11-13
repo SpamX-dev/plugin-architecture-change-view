@@ -5,6 +5,8 @@ import type { ModuleReviewState } from "./api.js";
 
 export interface SessionView extends Comparison {
   modules: (ComparisonModule & ModuleReviewState)[];
+  gitTree?: boolean;
+  reviewLoad?: Promise<void>;
   target?: { id: string };
   reviewDiagnostics: string[];
   baselineSnapshot: Snapshot | null;

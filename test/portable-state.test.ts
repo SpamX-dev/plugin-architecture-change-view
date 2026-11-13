@@ -1,3 +1,4 @@
+import { initTestRepository } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
 import type { AddressInfo } from "node:net";
@@ -31,6 +32,7 @@ async function fixture(t: TestContext) {
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const root = path.join(temporary, "original");
   await mkdir(path.join(root, "child"), { recursive: true });
+  initTestRepository(root);
   await writeModuleTree(root, { root: ".", child: "child" });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract("root")));
   await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify(contract("child")));

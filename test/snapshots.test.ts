@@ -1,3 +1,4 @@
+import { initTestRepository, commitTestFiles } from "./support.js";
 import { contractYaml, writeModuleTree } from "./support.js";
 import type { TestContext } from "node:test";
 /** Проверяет смысл четырёх статусов, исторические документы и базы сравнения. */
@@ -11,6 +12,7 @@ import test from "node:test";
 import { promisify } from "node:util";
 import { captureWorkingTree, captureGitHead, captureGitIndex } from "../src/snapshots/capture.js";
 import { compareSnapshots } from "../src/snapshots/comparison.js";
+import { createWorkspaceSession } from "../src/application/workspace-session.js";
 import { SnapshotStore } from "../src/storage/snapshot-store.js";
 
 /** Git-команды выполняются только в явно созданном временном проекте. */
@@ -22,12 +24,37 @@ async function fixture(t: TestContext, files: Record<string, string>) {
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const root = path.join(temporary, "project");
   await mkdir(root);
+  initTestRepository(root);
   for (const [file, text] of Object.entries(files)) {
     await mkdir(path.dirname(path.join(root, file)), { recursive: true });
     await writeFile(path.join(root, file), text);
   }
   return { root, store: path.join(temporary, "snapshots") };
 }
+
+test("the live Git tree spans HEAD to disk across the index, renames and unborn repositories", async t => {
+  const { root } = await fixture(t, {
+    ".gitignore": "*.tmp\n", "a/move.ts": "move\n", "a/cancel.ts": "same\n", "b/keep.ts": "keep\n",
+  });
+  const session = await createWorkspaceSession({ root });
+  const files = async (view: string, key: string) => (await session.getModule({view, path: key, analysis: false})).files;
+  const initial = await session.getComparison();
+  assert.equal(initial.before.label, "Пустое дерево");
+  assert.ok(initial.modules.every(module => module.status === "new"));
+  commitTestFiles(root);
+  await writeFile(path.join(root, "a/cancel.ts"), "staged edit\n");
+  await rename(path.join(root, "a/move.ts"), path.join(root, "b/move.ts"));
+  await run("git", ["add", "-A"], {cwd: root});
+  await writeFile(path.join(root, "a/cancel.ts"), "same\n");
+  await writeFile(path.join(root, "b/new.ts"), "new\n");
+  await writeFile(path.join(root, "ignored.tmp"), "ignore\n");
+  const current = await session.getComparison();
+  assert.deepEqual(await files(current.id, "a"), [{path: "a/move.ts", status: "removed"}]);
+  assert.deepEqual(await files(current.id, "b"), [
+    {path: "b/move.ts", status: "new"}, {path: "b/new.ts", status: "new"},
+  ]);
+  assert.equal(current.modules.find(m => m.key === ".")!.status, "unchanged");
+});
 
 test("compares new, changed, removed and old modules without changing parent status", async (t) => {
   const { root } = await fixture(t, {

@@ -1,3 +1,5 @@
+import { initTestRepository, commitTestFiles } from "./support.js";
+import { createWorkspaceSession } from "../src/application/workspace-session.js";
 import { writeModuleTree } from "./support.js";
 import type { Fact } from "../src/snapshots/types.js";
 import type { ComparisonResponse } from "./support.js";
@@ -19,7 +21,6 @@ import { stringify, parse } from "yaml";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { createArchiView } from "../src/archiview/http.js";
-import { reviewFreshness } from "../src/reports/model.js";
 import { digest } from "../src/serialization/digest.js";
 import { createCodexPanel } from "../src/codex/panel.js";
 import { createArchiViewClient } from "../web/archiview/client.js";
@@ -40,7 +41,7 @@ test("autonomous MCP panel serves project operations with no listening sockets a
     cwd: distribution, env: { ...process.env, PLUGIN_ROOT: distribution }, stderr: "pipe" }));
   const tools = (await client.listTools()).tools;
   const hidden = tools.filter((tool) => tool.name.startsWith("archiview_ui_"));
-  assert.equal(hidden.length, 9);
+  assert.equal(hidden.length, 11);
   for (const tool of hidden) assert.deepEqual(panelMetadata(tool).ui.visibility, ["app"]);
   assert.deepEqual(tools.filter((tool) => !tool._meta || !panelMetadata(tool).ui?.visibility || panelMetadata(tool).ui.visibility.includes("model")).map((tool) => tool.name),
     ["archiview_open", "module_inventory", "module_context"]);
@@ -73,11 +74,10 @@ test("autonomous MCP panel serves project operations with no listening sockets a
   await assert.rejects(call("get_comparison", { historyLimit: "50" }).then(uiData), { code: "INVALID_ARGUMENT" });
   await assert.rejects(call("get_comparison", { published: "true" }).then(uiData), { code: "INVALID_ARGUMENT" });
   const published = uiData<ComparisonView>(await call("get_comparison", { published: true }));
-  assert.equal(published.published, true);
+  assert.equal(published.separateAnalysis, true);
   assert.equal(uiData<ModuleDetail>(await call("get_module", { view: published.id, path: "child" })).moduleId, "child");
   const saved = uiData(await call("save_snapshot", { view: view.id, label: "MCP snapshot" }));
   assert.equal(saved.label, "MCP snapshot");
-  await writeFile(path.join(root, "child/code.js"), "export const value = 2;\n");
   const analysis = uiData<PreparedAnalysis>(await call("prepare_analysis", { view: view.id, path: "child" }));
   assert.ok(analysis.prompt.length > 0);
   const status = uiData(await call("get_analysis", { id: analysis.id }));
@@ -85,7 +85,10 @@ test("autonomous MCP panel serves project operations with no listening sockets a
   assert.equal(Object.hasOwn(status, "prompt"), false);
   const input = parse(await readFile(path.join(root, ".archiview/snapshots/analysis", analysis.id, "input.yaml"), "utf8"));
   assert.ok(input.current.facts.some((fact: Fact) => fact.text === "export const value = 1;\n"));
-  assert.equal(uiData(await call("build_review", { view: view.id, path: "child" })).module_id, "child");
+  await writeFile(path.join(root, "child/code.js"), "export const value = 2;\n");
+  await assert.rejects(call("prepare_analysis", { view: view.id, path: "child" }).then(uiData), { code: "STALE_VIEW" });
+  const latest = uiData<ComparisonView>(await call("get_comparison"));
+  assert.equal(uiData(await call("build_review", { view: latest.id, path: "child" })).module_id, "child");
   await client.close();
 });
 
@@ -130,6 +133,7 @@ export async function panelFixture(t: TestContext) {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-panel-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, "child"));
+  initTestRepository(root);
   await writeModuleTree(root, { root: ".", child: "child" });
   for (const [directory, id] of [[".", "root"], ["child", "child"]]) {
     await writeFile(path.join(root, ".archiview/modules", id + ".yaml"), stringify({ schema_version: 1,
@@ -153,6 +157,62 @@ export function completedFixture(input: ReviewInput) {
   result.report.assessment.current = { verdict: "needs_review", summary: "Protocol fixture only." };
   return result;
 }
+
+test("Git tree and separate reviews preserve module order across a revert, a late import, a restart and a commit", async (t) => {
+  const root = await panelFixture(t);
+  await writeFile(path.join(root, ".gitignore"), "*.tmp\n");
+  commitTestFiles(root);
+  let workspace = await createWorkspaceSession({ root });
+  async function tree() { return workspace.getComparison(); }
+  async function statuses(view: ComparisonView) {
+    const result = await workspace.getReviewStatuses({ view: view.id });
+    return Object.fromEntries(result.modules.map(m => [m.key, m.reviewStatus?.self.current.status]));
+  }
+  const first = await tree();
+  assert.equal(first.separateAnalysis, true);
+  assert.ok(first.modules.every(m => !m.reviewStatus));
+  async function review(view: ComparisonView, key: string) {
+    const request = await workspace.prepareAnalysis({ view: view.id, path: key });
+    const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
+    const input: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
+    await writeFile(path.join(folder, "result.yaml"), stringify(completedFixture(input), { aliasDuplicateObjects: false }));
+    return () => workspace.session().then(session => session.analysis.complete(request.id));
+  }
+  const parent = await review(first, ".");
+  const child = await review(first, "child");
+  await parent();
+  const filename = "child/новый файл.js";
+  await writeFile(path.join(root, filename), "new\n");
+  await writeFile(path.join(root, "ignored.tmp"), "ignore");
+  const changed = await tree();
+  assert.deepEqual((await workspace.getModule({ view: changed.id, path: "child", analysis: false })).files,
+    [{ path: filename, status: "new" }]);
+  assert.equal(changed.modules.find(m => m.key === ".")!.status, "unchanged");
+  await rm(path.join(root, filename));
+  await child();
+  workspace = await createWorkspaceSession({ root });
+  const reverted = await tree();
+  assert.equal(reverted.counts.changed, 0);
+  assert.deepEqual(await statuses(reverted), { ".": "fresh", child: "stale" });
+  await writeFile(path.join(root, "child/code.js"), "updated\n");
+  const next = await tree();
+  await (await review(next, "child"))();
+  assert.deepEqual(await statuses(await tree()), { ".": "fresh", child: "fresh" });
+  commitTestFiles(root);
+  const committed = await tree();
+  assert.equal(committed.counts.changed, 0);
+  assert.deepEqual(await statuses(committed), { ".": "fresh", child: "fresh" });
+  const contractPath = path.join(root, ".archiview/modules/child.yaml");
+  const original = await readFile(contractPath, "utf8");
+  const declaration = parse(original);
+  declaration.purpose += " Изменённое обещание.";
+  await writeFile(contractPath, stringify(declaration));
+  assert.deepEqual(await statuses(await tree()), { ".": "stale", child: "stale" });
+  await writeFile(contractPath, original);
+  workspace = await createWorkspaceSession({ root });
+  assert.deepEqual(await statuses(await tree()), { ".": "stale", child: "stale" });
+
+});
 
 /** Открывает временный backend и закрывает ровно принадлежащие тесту соединения. */
 async function serve(t: TestContext, root: string, panelToken?: string) {
@@ -214,8 +274,9 @@ test("analysis exports exactly the selected view, imports through CLI once, and 
   const entries = (await app.reports.list()).entries;
   assert.equal(entries.length, 1);
   assert.equal((await (await fetch(app.url + "/api/analysis/" + request.id)).json()).status, "completed");
-  const live = await app.reports.publishedComparison();
-  assert.equal(reviewFreshness(entries[0], live!.baseline, live!.current).current.status, "stale");
+  const live = await app.getComparison();
+  const statuses = await app.getReviewStatuses({ view: live.id });
+  assert.equal(statuses.modules.find(m => m.key === "child")!.reviewStatus!.self.current.status, "stale");
   const child = (await ((await fetch(app.url + "/api/comparison?baseline=initial")).json() as Promise<ComparisonResponse>)).modules.find((module) => module.moduleId === "child");
   assert.equal(child!.reviewStatus!.self.current.status, "stale");
 });

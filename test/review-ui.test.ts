@@ -202,16 +202,16 @@ test("own analysis stays separate from hidden descendants in a collapsed tree ro
       subtree: { current: { status: "fresh" } } } }), "Требует анализа", "module: " + status);
     const module = { reviewStatus: { self: { current: { status: "fresh" } }, subtree: { current: { status } } } };
     assert.equal(moduleAnalysisStatus(module), null, "own analysis: " + status);
-    assert.equal(moduleAnalysisStatus(module, "subtree"), "Требует анализа", "collapsed: " + status);
+    assert.equal(moduleAnalysisStatus(module, "subtree"), "Вложенные модули требуют анализа", "collapsed: " + status);
   }
   for (const area of ["self", "subtree"] as const) {
     const reviewStatus = { self: { current: { status: "fresh", conflict: false } },
       subtree: { current: { status: "fresh", conflict: false } } };
     reviewStatus[area].current.conflict = true;
     assert.equal(moduleAnalysisStatus({ reviewStatus }), area === "self" ? "Требует анализа" : null, area + " conflict");
-    assert.equal(moduleAnalysisStatus({ reviewStatus }, "subtree"), "Требует анализа", area + " collapsed conflict");
+    assert.equal(moduleAnalysisStatus({ reviewStatus }, "subtree"), area === "self" ? "Требует анализа" : "Вложенные модули требуют анализа", area + " collapsed conflict");
   }
-  assert.equal(moduleAnalysisStatus({}), "Требует анализа");
+  assert.equal(moduleAnalysisStatus({}), null);
   assert.equal(moduleAnalysisStatus({ reviewStatus: null }), "Требует анализа");
 });
 
@@ -238,7 +238,7 @@ test("current inputs and the change assessment keep independent freshness, reaso
   assert.equal(current.status, "fresh");
   assert.equal(current.conflict, false);
   assert.deepEqual(current.reasons, []);
-  assert.equal(change.title, "Оценка изменения");
+  assert.equal(change.title, "Оценка изменений модуля относительно базы");
   assert.equal(change.status, "stale");
   assert.deepEqual(change.reasons, ["Изменилась база сравнения", "Изменился собственный контракт"]);
   // Совпадение проверенных входов не заменяет устаревшую оценку изменения.
@@ -260,7 +260,7 @@ test("a review without saved inputs does not invent a matching change assessment
   assert.deepEqual(reviewFreshnessStates(bundle)[0].reasons, ["Изменились собственные файлы"]);
   assert.deepEqual(reviewFreshnessStates({}), [
     { key: "current", title: "Проверка модуля", status: "unknown", conflict: false, reasons: [] },
-    { key: "change", title: "Оценка изменения", status: "unknown", conflict: false, reasons: [] },
+    { key: "change", title: "Оценка изменений модуля относительно базы", status: "unknown", conflict: false, reasons: [] },
   ]);
 });
 

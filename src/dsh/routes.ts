@@ -195,6 +195,14 @@ async function runApiOperation(request: IncomingMessage, response: ServerRespons
   if (method === "GET" && relative === "comparison") {
     return sendJson(response, 200, await callSessionOperation(session, "getComparison", comparisonQueryArguments(query)));
   }
+  if (method === "GET" && relative === "changes") {
+    const controller = new AbortController();
+    response.once("close", () => controller.abort());
+    const result = await callSessionOperation(session, "waitForChanges", query, controller.signal);
+    if (!response.destroyed) sendJson(response, 200, result);
+    return;
+  }
+  if (method === "GET" && relative === "review-statuses") return sendJson(response, 200, await callSessionOperation(session, "getReviewStatuses", query));
   if (method === "GET" && relative === "module") {
     return sendJson(response, 200, await callSessionOperation(session, "getModule", query));
   }

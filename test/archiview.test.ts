@@ -1,3 +1,4 @@
+import { initTestRepository, commitTestFiles } from "./support.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
 import { contractYaml, writeModuleTree } from "./support.js";
 import type { AddressInfo } from "node:net";
@@ -15,11 +16,13 @@ test("serves tree and historical documents; snapshot creation preserves selected
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const root = path.join(temporary, "project");
   await mkdir(path.join(root, "gone"), { recursive: true });
+  initTestRepository(root);
   await writeModuleTree(root, { root: ".", gone: "gone" });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), contractYaml("root"));
   const historical = contractYaml("gone", "Historical responsibility");
   await writeFile(path.join(root, ".archiview/modules/gone.yaml"), historical);
   await writeFile(path.join(root, "gone/code.js"), "export const old = true;");
+  commitTestFiles(root);
   const { server } = await createArchiView({ root,
     stateDirectory: path.join(temporary, "snapshots") });
   server.listen(0, "127.0.0.1");

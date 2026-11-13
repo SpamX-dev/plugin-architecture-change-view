@@ -1,3 +1,4 @@
+import { initTestRepository } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { TestContext } from "node:test";
 /** Реальные Git revision и неизменяемые наблюдения рабочего дерева между коммитами. */
@@ -22,6 +23,7 @@ async function fixture(t: TestContext, useGit = true) {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const root = path.join(directory, "source");
   await mkdir(root);
+  initTestRepository(root);
   await writeModuleTree(root, { root: "." });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify({ schema_version: 1, id: "root", title: "Root", kind: "module",
     purpose: "Читать записи.", responsibilities: { R1: "Читать записи." }, boundaries: {}, invariants: {} }));

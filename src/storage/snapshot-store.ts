@@ -154,6 +154,33 @@ export class SnapshotStore {
     this.migration = { from: legacy, snapshots, reviews };
   }
 
+  /** Read only names and small labels for the timeline. Earlier archives can still be opened by ID. */
+  async savedMetadata() {
+    const raw = path.join(this.directory, "snapshots");
+    const list = async (directory: string) => {
+      await this.assertLocation(directory);
+      try { return await readdir(directory); }
+      catch (cause) { if (errorDetails(cause).code === "ENOENT") return []; throw cause; }
+    };
+    const [old, files] = await Promise.all([list(this.directory), list(raw)]);
+    const ids = new Set([...old.filter(name => /^saved-[a-f0-9]{24}\.json$/.test(name)),
+      ...files.filter(name => /^saved-[a-f0-9]{24}\.yaml$/.test(name))].map(name => name.slice(0, -5)));
+    const names = new Set(files);
+    return Promise.all([...ids].map(async id => {
+      const fallback = { id, kind: "saved", label: "Сохранённый снимок " + id.slice(6, 14) };
+      if (!names.has(id + ".meta.json")) return fallback;
+      try {
+        const file = path.join(raw, id + ".meta.json");
+        await this.assertLocation(file);
+        const info = await lstat(file);
+        if (!info.isFile() || info.size > 4096) return fallback;
+        const { label, capturedAt } = JSON.parse(await readFile(file, "utf8"));
+        if (typeof label === "string" && typeof capturedAt === "string") return { ...fallback, label, capturedAt };
+      } catch { /* The snapshot remains selectable even if its display label cannot be read. */ }
+      return fallback;
+    }));
+  }
+
   /** Возвращает сохранённые базы; HTTP может передать уже восстановленные published отдельно. */
   async list({ includePublished = true } = {}) {
     await this.open();
@@ -206,6 +233,8 @@ export class SnapshotStore {
     try {
       await writeFile(temporary, content, { flag: "wx" });
       await rename(temporary, path.join(raw, saved.id + ".yaml"));
+      await writeFile(temporary, JSON.stringify({ label: saved.label, capturedAt: saved.capturedAt }), { flag: "wx" });
+      await rename(temporary, path.join(raw, saved.id + ".meta.json"));
     } finally { await rm(temporary, { force: true }); }
     return saved;
   }

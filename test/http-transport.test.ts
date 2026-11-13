@@ -1,3 +1,4 @@
+import { initTestRepository } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
@@ -17,6 +18,7 @@ import { createArchiView } from "../src/archiview/http.js";
 
 test("standalone CLI serves the shell before opening a project session", { timeout: 15000 }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-cli-start-"));
+  initTestRepository(root);
   const entry = fileURLToPath(new URL("../src/archiview/packaged-cli.ts", import.meta.url));
   const child = spawn(process.execPath, ["--import", "tsx", entry, "--root", root, "--port", "0"], { windowsHide: true });
   const closed = once(child, "close");
@@ -40,6 +42,7 @@ test("standalone CLI serves the shell before opening a project session", { timeo
 async function serve(t: TestContext) {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-transport-"));
   t.after(() => rm(root, { recursive: true, force: true }));
+  initTestRepository(root);
   await writeModuleTree(root, { root: "." });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify({ schema_version: 1, id: "root", title: "Пример",
     kind: "module", purpose: "Возвращать значение.", responsibilities: { R1: "Возвращать значение." },
@@ -88,10 +91,11 @@ test("HTTP serves the published view and rejects malformed publication selectors
   assert.equal((await fetch(url + "sometimes")).status, 400);
   assert.equal((await fetch(url + "true&historyLimit=0")).status, 400);
   const current = await (await fetch(url + "false")).json();
+  await app.buildReview({ view: current.id, path: "." });
   const published = await (await fetch(url + "true")).json();
   assert.equal(current.published, undefined);
   assert.equal(published.published, true);
-  assert.equal(published.after.id, current.after.id);
+  assert.equal(published.modules[0].moduleId, current.modules[0].moduleId);
   const detail = await fetch(app.url + "/api/module?" + new URLSearchParams({ view: published.id, path: "." }));
   assert.equal((await detail.json()).moduleId, "root");
 });

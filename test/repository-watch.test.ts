@@ -1,0 +1,51 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
+import os from "node:os";
+import test from "node:test";
+import { RepositoryWatch } from "../src/application/repository-watch.js";
+import { commitTestFiles, initTestRepository } from "./support.js";
+
+test("linked worktree subscriptions ignore local storage, wake all readers and see shared Git refs and reviews", async t => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "archiview-linked-watch-"));
+  const repo = path.join(dir, "main"), linked = path.join(dir, "linked"), storage = path.join(dir, "state");
+  await mkdir(repo);
+  await mkdir(storage);
+  const watcher = new RepositoryWatch(linked, storage);
+  t.after(async () => { watcher.close(); await rm(dir, {recursive:true, force:true, maxRetries:5}); });
+  initTestRepository(repo);
+  await writeFile(path.join(repo, ".gitignore"), "*.tmp\n");
+  await writeFile(path.join(repo, "value.js"), "initial\n");
+  commitTestFiles(repo);
+  const git = (...args: string[]) => execFileSync("git", args, {cwd:repo, windowsHide:true}).toString().trim();
+  git("worktree", "add", "-qb", "linked", linked);
+  await mkdir(path.join(linked, ".archiview/snapshots"), {recursive:true});
+  await mkdir(path.join(storage, "work"));
+  const cursor = await watcher.current();
+  await writeFile(path.join(linked, "temp.tmp"), "scratch");
+  await writeFile(path.join(linked, ".archiview/snapshots/module-observations.json"), "{}");
+  await writeFile(path.join(storage, "work/module.archi.yaml"), "structure");
+  const quiet = await watcher.wait(cursor, AbortSignal.timeout(600));
+  assert.equal(quiet.cursor, cursor);
+  const listeners = [watcher.wait(cursor, AbortSignal.timeout(5000)), watcher.wait(cursor, AbortSignal.timeout(5000))];
+  await writeFile(path.join(linked, "value.js"), "saved\n");
+  const [one, two] = await Promise.all(listeners);
+  assert.notEqual(one.cursor, cursor);
+  assert.deepEqual(one, two);
+  assert.equal(one.reviewsChanged, false);
+  // Change the checked-out branch's tip without changing any files in the linked worktree.
+  const newTip = git("-c", "user.name=Test", "-c", "user.email=test@example.test", "commit-tree",
+    git("rev-parse", "HEAD^{tree}"), "-p", "HEAD", "-m", "new tip");
+  const stable = await watcher.current();
+  git("update-ref", "refs/heads/linked", newTip);
+  const refs = await watcher.wait(stable, AbortSignal.timeout(5000));
+  assert.notEqual(refs.cursor, stable);
+  await writeFile(path.join(storage, "work/module.review.yaml"), "analysis");
+  let review = await watcher.wait(refs.cursor, AbortSignal.timeout(5000));
+  if (!review.reviewsChanged) review = await watcher.wait(review.cursor, AbortSignal.timeout(5000));
+  assert.equal(review.reviewsChanged, true);
+  const pending = watcher.wait(review.cursor);
+  watcher.close();
+  await assert.rejects(pending, /наблюдение|Наблюдение|Прервано/);
+});

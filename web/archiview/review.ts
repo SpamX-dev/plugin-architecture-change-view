@@ -96,7 +96,7 @@ function reviewOrigin(bundle: ReviewBundle) {
   if (versions.showChange) {
     origin.append(el("p", "", "Сравнение: " + versions.baseline));
     const verdict = bundle.report.assessment?.change?.verdict;
-    if (verdict) origin.append(el("p", "", "Оценка изменения: " + (verdicts[verdict] ?? verdict)));
+    if (verdict) origin.append(el("p", "", "Оценка изменений модуля относительно базы: " + (verdicts[verdict] ?? verdict)));
   }
   return origin;
 }

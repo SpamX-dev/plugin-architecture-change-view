@@ -1,3 +1,4 @@
+import { initTestRepository, commitTestFiles } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { SnapshotStore } from "../src/storage/snapshot-store.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
@@ -22,10 +23,12 @@ async function fixture(t: TestContext) {
   t.after(() => rm(root, { recursive: true, force: true }));
   const contract = { schema_version: 1, id: "root", title: "Пример", kind: "module",
     purpose: "Возвращать значение.", responsibilities: { R1: "Возвращать значение." }, boundaries: {}, invariants: {} };
+  initTestRepository(root);
   await writeModuleTree(root, { root: "." });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract));
   await writeFile(path.join(root, "code.js"), "export const value = 1;\n");
-  const app = await createArchiView({ root });
+  commitTestFiles(root);
+  const app = await createArchiView({ root, publishOnOpen: true });
   app.server.listen(0, "127.0.0.1");
   await once(app.server, "listening");
   t.after(() => new Promise<void>((resolve) => { app.server.closeAllConnections(); app.server.close(() => resolve()); }));
@@ -65,17 +68,9 @@ test("complete refresh reuses publication and history while preserving saved and
   const changed = await app.get("?baseline=auto");
   assert.notEqual(changed.after.digest, first.after.digest);
   assert.equal(changed.modules[0].status, "changed");
-  const previousWorking = await app.get("?baseline=" + changed.after.id);
-  assert.equal(previousWorking.before.id, changed.after.id);
-  assert.equal(previousWorking.modules[0].status, "unchanged");
-  const response = await fetch(app.url + "/api/snapshots", { method: "POST",
-    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ view: previousWorking.id, label: "Сохранённая база" }) });
-  assert.equal(response.status, 201);
-  const saved = await response.json();
-  const selected = await app.get("?baseline=" + saved.id);
-  assert.equal(selected.before.id, saved.id);
-  assert.ok(selected.baselines.some((entry) => entry.id === saved.id && entry.label === "Сохранённая база"));
-  assert.equal(savedReader.mock.callCount(), 5);
+  assert.equal(savedReader.mock.callCount(), 0);
+  assert.ok(changed.modules.every(module => module.reviewStatus === undefined));
+
 });
 
 test("incomplete working capture reads existing diagnostics and leaves the publication intact", async (t) => {
@@ -92,15 +87,15 @@ test("incomplete working capture reads existing diagnostics and leaves the publi
   const view = await app.get();
   assert.equal(view.complete, false);
   assert.ok(view.diagnostics.some((message) => message.includes("128 KiB")));
-  assert.ok(view.reviewDiagnostics!.includes("Диагностика сохранённой публикации"));
-  assert.equal(reader.mock.callCount(), 1);
+  assert.deepEqual(view.reviewDiagnostics, []);
+  assert.equal(reader.mock.callCount(), 0);
   assert.deepEqual(await workBytes(app), before);
 });
 
 test("historical refresh reuses loaded history and preserves the current publication", async (t) => {
   const app = await fixture(t);
   const first = await app.get();
-  const historicalId = first.timeline.find((entry) => entry.kind === "change")!.id;
+  const historicalId = first.timeline.find((entry) => entry.kind === "git")!.id;
   const firstDetail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: first.id, path: "." }))).json() as Promise<ModuleResponse>);
   await writeFile(path.join(app.root, "code.js"), "export const value = 2;\n");
   await app.get();

@@ -124,7 +124,8 @@ async function repositoryInventory(root: string, options: InventoryOptions, nest
 export async function moduleInventory(projectRoot: string, options: InventoryOptions = {}) {
   const root = await realpath(projectRoot);
   const repositories = await discoverWorkspaceRepositories(root);
-  if (!repositories.length || repositories.length === 1 && repositories[0] === ".") {
+  if (!repositories.length) throw new Error("Для ArchiView требуется рабочее дерево Git");
+  if (repositories.length === 1 && repositories[0] === ".") {
     const { inventory } = await repositoryInventory(root, options, []);
     return { ...inventory, repositories };
   }

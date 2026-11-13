@@ -4,9 +4,11 @@ import type { Freshness, Coverage, Reason, ReviewBundle } from "./types.js";
 export function moduleAnalysisStatus(module: {
   reviewStatus?: { self?: { current?: Freshness }; subtree?: { current?: Freshness } } | null;
 }, scope: "self" | "subtree" = "self") {
-  const statuses = [module.reviewStatus?.self?.current,
-    ...(scope === "subtree" ? [module.reviewStatus?.subtree?.current] : [])];
-  return statuses.some((value) => value?.status !== "fresh" || value.conflict) ? "Требует анализа" : null;
+  if (module.reviewStatus === undefined) return null;
+  const requiresAnalysis = (value?: Freshness) => value?.status !== "fresh" || value.conflict;
+  if (requiresAnalysis(module.reviewStatus?.self?.current)) return "Требует анализа";
+  if (scope === "subtree" && requiresAnalysis(module.reviewStatus?.subtree?.current)) return "Вложенные модули требуют анализа";
+  return null;
 }
 
 /** Сравнение известных входов не обещает полного покрытия или положительного вердикта. */
@@ -45,6 +47,7 @@ function reasonText(reason: Reason) {
     missing_manifest: "Нет полного описания входов проверки", legacy_manifest: "Прежняя проверка не описывает всю область влияния",
     dependency_coverage_unknown: "Полнота зависимостей не подтверждена", unresolved_dependency_changed: "Изменилась область возможного влияния",
     incomplete_snapshot: "Снимок неполный", not_reviewed: "Содержательная проверка ещё не выполнялась",
+    module_changed_since_analysis: "Модуль изменился после проверки", module_order_unknown: "Нет истории изменений для проверенной версии",
     module_existence: "Изменилось наличие модуля", module_path: "Модуль перемещён", own_code: "Изменились собственные файлы",
     own_contract: "Изменился собственный контракт", inherited_constraints: "Изменились ограничения предков",
     child_composition: "Изменились состав или контракты подмодулей", subtree_inputs: "Изменились входы поддерева",
@@ -68,5 +71,5 @@ export function reviewFreshnessStates(bundle: Pick<ReviewBundle, "freshness" | "
       reasons: [...new Set((value?.reasons ?? []).map(reasonText))] };
   };
   return [state("current", "Проверка модуля", bundle?.stale ? "stale" : "unknown"),
-    state("change", "Оценка изменения", "unknown")];
+    state("change", "Оценка изменений модуля относительно базы", "unknown")];
 }

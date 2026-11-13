@@ -31,7 +31,10 @@ export async function snapshotModules(records: FileRecord[], diagnostics: string
   let tree = new Map<string, string>();
   let treeError: string | undefined;
   if (treeFile) {
-    try { tree = parseModuleTree(treeFile.text ?? ""); }
+    try {
+      if (treeFile.error) throw new Error(treeFile.error);
+      tree = parseModuleTree(treeFile.text ?? "");
+    }
     catch (cause) {
       treeError = MODULE_TREE_FILE + ": " + (treeFile.error ?? errorDetails(cause).message);
       diagnostics.push(treeError);
@@ -88,7 +91,7 @@ export async function snapshotModules(records: FileRecord[], diagnostics: string
     owner ??= path.posix.dirname(record.path);
     while (!modules.has(owner)) owner = path.posix.dirname(owner);
     const module = modules.get(owner)!;
-    module.files.push({ path: record.path, hash: record.hash, error: record.error });
+    module.files.push({ path: record.path, hash: record.hash, error: record.error, ...(record.mode ? {mode: record.mode} : {}) });
     if (isSource(record.path)) module.sourceFiles++;
   }
   for (const module of modules.values()) {

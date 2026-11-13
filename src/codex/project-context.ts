@@ -15,8 +15,7 @@ export function threadIdFromMetadata(metadata?: Record<string, unknown>) {
 /**
  * Общая прикладная привязка остаётся неизменяемой. Codex-адаптер получает папку
  * до создания сессии; сериализация первых обращений исключает конкурирующие корни.
- * Когда хост не сообщает контекст, разрешён явный выбор существующей папки.
- * Подтверждённое отсутствие проекта не обходится ручным вводом.
+ * Если у чата нет доступной рабочей папки, пользователь может явно выбрать её.
  */
 export async function createCodexProjectBinding(initialRoot?: string, { readContext = createHostContextReader() } = {}) {
   const project = await createProjectBinding(initialRoot);
@@ -32,13 +31,13 @@ export async function createCodexProjectBinding(initialRoot?: string, { readCont
         }
         if (threadId !== undefined && threadId !== boundThread) {
           const context = await readContext(threadId, { allowStartupDirectory: boundThread === undefined });
-          if (context.status === "unavailable") throw new ApplicationError("PROJECT_UNAVAILABLE", "Плагин доступен только в проектах");
           if (context.status !== "ready") {
             if (requested !== undefined && project.root === undefined) {
               const root = await project.select(requested);
               boundThread = threadId;
               return root;
             }
+            if (context.status === "unavailable") throw new ApplicationError("PROJECT_UNAVAILABLE", "Укажите папку проекта, чтобы открыть ArchiView.");
             throw new ApplicationError("CODEX_CONTEXT_UNAVAILABLE", "Не удалось получить рабочую папку чата от Codex. Укажите папку проекта вручную.");
           }
           if (initialRoot === undefined) await project.select(context.root);

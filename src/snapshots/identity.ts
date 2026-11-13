@@ -9,7 +9,7 @@ export function structureHash(value: string | Buffer) {
 
 /** Метки и время не меняют содержание снимка; факты и неполнота входят в отпечаток. */
 export function snapshotDigest(snapshot: Snapshot) {
-  return contentDigest({ root: snapshot.root, modules: snapshot.modules,
+  return contentDigest({ observations: snapshot.observations, root: snapshot.root, modules: snapshot.modules,
     facts: snapshot.facts ?? [], complete: snapshot.complete,
     diagnostics: snapshot.diagnostics, evidenceLimitations: snapshot.evidenceLimitations ?? [] });
 }

@@ -47,13 +47,13 @@ function requestUrl(request: IncomingMessage, serverOrigin: string) {
 }
 
 /** Programmatic access to the server and its initialized store. The standalone CLI only needs the HTTP adapter. */
-export async function createArchiView({ root, stateDirectory, panelToken }: { root: string; stateDirectory?: string; panelToken?: string }) {
+export async function createArchiView({ root, stateDirectory, panelToken, publishOnOpen = false }: { root: string; stateDirectory?: string; panelToken?: string; publishOnOpen?: boolean }) {
   const workspace = await createWorkspaceSession({ root, stateDirectory });
-  const session = await workspace.session();
+  const session = await workspace.session(undefined, !publishOnOpen);
   return { ...session, ...workspace, server: createArchiViewHttpServer(workspace, panelToken) };
 }
 
-export function createArchiViewHttpServer(session: SessionOperations, panelToken?: string) {
+export function createArchiViewHttpServer(session: SessionOperations & { close?(): void | Promise<void> }, panelToken?: string) {
   const assets = new Map<string, [URL, string]>(([
     ["/", ["index.html", "text/html"]], ["/app.mjs", ["app.mjs", "text/javascript"]],
     ["/client.mjs", ["client.mjs", "text/javascript"]],
@@ -113,6 +113,14 @@ export function createArchiViewHttpServer(session: SessionOperations, panelToken
       if (request.method === "GET" && url.pathname === "/api/comparison") {
         return json(response, 200, await callSessionOperation(session, "getComparison", comparisonQueryArguments(args)));
       }
+      if (request.method === "GET" && url.pathname === "/api/changes") {
+        const controller = new AbortController();
+        response.once("close", () => controller.abort());
+        const result = await callSessionOperation(session, "waitForChanges", args, controller.signal);
+        if (!response.destroyed) json(response, 200, result);
+        return;
+      }
+      if (request.method === "GET" && url.pathname === "/api/review-statuses") return json(response, 200, await callSessionOperation(session, "getReviewStatuses", args));
       if (request.method === "GET" && url.pathname === "/api/module") return json(response, 200, await callSessionOperation(session, "getModule", args));
       if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))
         return json(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: url.pathname.split("/").at(-1) })));
@@ -129,5 +137,5 @@ export function createArchiViewHttpServer(session: SessionOperations, panelToken
       return json(response, error.code === "REQUEST_TOO_LARGE" ? 413 : errorStatus[error.code] ?? 500,
         { error: error.message, code: error.code });
     }
-  });
+  }).on("close", () => { void session.close?.(); });
 }

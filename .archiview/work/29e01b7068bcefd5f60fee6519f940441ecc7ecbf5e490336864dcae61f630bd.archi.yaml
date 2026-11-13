@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-snapshots
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: fbd0b982ff6ba96ce7ba47190346792a81aacea2a0291e1cfc2c84bce7e1f2dd
+check_hash: 0af3e11ecd42c1c9514ba4dcc4b8b6de71fdb411fd673eccee5b364f1a9f96e6
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,7 +10,7 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: b23283774c6463600f966355f5329f9f7684aacb
+      id: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
     state:
       exists: true
       directory: src/snapshots
@@ -19,8 +19,8 @@ input_manifest:
   current:
     exists: true
     directory: src/snapshots
-    self_digest: sha256:e3b7c614387feedb162d4a226493fe94bed920fbcef68d388797ed45e122a9c4
-    subtree_digest: sha256:f5625674db445f85d241c1aeb32347092bb66e27f548e729bf59bdfbf630c83c
+    self_digest: sha256:f53f070af9e4bd1b7579a5e0ffba2379b9214da75d20a3ae3796dc4e37ec6460
+    subtree_digest: sha256:b5e328985b0e7d1d73492935aaf55cdf967a3a8b39ca2d7fe5140368cacf2e4d
   analyzer:
     name: archiview-structure
     version: 1.0.2
@@ -345,22 +345,25 @@ current:
     directory: src/snapshots
     own_files:
       - path: src/snapshots/capture.ts
-        digest: sha256:cc777d1410a3740f53f0dc5218f44d47477c81430edacb257f3588f0e4c49d3a
+        digest: sha256:1091a3174ac30d0757b2fcd2c927b4bce0ab522c344204824ade9b807411b6de
         normalization: text-lf/v1
       - path: src/snapshots/comparison.ts
-        digest: sha256:cc51e3b0e9fce78b8c24beeef1f9a2d8acfb27309c59efbd060d523b43cb0a4a
+        digest: sha256:ac6a00dbe8c5cdf026577e19c2b4ad6b87ff1fea2654a569ceaaaa436702dc25
         normalization: text-lf/v1
       - path: src/snapshots/contract-diff.ts
         digest: sha256:6e2f12722a71cc8415ac0a1f48022a626b5f52c37bc1d829cd1b5d9ad6926cd0
         normalization: text-lf/v1
+      - path: src/snapshots/git-tree.ts
+        digest: sha256:26a3740a8544842b26f3460b654c62eda43a8fa31683d37d5ccfaba7c083535b
+        normalization: text-lf/v1
       - path: src/snapshots/identity.ts
-        digest: sha256:5acae35cacbdfdcf4f8489c88e509e590c3968d0d4d6319a36ed296cf71ba312
+        digest: sha256:1bd05abe3b3a429bf18063a901fbafc8beb2114b2581318f37c863ccd425b46f
         normalization: text-lf/v1
       - path: src/snapshots/module-layout.ts
-        digest: sha256:59e848be5331e20b2e2e4b8d6dcc686dcad04f74f71c73326f1429bac6fe10dc
+        digest: sha256:a8b206f56869c43ca5394ec346441f9ab85791e9c218d5a01310b3dca8e40038
         normalization: text-lf/v1
       - path: src/snapshots/types.ts
-        digest: sha256:80f5d1bddb2471b66da37d0a11a1850bd24bf90bed0ffaddc3f3d2bd102977ae
+        digest: sha256:d68b433338f958414d1ccd577dcd10eff51ca3a4a6f657668fcd2033b906c0b8
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -375,6 +378,8 @@ current:
       responsibilities:
         R1: Собирать снимки рабочего дерева, коммита и индекса Git с происхождением
           файлов и наблюдаемых фактов.
+        R3: Строить состав модулей рабочего дерева из структуры коммита, разницы Git и
+          новых файлов.
         R2: Сопоставлять версии модулей и вычислять различия файлов и композиции дерева.
       boundaries:
         B1: Публикация, оценка проверок и выбор представления принадлежат хранилищу,
@@ -400,8 +405,8 @@ current:
         section: invariants
         id: I1
         text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
+          корень от хоста или однократного явного выбора пользователя; явно
+          настроенный для модельных инструментов корень ограничивает их чтение.
       - module_id: architecture-change-view
         section: invariants
         id: I2
@@ -488,7 +493,7 @@ current:
         id: I6
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:e3b7c614387feedb162d4a226493fe94bed920fbcef68d388797ed45e122a9c4
+  technical_digest: sha256:f53f070af9e4bd1b7579a5e0ffba2379b9214da75d20a3ae3796dc4e37ec6460
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -496,22 +501,25 @@ current:
     directory: src/snapshots
     own_files:
       - path: src/snapshots/capture.ts
-        digest: sha256:cc777d1410a3740f53f0dc5218f44d47477c81430edacb257f3588f0e4c49d3a
+        digest: sha256:1091a3174ac30d0757b2fcd2c927b4bce0ab522c344204824ade9b807411b6de
         normalization: text-lf/v1
       - path: src/snapshots/comparison.ts
-        digest: sha256:cc51e3b0e9fce78b8c24beeef1f9a2d8acfb27309c59efbd060d523b43cb0a4a
+        digest: sha256:ac6a00dbe8c5cdf026577e19c2b4ad6b87ff1fea2654a569ceaaaa436702dc25
         normalization: text-lf/v1
       - path: src/snapshots/contract-diff.ts
         digest: sha256:6e2f12722a71cc8415ac0a1f48022a626b5f52c37bc1d829cd1b5d9ad6926cd0
         normalization: text-lf/v1
+      - path: src/snapshots/git-tree.ts
+        digest: sha256:26a3740a8544842b26f3460b654c62eda43a8fa31683d37d5ccfaba7c083535b
+        normalization: text-lf/v1
       - path: src/snapshots/identity.ts
-        digest: sha256:5acae35cacbdfdcf4f8489c88e509e590c3968d0d4d6319a36ed296cf71ba312
+        digest: sha256:1bd05abe3b3a429bf18063a901fbafc8beb2114b2581318f37c863ccd425b46f
         normalization: text-lf/v1
       - path: src/snapshots/module-layout.ts
-        digest: sha256:59e848be5331e20b2e2e4b8d6dcc686dcad04f74f71c73326f1429bac6fe10dc
+        digest: sha256:a8b206f56869c43ca5394ec346441f9ab85791e9c218d5a01310b3dca8e40038
         normalization: text-lf/v1
       - path: src/snapshots/types.ts
-        digest: sha256:80f5d1bddb2471b66da37d0a11a1850bd24bf90bed0ffaddc3f3d2bd102977ae
+        digest: sha256:d68b433338f958414d1ccd577dcd10eff51ca3a4a6f657668fcd2033b906c0b8
         normalization: text-lf/v1
     contract:
       id: archiview-snapshots
@@ -521,6 +529,8 @@ current:
       responsibilities:
         R1: Собирать снимки рабочего дерева, коммита и индекса Git с происхождением
           файлов и наблюдаемых фактов.
+        R3: Строить состав модулей рабочего дерева из структуры коммита, разницы Git и
+          новых файлов.
         R2: Сопоставлять версии модулей и вычислять различия файлов и композиции дерева.
       boundaries:
         B1: Публикация, оценка проверок и выбор представления принадлежат хранилищу,
@@ -545,8 +555,8 @@ current:
         section: invariants
         id: I1
         text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
+          корень от хоста или однократного явного выбора пользователя; явно
+          настроенный для модельных инструментов корень ограничивает их чтение.
       - module_id: architecture-change-view
         section: invariants
         id: I2
@@ -634,21 +644,21 @@ current:
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
     children: []
-  self_digest: sha256:8a28c65e71a57e9fc5983d7b587fdd9048e1d9346120fc2924f24dfa0cb832be
+  self_digest: sha256:d9d391837bcca3fc1c9eced73357ffda82ddb9bcff268aab0faadcc2f56bcc84
   subtree:
-    self: sha256:e3b7c614387feedb162d4a226493fe94bed920fbcef68d388797ed45e122a9c4
+    self: sha256:f53f070af9e4bd1b7579a5e0ffba2379b9214da75d20a3ae3796dc4e37ec6460
     children: []
-  subtree_digest: sha256:f5625674db445f85d241c1aeb32347092bb66e27f548e729bf59bdfbf630c83c
+  subtree_digest: sha256:b5e328985b0e7d1d73492935aaf55cdf967a3a8b39ca2d7fe5140368cacf2e4d
   semantic_subtree:
-    self: sha256:8a28c65e71a57e9fc5983d7b587fdd9048e1d9346120fc2924f24dfa0cb832be
+    self: sha256:d9d391837bcca3fc1c9eced73357ffda82ddb9bcff268aab0faadcc2f56bcc84
     children: []
-  semantic_subtree_digest: sha256:d7bf4004ef365adc1ed6f8791811433e7d8174656489f4258a26a987860b8f59
+  semantic_subtree_digest: sha256:491ff7ed6ee19f00487eae50ad23af17cc6e2e6382767435cd2aee98457c2d20
 change:
   existence: retained
-  own: false
-  own_code: false
-  own_contract: false
-  inherited_constraints: false
+  own: true
+  own_code: true
+  own_contract: true
+  inherited_constraints: true
   descendants: false
   child_composition: false
   moved: false
@@ -657,19 +667,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 221
-  comparison_key: sha256:53c5f0a3dced021795ded81c760ea2e2bb6057b0e82e4b2e0ec70f878b98c9e0
+  generation: 229
+  comparison_key: sha256:7da7254a0a66f9d27ec9b6f9a7adf4ab17c541a918826ea024b3c2f7739ca2d6
   baseline:
     metadata:
-      id: git-b23283774c6463600f966355f5329f9f7684aacb
-      digest: sha256:ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
+      id: git-d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T07:56:44.960Z
+      capturedAt: 2026-11-12T14:53:38.101Z
       kind: git
-      revision: b23283774c6463600f966355f5329f9f7684aacb
+      revision: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
       label: HEAD
-      fingerprint: ba10bb733fada7376b4433ba75d4ed45c1d0157dae53a16b26da608173dfec87
+      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -1669,14 +1679,14 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/snapshots/capture.ts","src/snapshots/comparison.ts","src/snapshots/contract-diff.ts","src/snapshots/identity.ts","src/snapshots/module-layout.ts","src/snapshots/types.ts"]}'
   current:
     metadata:
-      id: working-af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
-      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
+      id: working-17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
+      digest: sha256:17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T07:56:47.009Z
+      capturedAt: 2026-11-13T06:45:51.736Z
       kind: working
       label: Рабочее дерево
-      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
+      fingerprint: 8aab78b922d900e815b80f4c7e0671a4309fe40acea7b649b63dc3003bbadab6
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -1701,6 +1711,7 @@ publication:
 
           responsibilities:
             R1: Собирать снимки рабочего дерева, коммита и индекса Git с происхождением файлов и наблюдаемых фактов.
+            R3: Строить состав модулей рабочего дерева из структуры коммита, разницы Git и новых файлов.
             R2: Сопоставлять версии модулей и вычислять различия файлов и композиции дерева.
           boundaries:
             B1: Публикация, оценка проверок и выбор представления принадлежат хранилищу, модели отчётов и прикладной сессии.
@@ -1721,6 +1732,8 @@ publication:
           responsibilities:
             R1: Собирать снимки рабочего дерева, коммита и индекса Git с происхождением
               файлов и наблюдаемых фактов.
+            R3: Строить состав модулей рабочего дерева из структуры коммита, разницы Git и
+              новых файлов.
             R2: Сопоставлять версии модулей и вычислять различия файлов и композиции дерева.
           boundaries:
             B1: Публикация, оценка проверок и выбор представления принадлежат хранилищу,
@@ -1733,29 +1746,31 @@ publication:
       documentPath: .archiview/modules/archiview-snapshots.yaml
       files:
         - path: .archiview/modules/archiview-snapshots.yaml
-          hash: 729614d43b6c368f1bbd8d8586ff2d6b02f2eac7
+          hash: fe0b044308107dc1b57ddb7409cc26e4c10a2704
         - path: src/snapshots/capture.ts
-          hash: 1e1ea244e1e2a00a1e0fd56d0bd5164e19b161db
+          hash: 031d357bbc48e83d6907fc0a1b8aab4697e9bbd7
         - path: src/snapshots/comparison.ts
-          hash: ea6feeab066eb36b4b7c71c043cc743d8a30ebaf
+          hash: 7c37122c73260d36606f3ea2269ce64590379fee
         - path: src/snapshots/contract-diff.ts
           hash: 25c41f9e8bd2138489eafeb4cc6159062b301736
+        - path: src/snapshots/git-tree.ts
+          hash: 8571f2e95acb5ecaada2c4b4e67d4fb68bf16d23
         - path: src/snapshots/identity.ts
-          hash: a397fd9979b0ca0911893b78d4ec4d0f951e078d
+          hash: 82586f5c84d3b982b640b98ca4df78736961b4ba
         - path: src/snapshots/module-layout.ts
-          hash: f25e5edf2e26f6a22d630ee0d3c3f8d9008550c8
+          hash: 41d3d81033b859fdc9ba4df837b864309c61346a
         - path: src/snapshots/types.ts
-          hash: fbced32fb23a0c6279f89c6f24263b0c638385a2
-      sourceFiles: 6
-      fingerprint: a7ae5e2c4183bbf605ea242852545aff2d282b5955830f83c9feb696e1de6323
+          hash: aba7bfc3545c7cea0643ecd1d1bc26494a9e7442
+      sourceFiles: 7
+      fingerprint: 41415ca72b1d15688738c059beb8e24ed1f511f45df01ba1d702d56f4aa4050a
     facts:
       - index: 19
         fact:
-          id: sha256:8961471ce4fef0386c05571e7416ef35464fb0ff3bd1339d3bf20890eec9c29d
+          id: sha256:aed9cd35630c1087d0e1576c560d70f78eee07f3e6ce4060f00679e19dcb3a9d
           kind: file
           path: .archiview/modules/archiview-snapshots.yaml
           start_line: 1
-          end_line: 16
+          end_line: 17
           text: >
             schema_version: 1
 
@@ -1772,6 +1787,7 @@ publication:
 
             responsibilities:
               R1: Собирать снимки рабочего дерева, коммита и индекса Git с происхождением файлов и наблюдаемых фактов.
+              R3: Строить состав модулей рабочего дерева из структуры коммита, разницы Git и новых файлов.
               R2: Сопоставлять версии модулей и вычислять различия файлов и композиции дерева.
             boundaries:
               B1: Публикация, оценка проверок и выбор представления принадлежат хранилищу, модели отчётов и прикладной сессии.
@@ -1780,11 +1796,11 @@ publication:
               I2: Сравнение сохраняет удалённые модули и различает изменение собственных файлов и изменение потомков.
       - index: 114
         fact:
-          id: sha256:255f674b198953aa2cd113a3bfd133825acb7267ae8599692e2a00cc2a74fda0
+          id: sha256:085996b51d9f30c294dfc9fb974a53622ef5a287ea0304891338c0e8570d00e2
           kind: file
           path: src/snapshots/capture.ts
           start_line: 1
-          end_line: 338
+          end_line: 330
           text: >
             /** Сбор файлов, контрактов и доказательств из рабочего дерева,
             коммита или индекса Git. */
@@ -1799,10 +1815,6 @@ publication:
 
             import { spawn } from "node:child_process";
 
-            import { createHash } from "node:crypto";
-
-            import { createReadStream } from "node:fs";
-
             import { lstat, readFile, realpath } from "node:fs/promises";
 
             import path from "node:path";
@@ -1810,9 +1822,8 @@ publication:
             import { excludedProjectPath, projectFiles, regularProjectFile }
             from "../contracts/source-files.js";
 
-            import { decodeContractText, listModuleContractPaths,
-            MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY,
-            MODULE_TREE_FILE, readContractStorageFile } from
+            import { decodeContractText, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES,
+            MODULE_DIRECTORY, MODULE_TREE_FILE, readContractStorageFile } from
             "../contracts/module-tree.js";
 
             import { isSource, snapshotModules, type WorkingLayout } from
@@ -1843,8 +1854,9 @@ publication:
             /** Запускает только Git без оболочки, ограничивая время и объём
             ответа. */
 
-            async function git(root: string, args: string[], input: string |
-            Buffer = "", maxBytes = 16 * 1024 * 1024): Promise<Buffer> {
+            export async function git(root: string, args: string[], input:
+            string | Buffer = "", maxBytes = 16 * 1024 * 1024): Promise<Buffer>
+            {
               return new Promise((resolve, reject) => {
                 const child = spawn("git", args, { cwd: root, windowsHide: true,
                   stdio: ["pipe", "pipe", "pipe"] });
@@ -1882,8 +1894,20 @@ publication:
             }
 
 
-            /** Определяет корень и алгоритм Git; отсутствие Git допускает
-            файловые снимки. */
+            /** Git expects C-quoted paths, separated by newlines, for
+            --stdin-paths. */
+
+            export async function gitFileHashes(root: string, paths: string[]) {
+              const quoted = paths.map(name => '"' + [...Buffer.from(name)].map(byte =>
+                byte < 32 || byte > 126 || byte === 34 || byte === 92
+                  ? "\\" + byte.toString(8).padStart(3, "0") : String.fromCharCode(byte)).join("") + '"');
+              const hashes = (await git(root, ["hash-object", "--stdin-paths"], quoted.join("\n") + "\n")).toString().trim().split("\n");
+              if (hashes.length !== paths.length) throw new Error("Incomplete Git file hashes");
+              return hashes;
+            }
+
+
+            /** Определяет физический корень рабочего дерева Git. */
 
             async function gitInfo(root: string) {
               let repository;
@@ -1893,34 +1917,16 @@ publication:
                 if (error.code === "ENOENT" || error.message.includes("not a git repository")) return null;
                 throw error;
               }
-              const algorithm = (await git(root, ["rev-parse", "--show-object-format"]))
-                .toString().trim();
-              return { repository: await realpath(repository), algorithm };
+              return { repository: await realpath(repository) };
             }
 
 
-            /** Вычисляет blob-отпечаток вне Git, не загружая крупные исходники
-            в память. */
-
-            async function fileHash(file: string) {
-              const before = await lstat(file);
-              const hash = createHash("sha1").update("blob " + before.size + "\0");
-              for await (const chunk of createReadStream(file)) hash.update(chunk);
-              const after = await lstat(file);
-              if (before.size !== after.size || before.mtimeMs !== after.mtimeMs) {
-                throw new Error("File changed while being captured");
-              }
-              return hash.digest("hex");
-            }
-
-
-            /** Hash the exact buffer retained as evidence using Git's filters
-            when available. */
+            /** Hash the same bytes used as evidence, applying this path's Git
+            filters. */
 
             async function capturedText(root: string, file: string, bytes:
-            Buffer, decoded: string, inGit: boolean): Promise<FileRecord> {
-              const hash = inGit ? (await git(root, ["hash-object", "--stdin", "--path", file], bytes)).toString().trim() :
-                createHash("sha1").update("blob " + bytes.length + "\0").update(bytes).digest("hex");
+            Buffer, decoded: string): Promise<FileRecord> {
+              const hash = (await git(root, ["hash-object", "--stdin", "--path", file], bytes)).toString().trim();
               return { path: file, hash, text: decoded.replace(/\r\n?/g, "\n") };
             }
 
@@ -1971,6 +1977,7 @@ publication:
             options: SnapshotOptions = {}) {
               const root = await realpath(projectRoot);
               const info = await gitInfo(root);
+              if (!info) throw new Error("Для ArchiView требуется рабочее дерево Git");
               const working = { root, ownsDirectory: repositoryDirectoryOwnership(root) };
               const listed = await projectFiles(root, options.maxFiles ?? 50000, working.ownsDirectory);
               const diagnostics = [...listed.diagnostics];
@@ -1983,14 +1990,14 @@ publication:
               // Capture only the registry and contract documents from the reserved metadata directory.
               // They belong to the source project even when report storage is configured elsewhere.
               const maxFiles = options.maxFiles ?? 50000;
-              files.push(MODULE_TREE_FILE);
-              try {
-                const contracts = await listModuleContractPaths(root);
-                const room = Math.max(0, maxFiles - (files.length - 1));
-                if (contracts.length > room) diagnostics.push("File limit reached: " + maxFiles);
-                files.push(...contracts.slice(0, room));
-              }
-              catch (cause) { diagnostics.push(MODULE_DIRECTORY + ": " + errorDetails(cause).message); }
+              const contractPaths = (await git(root, ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--",
+                MODULE_TREE_FILE, MODULE_DIRECTORY])).toString().split("\0");
+              const contracts = [...new Set(contractPaths)].filter(isContractStorage);
+              const room = Math.max(0, maxFiles - files.length);
+              const documents = contracts.filter(file => file !== MODULE_TREE_FILE);
+              if (documents.length > room) diagnostics.push("File limit reached: " + maxFiles);
+              if (contracts.includes(MODULE_TREE_FILE)) files.push(MODULE_TREE_FILE);
+              files.push(...documents.slice(0, room));
               files.sort();
               const records: FileRecord[] = [];
               const hashOnly: FileRecord[] = [];
@@ -2006,7 +2013,7 @@ publication:
                         if (bytes.length > evidenceBudget) throw new Error("Contract evidence budget exceeded");
                         evidenceBudget -= bytes.length;
                       }
-                      return await capturedText(root, file, bytes, text, Boolean(info));
+                      return await capturedText(root, file, bytes, text);
                     }
                     const fullPath = path.join(root, file);
                     const size = (await lstat(fullPath)).size;
@@ -2016,11 +2023,11 @@ publication:
                       if (bytes.length !== size) throw new Error("File changed while being captured");
                       const decoded = bytes.toString("utf8");
                       if (!bytes.includes(0) && Buffer.from(decoded).equals(bytes)) {
-                        return await capturedText(root, file, bytes, decoded, Boolean(info));
+                        return await capturedText(root, file, bytes, decoded);
                       }
                     }
-                    const record = { path: file, hash: info ? null : await fileHash(fullPath) };
-                    if (info) hashOnly.push(record);
+                    const record = { path: file, hash: null };
+                    hashOnly.push(record);
                     return record;
                   } catch (errorCause) { const error = errorDetails(errorCause);
                     diagnostics.push(file + ": " + error.message);
@@ -2030,9 +2037,7 @@ publication:
                 records.push(...batch.filter((record) => record !== null));
               }
               if (hashOnly.length) {
-                const paths = hashOnly.map((record) => JSON.stringify(record.path)).join("\n") + "\n";
-                const hashes = (await git(root, ["hash-object", "--stdin-paths"], paths)).toString().trim().split("\n");
-                if (hashes.length !== hashOnly.length) throw new Error("Incomplete Git file hashes");
+                const hashes = await gitFileHashes(root, hashOnly.map(record => record.path));
                 hashOnly.forEach((record, i) => { record.hash = hashes[i]; });
               }
               const snapshotRoot = options.snapshotRoot ?? await readSnapshotRoot(root) ?? root;
@@ -2088,7 +2093,7 @@ publication:
                     diagnostics.push("Expected regular contract storage: " + file);
                   continue;
                 }
-                if (!excludedProjectPath(file) || isContractStorage(file)) records.push({ path: file, hash });
+                if (!excludedProjectPath(file) || isContractStorage(file)) records.push({ path: file, hash, ...(mode === "100755" ? { mode } : {}) });
               }
               const maxFiles = options.maxFiles ?? 50000;
               // The registry is required to interpret the captured files and does not consume a file slot.
@@ -2183,7 +2188,7 @@ publication:
             }
       - index: 115
         fact:
-          id: sha256:89c76c376917137e0c9bc015e69497d46b9b90753a956efdebef5b509c3f3d9d
+          id: sha256:02e6b5f716e67f90eafa6c1c5c267fe475890e3bc80f2b59916f459fa4b9d0ce
           kind: file
           path: src/snapshots/comparison.ts
           start_line: 1
@@ -2207,7 +2212,7 @@ publication:
               return [...new Set([...oldFiles.keys(), ...newFiles.keys()])].sort().flatMap((file: string) => {
                 const previous = oldFiles.get(file);
                 const current = newFiles.get(file);
-                if (previous && current && previous.hash === current.hash) return [];
+                if (previous && current && previous.hash === current.hash && previous.mode === current.mode) return [];
                 return [{ path: file, status: !previous ? "new" : !current ? "removed" : "changed" }];
               });
             }
@@ -2218,7 +2223,7 @@ publication:
              * статус, а число изменённых потомков передаётся отдельным полем.
              */
             export function compareSnapshots(before: Snapshot | null, after:
-            Snapshot, { projectRoot = after.root } = {}) {
+            Snapshot, { projectRoot = after.root, emptyTree = false } = {}) {
               if (before && before.root !== after.root) throw new Error("Snapshots belong to different projects");
               const previous = new Map((before?.modules ?? []).map((module) => [module.directory, module]));
               const current = new Map(after.modules.map((module) => [module.directory, module]));
@@ -2246,7 +2251,7 @@ publication:
                   title: entry.document.contract?.title,
                   baselinePath: oldModule?.directory ?? null, currentPath: newModule?.directory ?? null,
                   moved: Boolean(oldModule && newModule && oldModule.directory !== newModule.directory),
-                  status: !before ? "initial" : !oldModule ? "new" : !newModule ? "removed" : files.length ? "changed" : "unchanged",
+                  status: !before && !emptyTree ? "initial" : !oldModule ? "new" : !newModule ? "removed" : files.length ? "changed" : "unchanged",
                   documentState: entry.document.state,
                   documentChanged: JSON.stringify(oldModule?.document ?? { state: "missing", text: null }) !==
                     JSON.stringify(newModule?.document ?? { state: "missing", text: null }),
@@ -2276,7 +2281,7 @@ publication:
               return { schema_version: 2, id: structureHash((before?.id ?? "initial") + after.digest).slice(0, 24),
                 root: projectRoot, before: before ? { id: before.id, label: before.label, kind: before.kind,
                   digest: before.digest ?? snapshotDigest(before), capturedAt: before.capturedAt } :
-                  { id: "initial", label: "Первый анализ", kind: "initial" },
+                  { id: "initial", label: emptyTree ? "Пустое дерево" : "Первый анализ", kind: "initial" },
                 after: { id: after.id, digest: after.digest, capturedAt: after.capturedAt },
                 complete: (before?.complete ?? true) && after.complete,
                 diagnostics: [...before?.diagnostics ?? [], ...after.diagnostics],
@@ -2357,7 +2362,204 @@ publication:
             }
       - index: 117
         fact:
-          id: sha256:a2f3cce99e1ca7491a01705ef004f88712a751312ba721477ec32bfc1e6dfcbb
+          id: sha256:4b8bbf714cc156f02f779e379b32feb0cfb4d74ad754963165fcc5a2df7700c4
+          kind: file
+          path: src/snapshots/git-tree.ts
+          start_line: 1
+          end_line: 161
+          text: >
+            import path from "node:path";
+
+            import { lstat } from "node:fs/promises";
+
+            import { git, gitFileHashes, readGitHeadRevision } from
+            "./capture.js";
+
+            import { snapshotModules } from "./module-layout.js";
+
+            import { excludedProjectPath, regularProjectFile } from
+            "../contracts/source-files.js";
+
+            import { MODULE_TREE_FILE, isModuleContractPath,
+            readContractStorageFile, decodeContractText, MAX_DOCUMENT_BYTES,
+            MAX_TREE_BYTES } from "../contracts/module-tree.js";
+
+            import { repositoryDirectoryOwnership } from
+            "../project/workspace.js";
+
+            import { digest } from "../serialization/digest.js";
+
+            import { snapshotDigest } from "./identity.js";
+
+            import type { Snapshot, FileRecord } from "./types.js";
+
+
+            const contract = (file: string) => file === MODULE_TREE_FILE ||
+            isModuleContractPath(file);
+
+            const included = (file: string) => !excludedProjectPath(file) ||
+            contract(file);
+
+            const regular = (mode: string) => mode === "100644" || mode ===
+            "100755";
+
+            const fields = (bytes: Buffer) =>
+            bytes.toString().split("\0").filter(Boolean);
+
+
+            async function commitRecords(root: string, revision: string) {
+              const records = new Map<string, FileRecord>();
+              const diagnostics: string[] = [];
+              const contracts: FileRecord[] = [];
+              for (const row of fields(await git(root, ["ls-tree", "-rz", revision, "--", "."]))) {
+                const tab = row.indexOf("\t");
+                const file = row.slice(tab + 1);
+                if (!included(file)) continue;
+                const [mode, , hash] = row.slice(0, tab).trim().split(/\s+/);
+                if (!regular(mode)) {
+                  if (contract(file)) diagnostics.push("Expected regular contract storage: " + file);
+                  continue;
+                }
+                const record: FileRecord = { path: file, hash, ...(mode === "100755" ? { mode } : {}) };
+                records.set(file, record);
+                if (contract(file)) contracts.push(record);
+              }
+              for (let start = 0; start < contracts.length; start += 64) {
+                const group = contracts.slice(start, start + 64);
+                const sizes = (await git(root, ["cat-file", "--batch-check=%(objectsize)"],
+                  group.map(record => record.hash).join("\n") + "\n")).toString().trim().split("\n");
+                const batch = group.filter((record, i) => {
+                  const limit = record.path === MODULE_TREE_FILE ? MAX_TREE_BYTES : MAX_DOCUMENT_BYTES;
+                  if (Number(sizes[i]) <= limit) return true;
+                  record.error = "Contract exceeds the size limit";
+                  diagnostics.push(record.path + ": " + record.error);
+                  return false;
+                });
+                if (!batch.length) continue;
+                const blobs = await git(root, ["cat-file", "--batch"], batch.map(record => record.hash).join("\n") + "\n");
+                let offset = 0;
+                for (const record of batch) {
+                  const newline = blobs.indexOf(10, offset);
+                  const [hash, type, size] = blobs.toString("ascii", offset, newline).split(" ");
+                  const end = newline + 1 + Number(size);
+                  if (hash !== record.hash || type !== "blob" || blobs[end] !== 10) throw new Error("Incomplete Git contract: " + record.path);
+                  try { record.text = decodeContractText(blobs.subarray(newline + 1, end), record.path).replace(/\r\n?/g, "\n"); }
+                  catch (cause) { record.error = String(cause); diagnostics.push(record.path + ": " + record.error); }
+                  offset = end + 1;
+                }
+              }
+              return { records, diagnostics };
+            }
+
+
+            async function snapshot(root: string, origin: string, records:
+            Map<string, FileRecord>, diagnostics: string[], revision?: string):
+            Promise<Snapshot> {
+              const modules = await snapshotModules([...records.values()], diagnostics,
+                revision ? undefined : {root, ownsDirectory: repositoryDirectoryOwnership(root)});
+              const value: Snapshot = { schema_version: 2, id: "", digest: "", root: origin, modules, facts: [], evidenceLimitations: [],
+                capturedAt: new Date().toISOString(), fingerprint: digest(modules), diagnostics, complete: !diagnostics.length,
+                kind: revision ? "git" : "working", label: revision ? "Revision " + revision.slice(0, 7) : "Рабочее дерево", revision };
+              value.digest = snapshotDigest(value);
+              value.id = revision ? "git-" + revision : "working-" + value.digest.slice(7);
+              return value;
+            }
+
+
+            /** Immutable Git objects supply unchanged file identities. Only
+            contract blobs need decoding for the tree. */
+
+            export class GitTreeReader {
+              private readonly commits = new Map<string, Awaited<ReturnType<typeof commitRecords>> & { snapshot?: Snapshot }>();
+              constructor(private readonly root: string, private readonly origin: string) {}
+
+              private async commit(revision: string) {
+                let value = this.commits.get(revision);
+                if (!value) {
+                  value = await commitRecords(this.root, revision);
+                  if (this.commits.size >= 4) this.commits.delete(this.commits.keys().next().value!);
+                  this.commits.set(revision, value);
+                }
+                return value;
+              }
+
+              async revision(revision: string) {
+                const value = await this.commit(revision);
+                return value.snapshot ??= await snapshot(this.root, this.origin, value.records, [...value.diagnostics], revision);
+              }
+
+              async working(head: string | null) {
+                const root = this.root;
+                const base = head ? await this.commit(head) : null;
+                const records = new Map(base?.records);
+                const diagnostics: string[] = [];
+                // Explicit object name pins the baseline through an index/branch switch.
+                const [tracked, extra, staged] = await Promise.all([
+                  head ? git(root, ["diff", "--raw", "-z", "--relative", "--no-renames", "--no-ext-diff", head, "--", "."]) : Promise.resolve(Buffer.alloc(0)),
+                  git(root, ["ls-files", "-z", "--others", "--exclude-standard", "--", "."]),
+                  git(root, ["ls-files", "-z", "--stage", ...(head ? ["--unmerged"] : []), "--", "."]),
+                ]);
+                const changes = new Map<string, string>();
+                const conflicts = new Set<string>();
+                for (const row of fields(staged)) {
+                  const tab = row.indexOf("\t");
+                  const [mode, , stage] = row.slice(0, tab).split(" ");
+                  const file = row.slice(tab + 1);
+                  if (!included(file)) continue;
+                  if (stage !== "0") conflicts.add(file);
+                  else if (!head) changes.set(file, mode);
+                }
+                const raw = fields(tracked);
+                for (let i = 0; i < raw.length; i += 2) {
+                  const [, mode, , , status] = raw[i].split(" ");
+                  if (status === "U" && included(raw[i + 1])) conflicts.add(raw[i + 1]);
+                  if (included(raw[i + 1])) changes.set(raw[i + 1], mode);
+                }
+                for (const file of conflicts) diagnostics.push("Unmerged file: " + file);
+                for (const file of fields(extra)) if (included(file) && !file.endsWith("/")) changes.set(file, "");
+                for (const record of records.values()) {
+                  if (record.error && !changes.has(record.path)) diagnostics.push(record.path + ": " + record.error);
+                }
+                const owns = repositoryDirectoryOwnership(root);
+                // A directory tracked in HEAD may now belong to a separate nested checkout.
+                const directories = new Set([...records.keys()].filter(file => !contract(file)).map(file => path.posix.dirname(file)));
+                const foreign = new Set<string>();
+                await Promise.all([...directories].map(async directory => { if (!await owns(directory)) foreign.add(directory); }));
+                if (foreign.size) for (const file of records.keys()) {
+                  if (foreign.has(path.posix.dirname(file))) records.delete(file);
+                }
+                const candidates: { file: string; executable: boolean; text?: string }[] = [];
+                for (const [file, mode] of changes) {
+                  records.delete(file);
+                  if (mode && !regular(mode)) continue;
+                  let text: string | undefined;
+                  if (contract(file)) {
+                    try {
+                      const stored = await readContractStorageFile(root, file);
+                      if (stored === null) continue;
+                      text = stored.replace(/\r\n?/g, "\n");
+                    } catch (cause) {
+                      diagnostics.push(file + ": " + String(cause));
+                      continue;
+                    }
+                  } else if (!await owns(path.posix.dirname(file)) || !await regularProjectFile(root, file)) continue;
+                  const executable = mode ? mode === "100755" :
+                    process.platform !== "win32" && Boolean((await lstat(path.join(root, file))).mode & 0o111);
+                  candidates.push({ file, executable, text });
+                }
+                if (candidates.length) {
+                  const hashes = await gitFileHashes(root, candidates.map(candidate => candidate.file));
+                  candidates.forEach(({file, executable, text}, i) => {
+                    records.set(file, { path: file, hash: hashes[i], text, ...(executable ? { mode: "100755" } : {}) });
+                  });
+                }
+                if (await readGitHeadRevision(root) !== head) throw new Error("HEAD изменился, обновите дерево");
+                return snapshot(root, this.origin, records, diagnostics);
+              }
+            }
+      - index: 118
+        fact:
+          id: sha256:0de8d0137476c4c316a9edba2981ab957a562da77ebbc1dcdb531c562f5d5409
           kind: file
           path: src/snapshots/identity.ts
           start_line: 1
@@ -2383,17 +2585,17 @@ publication:
             входят в отпечаток. */
 
             export function snapshotDigest(snapshot: Snapshot) {
-              return contentDigest({ root: snapshot.root, modules: snapshot.modules,
+              return contentDigest({ observations: snapshot.observations, root: snapshot.root, modules: snapshot.modules,
                 facts: snapshot.facts ?? [], complete: snapshot.complete,
                 diagnostics: snapshot.diagnostics, evidenceLimitations: snapshot.evidenceLimitations ?? [] });
             }
-      - index: 118
+      - index: 119
         fact:
-          id: sha256:6759cd72a5e9b3aac9cc543b2fbeaf7aac69d2cce64d4f1c1f35af53af0b79ea
+          id: sha256:4fcf3b544c2a6bf2f19b1e8a38e85c6aedb21faaf71b68071347bd2359a2e7d6
           kind: file
           path: src/snapshots/module-layout.ts
           start_line: 1
-          end_line: 100
+          end_line: 103
           text: >
             import path from "node:path";
 
@@ -2442,7 +2644,10 @@ publication:
               let tree = new Map<string, string>();
               let treeError: string | undefined;
               if (treeFile) {
-                try { tree = parseModuleTree(treeFile.text ?? ""); }
+                try {
+                  if (treeFile.error) throw new Error(treeFile.error);
+                  tree = parseModuleTree(treeFile.text ?? "");
+                }
                 catch (cause) {
                   treeError = MODULE_TREE_FILE + ": " + (treeFile.error ?? errorDetails(cause).message);
                   diagnostics.push(treeError);
@@ -2499,7 +2704,7 @@ publication:
                 owner ??= path.posix.dirname(record.path);
                 while (!modules.has(owner)) owner = path.posix.dirname(owner);
                 const module = modules.get(owner)!;
-                module.files.push({ path: record.path, hash: record.hash, error: record.error });
+                module.files.push({ path: record.path, hash: record.hash, error: record.error, ...(record.mode ? {mode: record.mode} : {}) });
                 if (isSource(record.path)) module.sourceFiles++;
               }
               for (const module of modules.values()) {
@@ -2508,18 +2713,19 @@ publication:
               }
               return [...modules.values()];
             }
-      - index: 119
+      - index: 120
         fact:
-          id: sha256:cadc09b0e8edfeb439ff8bf54ae57c3a0703b2ae0b5a951c957b45a2509fd8a9
+          id: sha256:d5eca17c8d3770079164a129ed9bb7a4379593356e9350f6e7c581c807e5134a
           kind: file
           path: src/snapshots/types.ts
           start_line: 1
-          end_line: 137
+          end_line: 140
           text: >
             import type { ContractDocument } from "../contracts/types.js";
 
 
             export interface SourceFile {
+              mode?: string;
               path: string;
               hash: string | null;
               error?: string;
@@ -2569,6 +2775,7 @@ publication:
               modules: SnapshotModule[];
               facts: Fact[];
               evidenceLimitations: string[];
+              observations?: Record<string, { lineage: string; revision: number }>;
               scoped?: boolean;
               scope_digest?: string;
             }
@@ -2646,6 +2853,7 @@ publication:
               | "kind"
               | "revision"
               | "complete"
+              | "observations"
               | "modules"
               | "facts"
               | "diagnostics"
@@ -2667,26 +2875,44 @@ publication:
               subject: string;
               label: string;
             }
-      - index: 199
+      - index: 201
         fact:
-          id: sha256:c8c2a4c20cc49568cf2647eac8058f5ee62b808669d3976652187f7ad3ea5f75
+          id: sha256:6d92986eda96a4d4477784677386722d4f301c81869d0fa1d707c486b00624cc
           kind: module
           path: src/snapshots
-          text: '{"contract":"documented","format":"yaml","sources":["src/snapshots/capture.ts","src/snapshots/comparison.ts","src/snapshots/contract-diff.ts","src/snapshots/identity.ts","src/snapshots/module-layout.ts","src/snapshots/types.ts"]}'
+          text: '{"contract":"documented","format":"yaml","sources":["src/snapshots/capture.ts","src/snapshots/comparison.ts","src/snapshots/contract-diff.ts","src/snapshots/git-tree.ts","src/snapshots/identity.ts","src/snapshots/module-layout.ts","src/snapshots/types.ts"]}'
 review_status:
   self:
     current:
-      status: fresh
-      reasons: []
-      verdict: consistent
-      verdicts:
-        - consistent
+      status: stale
+      reasons:
+        - code: own_code
+        - code: own_contract
+        - code: own_code
+        - code: own_contract
+        - code: own_code
+        - code: own_contract
+      verdict: null
+      verdicts: []
       review_ids:
+        - review-9c521390-b3ce-4e32-819b-4e4c5afa9715
+        - review-2504a4a5-9f49-416c-b8df-22df5a3f1953
         - review-f36f9675-8220-4a1c-bac9-e9eb91e0fcab
       conflict: false
       coverage:
         status: partial
         limitations:
+          - Счётчик при переносе проверен вызовом compareSnapshots в памяти.
+            Расхождение хеша и текста установлено по раздельным операциям
+            чтения, правка файла в строго заданный момент отдельно не
+            моделировалась. Пять штатных тестов снимков прошли. Полнота
+            транзитивных зависимостей не устанавливалась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены Git-фильтр со сменой содержимого и перенос между ветвями.
+            Захват по-прежнему ограничивает суммарный бюджет текста; для файлов
+            за его пределами сохраняется только хеш.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -2701,8 +2927,6 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       current_violation: false
@@ -2710,13 +2934,17 @@ review_status:
       status: stale
       reasons:
         - code: own_code
+        - code: own_contract
         - code: baseline_identity
         - code: own_code
           side: baseline
         - code: own_code
+        - code: own_contract
         - code: baseline_identity
         - code: own_code
           side: baseline
+        - code: own_code
+        - code: own_contract
         - code: baseline_identity
       verdict: null
       verdicts: []
@@ -2761,6 +2989,17 @@ review_status:
       current:
         status: partial
         limitations:
+          - Счётчик при переносе проверен вызовом compareSnapshots в памяти.
+            Расхождение хеша и текста установлено по раздельным операциям
+            чтения, правка файла в строго заданный момент отдельно не
+            моделировалась. Пять штатных тестов снимков прошли. Полнота
+            транзитивных зависимостей не устанавливалась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены Git-фильтр со сменой содержимого и перенос между ветвями.
+            Захват по-прежнему ограничивает суммарный бюджет текста; для файлов
+            за его пределами сохраняется только хеш.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -2775,8 +3014,6 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       change:
@@ -2811,10 +3048,10 @@ review_status:
           - code: dependency_tracking_disabled
   subtree:
     current:
-      status: fresh
+      status: stale
       counts:
-        fresh: 1
-        stale: 0
+        fresh: 0
+        stale: 1
         unknown: 0
         not_reviewed: 0
       conflict: false
@@ -2822,6 +3059,17 @@ review_status:
       coverage:
         status: partial
         limitations:
+          - Счётчик при переносе проверен вызовом compareSnapshots в памяти.
+            Расхождение хеша и текста установлено по раздельным операциям
+            чтения, правка файла в строго заданный момент отдельно не
+            моделировалась. Пять штатных тестов снимков прошли. Полнота
+            транзитивных зависимостей не устанавливалась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены Git-фильтр со сменой содержимого и перенос между ветвями.
+            Захват по-прежнему ограничивает суммарный бюджет текста; для файлов
+            за его пределами сохраняется только хеш.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -2836,8 +3084,6 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
     change:

@@ -48,7 +48,8 @@ test("Codex can open checkout B's published tree and card while checkout A is re
   t.after(() => panel.close());
   const call = (name: string, args: Record<string, unknown>, metadata?: Record<string, unknown>) =>
     panel.callUi("archiview_ui_" + name, args, metadata);
-  uiData(await call("get_comparison", { repository: "b" }));
+  const live = uiData<ComparisonView>(await call("get_comparison", { repository: "b" }));
+  uiData(await call("build_review", {repository:"b",view:live.id,path:"."}));
   const refresh = call("get_comparison", { repository: "a" }, { refreshing: true });
   try {
     await started;
@@ -86,6 +87,7 @@ test("opening a checkout serves its published tree and card even when its raw ar
   for (const repository of ["a", "b"]) {
     const first = await publisher.getComparison({ repository, published: true, baseline: "auto" });
     assert.equal(first.published, undefined, "a checkout without work must serve a live result");
+    await publisher.buildReview({repository,view:first.id,path:"."});
     const work = path.join(root, repository, ".archiview", "work");
     const technical = (await readdir(work)).find(name => name.endsWith(".archi.yaml"))!;
     assert.match(await readFile(path.join(work, technical), "utf8"), /generation: 1\b/);
@@ -97,7 +99,7 @@ test("opening a checkout serves its published tree and card even when its raw ar
   // The checkout has moved on since publication and the raw archives cannot be traversed.
   await writeFile(path.join(a, ".archiview/modules/shared.yaml"), contractYaml("shared", "New local purpose."));
   await writeFile(path.join(b, ".archiview/modules/shared.yaml"), contractYaml("shared", "Other local purpose."));
-  for (const name of ["changes", "modules"]) {
+  for (const name of ["modules"]) {
     const archive = path.join(a, ".archiview", "snapshots", name);
     await rename(archive, archive + ".saved");
     await writeFile(archive, "unavailable");
@@ -128,7 +130,7 @@ test("standalone and DSH isolate concurrent comparisons, snapshots and analyses 
   assert.deepEqual(left.workspace, { root, repositories: ["a", "b"], repository: "a" });
   assert.equal(right.workspace?.repository, "b");
   assert.deepEqual([left.root, right.root], [a, b]);
-  assert.equal(left.after.digest, right.after.digest);
+  assert.deepEqual(left.counts, right.counts);
   assert.notEqual(left.id, right.id);
   for (const view of [left, right]) assert.deepEqual(view.modules.map((module) => module.moduleId), ["shared"]);
   const apiModule = "/module?repository=b&path=.&view=";

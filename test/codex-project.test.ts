@@ -1,3 +1,4 @@
+import { initTestRepository } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { HostProjectContext } from "../src/codex/host-context.js";
 import { uiData, panelMetadata, processEnvironment } from "./support.js";
@@ -28,7 +29,8 @@ async function fixture(t: TestContext) {
   const roots = await Promise.all(["Проект A", "Проект B", "home"].map(async (name, index) => {
     const root = path.join(temporary, name); await mkdir(root);
     const contractId = "root-" + index;
-    await writeModuleTree(root, { [contractId]: "." });
+    initTestRepository(root);
+  await writeModuleTree(root, { [contractId]: "." });
     await writeFile(path.join(root, ".archiview/modules", contractId + ".yaml"), `schema_version: 1\nid: root-${index}\ntitle: ${name}\nkind: module\npurpose: Предоставлять значение.\nresponsibilities:\n  R1: Возвращать значение.\nboundaries: {}\ninvariants: {}\n`);
     await writeFile(path.join(root, "main.js"), "export const value = 1;\n");
     return realpath(root);
@@ -77,7 +79,7 @@ test("a chat without a selected folder is unavailable; a host failure is a diffe
   const { roots } = await fixture(t);
   const readContext = createHostContextReader({ pipePath: "fixture", connection: contextConnection(hostData(roots[2], [roots[0]])) });
   const absent = await createCodexProjectBinding(undefined, { readContext });
-  await assert.rejects(absent.select(undefined, { threadId: "chat-1" }), { code: "PROJECT_UNAVAILABLE", message: "Плагин доступен только в проектах" });
+  await assert.rejects(absent.select(undefined, { threadId: "chat-1" }), { code: "PROJECT_UNAVAILABLE", message: "Укажите папку проекта, чтобы открыть ArchiView." });
   assert.equal(absent.root, undefined);
   const unknown = await createCodexProjectBinding(undefined, { readContext: createHostContextReader({ pipePath: "" }) });
   await assert.rejects(unknown.select(undefined, { threadId: "chat-1" }), { code: "CODEX_CONTEXT_UNAVAILABLE" });
@@ -110,6 +112,7 @@ test("context failures keep the panel loadable and retrying can initialize the s
     context = { status: status as "unknown" | "unavailable" };
     const opened = await panel.open(undefined, metadata);
     assert.notEqual("isError" in opened && opened.isError, true, "Host must still load the UI");
+    assert.equal(opened.structuredContent.projectRequired, true);
     assert.equal(opened._meta!.bootstrap.code, code);
     assert.ok((await panel.resource()).contents[0].text.includes("ui/initialize"));
     await assert.rejects(panel.callUi("archiview_ui_get_comparison", {}, metadata).then(uiData), { code });
@@ -119,41 +122,34 @@ test("context failures keep the panel loadable and retrying can initialize the s
   assert.equal(uiData(await panel.callUi("archiview_ui_get_comparison", {}, metadata)).root, roots[0]);
 });
 
-test("unknown context permits one manual project; absent projects and other chats cannot override it", async (t) => {
-  const { roots } = await fixture(t); let status: "unknown" | "unavailable" = "unknown";
+for (const status of ["unknown", "unavailable"] as const) test(`${status} context permits one manual project; other chats cannot override it`, async (t) => {
+  const { roots } = await fixture(t);
   const binding = await createCodexProjectBinding(undefined, { readContext: async () => ({ status }) });
   const panel = createCodexPanel(binding, { chooseDirectory: async () => ({ projectRoot: roots[0] }) });
   t.after(() => panel.close());
   const metadata = { threadId: "chat-1" };
   const call = (name: string, args: Record<string, unknown> = {}) => panel.callUi("archiview_ui_" + name, args, metadata).then(uiData);
-  await assert.rejects(call("get_comparison"), { code: "CODEX_CONTEXT_UNAVAILABLE" });
+  const code = status === "unknown" ? "CODEX_CONTEXT_UNAVAILABLE" : "PROJECT_UNAVAILABLE";
+  await assert.rejects(call("get_comparison"), { code });
   assert.equal((await call("choose_project")).projectRoot, roots[0]);
   assert.equal(binding.root, undefined, "Dialog selection does not bind before the form submits");
   await assert.rejects(call("set_project", { projectRoot: "relative" }), { code: "INVALID_ARGUMENT" });
   assert.equal((await call("set_project", { projectRoot: roots[0] })).root, roots[0]);
   assert.equal((await call("get_comparison")).root, roots[0]);
   await assert.rejects(call("set_project", { projectRoot: roots[1] }), { code: "PROJECT_BOUND" });
-  await assert.rejects(binding.select(roots[0], { threadId: "chat-2" }), { code: "CODEX_CONTEXT_UNAVAILABLE" });
-  status = "unavailable";
-  const absent = await createCodexProjectBinding(undefined, { readContext: async () => ({ status }) });
-  let dialogs = 0;
-  const denied = createCodexPanel(absent, { chooseDirectory: async () => { dialogs++; return { projectRoot: roots[0] }; } });
-  t.after(() => denied.close());
-  await assert.rejects(denied.callUi("archiview_ui_choose_project", {}, metadata).then(uiData), { code: "PROJECT_UNAVAILABLE" });
-  await assert.rejects(absent.select(roots[0], metadata), { code: "PROJECT_UNAVAILABLE" });
-  assert.equal(dialogs, 0);
+  await assert.rejects(binding.select(roots[0], { threadId: "chat-2" }), { code });
 });
 
-test("Codex client opens the original form on unknown context, missing root or a stalled first response", async () => {
+test("Codex client opens the original form on unknown or absent context, missing root or a stalled first response", async () => {
   const missing = Object.assign(new Error("Host context unavailable"), { code: "CODEX_CONTEXT_UNAVAILABLE" });
   for (const call of [async () => { throw missing; }, async () => ({}), () => new Promise(() => {})]) {
     const client = createCodexClient({ mode: "mcp", connection: Promise.resolve({ call }) }, { timeoutMs: 20 });
     await assert.rejects(client.getComparison(), { code: "PROJECT_REQUIRED" });
   }
   const absent = createCodexClient({ mode: "mcp", connection: Promise.resolve({ call: async () => {
-    throw Object.assign(new Error("Плагин доступен только в проектах"), { code: "PROJECT_UNAVAILABLE" });
+    throw Object.assign(new Error("Укажите папку проекта, чтобы открыть ArchiView."), { code: "PROJECT_UNAVAILABLE" });
   } }) });
-  await assert.rejects(absent.getComparison(), { code: "PROJECT_UNAVAILABLE" });
+  await assert.rejects(absent.getComparison(), { code: "PROJECT_REQUIRED" });
 });
 
 test("a resolved project keeps loading beyond the folder timeout and preserves comparison errors", async () => {
@@ -249,7 +245,7 @@ async function hostPipe(t: TestContext, data: { chat: unknown; folders: unknown 
   return { address, calls };
 }
 
-test("bundled plugin loads the selected folder on its first UI call and rejects projectless chats", async (t) => {
+test("bundled plugin loads the selected folder on its first UI call and requires a root for projectless chats", async (t) => {
   const { roots, temporary, clients } = await fixture(t); const data = hostData(roots[0]);
   const pipe = await hostPipe(t, data);
   const distribution = path.join(temporary, "installed plugin");
@@ -272,7 +268,7 @@ test("bundled plugin loads the selected folder on its first UI call and rejects 
   assert.deepEqual(pipe.calls.filter((call) => call.method === "tools/call").map((call) => call.params!.tool).sort(), ["list_projects", "read_thread"]);
   assert.ok(!(data.chat instanceof Error));
   data.chat.thread = { id: "chat-without-folder", cwd: roots[2], hostId: "local" };
-  await assert.rejects(call("chat-without-folder"), { code: "PROJECT_UNAVAILABLE", message: "Плагин доступен только в проектах" });
+  await assert.rejects(call("chat-without-folder"), { code: "PROJECT_UNAVAILABLE", message: "Укажите папку проекта, чтобы открыть ArchiView." });
   await assert.rejects(readFile(path.join(distribution, ".archiview/project.json")), { code: "ENOENT" });
 });
 

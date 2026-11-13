@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
 import { createServer, type Server } from "node:http";
-import { cp, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
@@ -12,7 +12,8 @@ import test, { type TestContext } from "node:test";
 import { promisify } from "node:util";
 import { chromium } from "playwright";
 import { build } from "esbuild";
-import { stringify } from "yaml";
+import { parse, stringify } from "yaml";
+import type { ReviewInput } from "../src/reports/types.js";
 import { createArchiView } from "../src/archiview/http.js";
 import type { ComparisonView } from "../src/application/api.js";
 import { createArchiViewSession } from "../src/application/session.js";
@@ -20,6 +21,8 @@ import { createRouteTable } from "../src/dsh/routes.js";
 import { createReviewInput } from "../src/reports/review-input.js";
 import { digest } from "../src/serialization/digest.js";
 import { captureWorkingTree } from "../src/snapshots/capture.js";
+import { createCodexProjectBinding } from "../src/codex/project-context.js";
+import { createCodexPanel } from "../src/codex/panel.js";
 
 const browserOptions = { skip: process.env.ARCHIVIEW_BROWSER_TEST !== "1", timeout: 60_000 };
 
@@ -74,6 +77,72 @@ async function browserContext(defer: DeferCleanup) {
   defer(() => browser.close());
   return browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ["clipboard-read", "clipboard-write"] });
 }
+
+test("built Codex panel offers a project folder before and after preflight and loads manual and picker selections", browserOptions, async (t) => {
+  await promisify(execFile)(process.execPath, ["--import", "tsx", "scripts/build-plugin.ts"], { windowsHide: true });
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const context = await browserContext(defer);
+  let panelHtml = "";
+  const server = createServer((_request, response) => {
+    response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    response.end(`<!doctype html><html lang="ru"><meta charset="utf-8">
+      <title>ArchiView — тестовый хост MCP Apps</title>
+      <style>body{margin:0}iframe{display:block;width:100vw;height:100vh;border:0}</style>
+      <iframe sandbox="allow-scripts allow-same-origin allow-forms"></iframe><script>
+        const frame = document.querySelector('iframe');
+        window.addEventListener('message', async (event) => {
+          const message = event.data;
+          if (event.source !== frame.contentWindow || !message || message.id === undefined) return;
+          let result = {};
+          if (message.method === 'ui/initialize') result = { protocolVersion: message.params.protocolVersion,
+            hostInfo: { name: 'ArchiView protocol test host', version: '1' }, hostCapabilities: { serverTools: {} },
+            hostContext: { theme: 'light', displayMode: 'inline', availableDisplayModes: ['inline'] } };
+          if (message.method === 'tools/call') result = await window.panelTool(message.params.name, message.params.arguments);
+          frame.contentWindow.postMessage({ jsonrpc: '2.0', id: message.id, result }, '*');
+        });
+        frame.srcdoc = ${JSON.stringify(panelHtml).replace(/</g, "\\u003c")};
+      </script></html>`);
+  });
+  const origin = await listen(defer, server);
+  for (const selection of ["manual", "picker", "comparison"]) {
+    const binding = await createCodexProjectBinding(undefined, { readContext: async () => ({ status: "unavailable" }) });
+    let picks = 0;
+    const panel = createCodexPanel(binding, { chooseDirectory: async () => ({ projectRoot: ++picks === 1 ? null : root }) });
+    defer(() => panel.close());
+    panelHtml = (await panel.resource()).contents[0].text;
+    const page = await context.newPage();
+    await page.exposeFunction("panelTool", (name: string, args: Record<string, unknown>) => {
+      if (selection === "comparison" && name === "archiview_ui_get_project") return { content: [], _meta: { result: { root } } };
+      return panel.callUi(name, args, { threadId: "projectless-chat" });
+    });
+    await page.goto(origin);
+    const frame = page.frameLocator("iframe");
+    const input = frame.getByRole("textbox", { name: "Папка проекта", exact: true });
+    await input.waitFor({ timeout: 5000 });
+    if (selection === "comparison" && process.env.ARCHIVIEW_FOLDER_SCREENSHOT) await page.screenshot({ path: process.env.ARCHIVIEW_FOLDER_SCREENSHOT });
+    assert.equal(binding.root, undefined);
+    if (selection !== "picker") {
+      await input.fill("relative");
+      await frame.getByRole("button", { name: "Открыть проект", exact: true }).click();
+      await frame.getByRole("alert").filter({ hasText: "projectRoot должен быть абсолютным" }).waitFor();
+      assert.equal(binding.root, undefined);
+      await input.fill(root);
+      await frame.getByRole("button", { name: "Открыть проект", exact: true }).click();
+    } else {
+      const browse = frame.getByRole("button", { name: "Выбрать папку…", exact: true });
+      await input.fill("Сохранённый ввод");
+      await browse.click();
+      await page.waitForFunction(() => !document.querySelector("iframe")?.contentDocument?.querySelector<HTMLButtonElement>(".project-form .button-quiet")?.disabled);
+      assert.equal(await input.inputValue(), "Сохранённый ввод");
+      assert.equal(binding.root, undefined);
+      await browse.click();
+    }
+    await frame.getByRole("treeitem").filter({ hasText: "Функция браузера" }).waitFor();
+    assert.equal(binding.root, root);
+    await page.close();
+  }
+});
 
 /** Exercise a source checkout with installed dependencies and no generated assets. */
 async function sourceCliOrigin(defer: DeferCleanup, project: string) {
@@ -142,21 +211,9 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   assert.ok(revision);
   await timeline.selectOption(revision);
   await page.waitForFunction((id) => (document.querySelector("#timeline") as HTMLSelectElement).value === id && !(document.querySelector("#timeline") as HTMLSelectElement).disabled, revision);
-  let releaseLive!: () => void;
-  const gate = new Promise<void>(resolve => { releaseLive = resolve; });
-  await page.route(url => url.pathname === "/api/comparison" && !url.searchParams.has("published"), async route => {
-    await gate;
-    await route.continue();
-  }, { times: 1 });
-  const nextComparison = page.waitForRequest(request => new URL(request.url()).pathname === "/api/comparison");
   await timeline.selectOption("current");
-  try {
-    assert.equal(new URL((await nextComparison).url()).searchParams.get("published"), "true");
-    await page.locator("#updated").filter({ hasText: /^Сохранено/ }).waitFor();
-    assert.equal(await page.locator(".tree-row.selected").getAttribute("data-key"), "src");
-  } finally {
-    releaseLive();
-  }
+  await page.waitForFunction(() => document.querySelector<HTMLSelectElement>("#timeline")?.value === "current"
+    && !document.querySelector<HTMLSelectElement>("#timeline")?.disabled);
   await page.getByRole("button", { name: "Обновить", exact: true }).click();
   await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
   const artifacts = path.resolve("dist/verification");
@@ -170,7 +227,8 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   await page.screenshot({ path: path.join(artifacts, "web-mobile.png"), fullPage: true });
   // Own reviews remain independent: a parent relays a pending child only while collapsed.
   let childRequiresAnalysis = true;
-  await page.route(url => url.pathname === "/api/comparison", async route => {
+  defer(() => page.unrouteAll({behavior:"wait"}));
+  await page.route(url => url.pathname === "/api/review-statuses", async route => {
     const response = await route.fetch();
     const view: ComparisonView = await response.json();
     for (const module of view.modules) {
@@ -180,13 +238,14 @@ test("standalone browser loads modules, navigates history, copies analysis and f
       }
       if (childRequiresAnalysis) {
         module.reviewStatus!.subtree.current.status = "stale";
-        if (module.directory === "src") module.reviewStatus!.self.current.status = "stale";
+        if (module.key === "src") module.reviewStatus!.self.current.status = "stale";
       }
     }
     await route.fulfill({ response, json: view });
   });
   await page.getByRole("button", { name: "Обновить", exact: true }).click();
-  await page.waitForFunction(() => !(document.querySelector("#refresh") as HTMLButtonElement).disabled);
+  await page.waitForFunction(() => !(document.querySelector("#refresh") as HTMLButtonElement).disabled &&
+    !document.querySelector("#updated")?.textContent?.includes("Загружаем"));
   await page.setViewportSize({ width: 1440, height: 1000 });
   const parentRow = page.locator('.tree-row[data-key="."]');
   assert.equal(await parentRow.getAttribute("aria-expanded"), "true");
@@ -197,7 +256,7 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   assert.equal(await page.locator("#review-status").count(), 0, "the parent's card only shows its own analysis");
   await parentRow.locator("[data-toggle]").click();
   assert.equal(await parentRow.getAttribute("aria-expanded"), "false");
-  assert.equal(await parentRow.locator(".review-marker").getAttribute("title"), "Требует анализа");
+  assert.equal(await parentRow.locator(".review-marker").getAttribute("title"), "Вложенные модули требуют анализа");
   await page.screenshot({ path: path.join(artifacts, "web-analysis-collapsed.png"), fullPage: true });
   await page.getByRole("searchbox").fill("Функция браузера");
   assert.equal(await parentRow.getAttribute("aria-expanded"), "true");
@@ -212,70 +271,104 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   // An outdated comparison assessment alone does not demand current-input analysis.
   childRequiresAnalysis = false;
   await page.getByRole("button", { name: "Обновить", exact: true }).click();
-  await page.waitForFunction(() => !(document.querySelector("#refresh") as HTMLButtonElement).disabled);
+  await page.waitForFunction(() => !(document.querySelector("#refresh") as HTMLButtonElement).disabled &&
+    !document.querySelector("#updated")?.textContent?.includes("Загружаем"));
   assert.equal(await page.locator("#review-status").count(), 0);
   assert.equal(await page.locator(".tree-row .review-marker").count(), 0);
   assert.deepEqual(errors, []);
 });
 
-test("a saved comparison remains browsable while live data loads, fails and retries", browserOptions, async (t) => {
+test("a native watch updates the selected files and review status after atomic saves, removals and commits", browserOptions, async t => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
-  await app.getComparison(); // Publish the feature under its original name.
-  const contract = path.join(root, ".archiview/modules/browser-feature.yaml");
-  await writeFile(contract, (await readFile(contract, "utf8")).replace("Функция браузера", "Новая функция"));
   const origin = await listen(defer, app.server);
+  const initial = await app.getComparison();
+  for (const key of [".", "src"]) {
+    const request = await app.prepareAnalysis({ view: initial.id, path: key });
+    const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
+    const input: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
+    input.report.analysis.model = input.manifest.model = { provider: "test", id: "watch-fixture" };
+    input.report.analysis.prompt_digest = input.manifest.prompt_digest = digest("Watch integration fixture");
+    input.report.assessment.current = { verdict: "consistent", summary: "Fixture" };
+    await writeFile(path.join(folder, "result.yaml"), stringify(input, { aliasDuplicateObjects: false }));
+    await app.analysis.complete(request.id);
+  }
   const page = await (await browserContext(defer)).newPage();
-  const requests: boolean[] = [];
-  let holdLive: ((route: import("playwright").Route) => void) | undefined;
-  const nextLive = () => new Promise<import("playwright").Route>((resolve) => { holdLive = resolve; });
-  await page.route("**/api/comparison?**", (route) => {
-    const published = new URL(route.request().url()).searchParams.get("published") === "true";
-    requests.push(published);
-    if (!published && holdLive) {
-      const capture = holdLive;
-      holdLive = undefined;
-      return capture(route);
-    }
-    return route.continue();
-  });
-  const firstLive = nextLive();
-  await page.goto(origin, { waitUntil: "commit" });
-  const pending = await firstLive;
-  await page.getByRole("treeitem", { name: /Функция браузера/ }).click();
-  await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
-  await page.getByRole("tab", { name: /^Файлы/ }).click();
-  const file = page.locator("#document-panel").getByText("feature.ts", { exact: true });
-  await file.waitFor();
-  assert.match(await page.locator("#updated").innerText(), /Сохранено.*Проверяем изменения/);
-  assert.ok(await page.locator("#analyze-module").isDisabled());
-  await pending.fulfill({ status: 500, json: { error: "Недоступна история Git" } });
-  await page.getByRole("alert").filter({ hasText: "Недоступна история Git" }).waitFor();
-  assert.ok(await file.isVisible());
-  assert.equal(await page.locator('.tree-row.selected').getAttribute("data-key"), "src");
-
-  const retry = nextLive();
-  await page.locator("#refresh").click();
-  await (await retry).continue();
-  await page.getByRole("heading", { name: "Новая функция", exact: true }).waitFor();
-  await file.waitFor();
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto(origin + "/#src");
+  await page.getByRole("tab", {name: /^Файлы/}).click();
+  const panel = page.locator("#document-panel");
+  const source = panel.getByText("feature.ts", {exact: true});
+  await source.waitFor();
+  await page.waitForFunction(() => document.querySelector("#updated")?.textContent?.startsWith("Обновлено") &&
+    !document.querySelector("#updated")?.textContent?.includes("Загружаем"));
+  assert.equal(await page.locator("#review-status").count(), 0);
+  // Atomic replacement with the HEAD bytes clears an existing diff, while the previous analysis expires.
+  const temp = path.join(root, "src/editor.tmp");
+  await writeFile(temp, "export const feature = 1;\n");
+  const saved = performance.now();
+  await rename(temp, path.join(root, "src/feature.ts"));
+  await page.locator("#review-status").getByText("Требует анализа").waitFor();
+  await panel.locator('.file-row[title="src/feature.ts"] .unchanged').waitFor();
+  t.diagnostic("Atomic save to visible status and files: " + Math.round(performance.now() - saved) + " ms");
+  assert.equal(await page.locator('.tree-row[data-key="."] .review-marker').count(), 0);
+  const added = path.join(root, "src/new-file.ts");
+  const name = panel.getByText("new-file.ts", {exact:true});
+  await writeFile(added, "export const newValue = 1;\n");
+  await name.waitFor();
+  await rm(added);
+  await name.waitFor({state:"hidden"});
+  await writeFile(added, "export const newValue = 2;\n");
+  await name.waitFor();
+  const git = (...args: string[]) => promisify(execFile)("git", args, {cwd:root, windowsHide:true});
+  await git("add", "src/new-file.ts");
+  await git("-c", "user.name=Test", "-c", "user.email=test@example.test", "commit", "-qm", "Add watched file");
+  await panel.locator('.file-row[title="src/new-file.ts"] .unchanged').waitFor();
   assert.equal(await page.locator("#tab-files").getAttribute("aria-selected"), "true");
-  assert.ok(await page.locator("#analyze-module").isEnabled());
-  assert.ok(await page.locator("#timeline option").count() > 1);
-  assert.deepEqual(requests, [true, false, false]);
+  assert.equal(new URL(page.url()).hash, "#src");
+  const timeline = page.locator("#timeline");
+  const revision = "git-" + (await git("rev-parse", "HEAD")).stdout.trim();
+  await timeline.selectOption(revision);
+  await page.waitForFunction(id => {
+    const select = document.querySelector<HTMLSelectElement>("#timeline");
+    return select?.value === id && !select.disabled;
+  }, revision);
+  let unexpectedReads = 0;
+  page.on("request", request => {
+    const url = new URL(request.url());
+    if (url.pathname === "/api/comparison" && url.searchParams.get("target") === "current") unexpectedReads++;
+  });
+  await writeFile(path.join(root, "src/in-history.ts"), "later\\n");
+  const untouched = await app.getComparison();
+  assert.ok(untouched.modules.find(m => m.key === "src")?.filesChanged);
+  assert.equal(await timeline.inputValue(), revision);
+  assert.equal(unexpectedReads, 0);
+  await timeline.selectOption("current");
+  await panel.getByText("in-history.ts", {exact:true}).waitFor();
+  assert.deepEqual(errors, []);
+});
 
-  // A new page opens the saved root. Change its selection before the fresh response arrives.
-  const secondLive = nextLive();
-  await page.goto(origin, { waitUntil: "commit" });
-  const second = await secondLive;
+test("files remain browsable while independent review statuses load, fail and retry", browserOptions, async t => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const origin = await sourceCliOrigin(defer, root);
+  const page = await (await browserContext(defer)).newPage();
+  let capture!: (route: import("playwright").Route) => void;
+  const pending = new Promise<import("playwright").Route>(resolve => { capture = resolve; });
+  await page.route("**/api/review-statuses?**", route => capture(route), {times:1});
+  await page.goto(origin);
+  const request = await pending;
   await page.locator('.tree-row[data-key="src"]').click();
-  await page.getByRole("tab", { name: /^Файлы/ }).click();
-  await file.waitFor();
-  await second.continue();
-  await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#analyze-module")?.disabled);
-  assert.equal(await page.locator('.tree-row.selected').getAttribute("data-key"), "src");
-  assert.ok(await file.isVisible());
+  await page.getByRole("tab", {name:/^Файлы/}).click();
+  await page.locator("#document-panel").getByText("feature.ts", {exact:true}).waitFor();
+  assert.equal(await page.locator(".review-marker").count(),0);
+  await request.fulfill({status:500,json:{error:"Ошибка чтения анализа"}});
+  await page.locator("#updated").filter({hasText:"Ошибка чтения анализа"}).waitFor();
+  await page.locator("#tab-findings").click();
+  await page.getByRole("button",{name:"Повторить"}).click();
+  await page.locator('.tree-row[data-key="src"] .review-marker').waitFor();
 });
 
 test("a reused directory retains its exact module under search and status filters", browserOptions, async (t) => {
@@ -419,7 +512,7 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   await page.reload();
   await page.getByRole("heading", { name: "beta feature", exact: true }).waitFor();
   await page.locator("#updated").filter({ hasText: /^Обновлено/ }).waitFor();
-  assert.deepEqual(repositoriesRequested, ["beta", "beta"]);
+  assert.deepEqual(repositoriesRequested, ["beta"]);
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
   await page.getByText("Промпт скопирован. Вставьте его в чат с агентом.", { exact: false }).waitFor();
   const prompt = await page.evaluate(() => navigator.clipboard.readText());
@@ -430,7 +523,7 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   await page.reload();
   await page.getByRole("heading", { name: "alpha project", exact: true }).waitFor();
   await page.locator("#updated").filter({ hasText: /^Обновлено/ }).waitFor();
-  assert.deepEqual(repositoriesRequested, ["removed", null, "alpha"]);
+  assert.deepEqual(repositoriesRequested, ["removed", null]);
 
   repositoriesRequested.length = 0;
   await page.route("**/api/comparison?**", (route) => route.fulfill({

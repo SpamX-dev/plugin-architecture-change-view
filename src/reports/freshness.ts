@@ -4,7 +4,7 @@ import { ANALYZER } from "../reviews/bundle.js";
 import { snapshotDigest } from "../snapshots/identity.js";
 import type { SelfState, ReviewState, ReviewEntry, Freshness, ReviewFreshness } from "./types.js";
 import { canonical, digest } from "../serialization/digest.js";
-import type { ModuleStateContext } from "./module-state.js";
+import { moduleId, type ModuleStateContext } from "./module-state.js";
 import { REPORT_SCHEMA_VERSION } from "./types.js";
 import { isSemanticReview } from "./review-identity.js";
 import { createInputs } from "./review-state.js";
@@ -60,18 +60,6 @@ function inputFreshness(previous: ReviewState | null, current: ReviewState | nul
     coverage: { status: limitations.length ? "partial" : "complete", limitations, reasons: [...coverageReasons, ...unknown] } };
 }
 
-/**
- * Сохранённый формат own содержит контекст детей для доказательств и валидации.
- * При сравнении локального анализа он не становится входом родителя: проверяются
- * собственный код и контракт. История не меняется.
- */
-function localInput(input: ReviewState | null, snapshot: SnapshotData | null): ReviewState | null {
-  if (!input) return null;
-  return { ...input, state: input.state ? { ...input.state, children: [] } : null,
-    complete: snapshot?.complete !== false && (!input.exists || Boolean(input.state?.contract) &&
-      input.state?.own_files.every((file) => !file.error && file.normalization === "text-lf/v1") === true) };
-}
-
 /** Все проекции одной оценки используют те же состояния зафиксированных снимков. */
 export function freshness(entry: ReviewEntry, baseline: SnapshotData | null, current: SnapshotData, context: ModuleStateContext): ReviewFreshness {
   if (!entry?.inputs || entry.schema_version !== REPORT_SCHEMA_VERSION || entry.inputs.schema_version !== 1) {
@@ -82,17 +70,38 @@ export function freshness(entry: ReviewEntry, baseline: SnapshotData | null, cur
   const options = { scope: entry.inputs.scope, dependencies: [],
     dependencyCoverage: entry.inputs.current.dependency_coverage, contractScope: entry.inputs.contract_scope ?? "effective" };
   const actual = createInputs(baseline, current, entry.module_id, options, isSemanticReview(entry), context);
-  const local = entry.inputs.contract_scope === "own" && entry.inputs.scope === "self";
-  const previousCurrent = local ? localInput(entry.inputs.current, entry.current) : entry.inputs.current;
-  const actualCurrent = local ? localInput(actual.current, current) : actual.current;
-  const own = inputFreshness(previousCurrent, actualCurrent);
+  const own = inputFreshness(entry.inputs.current, actual.current);
+  if (entry.inputs.scope === "self" && (current.observations || current.revision)) {
+    const id = entry.module_id;
+    const prior = entry.current.modules.find(m => moduleId(m) === id);
+    const now = current.modules.find(m => moduleId(m) === id);
+    const beforeVersion = entry.current.observations?.[id];
+    const version = current.observations?.[id];
+    const comparable = beforeVersion && version && beforeVersion.lineage === version.lineage;
+    const inputs = (m: typeof now) => m ? [m.directory, m.files, m.document] : null;
+    const children = actual.current.state?.children ?? [];
+    const compositionChanged = own.reasons.some(reason => reason.code === "child_composition");
+    if (compositionChanged) {
+      own.status = "stale";
+      own.reasons = [{code:"child_composition"}];
+    } else if (canonical(inputs(prior)) !== canonical(inputs(now)) || comparable && beforeVersion.revision !== version.revision) {
+      own.status = "stale"; own.reasons = [{code:"module_changed_since_analysis"}];
+    } else if (children.some(child => child.document_state !== "documented" || !child.contract)) {
+      own.status = "unknown"; own.reasons = [{code:"input_coverage_incomplete"}];
+    } else if ((!comparable && (!current.revision || entry.current.revision !== current.revision)) || !current.complete || !entry.current.complete) {
+      own.status = "unknown"; own.reasons = [{code:"module_order_unknown"}];
+    } else {
+      own.status = "fresh"; own.reasons = [];
+    }
+  }
   const change = structuredClone(own);
   if (canonical(entry.inputs.baseline_identity) !== canonical(actual.baseline_identity)) {
     change.status = "stale"; change.reasons.push({ code: "baseline_identity" });
   }
-  if (entry.inputs.baseline || actual.baseline) {
-    const baselineStatus = inputFreshness(local ? localInput(entry.inputs.baseline, entry.baseline) : entry.inputs.baseline,
-      local ? localInput(actual.baseline, baseline) : actual.baseline);
+  // An identical immutable Git object already fixes every baseline input.
+  const sameCommit = baseline?.complete && entry.baseline?.complete && baseline.revision && baseline.revision === entry.baseline.revision;
+  if (!sameCommit && (entry.inputs.baseline || actual.baseline)) {
+    const baselineStatus = inputFreshness(entry.inputs.baseline, actual.baseline);
     change.reasons.push(...baselineStatus.reasons.map((reason) => ({ ...reason, side: "baseline" })));
     change.coverage = combineCoverage([change.coverage, baselineStatus.coverage]);
     if (baselineStatus.status === "stale") change.status = "stale";

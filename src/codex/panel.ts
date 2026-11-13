@@ -8,7 +8,7 @@ import { packageUrl } from "../runtime/package-paths.js";
 import { UI_TOOL_METHODS, validateUiArguments } from "./ui-tools.js";
 import { chooseProjectDirectory } from "./directory-picker.js";
 
-export const PANEL_URI = "ui://archiview/panel-v6.html";
+export const PANEL_URI = "ui://archiview/panel-v7.html";
 export const PROJECT_INPUT = { type: "string", description: "Absolute project directory of the current chat, not the plugin installation. Normally selected automatically from the working folder supplied by Codex." };
 export const PANEL_TOOL: import("@modelcontextprotocol/sdk/types.js").Tool = {
   name: "archiview_open", title: "ArchiView",
@@ -24,6 +24,7 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
   const binding = rootOrBinding && typeof rootOrBinding === "object" ? Promise.resolve(rootOrBinding) : createProjectBinding(rootOrBinding);
   let session: ReturnType<typeof createWorkspaceSession> | null | undefined;
   let closed = false;
+  const lifetime = new AbortController();
   let projectSelection = Promise.resolve();
   let mutations = Promise.resolve();
   const reads = new Set<Promise<void>>();
@@ -43,8 +44,8 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
       catch (error) {
         if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE", "PROJECT_UNAVAILABLE"].includes(applicationError(error).code)) throw error;
         const unavailable = applicationError(error).code === "PROJECT_UNAVAILABLE";
-        return { content: [{ type: "text" as const, text: unavailable ? applicationError(error).message : "ArchiView: подготовка рабочей папки проекта." }],
-          structuredContent: { projectRequired: !unavailable, projectStatus: unavailable ? "unavailable" : "initializing" },
+        return { content: [{ type: "text" as const, text: unavailable ? "ArchiView: выберите папку проекта." : "ArchiView: подготовка рабочей папки проекта." }],
+          structuredContent: { projectRequired: true, projectStatus: unavailable ? "unavailable" : "initializing" },
           _meta: { bootstrap: applicationError(error) } };
       }
       const root = project.root;
@@ -54,8 +55,7 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
     callUi(name: string, args: unknown, metadata?: Record<string, unknown>) {
       const method = UI_TOOL_METHODS.get(name);
       const selectsProject = method === "setProject" || method === "chooseProject" || method === "getProject";
-      const read = method === "getModule" || (method === "getComparison" && args !== null &&
-        typeof args === "object" && "published" in args && args.published === true);
+      const read = method === "waitForChanges" || method === "getReviewStatuses" || method === "getModule" || method === "getComparison";
       const ready = read || selectsProject ? projectSelection : Promise.all([projectSelection, mutations]);
       const operation = ready.then(async () => {
         checkOpen();
@@ -63,13 +63,13 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
         if (!method) throw new ApplicationError("INVALID_ARGUMENT", "Неизвестная операция панели");
         if (method === "chooseProject") {
           try { await (await binding).select(undefined, metadata); }
-          catch (error) { if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE"].includes(applicationError(error).code)) throw error; }
+          catch (error) { if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE", "PROJECT_UNAVAILABLE"].includes(applicationError(error).code)) throw error; }
           return { content: [], _meta: { result: await chooseDirectory() } };
         }
         // Проверка папки не создаёт сессию и не ждёт обхода исходников или истории.
         const result = (method === "getProject" || method === "setProject") ?
           { root: await (await binding).select(method === "setProject" ? args.projectRoot as string : undefined, metadata) } :
-          await callSessionOperation(await service(metadata), method, args);
+          await callSessionOperation(await service(metadata), method, args, lifetime.signal);
         // Ни content, ни structuredContent не содержат данные просмотра.
         return { content: [], _meta: { result } };
       }).catch((error) => ({ isError: true, content: [], _meta: { error: applicationError(error) } }));
@@ -96,6 +96,6 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
           "openai/ui": { availableDisplayModes: ["inline", "fullscreen"] } } }] };
     },
     /** После отключения хоста новые операции отклоняются; уже начатая запись безопасно завершается. */
-    async close() { closed = true; await Promise.all([projectSelection, mutations, ...reads]); session = null; },
+    async close() { closed = true; lifetime.abort(); await Promise.all([projectSelection, mutations, ...reads]); await (await session)?.close(); session = null; },
   };
 }

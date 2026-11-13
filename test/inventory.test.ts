@@ -15,9 +15,10 @@ import { discoverWorkspaceRepositories, resolveWorkspaceRepository } from "../sr
 const runFile = promisify(execFile);
 
 /** Создаёт временный проект с автоматической уборкой только его каталога. */
-async function project(t: TestContext, files: Record<string, string>) {
+async function project(t: TestContext, files: Record<string, string>, repository = true) {
   const root = await mkdtemp(path.join(os.tmpdir(), "architecture-change-view-"));
   t.after(() => rm(root, { recursive: true, force: true }));
+  if (repository) await runFile("git", ["init", "-q", root]);
   for (const [file, text] of Object.entries(files)) {
     await mkdir(path.dirname(path.join(root, file)), { recursive: true });
     await writeFile(path.join(root, file), text);
@@ -239,7 +240,7 @@ test("an unreadable contract entry requires repair even in a planned directory",
 
 test("a workspace routes existing and new source files to their own checkout", async (t) => {
   const root = await project(t, { "README.md": "Workspace notes", "abandoned/.git": "broken worktree pointer",
-    "apps/left/src/file.ts": "left", "right/src/file.ts": "right", "dist/generated/x.ts": "ignored" });
+    "apps/left/src/file.ts": "left", "right/src/file.ts": "right", "dist/generated/x.ts": "ignored" }, false);
   for (const repository of ["apps/left", "right", "dist/generated"]) {
     const directory = path.join(root, repository);
     await runFile("git", ["init", "--quiet"], { cwd: directory });
@@ -277,7 +278,7 @@ test("a workspace routes existing and new source files to their own checkout", a
 });
 
 test("nested checkouts and linked worktrees retain independent roots", async (t) => {
-  const root = await project(t, { "parent/src/index.ts": "", "parent/libs/child/src/main.ts": "" });
+  const root = await project(t, { "parent/src/index.ts": "", "parent/libs/child/src/main.ts": "" }, false);
   const parent = path.join(root, "parent"), child = path.join(parent, "libs/child");
   const git = (cwd: string, args: string[]) => runFile("git", args, { cwd, windowsHide: true });
   for (const directory of [parent, child]) {

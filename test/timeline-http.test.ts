@@ -17,7 +17,7 @@ async function workBytes(app: { reports: { work: string } }){
  const names=(await readdir(app.reports.work)).sort();
  return Promise.all(names.map(async f=>[f,await readFile(path.join(app.reports.work,f),"utf8")]));
 }
-test("timeline shows revisions, live HEAD, two immutable changes and compacted current; browsing cannot replace work",async t=>{
+test("timeline shows revisions, live HEAD, cumulative working changes; browsing cannot replace work",async t=>{
  const root=await mkdtemp(path.join(os.tmpdir(),"archiview-timeline-"));
  t.after(()=>rm(root,{recursive:true,force:true}));
  await writeModuleTree(root, { root: "." });
@@ -29,7 +29,7 @@ test("timeline shows revisions, live HEAD, two immutable changes and compacted c
   git(root,["add","."]);git(root,["commit","-qm","Revision "+i]);
   revisions.push(git(root,["rev-parse","HEAD"]));
  }
- const app=await createArchiView({root});
+ const app=await createArchiView({root, publishOnOpen: true});
  app.server.listen(0,"127.0.0.1");await once(app.server,"listening");
  t.after(()=>new Promise<void>(resolve=>{app.server.closeAllConnections();app.server.close(() => resolve());}));
  const url="http://127.0.0.1:"+(app.server.address() as AddressInfo).port;
@@ -43,27 +43,15 @@ test("timeline shows revisions, live HEAD, two immutable changes and compacted c
  const full=await get("?historyLimit=50");
  assert.deepEqual(full.timeline.filter(s=>s.kind==="git").map(s=>s.revision),revisions);
  await writeFile(path.join(root,"code.js"),"export const value = 4;\n");
- const w1=await get();const change1=w1.timeline.find(s=>s.kind==="change");
- assert.ok(change1);
+ const w1=await get();
  await writeFile(path.join(root,"code.js"),"export const value = 5;\n");
- const w2=await get();const changes=w2.timeline.filter(s=>s.kind==="change");
- assert.equal(changes.length,2);assert.equal(changes[0].id,change1.id);
- assert.ok(changes.every(s=>s.capturedAt&&s.baseRevision===revisions[2]));
- assert.equal((await get()).timeline.filter(s=>s.kind==="change").length,2);
- // Прежняя явная база остаётся доступной через API, но компактный UI выбирает HEAD.
- const explicit=await get("?baseline="+changes.at(-1)!.id);
- assert.equal(explicit.before.id,changes.at(-1)!.id);
- assert.equal(explicit.counts.changed,0);
- assert.equal((await get()).before.id,changes.at(-1)!.id);
- const automatic=await get("?baseline=auto");
- assert.equal(automatic.before.id,"git-"+revisions[2]);
- assert.equal(automatic.counts.changed,1);
+ const w2=await get();
+ assert.notEqual(w1.id,w2.id);
+ assert.equal(w1.before.id,"git-"+revisions[2]);
+ assert.equal(w2.before.id,w1.before.id);
+ assert.deepEqual(w2.timeline.filter(s=>s.kind==="change"),[]);
+ assert.equal(w2.counts.changed,1);
  const before=await workBytes(app);
- const historical=await get("?target="+change1.id+"&baseline=auto");
- assert.equal(historical.target!.id,change1.id);
- assert.equal(historical.after.digest,(await app.changes.get(change1.id))!.digest);
- assert.equal(historical.before.id,"git-"+revisions[2]);
- assert.deepEqual(await workBytes(app),before);
  const revision=await get("?target=git-"+revisions[1]);
  assert.equal(revision.after.id,"git-"+revisions[1]);
  assert.equal(revision.before.id,"git-"+revisions[0]);
@@ -91,7 +79,7 @@ test("a complete working tree with an incomplete HEAD opens without replacing pu
  git(root,["init","-q"]);git(root,["config","user.name","Timeline Test"]);git(root,["config","user.email","timeline@example.invalid"]);
  git(root,["add",".archiview/modules.tree", ".archiview/modules/root.yaml","code.js"]);git(root,["commit","-qm","Oversized historical contract"]);
  await writeFile(path.join(root,".archiview/modules/root.yaml"),stringify(contract));
- const app=await createArchiView({root});
+ const app=await createArchiView({root, publishOnOpen: true});
  app.server.listen(0,"127.0.0.1");await once(app.server,"listening");
  t.after(()=>new Promise<void>(resolve=>{app.server.closeAllConnections();app.server.close(() => resolve());}));
  const response=await fetch("http://127.0.0.1:"+(app.server.address() as AddressInfo).port+"/api/comparison");

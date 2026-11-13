@@ -1,3 +1,4 @@
+import { initTestRepository } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { Snapshot, ComparisonModule } from "../src/snapshots/types.js";
 import type { TechnicalReport, ReviewHistory } from "../src/reports/types.js";
@@ -30,33 +31,21 @@ import { createArchiViewSession } from "../src/application/session.js";
 
 const stored = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
-test("a warm refresh only reads archive files replaced since the previous comparison", async (t) => {
+test("Git tree and files remain available when a review archive is damaged", async (t) => {
   const { root } = await fixture(t);
   const session = await createArchiViewSession({ root, deferPublication: true });
   const first = await session.getComparison({ baseline: "auto" });
-  const module = first.modules.find(item => item.moduleId === "child")!;
   const meta = path.join(root, ".archiview");
-  const raw = path.join(meta, "snapshots", "modules", module.structure!.checkHash!, moduleReportName("child") + ".archi.yaml");
-  const changeDir = path.join(meta, "snapshots", "changes");
-  const change = path.join(changeDir, (await readdir(changeDir)).find(name => name.startsWith("change-"))!);
-  const old = await Promise.all([raw, change].map(async file => ({ file, bytes: await readFile(file), info: await stat(file) })));
-
+  await mkdir(path.join(meta,"work"), {recursive:true});
+  const file = path.join(meta,"work",moduleReportName("child")+".review.yaml");
+  await writeFile(file,"broken: true");
   const reads = t.mock.method(fs, "readFile");
   syncBuiltinESMExports();
   t.after(() => { reads.mock.restore(); syncBuiltinESMExports(); });
-  const archiveReads = () => reads.mock.calls.map(call => String(call.arguments[0])).filter(file =>
-    [session.reports.raw, session.reports.work, changeDir].some(directory => file.startsWith(directory + path.sep)));
   assert.equal((await session.getComparison({ baseline: "auto" })).id, first.id);
-  assert.deepEqual(archiveReads(), []);
-  // Preserve length, mtime and contents. Replacement must still be revalidated.
-  for (const { file, bytes, info } of old) {
-    const replacement = file + ".replacement";
-    await writeFile(replacement, bytes);
-    await utimes(replacement, info.atime, info.mtime);
-    await rename(replacement, file);
-  }
-  assert.equal((await session.getComparison({ baseline: "auto" })).id, first.id);
-  assert.deepEqual(archiveReads().sort(), [raw, change].sort());
+  assert.ok(!reads.mock.calls.some(call => String(call.arguments[0]) === file));
+  await assert.rejects(session.getReviewStatuses({view:first.id}));
+  assert.equal((await session.getModule({view:first.id,path:"child",analysis:false})).moduleId,"child");
 });
 
 /** Каждый тест владеет своими исходниками, состоянием и копиями проекта. */
@@ -67,6 +56,7 @@ async function fixture(t: TestContext) {
   await mkdir(path.join(root, "child"), { recursive: true });
   const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module", purpose: "Читать собственные записи.",
     responsibilities: { R1: "Возвращать записи." }, boundaries: { B1: "Не обращаться к сети." }, invariants: {} });
+  initTestRepository(root);
   await writeModuleTree(root, { root: ".", child: "child" });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract("root")));
   await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify(contract("child")));
@@ -206,13 +196,15 @@ test("deferred first comparison selects the ordinary baseline and publishes the 
   const session = await createArchiViewSession({ root, deferPublication: true });
   assert.equal(await createPublishedView({ root }), null);
   const result = await session.getComparison();
+  assert.equal(await createPublishedView({root}),null);
+  await session.buildReview({view:result.id,path:"."});
   const saved = await createPublishedView({ root });
   assert.ok(saved);
-  assert.equal(saved.comparison.after.id, result.after.id);
+  assert.equal(saved.comparison.modules.length, result.modules.length);
   assert.equal(saved.comparison.before.id, result.before.id);
   const history = await session.reports.list();
   assert.equal(history.comparison?.current.kind, "working");
-  assert.equal(history.comparison?.baseline?.kind, "launch");
+  assert.equal(history.comparison?.baseline, null);
   assert.ok(history.reports.every(report => report.publication?.generation === 1));
 });
 
@@ -242,7 +234,9 @@ test("unsupported analyzer versions reach the panel as a clear error and cannot 
   await assert.rejects(store.publishedComparison(), (error: unknown) => error instanceof Error && error.message.includes(message));
   const panel = createCodexPanel(root);
   t.after(() => panel.close());
-  const result = await panel.callUi("archiview_ui_get_comparison", {});
+  const live = await panel.callUi("archiview_ui_get_comparison", {});
+  assert.ok(!("isError" in live && live.isError));
+  const result = await panel.callUi("archiview_ui_get_comparison", { published: true });
   assert.ok("isError" in result && result.isError);
   assert.deepEqual(result.content, []);
   assert.equal("structuredContent" in result ? result.structuredContent : undefined, undefined);

@@ -1,3 +1,4 @@
+import { initTestRepository } from "./support.js";
 import { firstTextContent, writeModuleTree } from "./support.js";
 import type { moduleInventory } from "../src/contracts/inventory.js";
 /** Проверяет настоящий MCP handshake, ресурсы skill:// и инструменты чтения. */
@@ -15,6 +16,7 @@ test("serves a matching skill descriptor and read-only module tools over stdio",
   const root = await mkdtemp(path.join(os.tmpdir(), "module-mcp-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, "src"));
+  initTestRepository(root);
   await writeModuleTree(root, { root: "." });
   const document = "schema_version: 1\nid: root\ntitle: Root\nkind: module\npurpose: Read\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\n";
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), document);

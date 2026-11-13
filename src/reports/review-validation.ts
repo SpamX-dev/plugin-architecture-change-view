@@ -20,8 +20,13 @@ function validateScopedProof(entry: ReviewEntry) {
     const { scope_digest, ...content } = snapshot;
     if (snapshot.schema_version !== 2 || !snapshot.scoped || digest(content) !== scope_digest) throw new Error("Scoped snapshot digest mismatch");
     const allowed = ["schema_version", "id", "digest", "kind", "revision", "complete", "modules", "facts",
-      "diagnostics", "evidenceLimitations", "scoped", "scope_digest"];
+      "diagnostics", "evidenceLimitations", "scoped", "scope_digest", "observations"];
     if (Object.keys(snapshot).some((key) => !allowed.includes(key))) throw new Error("Unknown scoped snapshot field");
+    if (snapshot.observations !== undefined && (!snapshot.observations || typeof snapshot.observations !== "object" ||
+      Array.isArray(snapshot.observations) || Object.values(snapshot.observations).some(token =>
+        !token || typeof token.lineage !== "string" || !token.lineage || !Number.isSafeInteger(token.revision) || token.revision < 1))) {
+      throw new Error("Invalid module observation versions");
+    }
     if (!Array.isArray(snapshot.modules) || !Array.isArray(snapshot.facts)) throw new Error("Invalid scoped snapshot collections");
     const relative = (value: unknown, directory = false) => typeof value === "string" && (directory && value === "." ||
       value.length > 0 && !/[\\:]/.test(value) && !value.startsWith("/") &&

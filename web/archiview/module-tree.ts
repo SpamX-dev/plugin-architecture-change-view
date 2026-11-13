@@ -251,11 +251,17 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
       }
       row.append(caret, icon("folder"), label);
       const findings = findingCounts.get(module.key) ?? 0;
+      const ownFindings = moduleFindingCount(module);
+      const ownViolation = module.reviewStatus?.self?.current.current_violation;
       const savedViolation = view.published && (isExpanded ? module.reviewStatus?.self : module.reviewStatus?.subtree)?.current.current_violation;
       if (findings || savedViolation) {
         const marker = el("span", "finding-marker");
-        marker.title = findings ? "Открытые замечания" + (findings > moduleFindingCount(module) ? " в модуле и вложенных модулях" : " модуля") + " · " + findings :
-          "Сохранённая проверка выявила нарушение";
+        if (findings) {
+          const location = ownFindings === findings ? "модуля" : ownFindings ? "в модуле и вложенных модулях" : "во вложенных модулях";
+          marker.title = "Открытые замечания " + location + " · " + findings;
+        } else {
+          marker.title = ownViolation ? "Сохранённая проверка выявила нарушение в модуле" : "Нарушение во вложенных модулях";
+        }
         marker.setAttribute("role", "img");
         marker.setAttribute("aria-label", marker.title);
         marker.append(findingBug());
@@ -303,7 +309,7 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     tree.append(list);
   }
 
-  function showComparison(view: ComparisonView, historyLimit: number) {
+  function showComparison(view: ComparisonView, historyLimit: number, automatic = false) {
     const root = view.workspace?.root ?? view.root;
     if (treeRoot !== root) {
       trees.clear();
@@ -319,7 +325,7 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     }
     const expanded = trees.get(repository)?.expanded ?? new Set(view.modules.length < 100 ? view.modules.map((module) => module.key) : []);
     trees.set(repository, { view, expanded, historyLimit });
-    closed.delete(repository);
+    if (!automatic) closed.delete(repository);
     const repositoryCount = view.workspace?.repositories.length ?? trees.size;
     const partial = trees.size < repositoryCount;
     const searchInput = byId("search");
@@ -332,7 +338,7 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     byId("filters").title = scope;
     renderFilters();
     // Selecting the initial module reveals its parents and renders the tree in one pass.
-    if (!view.modules.length) renderTree();
+    if (automatic || !view.modules.length) renderTree();
   }
 
   function reveal(module: ModuleSummary) {
@@ -392,5 +398,5 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
         node.dataset.key === key && node.dataset.repository === row.dataset.repository)?.focus();
     }
   });
-  return { showComparison, reveal, getRepository: (repository: string) => trees.get(repository) };
+  return { showComparison, reveal, refreshStatuses() { renderFilters(); renderTree(); }, getRepository: (repository: string) => trees.get(repository) };
 }

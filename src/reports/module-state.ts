@@ -1,6 +1,6 @@
 import type { SnapshotData, SourceFile, SnapshotModule } from "../snapshots/types.js";
 import type { Contract } from "../contracts/types.js";
-import type { FileInput, ModuleState } from "./types.js";
+import type { FileInput, ModuleState, SelfState } from "./types.js";
 import path from "node:path";
 import { canonical, digest } from "../serialization/digest.js";
 
@@ -55,6 +55,24 @@ function inheritedInputs(modules: SnapshotModule[], directory: string) {
   (item) => [item.module_id, item.section, item.id].join("\0"));
 }
 
+/** Граница композиции — объявления ближайших модулей, без их реализации и потомков. */
+export function directChildContracts(modules: SnapshotModule[]) {
+  const directories = new Set(modules.map(module => module.directory));
+  const children = new Map<string, SelfState["children"]>();
+  for (const module of modules) {
+    if (module.directory === ".") continue;
+    let parent = path.posix.dirname(module.directory);
+    while (parent !== "." && !directories.has(parent)) parent = path.posix.dirname(parent);
+    if (!directories.has(parent)) continue;
+    const declarations = children.get(parent) ?? [];
+    declarations.push({ module_id: moduleId(module), directory: module.directory,
+      contract: semanticContract(module.document?.contract), document_state: module.document?.state ?? "missing" });
+    children.set(parent, declarations);
+  }
+  for (const declarations of children.values()) declarations.sort((a, b) => compare(a.module_id, b.module_id));
+  return children;
+}
+
 /**
  * Строит одновременно техническое состояние и обязательные входы self. Карта
  * использует устойчивый id; directory:... — явный технический ключ модуля без
@@ -63,14 +81,10 @@ function inheritedInputs(modules: SnapshotModule[], directory: string) {
 export function buildModuleStates(snapshot: SnapshotData | null): Map<string, ModuleState> {
   const states = new Map<string, ModuleState>();
   const modules = snapshot?.modules ?? [];
-  const byDirectory = new Map(modules.map((module) => [module.directory, module]));
+  const composition = directChildContracts(modules);
   for (const module of modules) {
     const id = moduleId(module);
     if (states.has(id)) throw new Error("Duplicate module identity: " + id);
-    let parentDirectory = module.directory === "." ? null : path.posix.dirname(module.directory);
-    while (parentDirectory !== null && !byDirectory.has(parentDirectory)) {
-      parentDirectory = parentDirectory === "." ? null : path.posix.dirname(parentDirectory);
-    }
     const ownFiles = sorted((module.files ?? []).filter((file) => file.path !== module.documentPath)
       .map((file) => fileInput(snapshot, file)), (file) => file.path);
     const inherited = inheritedInputs(modules, module.directory);
@@ -79,7 +93,7 @@ export function buildModuleStates(snapshot: SnapshotData | null): Map<string, Mo
       own_files: ownFiles, contract: structuredClone(contract), document_state: module.document?.state ?? "missing", inherited,
       ...(!contract && module.document?.text ? { invalid_contract_digest: digest(normalizeText(module.document.text ?? "")) } : {}) };
     states.set(id, { module_id: id, directory: module.directory,
-      parent_id: parentDirectory === null ? null : moduleId(byDirectory.get(parentDirectory)!),
+      parent_id: null,
       children: [], technical, technical_digest: digest(technical),
       complete: snapshot?.complete !== false && module.document?.state === "documented" && Boolean(contract) && !ownFiles.some((file) => file.error) &&
         modules.filter((ancestor) => ancestor.directory !== module.directory &&
@@ -88,11 +102,10 @@ export function buildModuleStates(snapshot: SnapshotData | null): Map<string, Mo
       self: { normalization: NORMALIZATION, module_id: id, directory: module.directory,
         own_files: structuredClone(ownFiles), contract: semanticContract(contract), inherited, children: [] } });
   }
-  for (const state of states.values()) if (state.parent_id !== null) states.get(state.parent_id)?.children.push(state.module_id);
   for (const state of states.values()) {
-    state.children.sort(compare);
-    state.self.children = state.children.map((id) => ({ module_id: id, directory: states.get(id)!.directory,
-      contract: semanticContract(states.get(id)!.technical.contract), document_state: states.get(id)!.technical.document_state }));
+    state.self.children = composition.get(state.directory) ?? [];
+    state.children = state.self.children.map(child => child.module_id);
+    for (const id of state.children) states.get(id)!.parent_id = state.module_id;
     state.complete &&= state.self.children.every((child) => child.document_state === "documented" && child.contract);
     state.self_digest = digest(state.self);
   }

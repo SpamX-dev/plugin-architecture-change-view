@@ -120,6 +120,27 @@ export class ReportStore {
     });
   }
 
+  /** Read consolidated review attempts without parsing technical reports or scanning raw snapshots. */
+  async readReviews() {
+    return this.#locked(async () => {
+      await this.snapshotStore.assertLocation(this.work);
+      let names: string[];
+      try { names = await readdir(this.work); }
+      catch (cause) { if (errorDetails(cause).code === "ENOENT") return []; throw cause; }
+      const entries: ReviewEntry[] = [];
+      for (const name of names.sort()) {
+        if (!name.endsWith(".review.yaml")) continue;
+        const file = path.join(this.work, name);
+        await this.snapshotStore.assertLocation(file);
+        const checked = await this.#checkedFile(file, true);
+        if (checked.kind !== "reviews") throw new Error("Invalid review history: " + name);
+        entries.push(...checked.entries);
+      }
+      validateReviewRelations(entries);
+      return entries.sort((a,b) => (b.registration_order ?? 0) - (a.registration_order ?? 0));
+    });
+  }
+
   /** Автоматическая техническая проверка не создаёт содержательных попыток агента. */
   async rebuild(baseline: Snapshot | null,
     current: Snapshot, comparisonModules?: ComparisonModule[], options: {expectedComparison?: PublishedComparison} = {}) {
@@ -387,6 +408,10 @@ export class ReportStore {
   /** Управляемый блок не заменяет пользовательские правила .gitignore. */
   async #prepare() {
     await this.snapshotStore.ensureIdentity();
+    await this.prepareLocalState();
+  }
+
+  async prepareLocalState() {
     const file = path.join(this.directory, ".gitignore");
     await this.snapshotStore.assertLocation(file);
     let text = "";

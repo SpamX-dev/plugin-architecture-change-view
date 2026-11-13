@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-codex
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 4166cfd38a9019a2b23f97231f5e1b1dbfe318473b199428d611c4e5199bad9a
+check_hash: d59f1792d1151c5e18961179c23a110c53baf15d5e8e1aba14d79d12733d0b87
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,7 +10,7 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: b23283774c6463600f966355f5329f9f7684aacb
+      id: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
     state:
       exists: true
       directory: src/codex
@@ -19,8 +19,8 @@ input_manifest:
   current:
     exists: true
     directory: src/codex
-    self_digest: sha256:da04947171214784dd4823c87f5f4778d6f9d157e3def8f111438ffe2293561e
-    subtree_digest: sha256:20b952b6f407ac674127df680b25a1738b6ee09b1e0a4ac116c20b529b9e38fd
+    self_digest: sha256:fb6e39dd412f7975507f4f215dfebb3f64d76a331502ae738cc3f82e6c14afce
+    subtree_digest: sha256:bfc29e54f365561870b241f4f261bbffbb7350d3ca5ccb2cc99ea35f5245d22d
   analyzer:
     name: archiview-structure
     version: 1.0.2
@@ -411,19 +411,19 @@ current:
         digest: sha256:b47480c35a86b4ab4e0e6dd56fe9545c1ed4473d2d63159d2247995adb4c8449
         normalization: text-lf/v1
       - path: src/codex/panel-client.ts
-        digest: sha256:fc533a5033a40c4666b5874798aee413db75ed15e10ffcd015d33c759ed0dc52
+        digest: sha256:ea803e58d24e131c9fd08a5e7717e12b577e356c974e5af86182116b1d24322b
         normalization: text-lf/v1
       - path: src/codex/panel-entry.ts
         digest: sha256:d94b543ce657e4a0c9df249541a01a279efc6a1b3a1fbbd180a47661729e680e
         normalization: text-lf/v1
       - path: src/codex/panel.ts
-        digest: sha256:fc7c57c3add6caafee67b795ff1877dd317201c012fefd4510658f6753bfb540
+        digest: sha256:94618c482047ec14efcdaa0447e3e715c713ce398b276a72e4f82370b16c1b00
         normalization: text-lf/v1
       - path: src/codex/project-context.ts
-        digest: sha256:e6a25d6d8e4dd8c3920d34dee5a4266ccaa1b7713c4ff7fc3d0c8a69eff68ab4
+        digest: sha256:e7a82531a4d5caa95442cb39695271f5c57f80cda4293e89b0207f0048184bc7
         normalization: text-lf/v1
       - path: src/codex/ui-tools.ts
-        digest: sha256:b23df33dcd854bfd69355cba2719d629f7c5c4e73464c91997ffe98c205c90ac
+        digest: sha256:7915471941a93d99fd1f963df7f1352bcec78abd86820f57f246291f8530a0d4
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -442,8 +442,8 @@ current:
         R2: Скрывать операции UI от модели через visibility app; передавать данные и
           ошибки просмотра только в метаданных результата.
         R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex;
-          отличать отсутствие папки от недоступности контекста и запрещать
-          просмотр вне проектов.
+          при отсутствии доступного корня позволять пользователю явно выбрать
+          существующую папку проекта.
         R4: Подключать встроенную панель к Codex через MCP Apps и вызывать инструменты
           хоста для определения и выбора проекта.
       boundaries:
@@ -467,9 +467,10 @@ current:
         I5: Отсутствие истории чата или временная недоступность его контекста не
           блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку чата и
           проверяется по каталогу папок хоста.
-        I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный
-          диалог открывается только явной кнопкой пользователя. Подтверждённое
-          отсутствие проекта не обходится этой формой.
+        I6: При неизвестной или отсутствующей папке чата панель предлагает ручной ввод;
+          в Windows нативный диалог открывается только явной кнопкой
+          пользователя. Явный выбор привязывает папку один раз и не переключает
+          уже выбранный корень.
     document_state: documented
     inherited:
       - module_id: architecture-change-view
@@ -486,8 +487,8 @@ current:
         section: invariants
         id: I1
         text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
+          корень от хоста или однократного явного выбора пользователя; явно
+          настроенный для модельных инструментов корень ограничивает их чтение.
       - module_id: architecture-change-view
         section: invariants
         id: I2
@@ -574,7 +575,7 @@ current:
         id: I6
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:da04947171214784dd4823c87f5f4778d6f9d157e3def8f111438ffe2293561e
+  technical_digest: sha256:fb6e39dd412f7975507f4f215dfebb3f64d76a331502ae738cc3f82e6c14afce
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -591,19 +592,19 @@ current:
         digest: sha256:b47480c35a86b4ab4e0e6dd56fe9545c1ed4473d2d63159d2247995adb4c8449
         normalization: text-lf/v1
       - path: src/codex/panel-client.ts
-        digest: sha256:fc533a5033a40c4666b5874798aee413db75ed15e10ffcd015d33c759ed0dc52
+        digest: sha256:ea803e58d24e131c9fd08a5e7717e12b577e356c974e5af86182116b1d24322b
         normalization: text-lf/v1
       - path: src/codex/panel-entry.ts
         digest: sha256:d94b543ce657e4a0c9df249541a01a279efc6a1b3a1fbbd180a47661729e680e
         normalization: text-lf/v1
       - path: src/codex/panel.ts
-        digest: sha256:fc7c57c3add6caafee67b795ff1877dd317201c012fefd4510658f6753bfb540
+        digest: sha256:94618c482047ec14efcdaa0447e3e715c713ce398b276a72e4f82370b16c1b00
         normalization: text-lf/v1
       - path: src/codex/project-context.ts
-        digest: sha256:e6a25d6d8e4dd8c3920d34dee5a4266ccaa1b7713c4ff7fc3d0c8a69eff68ab4
+        digest: sha256:e7a82531a4d5caa95442cb39695271f5c57f80cda4293e89b0207f0048184bc7
         normalization: text-lf/v1
       - path: src/codex/ui-tools.ts
-        digest: sha256:b23df33dcd854bfd69355cba2719d629f7c5c4e73464c91997ffe98c205c90ac
+        digest: sha256:7915471941a93d99fd1f963df7f1352bcec78abd86820f57f246291f8530a0d4
         normalization: text-lf/v1
     contract:
       id: archiview-codex
@@ -616,8 +617,8 @@ current:
         R2: Скрывать операции UI от модели через visibility app; передавать данные и
           ошибки просмотра только в метаданных результата.
         R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex;
-          отличать отсутствие папки от недоступности контекста и запрещать
-          просмотр вне проектов.
+          при отсутствии доступного корня позволять пользователю явно выбрать
+          существующую папку проекта.
         R4: Подключать встроенную панель к Codex через MCP Apps и вызывать инструменты
           хоста для определения и выбора проекта.
       boundaries:
@@ -641,9 +642,10 @@ current:
         I5: Отсутствие истории чата или временная недоступность его контекста не
           блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку чата и
           проверяется по каталогу папок хоста.
-        I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный
-          диалог открывается только явной кнопкой пользователя. Подтверждённое
-          отсутствие проекта не обходится этой формой.
+        I6: При неизвестной или отсутствующей папке чата панель предлагает ручной ввод;
+          в Windows нативный диалог открывается только явной кнопкой
+          пользователя. Явный выбор привязывает папку один раз и не переключает
+          уже выбранный корень.
     inherited:
       - module_id: architecture-change-view
         section: boundaries
@@ -659,8 +661,8 @@ current:
         section: invariants
         id: I1
         text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
+          корень от хоста или однократного явного выбора пользователя; явно
+          настроенный для модельных инструментов корень ограничивает их чтение.
       - module_id: architecture-change-view
         section: invariants
         id: I2
@@ -748,21 +750,21 @@ current:
         text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
           описывают состояние исходников и контрактов из того же индекса Git.
     children: []
-  self_digest: sha256:d1cbc81b05030a91d2f627f2eeed2df1170ce3edb8619f80b009b3487a13fdaf
+  self_digest: sha256:feb8a13335a0111a299540312efb5438e149b38a3625e534cddb320c4d07efeb
   subtree:
-    self: sha256:da04947171214784dd4823c87f5f4778d6f9d157e3def8f111438ffe2293561e
+    self: sha256:fb6e39dd412f7975507f4f215dfebb3f64d76a331502ae738cc3f82e6c14afce
     children: []
-  subtree_digest: sha256:20b952b6f407ac674127df680b25a1738b6ee09b1e0a4ac116c20b529b9e38fd
+  subtree_digest: sha256:bfc29e54f365561870b241f4f261bbffbb7350d3ca5ccb2cc99ea35f5245d22d
   semantic_subtree:
-    self: sha256:d1cbc81b05030a91d2f627f2eeed2df1170ce3edb8619f80b009b3487a13fdaf
+    self: sha256:feb8a13335a0111a299540312efb5438e149b38a3625e534cddb320c4d07efeb
     children: []
-  semantic_subtree_digest: sha256:e84169c2778cf3b8b2bb865daf007a42b9a6004708cb4dd23932453f7b152577
+  semantic_subtree_digest: sha256:be5c6a206e6b08a86d2bc8d09580c1af6cb97a17e1189ba2e9d5aa74b2b81f07
 change:
   existence: retained
-  own: false
-  own_code: false
-  own_contract: false
-  inherited_constraints: false
+  own: true
+  own_code: true
+  own_contract: true
+  inherited_constraints: true
   descendants: false
   child_composition: false
   moved: false
@@ -771,19 +773,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 221
-  comparison_key: sha256:53c5f0a3dced021795ded81c760ea2e2bb6057b0e82e4b2e0ec70f878b98c9e0
+  generation: 229
+  comparison_key: sha256:7da7254a0a66f9d27ec9b6f9a7adf4ab17c541a918826ea024b3c2f7739ca2d6
   baseline:
     metadata:
-      id: git-b23283774c6463600f966355f5329f9f7684aacb
-      digest: sha256:ee299d6760708f6091d7a0fe155a4f681bb2d63cb7643f560fc370b74f04242e
+      id: git-d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T07:56:44.960Z
+      capturedAt: 2026-11-12T14:53:38.101Z
       kind: git
-      revision: b23283774c6463600f966355f5329f9f7684aacb
+      revision: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
       label: HEAD
-      fingerprint: ba10bb733fada7376b4433ba75d4ed45c1d0157dae53a16b26da608173dfec87
+      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -1608,14 +1610,14 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/codex/directory-picker.ts","src/codex/host-context.ts","src/codex/panel-bridge.ts","src/codex/panel-client.ts","src/codex/panel-entry.ts","src/codex/panel.ts","src/codex/project-context.ts","src/codex/ui-tools.ts"]}'
   current:
     metadata:
-      id: working-af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
-      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
+      id: working-17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
+      digest: sha256:17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T07:56:47.009Z
+      capturedAt: 2026-11-13T06:45:51.736Z
       kind: working
       label: Рабочее дерево
-      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
+      fingerprint: 8aab78b922d900e815b80f4c7e0671a4309fe40acea7b649b63dc3003bbadab6
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -1642,7 +1644,7 @@ publication:
             R1: Предоставлять общему MCP-серверу ресурс панели и обработчики её инструментов.
               Точка открытия панели привязана к боковой вкладке чата.
             R2: Скрывать операции UI от модели через visibility app; передавать данные и ошибки просмотра только в метаданных результата.
-            R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex; отличать отсутствие папки от недоступности контекста и запрещать просмотр вне проектов.
+            R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex; при отсутствии доступного корня позволять пользователю явно выбрать существующую папку проекта.
             R4: Подключать встроенную панель к Codex через MCP Apps и вызывать инструменты хоста
               для определения и выбора проекта.
           boundaries:
@@ -1655,7 +1657,7 @@ publication:
             I7: Выбор опубликованного сравнения и чтение его карточек доступны во время фоновой проверки другого репозитория и учитывают выбранную рабочую папку.
             I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки ArchiView не означает отсутствие рабочей папки чата; неизвестный контекст не выдаётся за отсутствие проекта.
             I5: Отсутствие истории чата или временная недоступность его контекста не блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку чата и проверяется по каталогу папок хоста.
-            I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный диалог открывается только явной кнопкой пользователя. Подтверждённое отсутствие проекта не обходится этой формой.
+            I6: При неизвестной или отсутствующей папке чата панель предлагает ручной ввод; в Windows нативный диалог открывается только явной кнопкой пользователя. Явный выбор привязывает папку один раз и не переключает уже выбранный корень.
         format: yaml
         contract:
           schema_version: 1
@@ -1675,8 +1677,8 @@ publication:
             R2: Скрывать операции UI от модели через visibility app; передавать данные и
               ошибки просмотра только в метаданных результата.
             R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex;
-              отличать отсутствие папки от недоступности контекста и запрещать
-              просмотр вне проектов.
+              при отсутствии доступного корня позволять пользователю явно
+              выбрать существующую папку проекта.
             R4: Подключать встроенную панель к Codex через MCP Apps и вызывать инструменты
               хоста для определения и выбора проекта.
           boundaries:
@@ -1700,13 +1702,14 @@ publication:
             I5: Отсутствие истории чата или временная недоступность его контекста не
               блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку
               чата и проверяется по каталогу папок хоста.
-            I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный
-              диалог открывается только явной кнопкой пользователя.
-              Подтверждённое отсутствие проекта не обходится этой формой.
+            I6: При неизвестной или отсутствующей папке чата панель предлагает ручной ввод;
+              в Windows нативный диалог открывается только явной кнопкой
+              пользователя. Явный выбор привязывает папку один раз и не
+              переключает уже выбранный корень.
       documentPath: .archiview/modules/archiview-codex.yaml
       files:
         - path: .archiview/modules/archiview-codex.yaml
-          hash: e9756208d1eff31629effc64f8fc76f643cd23c7
+          hash: 7c667c7a412fb9d796ca4a459c4a4ac38d2f0fd9
         - path: src/codex/directory-picker.ts
           hash: 44c5faed4efff45701bc14e31fbc5d268b06aec4
         - path: src/codex/host-context.ts
@@ -1714,21 +1717,21 @@ publication:
         - path: src/codex/panel-bridge.ts
           hash: 34e2b0bc0a27cd567b06194b7c0f6e90b65a718c
         - path: src/codex/panel-client.ts
-          hash: 53dfde7535f207d185ee7cfa8b52270878207ca8
+          hash: f90b4fc67e7f036a2719ac621c2fde6dc7337c3e
         - path: src/codex/panel-entry.ts
           hash: 11223c31068740886dea1686a08461354d331c35
         - path: src/codex/panel.ts
-          hash: df644c0efb206f37d62a227ec1d718990f2664bf
+          hash: e1f7c363552b3c5af01ab8b8836862d28f9a89cf
         - path: src/codex/project-context.ts
-          hash: bcbd59bc6aee2d72f7dc77166ed18923714681d9
+          hash: 782923b4ea3b5482f3ef5e42b7594e5b0d5ff3dd
         - path: src/codex/ui-tools.ts
-          hash: 66d67df349dbda720e6ad20649e5e3d823c1f322
+          hash: 00368afa1e9449b54b3edced84194571303132fb
       sourceFiles: 8
-      fingerprint: 5111e3d6a74cdc5712e1f42dc66a8db4a0163d9e43f0b5c1bc2fca007d37b1c5
+      fingerprint: 9c2050f07a581baf4fe3010b50e3b4369a5fd008c5c2b549833c971f46d442af
     facts:
       - index: 7
         fact:
-          id: sha256:875a2615dd6cf2a5de48f59a966491506577a0edfb4246b89c43c14769f9dcf3
+          id: sha256:01badda0c4332d94b2372188c875808b735e1b4bd254c7f4c3068c4212a37720
           kind: file
           path: .archiview/modules/archiview-codex.yaml
           start_line: 1
@@ -1751,7 +1754,7 @@ publication:
               R1: Предоставлять общему MCP-серверу ресурс панели и обработчики её инструментов.
                 Точка открытия панели привязана к боковой вкладке чата.
               R2: Скрывать операции UI от модели через visibility app; передавать данные и ошибки просмотра только в метаданных результата.
-              R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex; отличать отсутствие папки от недоступности контекста и запрещать просмотр вне проектов.
+              R3: Автоматически привязывать экземпляр к выбранной рабочей папке чата Codex; при отсутствии доступного корня позволять пользователю явно выбрать существующую папку проекта.
               R4: Подключать встроенную панель к Codex через MCP Apps и вызывать инструменты хоста
                 для определения и выбора проекта.
             boundaries:
@@ -1764,7 +1767,7 @@ publication:
               I7: Выбор опубликованного сравнения и чтение его карточек доступны во время фоновой проверки другого репозитория и учитывают выбранную рабочую папку.
               I4: Автоматическое получение папки не вызывает модель. Отсутствие привязки ArchiView не означает отсутствие рабочей папки чата; неизвестный контекст не выдаётся за отсутствие проекта.
               I5: Отсутствие истории чата или временная недоступность его контекста не блокируют загрузку UI; исходный cwd MCP сохраняет рабочую папку чата и проверяется по каталогу папок хоста.
-              I6: При неизвестной папке панель предлагает ручной ввод; в Windows нативный диалог открывается только явной кнопкой пользователя. Подтверждённое отсутствие проекта не обходится этой формой.
+              I6: При неизвестной или отсутствующей папке чата панель предлагает ручной ввод; в Windows нативный диалог открывается только явной кнопкой пользователя. Явный выбор привязывает папку один раз и не переключает уже выбранный корень.
       - index: 64
         fact:
           id: sha256:be363f0302ad5c8d51d01073af75fe4a09b7bd9615400b8eb3b8f89e28ffce4c
@@ -2053,7 +2056,7 @@ publication:
             }
       - index: 67
         fact:
-          id: sha256:eb6f64163ae3e0c4b00283b7d523ce2453f44164607f0f09e763609f8f154b59
+          id: sha256:503c201989fd81f393cb1eaeac98c92fc6f22b61c54a457f36982d3541c6bf2e
           kind: file
           path: src/codex/panel-client.ts
           start_line: 1
@@ -2085,8 +2088,8 @@ publication:
 
 
             /**
-             * Адаптирует неизвестный root к старому PROJECT_REQUIRED. Явное отсутствие
-             * проекта сохраняет PROJECT_UNAVAILABLE. Ввод и диалог проходят ту же проверку
+             * Адаптирует неизвестную или отсутствующую папку к форме PROJECT_REQUIRED.
+             * Ввод и диалог проходят ту же проверку
              * абсолютного существующего каталога; повторная смена привязанного корня запрещена.
              */
             export function createArchiViewClient(options: ClientOptions, {
@@ -2104,7 +2107,7 @@ publication:
                     if (!isRecord(result) || typeof result.root !== "string" || result.root.trim() === "") throw Object.assign(new Error("Не удалось определить папку проекта"), { code: "CODEX_CONTEXT_UNAVAILABLE" });
                     initialized = true;
                   } catch (error) {
-                    if (errorCode(error) !== "CODEX_CONTEXT_UNAVAILABLE") throw error;
+                    if (!["CODEX_CONTEXT_UNAVAILABLE", "PROJECT_UNAVAILABLE"].includes(errorCode(error) ?? "")) throw error;
                     throw Object.assign(new Error(errorMessage(error)), { code: "PROJECT_REQUIRED" });
                   }
                 }
@@ -2146,11 +2149,11 @@ publication:
             await startApp({ client, bridge, host: "codex", chooseProject: pickerAvailable ? () => choosePanelProject(bridge) : undefined });
       - index: 69
         fact:
-          id: sha256:f743b3899af67f90697ccb6463c56824d278fa9449ea547799ab46be7c07886b
+          id: sha256:be91d350ddb007b5119b1c026990bce95026dece4f3372e3efbeb56bd9768e73
           kind: file
           path: src/codex/panel.ts
           start_line: 1
-          end_line: 102
+          end_line: 101
           text: >
             import { callSessionOperation } from "../application/arguments.js";
 
@@ -2175,7 +2178,7 @@ publication:
             import { chooseProjectDirectory } from "./directory-picker.js";
 
 
-            export const PANEL_URI = "ui://archiview/panel-v6.html";
+            export const PANEL_URI = "ui://archiview/panel-v7.html";
 
             export const PROJECT_INPUT = { type: "string", description:
             "Absolute project directory of the current chat, not the plugin
@@ -2226,8 +2229,8 @@ publication:
                   catch (error) {
                     if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE", "PROJECT_UNAVAILABLE"].includes(applicationError(error).code)) throw error;
                     const unavailable = applicationError(error).code === "PROJECT_UNAVAILABLE";
-                    return { content: [{ type: "text" as const, text: unavailable ? applicationError(error).message : "ArchiView: подготовка рабочей папки проекта." }],
-                      structuredContent: { projectRequired: !unavailable, projectStatus: unavailable ? "unavailable" : "initializing" },
+                    return { content: [{ type: "text" as const, text: unavailable ? "ArchiView: выберите папку проекта." : "ArchiView: подготовка рабочей папки проекта." }],
+                      structuredContent: { projectRequired: true, projectStatus: unavailable ? "unavailable" : "initializing" },
                       _meta: { bootstrap: applicationError(error) } };
                   }
                   const root = project.root;
@@ -2237,8 +2240,7 @@ publication:
                 callUi(name: string, args: unknown, metadata?: Record<string, unknown>) {
                   const method = UI_TOOL_METHODS.get(name);
                   const selectsProject = method === "setProject" || method === "chooseProject" || method === "getProject";
-                  const read = method === "getModule" || (method === "getComparison" && args !== null &&
-                    typeof args === "object" && "published" in args && args.published === true);
+                  const read = method === "getReviewStatuses" || method === "getModule" || method === "getComparison";
                   const ready = read || selectsProject ? projectSelection : Promise.all([projectSelection, mutations]);
                   const operation = ready.then(async () => {
                     checkOpen();
@@ -2246,7 +2248,7 @@ publication:
                     if (!method) throw new ApplicationError("INVALID_ARGUMENT", "Неизвестная операция панели");
                     if (method === "chooseProject") {
                       try { await (await binding).select(undefined, metadata); }
-                      catch (error) { if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE"].includes(applicationError(error).code)) throw error; }
+                      catch (error) { if (!["PROJECT_REQUIRED", "CODEX_CONTEXT_UNAVAILABLE", "PROJECT_UNAVAILABLE"].includes(applicationError(error).code)) throw error; }
                       return { content: [], _meta: { result: await chooseDirectory() } };
                     }
                     // Проверка папки не создаёт сессию и не ждёт обхода исходников или истории.
@@ -2284,11 +2286,11 @@ publication:
             }
       - index: 70
         fact:
-          id: sha256:751c90712be8b3ab0429c7d993fe03ab914e413fc9eb477945760225a11908f6
+          id: sha256:0931ff7ee3b1bb629dba2d3bbb59dab263f2dd52d8faeb9b85c3926e62790318
           kind: file
           path: src/codex/project-context.ts
           start_line: 1
-          end_line: 54
+          end_line: 53
           text: >
             /** Привязка панели к рабочей папке чата Codex, независимо от
             projectId и наличия сообщений. */
@@ -2316,8 +2318,7 @@ publication:
             /**
              * Общая прикладная привязка остаётся неизменяемой. Codex-адаптер получает папку
              * до создания сессии; сериализация первых обращений исключает конкурирующие корни.
-             * Когда хост не сообщает контекст, разрешён явный выбор существующей папки.
-             * Подтверждённое отсутствие проекта не обходится ручным вводом.
+             * Если у чата нет доступной рабочей папки, пользователь может явно выбрать её.
              */
             export async function createCodexProjectBinding(initialRoot?:
             string, { readContext = createHostContextReader() } = {}) {
@@ -2334,13 +2335,13 @@ publication:
                     }
                     if (threadId !== undefined && threadId !== boundThread) {
                       const context = await readContext(threadId, { allowStartupDirectory: boundThread === undefined });
-                      if (context.status === "unavailable") throw new ApplicationError("PROJECT_UNAVAILABLE", "Плагин доступен только в проектах");
                       if (context.status !== "ready") {
                         if (requested !== undefined && project.root === undefined) {
                           const root = await project.select(requested);
                           boundThread = threadId;
                           return root;
                         }
+                        if (context.status === "unavailable") throw new ApplicationError("PROJECT_UNAVAILABLE", "Укажите папку проекта, чтобы открыть ArchiView.");
                         throw new ApplicationError("CODEX_CONTEXT_UNAVAILABLE", "Не удалось получить рабочую папку чата от Codex. Укажите папку проекта вручную.");
                       }
                       if (initialRoot === undefined) await project.select(context.root);
@@ -2355,11 +2356,11 @@ publication:
             }
       - index: 71
         fact:
-          id: sha256:30f7fe7cfa144e4d1d948ef6d1509fded7a12fd464658733595101578a46dc2e
+          id: sha256:dfc09c818350bc35b56be99066343d865d4a253617023998664575405ed8b087
           kind: file
           path: src/codex/ui-tools.ts
           start_line: 1
-          end_line: 47
+          end_line: 48
           text: >
             import type { SessionOperations } from "../application/api.js";
 
@@ -2394,7 +2395,8 @@ publication:
               ["choose_project", "chooseProject", "Show a native folder chooser after an explicit user click. Cancellation keeps the current input.", {}, [], false],
               ["set_project", "setProject", "Bind this panel to a project directory.", { projectRoot: string }, ["projectRoot"], false],
               ["get_comparison", "getComparison", "Load the selected repository comparison and timeline. With published=true, prefer the last complete publication.", { repository: string, target: string, baseline: string, historyLimit: { type: "integer", minimum: 1, maximum: 10000 }, published: { type: "boolean" } }, [], false],
-              ["get_module", "getModule", "Load module details from an existing comparison.", selectedModule, ["view", "path"], true],
+              ["get_review_statuses", "getReviewStatuses", "Load analysis statuses for the selected tree.", { view: string, repository: string }, ["view"], true],
+              ["get_module", "getModule", "Load module details from an existing comparison.", { ...selectedModule, analysis: {type:"boolean"} }, ["view", "path"], true],
               ["prepare_analysis", "prepareAnalysis", "Prepare immutable inputs for an explicit module analysis.", selectedModule, ["view", "path"], false],
               ["get_analysis", "getAnalysis", "Read the saved status of a prepared analysis.", { id: string, repository: string }, ["id"], true],
               ["build_review", "buildReview", "Refresh a structural report for a selected module.", selectedModule, ["view", "path"], false],
@@ -2431,7 +2433,7 @@ publication:
                 if (rule.type === "boolean" && typeof value !== "boolean") invalid();
               }
             }
-      - index: 189
+      - index: 191
         fact:
           id: sha256:5e9da8357483fde4e306653eb92646b28ce5ba9a7872024319e081129b8c1d2f
           kind: module
@@ -2440,17 +2442,43 @@ publication:
 review_status:
   self:
     current:
-      status: fresh
-      reasons: []
-      verdict: consistent
-      verdicts:
-        - consistent
+      status: stale
+      reasons:
+        - code: own_code
+        - code: own_contract
+        - code: own_code
+        - code: own_contract
+        - code: own_code
+        - code: own_contract
+        - code: own_code
+        - code: own_contract
+      verdict: null
+      verdicts: []
       review_ids:
+        - review-d1aee4bd-4f0c-4eae-a083-538737c09ee2
+        - review-5db479c5-9b89-4866-8439-e7559392800c
+        - review-628ac376-ca91-4601-a5af-4958eb7bb951
         - review-09b0b335-e2a7-4854-a6c4-7205b426faff
       conflict: false
       coverage:
         status: partial
         limitations:
+          - 12 codex-project tests и тесты panel; нативный GUI клиента/выбор
+            папки не открывались.
+          - Историческая JS-реализация не проверялась содержательно; прежние
+            проверки помечены not_checked.
+          - GUI установленных Codex/dsh плагинов не открывался; полнота внешних
+            зависимостей не подтверждена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены статические маршруты обеих сторон и результаты стандартных
+            тестов с нативным загрузчиком Codex. Графический WinForms-диалог
+            вручную не открывался. Вывод о канонизации получен при чтении кода.
+            Полнота транзитивных зависимостей SDK и хоста не установлена.
+          - Проверены статические маршруты привязки, локальные файловые сценарии
+            и тест загрузчика. Не перебирались состояния всех версий приложения
+            Codex.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - "Две фазы завершены: собственные пункты и соответствие
             контракта/реализации всем фактическим предкам проверены отдельно. В
             этой области новых подтверждённых нарушений границ не найдено;
@@ -2465,8 +2493,6 @@ review_status:
           - Динамика реальных Codex/dsh host, полный активный реестр вкладок dsh
             и Electron file:// не проверялись; наличие тестов не использовано
             как доказательство семантического соответствия.
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       current_violation: false
@@ -2494,6 +2520,8 @@ review_status:
           side: baseline
         - code: own_contract
           side: baseline
+        - code: own_code
+        - code: own_contract
         - code: baseline_identity
       verdict: null
       verdicts: []
@@ -2544,6 +2572,22 @@ review_status:
       current:
         status: partial
         limitations:
+          - 12 codex-project tests и тесты panel; нативный GUI клиента/выбор
+            папки не открывались.
+          - Историческая JS-реализация не проверялась содержательно; прежние
+            проверки помечены not_checked.
+          - GUI установленных Codex/dsh плагинов не открывался; полнота внешних
+            зависимостей не подтверждена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены статические маршруты обеих сторон и результаты стандартных
+            тестов с нативным загрузчиком Codex. Графический WinForms-диалог
+            вручную не открывался. Вывод о канонизации получен при чтении кода.
+            Полнота транзитивных зависимостей SDK и хоста не установлена.
+          - Проверены статические маршруты привязки, локальные файловые сценарии
+            и тест загрузчика. Не перебирались состояния всех версий приложения
+            Codex.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - "Две фазы завершены: собственные пункты и соответствие
             контракта/реализации всем фактическим предкам проверены отдельно. В
             этой области новых подтверждённых нарушений границ не найдено;
@@ -2558,8 +2602,6 @@ review_status:
           - Динамика реальных Codex/dsh host, полный активный реестр вкладок dsh
             и Electron file:// не проверялись; наличие тестов не использовано
             как доказательство семантического соответствия.
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       change:
@@ -2599,10 +2641,10 @@ review_status:
           - code: dependency_tracking_disabled
   subtree:
     current:
-      status: fresh
+      status: stale
       counts:
-        fresh: 1
-        stale: 0
+        fresh: 0
+        stale: 1
         unknown: 0
         not_reviewed: 0
       conflict: false
@@ -2610,6 +2652,22 @@ review_status:
       coverage:
         status: partial
         limitations:
+          - 12 codex-project tests и тесты panel; нативный GUI клиента/выбор
+            папки не открывались.
+          - Историческая JS-реализация не проверялась содержательно; прежние
+            проверки помечены not_checked.
+          - GUI установленных Codex/dsh плагинов не открывался; полнота внешних
+            зависимостей не подтверждена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены статические маршруты обеих сторон и результаты стандартных
+            тестов с нативным загрузчиком Codex. Графический WinForms-диалог
+            вручную не открывался. Вывод о канонизации получен при чтении кода.
+            Полнота транзитивных зависимостей SDK и хоста не установлена.
+          - Проверены статические маршруты привязки, локальные файловые сценарии
+            и тест загрузчика. Не перебирались состояния всех версий приложения
+            Codex.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - "Две фазы завершены: собственные пункты и соответствие
             контракта/реализации всем фактическим предкам проверены отдельно. В
             этой области новых подтверждённых нарушений границ не найдено;
@@ -2624,8 +2682,6 @@ review_status:
           - Динамика реальных Codex/dsh host, полный активный реестр вкладок dsh
             и Electron file:// не проверялись; наличие тестов не использовано
             как доказательство семантического соответствия.
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
     change:

@@ -30,7 +30,8 @@ async function gitTopLevel(directory: string) {
     return await realpath(stdout.trim());
   } catch (cause) {
     const error = errorDetails(cause);
-    if (error.code === "ENOENT" || /not a git repository|invalid gitfile format/i.test(String(error.stderr))) return null;
+    if (error.code === "ENOENT") throw new Error("Для ArchiView требуется установленный Git");
+    if (/not a git repository|invalid gitfile format/i.test(String(error.stderr))) return null;
     throw cause;
   }
 }
@@ -56,7 +57,7 @@ export async function discoverWorkspaceRepositories(workspace: string): Promise<
     }
   }
   // A selected subtree of an enclosing checkout can also contain its own nested checkouts.
-  if (repositories.length && !repositories.includes(".") && await gitTopLevel(root)) repositories.push(".");
+  if (!repositories.includes(".") && await gitTopLevel(root)) repositories.push(".");
   return repositories.sort();
 }
 
@@ -129,6 +130,7 @@ export async function locateSourceRepository(workspace: string, relative: string
       if (repositories.length && !repositories.includes(".")) {
         throw new Error("Source path is outside the workspace repositories. Choose a repository: " + repositories.join(", "));
       }
+      if (!repositories.includes(".")) throw new Error("Для ArchiView требуется рабочее дерево Git");
       break;
     }
     root = path.dirname(root);

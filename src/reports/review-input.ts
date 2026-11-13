@@ -68,6 +68,8 @@ function scopedSnapshot(snapshot: SnapshotData | null, id: string, options: Revi
     kind: snapshot.kind, revision: snapshot.revision, complete: snapshot.complete,
     modules, facts: structuredClone(facts), diagnostics: structuredClone(snapshot.diagnostics ?? []),
     evidenceLimitations: structuredClone(snapshot.evidenceLimitations ?? []), scoped: true };
+  if (snapshot.observations) result.observations = Object.fromEntries([...ids].filter(key => Object.hasOwn(snapshot.observations!, key))
+    .map(key => [key, snapshot.observations![key]]));
   result.scope_digest = digest(result);
   return result;
 }
@@ -92,7 +94,7 @@ export function createReviewInput(projectId: string, baseline: Snapshot | null, 
   bundle.report.id = options.reviewId ?? "review-" + randomUUID();
   bundle.report.analysis.analyzer = { name: "agent-review", version: "1", config_digest: digest({ method: "agent" }) };
   bundle.manifest.analyzer = structuredClone(bundle.report.analysis.analyzer);
-  bundle.manifest.instructions = "Проверить собственную ответственность, границы и инварианты модуля, включая соответствие его реализации и контракта границам предков. Пункты предков не добавлять в собственный чеклист; противоречия отразить в замечаниях со ссылками на сохранённые ограничения и доказательства. Локальное изменение само по себе не требует пересмотра предков. Определение зависимостей через LLM отключено: не добавлять dependencies и не заявлять полноту их перечня. Если сохранённых данных недостаточно, указать ограничение покрытия и not_checked. Заполнить модель, prompt и результаты.";
+  bundle.manifest.instructions = "Проверить собственную ответственность, границы и инварианты модуля, включая соответствие его реализации и контракта границам предков. Пункты предков не добавлять в собственный чеклист; противоречия отразить в замечаниях со ссылками на сохранённые ограничения и доказательства. Композицию проверяй по объявленным контрактам непосредственных детей. Их код, замечания, оценки изменений и контракты более глубоких потомков не входят в собственную проверку родителя. Определение зависимостей через LLM отключено: не добавлять dependencies и не заявлять полноту их перечня. Если сохранённых данных недостаточно, указать ограничение покрытия и not_checked. Заполнить модель, prompt и результаты.";
   bundle.manifest.review_scope = options.scope ?? "self";
   bundle.report.analysis.input_digest = digest(bundle.manifest);
   const inputs = createInputs(baseline, current, id, options, true, context);

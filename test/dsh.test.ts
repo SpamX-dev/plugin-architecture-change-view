@@ -102,6 +102,8 @@ function fakeSession() {
     createdAt: "now", inputDigest: "input", snapshotsDigest: "snapshots", prompt: "Review src", status: "prepared",
   };
   const operations: SessionOperations = {
+    waitForChanges: unused,
+    async getReviewStatuses() { return {modules:[], diagnostics:[]}; },
     async getComparison(args) { calls.push(["getComparison", args]); return comparison; },
     async prepareAnalysis(args) { calls.push(["prepareAnalysis", args]); return analysis; },
     getModule: unused, getAnalysis: unused, buildReview: unused, saveSnapshot: unused,

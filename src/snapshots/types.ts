@@ -1,6 +1,7 @@
 import type { ContractDocument } from "../contracts/types.js";
 
 export interface SourceFile {
+  mode?: string;
   path: string;
   hash: string | null;
   error?: string;
@@ -46,6 +47,7 @@ export interface Snapshot {
   modules: SnapshotModule[];
   facts: Fact[];
   evidenceLimitations: string[];
+  observations?: Record<string, { lineage: string; revision: number }>;
   scoped?: boolean;
   scope_digest?: string;
 }
@@ -115,6 +117,7 @@ export type ScopedSnapshot = Pick<
   | "kind"
   | "revision"
   | "complete"
+  | "observations"
   | "modules"
   | "facts"
   | "diagnostics"
