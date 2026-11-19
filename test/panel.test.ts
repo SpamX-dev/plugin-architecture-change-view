@@ -41,10 +41,10 @@ test("autonomous MCP panel serves project operations with no listening sockets a
     cwd: distribution, env: { ...process.env, PLUGIN_ROOT: distribution }, stderr: "pipe" }));
   const tools = (await client.listTools()).tools;
   const hidden = tools.filter((tool) => tool.name.startsWith("archiview_ui_"));
-  assert.equal(hidden.length, 13);
+  assert.equal(hidden.length, 14);
   for (const tool of hidden) assert.deepEqual(panelMetadata(tool).ui.visibility, ["app"]);
   assert.deepEqual(tools.filter((tool) => !tool._meta || !panelMetadata(tool).ui?.visibility || panelMetadata(tool).ui.visibility.includes("model")).map((tool) => tool.name),
-    ["archiview_open", "module_inventory", "module_context"]);
+    ["archiview_open", "module_inventory", "module_context", "module_scaffold"]);
   const openTool = tools.find((tool) => tool.name === "archiview_open");
   assert.deepEqual(panelMetadata(openTool!)["openai/ui"].entrypoints, [{ type: "thread" }]);
   const resource = (await client.readResource({ uri: panelMetadata(openTool!).ui.resourceUri })).contents[0];
@@ -94,6 +94,11 @@ test("autonomous MCP panel serves project operations with no listening sockets a
   assert.equal(uiData(await call("build_review", { view: latest.id, path: "child" })).module_id, "child");
   uiData(await call("change_clause", { view: latest.id, path: "child", action: "add", section: "invariants", clauseId: "I1", text: "Проверено из панели" }));
   assert.equal(parse(await readFile(path.join(root, ".archiview/modules/child.yaml"), "utf8")).invariants.I1, "Проверено из панели");
+  uiData(await call("change_prototype", { view: latest.id, path: "planned", action: "create", moduleId: "planned",
+    title: "Запланированный модуль", purpose: "Считать покупки", responsibility: "Суммировать стоимость" }));
+  const planned = uiData<ComparisonView>(await call("get_comparison"));
+  assert.equal(planned.modules.find(item => item.directory === "planned")?.prototypeModule, true);
+  uiData(await call("change_prototype", { view: planned.id, path: "planned", action: "delete" }));
   await client.close();
 });
 

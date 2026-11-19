@@ -22,6 +22,7 @@ import { digest } from "../serialization/digest.js";
 import { AnalysisRequests } from "./analysis.js";
 import { metadata, moduleDetail, moduleSummary, reviewSummary } from "./module-view.js";
 import { createContractEditor } from "./contract-editor.js";
+import { changeExistingPrototype, createPrototypes } from "./prototypes.js";
 
 /** Открывает хранилища одного проекта; вызывается лениво при первом запросе данных. */
 export async function createArchiViewSession({ root: requestedRoot, stateDirectory, deferPublication = true }: { root: string; stateDirectory?: string; deferPublication?: boolean }) {
@@ -430,6 +431,18 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       throw new ApplicationError("INVALID_ARGUMENT", "Редактирование доступно для контракта в текущем состоянии");
     return editor.changeClause(module.after, args);
   };
-  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, changeClause, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
+  const changePrototype: SessionOperations["changePrototype"] = async args => {
+    if (findView(args.view).target?.id !== "current")
+      throw new ApplicationError("INVALID_ARGUMENT", "Прототипы доступны для изменения в текущем состоянии");
+    if (args.action === "create") {
+      await createPrototypes(root, [{ directory: args.path, id: args.moduleId, title: args.title,
+        purpose: args.purpose, responsibilities: { R1: args.responsibility } }]);
+      return { directory: args.path };
+    }
+    const { module } = selectedModule(args);
+    if (!module.after) throw new ApplicationError("STALE_VIEW", "Прототип отсутствует в текущем состоянии");
+    return changeExistingPrototype(root, module.after, args.action === "edit" ? args.text : undefined);
+  };
+  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
   return { root, store, reviews, reports, changes, analysis, ...operations, close: () => watcher.close() };
 }

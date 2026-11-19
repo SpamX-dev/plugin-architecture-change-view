@@ -5,6 +5,7 @@ import {
 } from "../contracts/module-tree.js";
 import { SOURCE_EXTENSIONS } from "../contracts/source-files.js";
 import type { ContractDocument } from "../contracts/types.js";
+import { isPrototype } from "../contracts/types.js";
 import { errorDetails } from "../runtime/errors.js";
 import { structureHash } from "./identity.js";
 import type { FileRecord, SnapshotModule } from "./types.js";
@@ -71,8 +72,9 @@ export async function snapshotModules(records: FileRecord[], diagnostics: string
       else if (record.error) document = { state: "unreadable", text: null, errors: [record.error] };
       else document = mappedContractDocument(record.text ?? "", id);
       try {
-        if (working) await assertModuleDirectory(working.root, directory);
-        else if (!observedDirectories.has(directory)) throw new Error("Missing mapped directory: " + directory);
+        const planned = isPrototype(document.contract);
+        if (working) await assertModuleDirectory(working.root, directory, planned);
+        else if (!planned && !observedDirectories.has(directory)) throw new Error("Missing mapped directory: " + directory);
       } catch (cause) {
         const message = directory + ": " + errorDetails(cause).message;
         diagnostics.push(message);

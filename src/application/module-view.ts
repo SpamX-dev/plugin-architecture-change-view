@@ -1,4 +1,5 @@
 import path from "node:path";
+import { isPrototype } from "../contracts/types.js";
 import { diffLines } from "diff";
 import { compareContracts, compareRoles } from "../snapshots/contract-diff.js";
 import type { Snapshot } from "../snapshots/types.js";
@@ -68,7 +69,7 @@ export function moduleSummary(entry: SessionView["modules"][number]) {
   module.filesChanged = contentFileChanges(entry).length;
   const roles = compareRoles(before?.document.contract, after?.document.contract, module.status !== "initial")
     .filter(role => role.status !== "removed");
-  return roles.length ? { ...module, roles } : module;
+  return { ...module, ...(roles.length ? { roles } : {}), ...(isPrototype((after ?? before)?.document.contract) ? { prototypeModule: true } : {}) };
 }
 
 export function reviewSummary(matching: ReviewEntry[], model: ReportModel) {

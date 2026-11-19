@@ -20,6 +20,10 @@ const operations: Operation[] = [
   ["get_review_statuses", "getReviewStatuses", "Load analysis statuses for the selected tree.", { view: string, repository: string }, ["view"], true],
   ["get_module", "getModule", "Load module details from an existing comparison.", { ...selectedModule, analysis: {type:"boolean"} }, ["view", "path"], true],
   ["get_file_diff", "getFileDiff", "Read a file's diff or unchanged text in the selected module comparison.", { ...selectedModule, file: string }, ["view", "path", "file"], true],
+  ["change_prototype", "changePrototype", "Create, edit or delete a module prototype in the selected working tree.", {
+    ...selectedModule, action: string, moduleId: string, title: string, purpose: { type: "string", maxLength: MAX_DOCUMENT_BYTES },
+    responsibility: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, text: { type: "string", maxLength: MAX_DOCUMENT_BYTES },
+  }, ["view", "path", "action"], false],
   ["change_clause", "changeClause", "Edit, add, delete or restore a clause in the selected working contract.", {
     ...selectedModule, section: string, clauseId: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, action: string,
     text: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, undoToken: string,
@@ -34,7 +38,7 @@ export const UI_TOOL_METHODS = new Map(operations.map(([name, method]) => ["arch
 export const UI_TOOLS = operations.map(([name, , description, properties, required, readOnlyHint]) => ({
   name: "archiview_ui_" + name, description,
   inputSchema: { type: "object" as const, properties, required, additionalProperties: false },
-  annotations: { readOnlyHint, destructiveHint: name === "change_clause", openWorldHint: false },
+  annotations: { readOnlyHint, destructiveHint: name === "change_clause" || name === "change_prototype", openWorldHint: false },
   _meta: { ui: { visibility: ["app"] } },
 })) satisfies Tool[];
 

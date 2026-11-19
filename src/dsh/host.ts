@@ -7,8 +7,7 @@ import type { HostContext, HostConfig, JsonValue } from "./host-types.js";
  *
  * Плагин собирает из существующих домены проекта две половины:
  *
- * 1. инструменты модели (`archiview_inventory`, `archiview_context`) — чтение
- *    контрактов через `src/contracts/inventory.ts`;
+ * 1. инструменты модели для чтения контрактов и создания каркаса программы;
  * 2. маршруты панели под префиксом `/archiview` — тот же прикладной сервис
  *    `src/application`, что используют standalone-адаптер и панель Codex;
  * 3. публикацию скилла module-boundaries в реестре dsh;
@@ -27,6 +26,7 @@ import path from "node:path";
 import z from "@deepseek-ai/schemastery";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { ApplicationError } from "../application/errors.js";
+import { createScaffold } from "../application/prototypes.js";
 import { resolveChatRoot } from "./chat-root.js";
 import { clientConfigRow, DEFAULT_PREFIX } from "./panel-contract.js";
 import { createRouteTable, normalizePrefix } from "./routes.js";
@@ -118,11 +118,13 @@ function registerTools(ctx: HostContext, { extensions, maxFiles, configuredRoot 
         schema: { type: "json" },
         render: (_args, value) => [{ type: "text", text: JSON.stringify(value) }],
       },
-      async execute(args: { projectRoot?: string; path?: string; directory?: string }, exec) {
+      async execute(args: { projectRoot?: string; path?: string; directory?: string; repository?: string; plan?: string }, exec) {
         const requested = args.projectRoot ?? (configuredRoot ? undefined : exec.agent?.session.header.cwd);
-        const projectRoot = await resolveRoot({ projectRoot: requested, configuredRoot });
+        const boundary = configuredRoot || (definition.name === "archiview_scaffold" ? exec.agent?.session.header.cwd : undefined);
+        const projectRoot = await resolveRoot({ projectRoot: requested, configuredRoot: boundary });
         const value = definition.name === "archiview_inventory"
           ? await readInventory({ root: projectRoot, extensions, maxFiles })
+          : definition.name === "archiview_scaffold" ? await createScaffold(projectRoot, args.repository, args.plan)
           : await readContext({ root: projectRoot, path: args.path, directory: args.directory });
         return JSON.parse(JSON.stringify(value)) as JsonValue;
       },

@@ -215,6 +215,9 @@ async function runApiOperation(request: IncomingMessage, response: ServerRespons
   if (method === "POST" && relative === "contract-clause") {
     return sendJson(response, 200, await callSessionOperation(session, "changeClause", repositoryArguments(repository, await readJson(request, 1024 * 1024))));
   }
+  if (method === "POST" && relative === "prototype") {
+    return sendJson(response, 200, await callSessionOperation(session, "changePrototype", repositoryArguments(repository, await readJson(request, 1024 * 1024))));
+  }
   if (method === "POST" && relative === "analysis") {
     return sendJson(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await readJson(request))));
   }

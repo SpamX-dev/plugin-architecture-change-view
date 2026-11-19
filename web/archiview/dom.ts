@@ -9,10 +9,11 @@ const icons = {
 
 /** Возвращает элемент по фиксированному идентификатору страницы. */
 type PageElements = { "analysis-status": HTMLElement; "toast": HTMLElement; "timeline": HTMLSelectElement; "app-shell": HTMLElement; "tree-resizer": HTMLElement; "module-sidebar": HTMLElement; "filters": HTMLElement; "module-total": HTMLElement; "tree": HTMLElement; "module-heading-content": HTMLElement; "module-title": HTMLElement; "module-status": HTMLElement; "module-subtitle": HTMLElement; "module-contract-heading": HTMLElement; "breadcrumbs": HTMLElement; "module-meta": HTMLElement; "copy-path": HTMLButtonElement; "files-count": HTMLElement; "tab-findings": HTMLButtonElement; "document-panel": HTMLElement; "project-name": HTMLElement; "project-path": HTMLElement; "refresh": HTMLButtonElement; "warning": HTMLElement; "updated": HTMLElement; "search": HTMLInputElement; "collapse": HTMLButtonElement; "tree-toggle": HTMLButtonElement };
-export function byId<K extends keyof PageElements>(id: K): PageElements[K] {
+type PageControls = PageElements & { "new-prototype": HTMLButtonElement };
+export function byId<K extends keyof PageControls>(id: K): PageControls[K] {
   const node = document.getElementById(id);
   if (!node) throw new Error("Missing page element: " + id);
-  return node as PageElements[K];
+  return node as PageControls[K];
 }
 
 /** Создаёт DOM-элемент и вставляет пользовательский текст безопасным textContent. */

@@ -6,6 +6,7 @@ import { isMap, isScalar, parseDocument } from "yaml";
 import { assertModuleDirectory, MAX_DOCUMENT_BYTES, MODULE_DIRECTORY, moduleDocumentPath, readContractStorageFile, readModuleTree } from "../contracts/module-tree.js";
 import { contractDocument } from "../contracts/document.js";
 import type { Contract, Section } from "../contracts/types.js";
+import { isPrototype } from "../contracts/types.js";
 import { assertStateLocation, STATE_DIRECTORY } from "../project/paths.js";
 import { repositoryDirectoryOwnership } from "../project/workspace.js";
 import type { SnapshotModule } from "../snapshots/types.js";
@@ -70,7 +71,7 @@ export function createContractEditor(root: string) {
       const checkOwner = async () => {
         if ((await readModuleTree(root)).get(module.directory) !== contract.id ||
             !await repositoryDirectoryOwnership(root)(module.directory)) throw stale();
-        await assertModuleDirectory(root, module.directory);
+        await assertModuleDirectory(root, module.directory, isPrototype(contract));
       };
       await checkOwner();
       const source = await readContractStorageFile(root, relative);

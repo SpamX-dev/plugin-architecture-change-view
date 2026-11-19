@@ -41,8 +41,8 @@ test("serves a matching skill descriptor and read-only module tools over stdio",
   await assert.rejects(client.readResource({ uri: "skill://missing" }), /Unknown resource/);
   const tools = await client.listTools();
   assert.deepEqual(tools.tools.map((tool) => tool.name),
-    ["module_inventory", "module_context"]);
-  assert.ok(tools.tools.every((tool) => tool.annotations!.readOnlyHint));
+    ["module_inventory", "module_context", "module_scaffold"]);
+  assert.deepEqual(tools.tools.map(tool => tool.annotations!.readOnlyHint), [true, true, false]);
   const coverage = await client.callTool({ name: "module_inventory", arguments: {} });
   const inventory = JSON.parse(firstTextContent(coverage)) as Awaited<ReturnType<typeof moduleInventory>>;
   assert.equal(inventory.complete, true);
@@ -64,4 +64,10 @@ test("serves a matching skill descriptor and read-only module tools over stdio",
   assert.equal(outside.isError, true);
   await assert.rejects(client.callTool({ name: "module_inventory",
     arguments: { directory: "src" } }), /Invalid tool arguments/);
+  const plan = JSON.stringify(["service", "service/domain"].map(directory => ({ directory,
+    id: directory.split("/").at(-1), title: directory, purpose: "Расчёт", responsibilities: { R1: "Вычислять сумму" } })));
+  const scaffold = await client.callTool({ name: "module_scaffold", arguments: { plan } });
+  assert.deepEqual(JSON.parse(firstTextContent(scaffold)).modules.map((m: {id: string}) => m.id), ["service", "domain"]);
+  const planned = await client.callTool({ name: "module_context", arguments: { path: "service/domain" } });
+  assert.deepEqual(JSON.parse(firstTextContent(planned)).contracts.map((item: {contract: {id: string}}) => item.contract.id), ["root", "service", "domain"]);
 });

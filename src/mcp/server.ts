@@ -15,6 +15,7 @@ import { parse } from "yaml";
 import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from "../contracts/inventory.js";
 import { createCodexPanel, PANEL_URI, PANEL_TOOL, PROJECT_INPUT } from "../codex/panel.js";
 import { createProjectBinding } from "../application/project.js";
+import { createScaffold, SCAFFOLD_DESCRIPTION } from "../application/prototypes.js";
 import { createCodexProjectBinding } from "../codex/project-context.js";
 import { UI_TOOLS, UI_TOOL_METHODS } from "../codex/ui-tools.js";
 import { packageUrl } from "../runtime/package-paths.js";
@@ -68,7 +69,7 @@ async function serve() {
         "Use module_inventory to find repositories and module_context with a workspace-relative source path " +
         "to read the owning repository's contracts, root first. Maintain that repository's .archiview/modules.tree and .archiview/modules/<id>.yaml " +
         "with your file tools. Analyze source when a contract is missing. " +
-        "Responsibility changes require user agreement." });
+        "Use module_scaffold to create planned modules before source directories exist. Responsibility changes require user agreement." });
   server.setRequestHandler(ListResourcesRequestSchema, async () => ({
     resources: [{ uri, name: metadata.name, description: metadata.description,
       mimeType: "text/markdown" }, ...(panel ? [{ uri: PANEL_URI, name: "ArchiView", mimeType: "text/html;profile=mcp-app" }] : [])],
@@ -96,6 +97,10 @@ async function serve() {
         directory: { type: "string", description: "Alternative to path for existing callers. Defaults to the workspace root." } },
         additionalProperties: false },
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } },
+    { name: "module_scaffold", description: SCAFFOLD_DESCRIPTION,
+      inputSchema: { type: "object", properties: { projectRoot: PROJECT_INPUT, repository: { type: "string", description: "Repository path from module_inventory. Defaults to ." }, plan: { type: "string" } },
+        required: ["plan"], additionalProperties: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
   ] }));
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const args = request.params.arguments ?? {};
@@ -107,10 +112,11 @@ async function serve() {
       try { return await panel.open(args.projectRoot, request.params._meta); }
       catch (error) { return { isError: true, content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }] }; }
     }
-    if (name !== "module_inventory" && name !== "module_context") {
+    if (name !== "module_inventory" && name !== "module_context" && name !== "module_scaffold") {
       throw new McpError(ErrorCode.InvalidParams, "Unknown tool: " + name);
     }
-    const allowed = name === "module_context" ? ["path", "directory", "projectRoot"] : ["projectRoot"];
+    const allowed = name === "module_context" ? ["path", "directory", "projectRoot"] :
+      name === "module_scaffold" ? ["projectRoot", "repository", "plan"] : ["projectRoot"];
     if (Object.keys(args).some((key) => !allowed.includes(key)) ||
         (args.path !== undefined && (typeof args.path !== "string" || args.directory !== undefined)) ||
         (args.directory !== undefined && typeof args.directory !== "string") ||
@@ -121,6 +127,7 @@ async function serve() {
       const root = await project.select(args.projectRoot, request.params._meta);
       const result = name === "module_inventory"
         ? await moduleInventory(root, { extensions, maxFiles })
+        : name === "module_scaffold" ? await createScaffold(root, args.repository, args.plan)
         : await moduleContext(root, args.path ?? args.directory);
       return { content: [{ type: "text", text: JSON.stringify(result) }] };
     } catch (error) {

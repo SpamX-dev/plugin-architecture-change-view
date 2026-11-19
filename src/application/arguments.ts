@@ -47,6 +47,16 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
       if (typeof args.view !== "string" || typeof args.path !== "string" || typeof args.file !== "string" || !args.file)
         throw new ApplicationError("INVALID_ARGUMENT", "Нужны view, path и file");
       return session.getFileDiff({ view: args.view, path: args.path, file: args.file, ...selector });
+    case "changePrototype": {
+      const { action, path, view, moduleId, title, purpose, responsibility, text } = args;
+      if (typeof view !== "string" || typeof path !== "string") throw new ApplicationError("INVALID_ARGUMENT", "Нужны view и path");
+      const target = { ...selector, path, view };
+      if (action === "create" && typeof moduleId === "string" && typeof title === "string" && typeof purpose === "string" && typeof responsibility === "string")
+        return session.changePrototype({ ...target, action, moduleId, title, purpose, responsibility });
+      if (action === "edit" && typeof text === "string") return session.changePrototype({ ...target, action, text });
+      if (action === "delete") return session.changePrototype({ ...target, action });
+      throw new ApplicationError("INVALID_ARGUMENT", "Некорректные параметры изменения прототипа");
+    }
     case "changeClause": {
       const { view, path, section, clauseId, action, text, undoToken } = args;
       if (typeof view !== "string" || typeof path !== "string" || typeof clauseId !== "string" || !clauseId.trim() ||

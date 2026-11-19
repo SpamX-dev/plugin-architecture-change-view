@@ -11,7 +11,7 @@ import type { PromptContext } from "../src/dsh/client/types.js";
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
@@ -103,6 +103,7 @@ function fakeSession() {
   };
   const operations: SessionOperations = {
     waitForChanges: unused,
+    async changePrototype(args) { calls.push(["changePrototype", args]); return { directory: args.path }; },
     async getReviewStatuses() { return {modules:[], diagnostics:[]}; },
     async getComparison(args) { calls.push(["getComparison", args]); return comparison; },
     async prepareAnalysis(args) { calls.push(["prepareAnalysis", args]); return analysis; },
@@ -158,7 +159,7 @@ test("sessions: dispose закрывает реестр", async () => {
 
 test("tools: описания инструментов стабильны", () => {
   assert.deepEqual(TOOL_DEFINITIONS.map((tool) => tool.name),
-    ["archiview_inventory", "archiview_context"]);
+    ["archiview_inventory", "archiview_context", "archiview_scaffold"]);
   for (const tool of TOOL_DEFINITIONS) {
     assert.ok(tool.description.length > 0);
     assert.equal(tool.parameters.projectRoot.type, "string");
@@ -187,6 +188,15 @@ test("tools: путь файла из рабочей папки чата dsh в�
     assert.equal(result.repository, repository);
     assert.equal(result.contracts.at(-1)?.text, contractYaml("core", repository));
   }
+  const scaffold = registered.get("archiview_scaffold") as unknown as {
+    execute(args: { repository: string; plan: string }, exec: typeof execution): Promise<{ modules: {id: string}[] }>;
+  };
+  const plan = JSON.stringify([{ directory: "future", id: "future", title: "Future", purpose: "Plan",
+    responsibilities: { R1: "Design" } }]);
+  const result = await scaffold.execute({ repository: "server", plan }, execution);
+  assert.equal(result.modules[0].id, "future");
+  assert.match(await readFile(path.join(workspace, "server/.archiview/modules/future.yaml"), "utf8"), /archiview.prototype: true/);
+  await assert.rejects(readFile(path.join(workspace, "client/.archiview/modules/future.yaml")), { code: "ENOENT" });
 });
 
 test("tools: расширения исходников нормализуются и проверяются", () => {
@@ -478,6 +488,11 @@ test("dsh forwards contract text and the selected repository", async () => {
   await handler(fakeRequest({ method: "POST", url: "/archiview/api/contract-clause?repository=feature", body: args }), response);
   assert.equal(response.statusCode, 200);
   assert.deepEqual(session.calls, [["changeClause", { ...args, repository: "feature" }]]);
+  const prototype = { view: "v1", path: "planned", action: "edit", text: args.text };
+  const edited = fakeResponse();
+  await handler(fakeRequest({ method: "POST", url: "/archiview/api/prototype?repository=feature", body: prototype }), edited);
+  assert.equal(edited.statusCode, 200);
+  assert.deepEqual(session.calls[1], ["changePrototype", { ...prototype, repository: "feature" }]);
 });
 
 test("routes: неизвестная операция и слишком большое тело отклоняются", async () => {

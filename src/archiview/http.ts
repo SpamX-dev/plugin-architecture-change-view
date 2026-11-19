@@ -135,6 +135,7 @@ export function createArchiViewHttpServer(session: SessionOperations & { close?(
         return json(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: url.pathname.split("/").at(-1) })));
       if (request.method === "POST") {
         if (url.pathname === "/api/contract-clause") return json(response, 200, await callSessionOperation(session, "changeClause", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
+        if (url.pathname === "/api/prototype") return json(response, 200, await callSessionOperation(session, "changePrototype", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
         if (url.pathname === "/api/analysis") return json(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/reviews") return json(response, 200, await callSessionOperation(session, "buildReview", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/snapshots") return json(response, 201, await callSessionOperation(session, "saveSnapshot", repositoryArguments(repository, await bodyOf(request))));

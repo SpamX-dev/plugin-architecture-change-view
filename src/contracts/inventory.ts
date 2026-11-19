@@ -3,6 +3,7 @@ import path from "node:path";
 import { discoverWorkspaceRepositories, locateSourceRepository, resolveWorkspaceRepository } from "../project/workspace.js";
 import { errorDetails } from "../runtime/errors.js";
 import type { ModuleDocument } from "./module-tree.js";
+import { isPrototype } from "./types.js";
 import {
   assertModuleDirectory, ADD_MAPPING, listModuleContractPaths,
   MODULE_TREE_FILE, moduleDocumentPath, readContractStorageFile, readModuleTree, resolveModuleDocument,
@@ -20,9 +21,10 @@ interface InventoryModule extends ModuleDocument {
 }
 
 async function documentAt(root: string, directory: string, id?: string): Promise<InventoryModule> {
-  await assertModuleDirectory(root, directory);
   const text = id ? await readContractStorageFile(root, moduleDocumentPath(id)) : null;
-  return resolveModuleDocument(directory, id, text);
+  const document = resolveModuleDocument(directory, id, text);
+  await assertModuleDirectory(root, directory, !id || isPrototype(document.contract));
+  return document;
 }
 
 function includeDirectory(directories: Map<string, number>, directory: string, source: boolean) {
@@ -159,16 +161,21 @@ export async function moduleInventory(projectRoot: string, options: InventoryOpt
 
 /** Resolve either a file or a directory, then read the chain inside its owning repository. */
 export async function moduleContext(projectRoot: string, sourcePath = ".") {
-  const { root, directory, workspaceRoot, repository, existingDirectory } = await locateSourceRepository(projectRoot, sourcePath);
+  const { root, directory: sourceDirectory, workspaceRoot, repository, existingDirectory, plannedPath } = await locateSourceRepository(projectRoot, sourcePath);
   const tree = await readModuleTree(root);
+  const plannedDirectory = plannedPath && (tree.has(plannedPath) || [...tree.keys()].some(dir => dir.startsWith(plannedPath + "/")));
+  const directory = plannedDirectory ? plannedPath : sourceDirectory;
   const chain = [];
   let current = directory;
   while (true) {
     const id = tree.get(current);
     const exists = current === "." || existingDirectory === current || existingDirectory.startsWith(current + "/");
     if (exists) chain.push(await documentAt(root, current, id));
-    else chain.push({ ...resolveModuleDocument(current, id, null),
-      action: "Каталог ещё не создан. " + ADD_MAPPING });
+    else {
+      const planned = id && resolveModuleDocument(current, id, await readContractStorageFile(root, moduleDocumentPath(id)));
+      chain.push(planned && isPrototype(planned.contract) ? planned : { ...resolveModuleDocument(current, id, null),
+        action: "Каталог ещё не создан. " + ADD_MAPPING });
+    }
     if (current === ".") break;
     current = path.posix.dirname(current);
   }

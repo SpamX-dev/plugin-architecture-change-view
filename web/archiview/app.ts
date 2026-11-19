@@ -14,6 +14,8 @@ import { renderDocument, renderHistoricalClause, renderFiles } from "./module-do
 import { openFileDiff } from "./diff.js";
 import { renderProjectSelection } from "./project-selection.js";
 import { createClauseEditor } from "./clause-editor.js";
+import { prototypeDialog } from "./prototype-editor.js";
+import { isPrototype } from "../../src/contracts/types.js";
 
 interface AppState {
   view: ComparisonView | null;
@@ -81,6 +83,18 @@ export async function startApp({ client, bridge, host, chooseProject }: {
   }, toast);
 
   function currentView(): ComparisonView { if (!state.view) throw new Error("Project comparison is not loaded"); return state.view; }
+
+  function openPrototype(mode: "create" | "edit" | "delete") {
+    const view = state.view;
+    if (!view || view.published || view.target.id !== "current" || refreshing) return;
+    prototypeDialog(mode, client, view, state.detail, async directory => {
+      if (state.view?.root !== view.root || state.target !== "current") return;
+      const key = mode === "delete" ? directory.slice(0, Math.max(0, directory.lastIndexOf("/"))) || "." : directory;
+      state.tab = "document";
+      document.body.classList.remove("tree-open");
+      await refresh({ key });
+    });
+  }
 
   function toast(message: string) {
     const node = byId("toast");
@@ -286,6 +300,15 @@ export async function startApp({ client, bridge, host, chooseProject }: {
       if (state.tab !== "document") return;
     }
     if (state.tab === "document") {
+      if (isPrototype(state.detail.after?.document.contract) && !currentView().published && state.target === "current") {
+        const actions = el("div", "prototype-actions");
+        const edit = el("button", "button button-quiet", "Редактировать контракт");
+        const remove = el("button", "button button-quiet", "Удалить прототип");
+        edit.onclick = () => openPrototype("edit");
+        remove.onclick = () => openPrototype("delete");
+        actions.append(edit, remove);
+        panel.append(actions);
+      }
       renderDocument(panel, state.detail, currentView(), selectModule, openReviewFinding, clauseControls(currentView(), state.detail));
       if (selectedClause) revealClause(selectedClause, state.detail);
     }
@@ -363,6 +386,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     state.view = view;
     statusLoaded = false; reviewError = detailError = undefined;
     state.target = view.target.id;
+    byId("new-prototype").hidden = Boolean(view.published) || state.target !== "current";
     state.historyLimit = historyLimit;
     state.findingFixes = fixesByRepository.get(view.root) ?? new Map();
     fixesByRepository.set(view.root, state.findingFixes);
@@ -376,7 +400,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     byId("updated").textContent = view.published ? "Сохранено " + captured + " · Проверяем изменения…" :
       state.target === "current" ? "Обновлено " + captured : "Состояние от " + captured;
     const owner = clause && view.modules.find((module) => module.moduleId === clause.reference.module_id);
-    const selected = [owner?.key, key, sameRepository ? state.selected : undefined, "."].find((directory) =>
+    const selected = [owner?.key, key, key && view.modules.find(module => module.currentPath === key)?.key, sameRepository ? state.selected : undefined, "."].find((directory) =>
       view.modules.some((module) => module.key === directory)) ?? view.modules[0]?.key;
     tree.showComparison(view, historyLimit, automatic);
     refreshing = false;
@@ -491,6 +515,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     if (state.detail && state.tab === "findings") renderPanel();
   });
   byId("refresh").prepend(icon("refresh"));
+  byId("new-prototype").addEventListener("click", () => openPrototype("create"));
   byId("refresh").addEventListener("click", () => refresh());
   byId("timeline").addEventListener("change", (event) => {
     if ((event.target as HTMLInputElement | HTMLSelectElement).value === "load-earlier") {

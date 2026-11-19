@@ -17,6 +17,11 @@ export type ClauseChange = { section: Section; clauseId: string } & (
   | { action: "restore"; undoToken: string }
 );
 export type ChangeClauseArgs = ModuleArgs & ClauseChange;
+export type PrototypeChange = RepositoryArgs & { view: string; path: string } & (
+  | { action: "create"; moduleId: string; title: string; purpose: string; responsibility: string }
+  | { action: "edit"; text: string }
+  | { action: "delete" }
+);
 export type FileDiffArgs = RepositoryArgs & { view: string; path: string; file: string };
 export interface FileDiff { hunks: StructuredPatchHunk[]; message?: string; unchangedText?: string }
 export type SnapshotArgs = RepositoryArgs & { view: string; label?: string };
@@ -41,7 +46,7 @@ export interface ModuleReviewState {
   reviewStatus?: TreeReviewStatus | null;
 }
 
-export type ModuleSummary = Omit<ComparisonModule, "before" | "after" | "files"> & ModuleReviewState & { roles?: RoleChange[] };
+export type ModuleSummary = Omit<ComparisonModule, "before" | "after" | "files"> & ModuleReviewState & { roles?: RoleChange[]; prototypeModule?: boolean };
 export interface ComparisonView extends Pick<Comparison, "schema_version" | "id" | "root" | "complete" | "diagnostics" | "counts" | "before" | "after"> {
   /** Served from the last complete publication, before checking the working tree. */
   published?: true;
@@ -91,6 +96,7 @@ export interface SessionOperations {
   getReviewStatuses(args: RepositoryArgs & {view: string}): Promise<{modules: (ModuleReviewState & {key: string})[]; diagnostics: string[]}>;
   getModule(args: ModuleArgs): Promise<ModuleDetail>;
   changeClause(args: ChangeClauseArgs): Promise<{ undoToken?: string }>;
+  changePrototype(args: PrototypeChange): Promise<{ directory: string }>;
   getFileDiff(args: FileDiffArgs): Promise<FileDiff>;
   prepareAnalysis(args: ModuleArgs): Promise<PreparedAnalysis>;
   getAnalysis(args: RepositoryArgs & { id: string }): Promise<AnalysisStatus>;

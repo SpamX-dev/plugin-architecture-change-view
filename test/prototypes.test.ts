@@ -1,0 +1,64 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+import { createScaffold } from "../src/application/prototypes.js";
+import { createWorkspaceSession } from "../src/application/workspace-session.js";
+import { moduleInventory } from "../src/contracts/inventory.js";
+import { captureGitIndex } from "../src/snapshots/capture.js";
+
+test("planned contracts survive Git, stale edits, retries and deletion of a parent", async t => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), "archiview-scaffold-"));
+  t.after(() => rm(workspace, { recursive: true, force: true }));
+  const root = path.join(workspace, "project");
+  await mkdir(root);
+  const git = (...args: string[]) => execFileSync("git", args, { cwd: root, windowsHide: true });
+  git("init", "-q");
+  const entry = (directory: string, id: string) => ({ directory, id, title: id, purpose: "Считать товары",
+    responsibilities: { R1: "Вести остаток" } });
+  const entries = [entry(".", "app"), entry("src/cart", "cart"), entry("src/cart/item", "item")];
+  const scaffold = (items: typeof entries) => createScaffold(workspace, "project", JSON.stringify(items));
+  const [first, second] = await Promise.all([scaffold(entries), scaffold(entries)]);
+  assert.deepEqual(first, second);
+  await assert.rejects(stat(path.join(root, "src")), {code: "ENOENT"});
+  const treeFile = path.join(root, ".archiview/modules.tree");
+  const tree = await readFile(treeFile, "utf8");
+  for (const conflict of [entry("src/cart", "other"), entry("other", "CART"), entry("../outside", "escape")]) {
+    await assert.rejects(scaffold([entry("valid", "valid"), conflict]));
+    assert.equal(await readFile(treeFile, "utf8"), tree);
+    await assert.rejects(stat(path.join(root, ".archiview/modules/valid.yaml")), {code: "ENOENT"});
+  }
+  const inventory = await moduleInventory(workspace);
+  assert.equal(inventory.complete, true, inventory.diagnostics.join("\n"));
+  assert.equal(inventory.modules.find(m => m.contract?.id === "item")?.sourceFiles, 0);
+  git("add", ".archiview");
+  assert.equal((await captureGitIndex(root))?.complete, true);
+  git("-c", "user.name=test", "-c", "user.email=test@example.test", "commit", "-qm", "scaffold");
+  const session = await createWorkspaceSession({ root: workspace });
+  t.after(() => session.close());
+  const repository = "project";
+  const current = await session.getComparison({ repository });
+  assert.equal(current.complete, true, current.diagnostics.join("\n"));
+  const historical = await session.getComparison({ repository, target: current.timeline.find(s => s.isHead)!.id });
+  assert.equal(historical.modules.find(m => m.directory === "src/cart")?.prototypeModule, true);
+  const selected = { view: current.id, path: "src/cart", repository };
+  await assert.rejects(session.changePrototype({ ...selected, action: "delete", view: historical.id }), { code: "INVALID_ARGUMENT" });
+  const detail = await session.getModule(selected);
+  const text = detail.after!.document.text!;
+  await assert.rejects(session.changePrototype({ ...selected, action: "edit", text: "invalid" }), { code: "INVALID_ARGUMENT" });
+  await session.changeClause({ ...selected, action: "add", section: "boundaries", clauseId: "B1", text: "Одна корзина" });
+  await assert.rejects(session.changePrototype({ ...selected, action: "delete" }), { code: "STALE_VIEW" });
+  await assert.rejects(session.changePrototype({ ...selected, action: "edit", text }), { code: "STALE_VIEW" });
+  await mkdir(path.join(root, "src/cart"), { recursive: true });
+  await writeFile(path.join(root, "src/cart/run.ts"), "export const count = 1;");
+  const fresh = await session.getComparison({ repository });
+  await session.changePrototype({ ...selected, view: fresh.id, action: "delete" });
+  assert.match(await readFile(path.join(root, "src/cart/run.ts"), "utf8"), /count/);
+  const after = await session.getComparison({ repository });
+  assert.equal(after.complete, true);
+  assert.equal(after.modules.find(m => m.directory === "src/cart/item")?.moduleId, "item");
+  assert.equal(after.modules.find(m => m.directory === "src/cart")?.prototypeModule, undefined);
+  await assert.rejects(session.changePrototype({ ...selected, view: after.id, action: "delete" }), { code: "INVALID_ARGUMENT" });
+});

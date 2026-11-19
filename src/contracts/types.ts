@@ -1,5 +1,10 @@
 export type Section = "responsibilities" | "boundaries" | "invariants";
 
+export const PROTOTYPE_EXTENSION = "archiview.prototype";
+export function isPrototype(contract?: Contract | null) {
+  return contract?.extensions?.[PROTOTYPE_EXTENSION] === true;
+}
+
 export interface Contract {
   schema_version: number;
   id: string;

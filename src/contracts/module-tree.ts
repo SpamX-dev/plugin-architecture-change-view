@@ -25,6 +25,14 @@ export function moduleDocumentPath(id: string) {
   return MODULE_DIRECTORY + "/" + id + ".yaml";
 }
 
+export function validateModuleMapping(id: string, directory: unknown): asserts directory is string {
+  moduleDocumentPath(id);
+  if (typeof directory !== "string" || directory !== "." &&
+      (!directory.split("/").every(portableName) || excludedProjectPath(directory))) {
+    throw new Error("Invalid project directory for " + id + ": " + String(directory));
+  }
+}
+
 export function isModuleContractPath(relative: string) {
   if (path.posix.dirname(relative) !== MODULE_DIRECTORY || !relative.endsWith(".yaml")) return false;
   return portableName(path.posix.basename(relative, ".yaml"));
@@ -40,11 +48,7 @@ export function parseModuleTree(text: string): Map<string, string> {
     const paths = new Set<string>();
     const ids = new Set<string>();
     for (const [id, directory] of Object.entries(value)) {
-      moduleDocumentPath(id);
-      if (typeof directory !== "string" || directory !== "." &&
-          (!directory.split("/").every(portableName) || excludedProjectPath(directory))) {
-        throw new Error("Invalid project directory for " + id + ": " + String(directory));
-      }
+      validateModuleMapping(id, directory);
       if (ids.has(id.toLowerCase())) throw new Error("Duplicate module id: " + id);
       if (paths.has(directory.toLowerCase())) throw new Error("Duplicate module directory: " + directory);
       ids.add(id.toLowerCase());
@@ -82,7 +86,10 @@ export async function resolveSourceDirectory(root: string, directory: string) {
 }
 
 /** Git tree paths are case-sensitive even when the local filesystem accepts aliases. */
-export async function assertModuleDirectory(root: string, directory: string) {
+export async function assertModuleDirectory(root: string, directory: string, planned = false): Promise<void> {
+  if (planned && directory !== "." && !await existingEntry(path.join(root, directory))) {
+    return assertModuleDirectory(root, path.posix.dirname(directory), true);
+  }
   const actual = await resolveSourceDirectory(root, directory);
   if (actual !== directory) throw new Error("Mapped directory " + directory + " does not match " + actual);
 }

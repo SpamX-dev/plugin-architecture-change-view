@@ -278,6 +278,38 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   assert.deepEqual(errors, []);
 });
 
+test("a user can create, edit, reopen and delete a module prototype", browserOptions, async t => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const app = await createArchiView({ root });
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(await listen(defer, app.server));
+  const button = (name: string) => page.getByRole("button", { name, exact: true });
+  const dialog = page.getByRole("dialog");
+  await button("Новый прототип").click();
+  await dialog.getByLabel("Путь от корня репозитория").fill("future/catalog");
+  await dialog.getByLabel("ID модуля").fill("catalog");
+  await dialog.getByLabel("Название", { exact: true }).fill("Каталог");
+  await dialog.getByLabel("Назначение", { exact: true }).fill("Хранить товары");
+  await dialog.getByLabel("Первая обязанность").fill("Выдавать карточку товара");
+  await button("Создать").click();
+  await page.getByRole("heading", { name: "Каталог", exact: true }).waitFor();
+  await button("Редактировать контракт").click();
+  const yaml = dialog.getByLabel("Контракт YAML");
+  await yaml.fill((await yaml.inputValue()).replace("title: Каталог", "title: Каталог магазина"));
+  await button("Сохранить").click();
+  await page.getByRole("heading", { name: "Каталог магазина", exact: true }).waitFor();
+  await page.reload();
+  await button("Удалить прототип").click();
+  await dialog.getByRole("button", { name: "Отмена" }).click();
+  await button("Удалить прототип").click();
+  await dialog.getByRole("button", { name: "Удалить", exact: true }).click();
+  await page.locator('.tree-row[data-directory="future/catalog"]').waitFor({ state: "detached" });
+  await assert.rejects(stat(path.join(root, ".archiview/modules/catalog.yaml")), { code: "ENOENT" });
+  await page.locator("#timeline").selectOption({ label: "HEAD" });
+  await button("Новый прототип").waitFor({ state: "hidden" });
+});
+
 test("contract clauses can be edited, added, deleted and restored from the working tree", browserOptions, async t => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);

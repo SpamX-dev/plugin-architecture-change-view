@@ -136,5 +136,6 @@ export async function locateSourceRepository(workspace: string, relative: string
     root = path.dirname(root);
   }
   return { workspaceRoot, root, repository: relativePath(workspaceRoot, root),
-    directory: relativePath(root, targetDirectory), existingDirectory: relativePath(root, existingDirectory) };
+    directory: relativePath(root, targetDirectory), existingDirectory: relativePath(root, existingDirectory),
+    plannedPath: existing === target ? undefined : relativePath(root, requested) };
 }

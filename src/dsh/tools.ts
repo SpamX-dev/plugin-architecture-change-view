@@ -6,8 +6,7 @@
  * Хост-половина (`host.ts`) превращает описания в определения `defineTool`,
  * поэтому этот модуль можно проверять обычным `node --test`.
  *
- * Инструменты только читают: анализ и запись карты и контрактов выполняет агент своими
- * файловыми средствами по каноническому скиллу module-boundaries.
+ * Агент может запросить каркас программы до появления её исходников.
  *
  * @module plugin-architecture-change-view/dsh/tools
  */
@@ -16,6 +15,7 @@ import { moduleContext, moduleInventory, SOURCE_EXTENSIONS } from "../contracts/
 import { realpath } from "node:fs/promises";
 import path from "node:path";
 import { within } from "../project/paths.js";
+import { SCAFFOLD_DESCRIPTION } from "../application/prototypes.js";
 
 /** Описание параметра `projectRoot`, общего для обоих инструментов. */
 const PROJECT_ROOT_PARAMETER = {
@@ -54,6 +54,14 @@ export const TOOL_DEFINITIONS = Object.freeze([
         type: "string" as const,
         description: "Альтернативное имя аргумента path для прежних вызовов.",
       }),
+    }),
+  }),
+  Object.freeze({
+    name: "archiview_scaffold",
+    description: SCAFFOLD_DESCRIPTION,
+    parameters: Object.freeze({ projectRoot: PROJECT_ROOT_PARAMETER,
+      repository: { type: "string" as const, description: "Путь репозитория из archiview_inventory, по умолчанию ." },
+      plan: { type: "string" as const, required: true as const, description: "YAML со списком прототипов" },
     }),
   }),
 ]);

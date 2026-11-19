@@ -242,6 +242,7 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
       if (isExpanded) caret.classList.add("expanded");
       const label = el("span", "tree-label");
       label.append(el("span", "tree-name", title));
+      if (module.prototypeModule) label.append(el("span", "tree-path", "Прототип"));
       if (title !== module.name) label.append(el("span", "tree-path", module.name));
       if (module.roles?.length) {
         const roles = el("span", "tree-roles");
