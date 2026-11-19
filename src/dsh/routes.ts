@@ -206,6 +206,9 @@ async function runApiOperation(request: IncomingMessage, response: ServerRespons
   if (method === "GET" && relative === "module") {
     return sendJson(response, 200, await callSessionOperation(session, "getModule", query));
   }
+  if (method === "GET" && relative === "file-diff") {
+    return sendJson(response, 200, await callSessionOperation(session, "getFileDiff", query));
+  }
   if (method === "GET" && match !== null) {
     return sendJson(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: match[1] })));
   }

@@ -28,7 +28,7 @@ async function serve(workspace: SessionOperations & { root: string }, port: numb
     if (store?.migration) process.stdout.write("History copied: " + store.migration.snapshots +
       " snapshots, " + store.migration.reviews + " reviews\n");
   });
-  for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => server.close(() => process.exit()));
+  for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, server.shutdown);
 }
 
 export async function runCli(prepareWeb?: () => Promise<void>) {

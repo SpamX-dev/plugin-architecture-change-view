@@ -69,7 +69,15 @@ export function createArchiViewHttpServer(session: SessionOperations & { close?(
     response.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
     response.end(JSON.stringify(value));
   };
-  return createServer(async (request, response) => {
+  const stopping = new AbortController();
+  const active = new Set<ServerResponse>();
+  const server = createServer(async (request, response) => {
+    // Already accepted sockets may carry another request after the listener closes.
+    if (stopping.signal.aborted) {
+      response.setHeader("Connection", "close");
+      return json(response, 503, { error: "Сервер ArchiView останавливается" });
+    }
+    active.add(response);
     // Обработчик асинхронный и не имеет внешнего catch, поэтому все способные
     // бросить этапы, включая разбор request-target, входят в единый перехват.
     try {
@@ -116,12 +124,13 @@ export function createArchiViewHttpServer(session: SessionOperations & { close?(
       if (request.method === "GET" && url.pathname === "/api/changes") {
         const controller = new AbortController();
         response.once("close", () => controller.abort());
-        const result = await callSessionOperation(session, "waitForChanges", args, controller.signal);
+        const result = await callSessionOperation(session, "waitForChanges", args, AbortSignal.any([controller.signal, stopping.signal]));
         if (!response.destroyed) json(response, 200, result);
         return;
       }
       if (request.method === "GET" && url.pathname === "/api/review-statuses") return json(response, 200, await callSessionOperation(session, "getReviewStatuses", args));
       if (request.method === "GET" && url.pathname === "/api/module") return json(response, 200, await callSessionOperation(session, "getModule", args));
+      if (request.method === "GET" && url.pathname === "/api/file-diff") return json(response, 200, await callSessionOperation(session, "getFileDiff", args));
       if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))
         return json(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: url.pathname.split("/").at(-1) })));
       if (request.method === "POST") {
@@ -136,6 +145,14 @@ export function createArchiViewHttpServer(session: SessionOperations & { close?(
       const error = applicationError(cause);
       return json(response, error.code === "REQUEST_TOO_LARGE" ? 413 : errorStatus[error.code] ?? 500,
         { error: error.message, code: error.code });
-    }
+    } finally { active.delete(response); }
   }).on("close", () => { void session.close?.(); });
+  function shutdown() {
+    if (stopping.signal.aborted) return;
+    server.close();
+    // Finish in-flight operations on their original sockets. Wake idle watch requests immediately.
+    for (const response of active) response.shouldKeepAlive = false;
+    stopping.abort();
+  }
+  return Object.assign(server, { shutdown });
 }

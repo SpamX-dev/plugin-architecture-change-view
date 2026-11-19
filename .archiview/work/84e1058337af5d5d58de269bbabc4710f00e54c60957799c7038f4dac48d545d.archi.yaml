@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-serialization
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 9ca2e0d177d4c960b797b06c5d12447b60053e18b65afaa57c06a74d35466d49
+check_hash: e27cef28bdd85a13f2b2a001c62605dcdbb5de54c5935db5593560787c821734
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,12 +10,12 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: faff1ed3907911564e7aa16a1a87c51571af85e9
+      id: e21dcb9af6886074c1bccbee8340601658f23829
     state:
       exists: true
       directory: src/serialization
-      self_digest: sha256:9c83dd1611ca7f9a762c9b45f547f9c9c5dfdd9814bc07cbfd13f34e457a396b
-      subtree_digest: sha256:696ddca88faf7a160a74295ec81e108ce5a9112bf93c1fea3397d114d7fb034e
+      self_digest: sha256:4e33db653cc887620a8a6464ce56409a7bfd36e4ddddb610611e57fa2e97b7e6
+      subtree_digest: sha256:f55521e0b318278f283119dd46c3b6ccae8b7d0429ed3a5e2017078898032a22
   current:
     exists: true
     directory: src/serialization
@@ -52,124 +52,79 @@ baseline:
       extensions:
         archiview.roles:
           - serialization
-      purpose: Предоставлять общее чтение YAML, средства проверки структуры и
-        канонические отпечатки внешних данных.
+      purpose: Читать структурированные данные ArchiView и получать воспроизводимый
+        отпечаток их содержимого.
       responsibilities:
-        R1: Читать однозначные JSON-совместимые значения из YAML и предоставлять
-          примитивы проверки их структуры.
-        R2: Канонизировать значения и вычислять согласованный SHA-256 по байтам UTF-8.
+        R1: Читать YAML как однозначное JSON-совместимое значение.
+        R3: Предоставлять проверки структуры данных с указанием поля, в котором
+          обнаружена ошибка.
+        R2: Вычислять SHA-256 канонической записи значения в UTF-8.
       boundaries:
-        B1: Схемы конкретных контрактов и проверок определяются их владельцами.
-      invariants:
-        I1: Порядок ключей словаря не влияет на каноническую форму. Порядок массива
-          сохраняется.
-        I2: Неоднозначные ключи, ссылки YAML и недопустимые типы отклоняются до
-          использования данных.
+        B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
+          поддерживаемых типов.
+        B3: При канонизации считать порядок ключей словаря несущественным, сохраняя
+          последовательность элементов массива.
+      invariants: {}
     document_state: documented
     inherited:
       - module_id: architecture-change-view
         section: boundaries
         id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
       - module_id: architecture-change-view
         section: boundaries
         id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
       - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста или однократного явного выбора пользователя; явно
-          настроенный для модельных инструментов корень ограничивает их чтение.
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
       - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
+        section: boundaries
+        id: B4
         text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
+          провести анализ или исправить замечание.
       - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
         section: boundaries
         id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
         section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
         section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
         section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
       - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
       - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
       - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:9c83dd1611ca7f9a762c9b45f547f9c9c5dfdd9814bc07cbfd13f34e457a396b
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+  technical_digest: sha256:4e33db653cc887620a8a6464ce56409a7bfd36e4ddddb610611e57fa2e97b7e6
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -188,132 +143,87 @@ baseline:
     contract:
       id: archiview-serialization
       kind: module
-      purpose: Предоставлять общее чтение YAML, средства проверки структуры и
-        канонические отпечатки внешних данных.
+      purpose: Читать структурированные данные ArchiView и получать воспроизводимый
+        отпечаток их содержимого.
       responsibilities:
-        R1: Читать однозначные JSON-совместимые значения из YAML и предоставлять
-          примитивы проверки их структуры.
-        R2: Канонизировать значения и вычислять согласованный SHA-256 по байтам UTF-8.
+        R1: Читать YAML как однозначное JSON-совместимое значение.
+        R3: Предоставлять проверки структуры данных с указанием поля, в котором
+          обнаружена ошибка.
+        R2: Вычислять SHA-256 канонической записи значения в UTF-8.
       boundaries:
-        B1: Схемы конкретных контрактов и проверок определяются их владельцами.
-      invariants:
-        I1: Порядок ключей словаря не влияет на каноническую форму. Порядок массива
-          сохраняется.
-        I2: Неоднозначные ключи, ссылки YAML и недопустимые типы отклоняются до
-          использования данных.
+        B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
+          поддерживаемых типов.
+        B3: При канонизации считать порядок ключей словаря несущественным, сохраняя
+          последовательность элементов массива.
+      invariants: {}
     inherited:
       - module_id: architecture-change-view
         section: boundaries
         id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
       - module_id: architecture-change-view
         section: boundaries
         id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
       - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста или однократного явного выбора пользователя; явно
-          настроенный для модельных инструментов корень ограничивает их чтение.
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
       - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
+        section: boundaries
+        id: B4
         text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
+          провести анализ или исправить замечание.
       - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
         section: boundaries
         id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
         section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
         section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
         section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
       - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
       - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
       - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
     children: []
-  self_digest: sha256:ee1134fc4c0556b163b6e6905f5367f0dcb17c3fb0b4448329fa9d2845a9fe4c
+  self_digest: sha256:587ebccbf26b3cd42aae9c1de76724b5f69250cce93ab3002df1ea72a00641bf
   subtree:
-    self: sha256:9c83dd1611ca7f9a762c9b45f547f9c9c5dfdd9814bc07cbfd13f34e457a396b
+    self: sha256:4e33db653cc887620a8a6464ce56409a7bfd36e4ddddb610611e57fa2e97b7e6
     children: []
-  subtree_digest: sha256:696ddca88faf7a160a74295ec81e108ce5a9112bf93c1fea3397d114d7fb034e
+  subtree_digest: sha256:f55521e0b318278f283119dd46c3b6ccae8b7d0429ed3a5e2017078898032a22
   semantic_subtree:
-    self: sha256:ee1134fc4c0556b163b6e6905f5367f0dcb17c3fb0b4448329fa9d2845a9fe4c
+    self: sha256:587ebccbf26b3cd42aae9c1de76724b5f69250cce93ab3002df1ea72a00641bf
     children: []
-  semantic_subtree_digest: sha256:116f1ec92d33769e64ee6cddbebade9fecee0344ad6d6e596049b9d2ea023216
+  semantic_subtree_digest: sha256:4ed04be54c53cd02ff3681a5238194b53d5ac1389b4e457c99914b7f2dc41f64
 current:
   module_id: archiview-serialization
   directory: src/serialization
@@ -515,10 +425,10 @@ current:
   semantic_subtree_digest: sha256:4ed04be54c53cd02ff3681a5238194b53d5ac1389b4e457c99914b7f2dc41f64
 change:
   existence: retained
-  own: true
+  own: false
   own_code: false
-  own_contract: true
-  inherited_constraints: true
+  own_contract: false
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -527,336 +437,23 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 230
-  comparison_key: sha256:dbbcc9929208174b5364c72ca96a3186ff40bffa50a1a9697a4763ed2695b719
+  generation: 231
+  comparison_key: sha256:224fe03fec74bcd5b21cd46cd4e887507b723db8015bdcc078b0bfc2e71152eb
   baseline:
     metadata:
-      id: git-faff1ed3907911564e7aa16a1a87c51571af85e9
-      digest: sha256:51ac76e85886d11780df766f66e795cd45b742a439f5fc5ce763415fd4b8ce48
+      id: git-e21dcb9af6886074c1bccbee8340601658f23829
+      digest: sha256:e9e842cc1d7f3b1024b774f0facc71bf2186d0106c3c4eb5381220f65a246681
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-19T08:54:36.342Z
+      capturedAt: 2026-11-19T10:42:49.497Z
       kind: git
-      revision: faff1ed3907911564e7aa16a1a87c51571af85e9
+      revision: e21dcb9af6886074c1bccbee8340601658f23829
       label: HEAD
-      fingerprint: 857d1f43852fb597c51de3c3dfacd50edf82ab25ecdac496396088445d837560
+      fingerprint: 5d8aa2401e9741375ea99e3fd028b4da7f79a43e88d2eb200bc563db5b7fadd2
       complete: true
       diagnostics: []
       evidenceLimitations: []
       isHead: true
-    module_index: 16
-    module:
-      directory: src/serialization
-      document:
-        state: documented
-        text: >
-          schema_version: 1
-
-          id: archiview-serialization
-
-          title: Кодирование данных
-
-          kind: module
-
-          extensions:
-            archiview.roles: [serialization]
-          purpose: Предоставлять общее чтение YAML, средства проверки структуры
-          и канонические отпечатки внешних данных.
-
-          responsibilities:
-            R1: Читать однозначные JSON-совместимые значения из YAML и предоставлять примитивы проверки их структуры.
-            R2: Канонизировать значения и вычислять согласованный SHA-256 по байтам UTF-8.
-          boundaries:
-            B1: Схемы конкретных контрактов и проверок определяются их владельцами.
-          invariants:
-            I1: Порядок ключей словаря не влияет на каноническую форму. Порядок массива сохраняется.
-            I2: Неоднозначные ключи, ссылки YAML и недопустимые типы отклоняются до использования данных.
-        format: yaml
-        contract:
-          schema_version: 1
-          id: archiview-serialization
-          title: Кодирование данных
-          kind: module
-          extensions:
-            archiview.roles:
-              - serialization
-          purpose: Предоставлять общее чтение YAML, средства проверки структуры и
-            канонические отпечатки внешних данных.
-          responsibilities:
-            R1: Читать однозначные JSON-совместимые значения из YAML и предоставлять
-              примитивы проверки их структуры.
-            R2: Канонизировать значения и вычислять согласованный SHA-256 по байтам UTF-8.
-          boundaries:
-            B1: Схемы конкретных контрактов и проверок определяются их владельцами.
-          invariants:
-            I1: Порядок ключей словаря не влияет на каноническую форму. Порядок массива
-              сохраняется.
-            I2: Неоднозначные ключи, ссылки YAML и недопустимые типы отклоняются до
-              использования данных.
-      documentPath: .archiview/modules/archiview-serialization.yaml
-      files:
-        - path: .archiview/modules/archiview-serialization.yaml
-          hash: 98d749a75d47207124e25ca215520aae1978fb91
-        - path: src/serialization/digest.ts
-          hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
-        - path: src/serialization/schema.ts
-          hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
-        - path: src/serialization/yaml.ts
-          hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
-      sourceFiles: 3
-      fingerprint: 45fce546e006eadbbb2c6abc3c61377793349ff8285526b3755956f22a3d8f88
-    facts:
-      - index: 17
-        fact:
-          id: sha256:8793e80ffc8cb057368a3368c39314a2ccb77ff607918897c357a1f268fdf571
-          kind: file
-          path: .archiview/modules/archiview-serialization.yaml
-          start_line: 1
-          end_line: 16
-          text: >
-            schema_version: 1
-
-            id: archiview-serialization
-
-            title: Кодирование данных
-
-            kind: module
-
-            extensions:
-              archiview.roles: [serialization]
-            purpose: Предоставлять общее чтение YAML, средства проверки
-            структуры и канонические отпечатки внешних данных.
-
-            responsibilities:
-              R1: Читать однозначные JSON-совместимые значения из YAML и предоставлять примитивы проверки их структуры.
-              R2: Канонизировать значения и вычислять согласованный SHA-256 по байтам UTF-8.
-            boundaries:
-              B1: Схемы конкретных контрактов и проверок определяются их владельцами.
-            invariants:
-              I1: Порядок ключей словаря не влияет на каноническую форму. Порядок массива сохраняется.
-              I2: Неоднозначные ключи, ссылки YAML и недопустимые типы отклоняются до использования данных.
-      - index: 112
-        fact:
-          id: sha256:9e7834c6f33641bbe191264d9e290882fc90255a8d5195f1c020b832a42e8a56
-          kind: file
-          path: src/serialization/digest.ts
-          start_line: 1
-          end_line: 15
-          text: >
-            import { createHash } from "node:crypto";
-
-
-            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
-            массивов. */
-
-            export function canonical(value: unknown): string {
-              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
-              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
-                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
-              return JSON.stringify(value ?? null);
-            }
-
-
-            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
-            префикс алгоритма. */
-
-            export function digest(value: unknown) {
-              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
-            }
-      - index: 113
-        fact:
-          id: sha256:a43ef3e9a7072d2666c010e5c43cabb7e14d271805e8ddad532a1d47cbd6f5a9
-          kind: file
-          path: src/serialization/schema.ts
-          start_line: 1
-          end_line: 27
-          text: >
-            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
-            путь поля. */
-
-            export const fail = (at: string, message: string): never => { throw
-            new Error(at + ": " + message); };
-
-            export type Validator = (v: unknown, at: string) => void;
-
-            export const string: Validator = (v, at) => typeof v === "string" &&
-            v.trim() ? undefined : fail(at, "ожидается непустая строка");
-
-            export const object: Validator = (v, at) => v && typeof v ===
-            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
-            словарь");
-
-            export const enumeration = (...values: unknown[]): Validator => (v,
-            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
-            values.join(", "));
-
-            export const nullable = (check: Validator): Validator => (v, at) =>
-            v === null ? undefined : check(v, at);
-
-            export const array = (check: Validator, min = 0): Validator => (v,
-            at) => {
-              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
-              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
-            };
-
-            export const shape = (required: Record<string, Validator>, optional:
-            Record<string, Validator> = {}): Validator => (v, at) => {
-              object(v, at);
-              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
-              for (const key of Object.keys(v as object)) {
-                if (Object.hasOwn(required, key)) continue;
-                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
-                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
-              }
-            };
-
-            export const strings = array(string);
-
-            export const references = array(shape({ title: string, uri: string
-            }));
-
-            export const extensions: Validator = (v, at) => {
-              object(v, at);
-              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
-            };
-      - index: 114
-        fact:
-          id: sha256:8c41810c557605410da1b4adab9609caa78cbe1491124f7f4f8fdc1f7f51dbd0
-          kind: file
-          path: src/serialization/yaml.ts
-          start_line: 1
-          end_line: 37
-          text: >
-            import { parseDocument, isAlias, isMap, isScalar, isSeq } from
-            "yaml";
-
-
-            /** Парсер запрещает дубликаты, aliases, нестандартные теги и
-            несколько документов. */
-
-            export function parseYaml<T>(text: string, validate: (value:
-            unknown) => T): T {
-              const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
-              if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
-              // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
-              // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
-              const inspect = (node: unknown): void => {
-                if (node == null) return;
-                if (typeof node === "object" && "tag" in node && node.tag &&
-                    !["str", "int", "float", "bool", "null", "map", "seq"].some((name) => node.tag === "tag:yaml.org,2002:" + name))
-                  throw new Error("Custom YAML tag");
-                if (isAlias(node)) throw new Error("YAML aliases are not allowed");
-                if (isMap(node)) {
-                  for (const pair of node.items) {
-                    if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
-                    inspect(pair.key);
-                    inspect(pair.value);
-                  }
-                } else if (isSeq(node)) node.items.forEach(inspect);
-                else if (isScalar(node) && typeof node.value === "bigint") {
-                  const number = Number(node.value);
-                  if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
-                  node.value = number;
-                } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
-                  typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
-              };
-              inspect(doc.contents);
-              return validate(doc.toJS({ maxAliasCount: 0 }));
-            }
-
-
-            /** Decodes persisted records before format-specific integrity
-            checks. */
-
-            export function parseReportYaml<T = unknown>(text: string): T {
-              return parseYaml(text, (value) => value as T);
-            }
-      - index: 202
-        fact:
-          id: sha256:82d92bb64dda60470ebf6524d6931aea0f4f976e4d3957592516420a68625b2f
-          kind: module
-          path: src/serialization
-          text: '{"contract":"documented","format":"yaml","sources":["src/serialization/digest.ts","src/serialization/schema.ts","src/serialization/yaml.ts"]}'
-  current:
-    metadata:
-      id: launch-c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
-      digest: sha256:ceaa4d2c1d904878f438bd3dafffa6e84373a3020bc10380e6abb3f3e3443861
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-19T08:54:38.403Z
-      kind: launch
-      label: Начальное состояние
-      fingerprint: c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-      observations:
-        architecture-change-view:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-distribution:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-skills:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-module-boundaries-skill:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        architecture-core:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-application:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-http:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-codex:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-contracts:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        dsh-adapter:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        dsh-client-panel:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-mcp:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-project-location:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-reports:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-reviews:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-node-runtime:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-serialization:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-snapshots:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-storage:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        architecture-tests:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        architecture-web:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-client:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
     module_index: 16
     module:
       directory: src/serialization
@@ -1090,6 +687,319 @@ publication:
           kind: module
           path: src/serialization
           text: '{"contract":"documented","format":"yaml","sources":["src/serialization/digest.ts","src/serialization/schema.ts","src/serialization/yaml.ts"]}'
+  current:
+    metadata:
+      id: launch-378c0d9cce1d355a3c79574619ae45d9030fbe84b29a90597652a739f947a66b
+      digest: sha256:6fd465dfaae3341d3998c450d785d09275554bff6b55935dd05cf69de2dc16f3
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-19T10:42:51.353Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 378c0d9cce1d355a3c79574619ae45d9030fbe84b29a90597652a739f947a66b
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+      observations:
+        architecture-change-view:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 18
+        archiview-distribution:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 5
+        archiview-skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-module-boundaries-skill:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+        architecture-core:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+        archiview-application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 11
+        archiview-http:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+        archiview-codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+        archiview-contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 5
+        dsh-client-panel:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-project-location:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+        archiview-reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-node-runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 4
+        archiview-storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 4
+        architecture-tests:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 11
+        architecture-web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+        archiview-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 13
+    module_index: 16
+    module:
+      directory: src/serialization
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-serialization
+
+          title: Кодирование данных
+
+          kind: module
+
+          extensions:
+            archiview.roles: [serialization]
+          purpose: Читать структурированные данные ArchiView и получать
+          воспроизводимый отпечаток их содержимого.
+
+          responsibilities:
+            R1: Читать YAML как однозначное JSON-совместимое значение.
+            R3: Предоставлять проверки структуры данных с указанием поля, в котором обнаружена ошибка.
+            R2: Вычислять SHA-256 канонической записи значения в UTF-8.
+          boundaries:
+            B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне поддерживаемых типов.
+            B3: При канонизации считать порядок ключей словаря несущественным, сохраняя последовательность элементов массива.
+          invariants: {}
+        format: yaml
+        contract:
+          schema_version: 1
+          id: archiview-serialization
+          title: Кодирование данных
+          kind: module
+          extensions:
+            archiview.roles:
+              - serialization
+          purpose: Читать структурированные данные ArchiView и получать воспроизводимый
+            отпечаток их содержимого.
+          responsibilities:
+            R1: Читать YAML как однозначное JSON-совместимое значение.
+            R3: Предоставлять проверки структуры данных с указанием поля, в котором
+              обнаружена ошибка.
+            R2: Вычислять SHA-256 канонической записи значения в UTF-8.
+          boundaries:
+            B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
+              поддерживаемых типов.
+            B3: При канонизации считать порядок ключей словаря несущественным, сохраняя
+              последовательность элементов массива.
+          invariants: {}
+      documentPath: .archiview/modules/archiview-serialization.yaml
+      files:
+        - path: .archiview/modules/archiview-serialization.yaml
+          hash: 174c8ed42f3e2ee5697cc5a9fdcc84f34b92cc54
+        - path: src/serialization/digest.ts
+          hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+        - path: src/serialization/schema.ts
+          hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+        - path: src/serialization/yaml.ts
+          hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
+      sourceFiles: 3
+      fingerprint: 21f460502bf43247815b779e46a703027e8778b2374875e5de0062f5a937fa42
+    facts:
+      - index: 17
+        fact:
+          id: sha256:d6bb9e1ead383575c5b82acc62c50455df0842dd83abd49efcf0e50093982d9d
+          kind: file
+          path: .archiview/modules/archiview-serialization.yaml
+          start_line: 1
+          end_line: 16
+          text: >
+            schema_version: 1
+
+            id: archiview-serialization
+
+            title: Кодирование данных
+
+            kind: module
+
+            extensions:
+              archiview.roles: [serialization]
+            purpose: Читать структурированные данные ArchiView и получать
+            воспроизводимый отпечаток их содержимого.
+
+            responsibilities:
+              R1: Читать YAML как однозначное JSON-совместимое значение.
+              R3: Предоставлять проверки структуры данных с указанием поля, в котором обнаружена ошибка.
+              R2: Вычислять SHA-256 канонической записи значения в UTF-8.
+            boundaries:
+              B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне поддерживаемых типов.
+              B3: При канонизации считать порядок ключей словаря несущественным, сохраняя последовательность элементов массива.
+            invariants: {}
+      - index: 113
+        fact:
+          id: sha256:9e7834c6f33641bbe191264d9e290882fc90255a8d5195f1c020b832a42e8a56
+          kind: file
+          path: src/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+      - index: 114
+        fact:
+          id: sha256:a43ef3e9a7072d2666c010e5c43cabb7e14d271805e8ddad532a1d47cbd6f5a9
+          kind: file
+          path: src/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+      - index: 115
+        fact:
+          id: sha256:8c41810c557605410da1b4adab9609caa78cbe1491124f7f4f8fdc1f7f51dbd0
+          kind: file
+          path: src/serialization/yaml.ts
+          start_line: 1
+          end_line: 37
+          text: >
+            import { parseDocument, isAlias, isMap, isScalar, isSeq } from
+            "yaml";
+
+
+            /** Парсер запрещает дубликаты, aliases, нестандартные теги и
+            несколько документов. */
+
+            export function parseYaml<T>(text: string, validate: (value:
+            unknown) => T): T {
+              const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
+              if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
+              // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
+              // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
+              const inspect = (node: unknown): void => {
+                if (node == null) return;
+                if (typeof node === "object" && "tag" in node && node.tag &&
+                    !["str", "int", "float", "bool", "null", "map", "seq"].some((name) => node.tag === "tag:yaml.org,2002:" + name))
+                  throw new Error("Custom YAML tag");
+                if (isAlias(node)) throw new Error("YAML aliases are not allowed");
+                if (isMap(node)) {
+                  for (const pair of node.items) {
+                    if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
+                    inspect(pair.key);
+                    inspect(pair.value);
+                  }
+                } else if (isSeq(node)) node.items.forEach(inspect);
+                else if (isScalar(node) && typeof node.value === "bigint") {
+                  const number = Number(node.value);
+                  if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
+                  node.value = number;
+                } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+                  typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
+              };
+              inspect(doc.contents);
+              return validate(doc.toJS({ maxAliasCount: 0 }));
+            }
+
+
+            /** Decodes persisted records before format-specific integrity
+            checks. */
+
+            export function parseReportYaml<T = unknown>(text: string): T {
+              return parseYaml(text, (value) => value as T);
+            }
+      - index: 204
+        fact:
+          id: sha256:82d92bb64dda60470ebf6524d6931aea0f4f976e4d3957592516420a68625b2f
+          kind: module
+          path: src/serialization
+          text: '{"contract":"documented","format":"yaml","sources":["src/serialization/digest.ts","src/serialization/schema.ts","src/serialization/yaml.ts"]}'
 review_status:
   self:
     current:
@@ -1143,12 +1053,18 @@ review_status:
         - code: baseline_identity
         - code: own_code
           side: baseline
+        - code: own_contract
+          side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
+        - code: own_contract
+          side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: own_contract
+          side: baseline
       verdict: null
       verdicts: []
       review_ids:

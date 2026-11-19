@@ -55,7 +55,7 @@ export function createCodexPanel(rootOrBinding?: string | ProjectBinding, { stat
     callUi(name: string, args: unknown, metadata?: Record<string, unknown>) {
       const method = UI_TOOL_METHODS.get(name);
       const selectsProject = method === "setProject" || method === "chooseProject" || method === "getProject";
-      const read = method === "waitForChanges" || method === "getReviewStatuses" || method === "getModule" || method === "getComparison";
+      const read = method === "waitForChanges" || method === "getReviewStatuses" || method === "getModule" || method === "getFileDiff" || method === "getComparison";
       const ready = read || selectsProject ? projectSelection : Promise.all([projectSelection, mutations]);
       const operation = ready.then(async () => {
         checkOpen();

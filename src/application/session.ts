@@ -1,4 +1,5 @@
-import type { ComparisonView, ModuleDetail, SessionOperations, ComparisonArgs, ModuleArgs, SnapshotArgs } from "./api.js";
+import type { ComparisonView, ModuleDetail, SessionOperations, ComparisonArgs, FileDiffArgs, ModuleArgs, SnapshotArgs } from "./api.js";
+import { fileDiff } from "./file-diff.js";
 import type { Snapshot, GitRevision } from "../snapshots/types.js";
 import type { PublishedComparison } from "../reports/types.js";
 import type { SessionView } from "./session-view.js";
@@ -358,6 +359,11 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     return moduleDetail(module, matching, matching.length ? view.reportModel : undefined, view.modules, root, reports.work);
   }
 
+  async function getFileDiff(args: FileDiffArgs) {
+    const { view, module } = selectedModule(args);
+    return fileDiff(module, view.baselineSnapshot, view.currentSnapshot, args.file, view.gitTree ? root : undefined);
+  }
+
   /** Выбирает точный view; неизвестный id требует обновления клиентом. */
   function selectedModule(args: ModuleArgs) {
     const view = views.get(args.view);
@@ -414,6 +420,6 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   }
 
   const waitForChanges: SessionOperations["waitForChanges"] = ({cursor}, signal) => watcher.wait(cursor, signal);
-  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
+  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
   return { root, store, reviews, reports, changes, analysis, ...operations, close: () => watcher.close() };
 }

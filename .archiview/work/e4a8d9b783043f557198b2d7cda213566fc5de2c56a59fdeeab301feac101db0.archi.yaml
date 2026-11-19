@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-node-runtime
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 0107d991b1747d52f913afd8189f9e042653b70af038310bc82b60642b4140f3
+check_hash: 567622ef83b37266b6b13881c74cb752dfe5fee7dc230a84c20359b159b585a6
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,12 +10,12 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: faff1ed3907911564e7aa16a1a87c51571af85e9
+      id: e21dcb9af6886074c1bccbee8340601658f23829
     state:
       exists: true
       directory: src/runtime
-      self_digest: sha256:7b3a0e58966a8455887400130bb32951c5c0a5a0045a921894e2ebafd63a30e0
-      subtree_digest: sha256:709e923a5a80ec1d5fdf3282526a6de44b31f0f263937fa3bb6c7c87efd06b0e
+      self_digest: sha256:4b03f04975db5327a97db9e4aaac4700c8e4c4409086d894c50cf377af03e995
+      subtree_digest: sha256:d40140504c73ccff1eeabc23e7a956a1b67e540781d8e64c3cc818e4ea6be337
   current:
     exists: true
     directory: src/runtime
@@ -49,123 +49,77 @@ baseline:
       extensions:
         archiview.roles:
           - runtime
-      purpose: Предоставлять общие для модулей Node сведения о среде выполнения
-        ArchiView.
+      purpose: Находить ресурсы действующего пакета ArchiView и предоставлять
+        диагностику ошибок Node.
       responsibilities:
-        R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной
-          и автономной поставке.
-        R2: Представлять ошибки платформы с сохранением диагностических полей файловых и
-          дочерних процессов.
+        R1: Определять расположение ресурсов и команду запуска CLI для исходной и
+          автономной поставки.
+        R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических
+          полей.
       boundaries:
-        B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат
-          потребителям.
-      invariants:
-        I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
+        B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от
+          рабочей папки пользователя.
+      invariants: {}
     document_state: documented
     inherited:
       - module_id: architecture-change-view
         section: boundaries
         id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
       - module_id: architecture-change-view
         section: boundaries
         id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
       - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста или однократного явного выбора пользователя; явно
-          настроенный для модельных инструментов корень ограничивает их чтение.
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
       - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
+        section: boundaries
+        id: B4
         text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
+          провести анализ или исправить замечание.
       - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
         section: boundaries
         id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
         section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
         section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
         section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
       - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
       - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
       - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:7b3a0e58966a8455887400130bb32951c5c0a5a0045a921894e2ebafd63a30e0
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+  technical_digest: sha256:4b03f04975db5327a97db9e4aaac4700c8e4c4409086d894c50cf377af03e995
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -181,131 +135,85 @@ baseline:
     contract:
       id: archiview-node-runtime
       kind: module
-      purpose: Предоставлять общие для модулей Node сведения о среде выполнения
-        ArchiView.
+      purpose: Находить ресурсы действующего пакета ArchiView и предоставлять
+        диагностику ошибок Node.
       responsibilities:
-        R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной
-          и автономной поставке.
-        R2: Представлять ошибки платформы с сохранением диагностических полей файловых и
-          дочерних процессов.
+        R1: Определять расположение ресурсов и команду запуска CLI для исходной и
+          автономной поставки.
+        R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических
+          полей.
       boundaries:
-        B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат
-          потребителям.
-      invariants:
-        I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
+        B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от
+          рабочей папки пользователя.
+      invariants: {}
     inherited:
       - module_id: architecture-change-view
         section: boundaries
         id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
       - module_id: architecture-change-view
         section: boundaries
         id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
       - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста или однократного явного выбора пользователя; явно
-          настроенный для модельных инструментов корень ограничивает их чтение.
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
       - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
+        section: boundaries
+        id: B4
         text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
+          провести анализ или исправить замечание.
       - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
         section: boundaries
         id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
         section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
         section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
         section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
       - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
       - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
       - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
     children: []
-  self_digest: sha256:7e1c5786adbcdaa6ae6d52fb0303fbbfe1ba0aa1c95ae1b714def21028d00903
+  self_digest: sha256:de27a9d827117217726ce50736d204b71bd6279fe808eb89535c5f765de9bbe1
   subtree:
-    self: sha256:7b3a0e58966a8455887400130bb32951c5c0a5a0045a921894e2ebafd63a30e0
+    self: sha256:4b03f04975db5327a97db9e4aaac4700c8e4c4409086d894c50cf377af03e995
     children: []
-  subtree_digest: sha256:709e923a5a80ec1d5fdf3282526a6de44b31f0f263937fa3bb6c7c87efd06b0e
+  subtree_digest: sha256:d40140504c73ccff1eeabc23e7a956a1b67e540781d8e64c3cc818e4ea6be337
   semantic_subtree:
-    self: sha256:7e1c5786adbcdaa6ae6d52fb0303fbbfe1ba0aa1c95ae1b714def21028d00903
+    self: sha256:de27a9d827117217726ce50736d204b71bd6279fe808eb89535c5f765de9bbe1
     children: []
-  semantic_subtree_digest: sha256:cb6d48397ae1f9495a907b5185d9d4ded3bc468904edf59384880cdb8163b04f
+  semantic_subtree_digest: sha256:e5778a34f7c2a48d641b3d3fc0c60140977868615f29bff8bc757a062d98fb83
 current:
   module_id: archiview-node-runtime
   directory: src/runtime
@@ -497,10 +405,10 @@ current:
   semantic_subtree_digest: sha256:e5778a34f7c2a48d641b3d3fc0c60140977868615f29bff8bc757a062d98fb83
 change:
   existence: retained
-  own: true
+  own: false
   own_code: false
-  own_contract: true
-  inherited_constraints: true
+  own_contract: false
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -509,260 +417,23 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 230
-  comparison_key: sha256:dbbcc9929208174b5364c72ca96a3186ff40bffa50a1a9697a4763ed2695b719
+  generation: 231
+  comparison_key: sha256:224fe03fec74bcd5b21cd46cd4e887507b723db8015bdcc078b0bfc2e71152eb
   baseline:
     metadata:
-      id: git-faff1ed3907911564e7aa16a1a87c51571af85e9
-      digest: sha256:51ac76e85886d11780df766f66e795cd45b742a439f5fc5ce763415fd4b8ce48
+      id: git-e21dcb9af6886074c1bccbee8340601658f23829
+      digest: sha256:e9e842cc1d7f3b1024b774f0facc71bf2186d0106c3c4eb5381220f65a246681
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-19T08:54:36.342Z
+      capturedAt: 2026-11-19T10:42:49.497Z
       kind: git
-      revision: faff1ed3907911564e7aa16a1a87c51571af85e9
+      revision: e21dcb9af6886074c1bccbee8340601658f23829
       label: HEAD
-      fingerprint: 857d1f43852fb597c51de3c3dfacd50edf82ab25ecdac496396088445d837560
+      fingerprint: 5d8aa2401e9741375ea99e3fd028b4da7f79a43e88d2eb200bc563db5b7fadd2
       complete: true
       diagnostics: []
       evidenceLimitations: []
       isHead: true
-    module_index: 15
-    module:
-      directory: src/runtime
-      document:
-        state: documented
-        text: >
-          schema_version: 1
-
-          id: archiview-node-runtime
-
-          title: Среда выполнения Node
-
-          kind: module
-
-          extensions:
-            archiview.roles: [runtime]
-          purpose: Предоставлять общие для модулей Node сведения о среде
-          выполнения ArchiView.
-
-          responsibilities:
-            R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной и автономной поставке.
-            R2: Представлять ошибки платформы с сохранением диагностических полей файловых и дочерних процессов.
-          boundaries:
-            B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат потребителям.
-          invariants:
-            I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
-        format: yaml
-        contract:
-          schema_version: 1
-          id: archiview-node-runtime
-          title: Среда выполнения Node
-          kind: module
-          extensions:
-            archiview.roles:
-              - runtime
-          purpose: Предоставлять общие для модулей Node сведения о среде выполнения
-            ArchiView.
-          responsibilities:
-            R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной
-              и автономной поставке.
-            R2: Представлять ошибки платформы с сохранением диагностических полей файловых и
-              дочерних процессов.
-          boundaries:
-            B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат
-              потребителям.
-          invariants:
-            I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
-      documentPath: .archiview/modules/archiview-node-runtime.yaml
-      files:
-        - path: .archiview/modules/archiview-node-runtime.yaml
-          hash: b2ccdd12e46e4acdeaa069a595005f5066fef107
-        - path: src/runtime/errors.ts
-          hash: aa925db7c51cef391247aa59d1890d45a210a7c3
-        - path: src/runtime/package-paths.ts
-          hash: 1f6d499f97c16bd5e61e7e7794f09d8c6187a1d3
-      sourceFiles: 2
-      fingerprint: fc888fb9bd849840571aeabfe2519ef380a4e3e14437c913bab75079553c31fa
-    facts:
-      - index: 13
-        fact:
-          id: sha256:edd225bccc2e12a6b6fc5b559317f42e4c29f174f9353c6b25fb280ed1f21346
-          kind: file
-          path: .archiview/modules/archiview-node-runtime.yaml
-          start_line: 1
-          end_line: 15
-          text: >
-            schema_version: 1
-
-            id: archiview-node-runtime
-
-            title: Среда выполнения Node
-
-            kind: module
-
-            extensions:
-              archiview.roles: [runtime]
-            purpose: Предоставлять общие для модулей Node сведения о среде
-            выполнения ArchiView.
-
-            responsibilities:
-              R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной и автономной поставке.
-              R2: Представлять ошибки платформы с сохранением диагностических полей файловых и дочерних процессов.
-            boundaries:
-              B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат потребителям.
-            invariants:
-              I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
-      - index: 110
-        fact:
-          id: sha256:7dced7100af4616e7b2739aaeed2f9144590c569513ddc8b4b27730a3cf0fe91
-          kind: file
-          path: src/runtime/errors.ts
-          start_line: 1
-          end_line: 12
-          text: >
-            /** Normalize unknown exceptions while retaining filesystem/process
-            diagnostics. */
-
-            export interface ErrorDetails extends Error { code?: string |
-            number; stderr?: string; exitCode?: number | null; }
-
-            export function errorDetails(error: unknown): ErrorDetails {
-              if (error instanceof Error) return error;
-              const value = error && typeof error === "object" ? error as Record<string, unknown> : {};
-              const result: ErrorDetails = new Error(typeof value.message === "string" ? value.message : String(error));
-              if (typeof value.code === "string" || typeof value.code === "number") result.code = value.code;
-              if (typeof value.stderr === "string") result.stderr = value.stderr;
-              if (typeof value.exitCode === "number" || value.exitCode === null) result.exitCode = value.exitCode;
-              return result;
-            }
-      - index: 111
-        fact:
-          id: sha256:8c11efb3622237b9af345e0527c031c736eb89a3abe2100f506834700eb3f05c
-          kind: file
-          path: src/runtime/package-paths.ts
-          start_line: 1
-          end_line: 23
-          text: >
-            import { fileURLToPath } from "node:url";
-
-            import { existsSync } from "node:fs";
-
-            /** Use the nearest package manifest both in a source checkout and
-            inside each distribution. */
-
-            function packageDirectory(moduleUrl: string): URL {
-              let directory = new URL("./", moduleUrl);
-              while (!existsSync(new URL("package.json", directory))) {
-                const parent = new URL("../", directory);
-                if (parent.href === directory.href) throw new Error("ArchiView package.json is missing");
-                directory = parent;
-              }
-              return directory;
-            }
-
-
-            export const packageUrl = packageDirectory(import.meta.url);
-
-            const sourceCli = new URL("src/archiview/cli.ts", packageUrl);
-
-            const sourceCheckout = existsSync(sourceCli);
-
-            export const webAssetUrl = new URL(sourceCheckout ?
-            "dist/web/archiview/" : "web/archiview/", packageUrl);
-
-
-            /** Runtime argv for source execution and autonomous installed CLI
-            bundles. */
-
-            export function cliArguments(): string[] {
-              return sourceCheckout ? ["--import", import.meta.resolve("tsx"), fileURLToPath(sourceCli)] : [fileURLToPath(new URL("src/cli.mjs", packageUrl))];
-            }
-      - index: 201
-        fact:
-          id: sha256:946698f0fe228c5f036b75b25276b3a6edfcfc50d35713f1d78c7b56ebc48066
-          kind: module
-          path: src/runtime
-          text: '{"contract":"documented","format":"yaml","sources":["src/runtime/errors.ts","src/runtime/package-paths.ts"]}'
-  current:
-    metadata:
-      id: launch-c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
-      digest: sha256:ceaa4d2c1d904878f438bd3dafffa6e84373a3020bc10380e6abb3f3e3443861
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-19T08:54:38.403Z
-      kind: launch
-      label: Начальное состояние
-      fingerprint: c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-      observations:
-        architecture-change-view:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-distribution:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-skills:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-module-boundaries-skill:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        architecture-core:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-application:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-http:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-codex:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-contracts:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        dsh-adapter:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        dsh-client-panel:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-mcp:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-project-location:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-reports:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-reviews:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-node-runtime:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-serialization:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-snapshots:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-storage:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        architecture-tests:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        architecture-web:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
-        archiview-client:
-          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
-          revision: 1
     module_index: 15
     module:
       directory: src/runtime
@@ -917,6 +588,240 @@ publication:
           kind: module
           path: src/runtime
           text: '{"contract":"documented","format":"yaml","sources":["src/runtime/errors.ts","src/runtime/package-paths.ts"]}'
+  current:
+    metadata:
+      id: launch-378c0d9cce1d355a3c79574619ae45d9030fbe84b29a90597652a739f947a66b
+      digest: sha256:6fd465dfaae3341d3998c450d785d09275554bff6b55935dd05cf69de2dc16f3
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-19T10:42:51.353Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 378c0d9cce1d355a3c79574619ae45d9030fbe84b29a90597652a739f947a66b
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+      observations:
+        architecture-change-view:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 18
+        archiview-distribution:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 5
+        archiview-skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-module-boundaries-skill:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+        architecture-core:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+        archiview-application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 11
+        archiview-http:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+        archiview-codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+        archiview-contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 5
+        dsh-client-panel:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-project-location:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+        archiview-reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-node-runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+        archiview-snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 4
+        archiview-storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 4
+        architecture-tests:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 11
+        architecture-web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+        archiview-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 13
+    module_index: 15
+    module:
+      directory: src/runtime
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-node-runtime
+
+          title: Среда выполнения Node
+
+          kind: module
+
+          extensions:
+            archiview.roles: [runtime]
+          purpose: Находить ресурсы действующего пакета ArchiView и
+          предоставлять диагностику ошибок Node.
+
+          responsibilities:
+            R1: Определять расположение ресурсов и команду запуска CLI для исходной и автономной поставки.
+            R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических полей.
+          boundaries:
+            B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от рабочей папки пользователя.
+          invariants: {}
+        format: yaml
+        contract:
+          schema_version: 1
+          id: archiview-node-runtime
+          title: Среда выполнения Node
+          kind: module
+          extensions:
+            archiview.roles:
+              - runtime
+          purpose: Находить ресурсы действующего пакета ArchiView и предоставлять
+            диагностику ошибок Node.
+          responsibilities:
+            R1: Определять расположение ресурсов и команду запуска CLI для исходной и
+              автономной поставки.
+            R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических
+              полей.
+          boundaries:
+            B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от
+              рабочей папки пользователя.
+          invariants: {}
+      documentPath: .archiview/modules/archiview-node-runtime.yaml
+      files:
+        - path: .archiview/modules/archiview-node-runtime.yaml
+          hash: 0b0bf38ec928778c89ef8f15899b6c64173613e7
+        - path: src/runtime/errors.ts
+          hash: aa925db7c51cef391247aa59d1890d45a210a7c3
+        - path: src/runtime/package-paths.ts
+          hash: 1f6d499f97c16bd5e61e7e7794f09d8c6187a1d3
+      sourceFiles: 2
+      fingerprint: ecadfb7e4e2ff09754317071593599518a8055100150bcc98583f5b9d5ea500b
+    facts:
+      - index: 13
+        fact:
+          id: sha256:a52d059d67a4d4c9af6689d8c05df607438bdd6cbb098f60e50cd08be78cd321
+          kind: file
+          path: .archiview/modules/archiview-node-runtime.yaml
+          start_line: 1
+          end_line: 14
+          text: >
+            schema_version: 1
+
+            id: archiview-node-runtime
+
+            title: Среда выполнения Node
+
+            kind: module
+
+            extensions:
+              archiview.roles: [runtime]
+            purpose: Находить ресурсы действующего пакета ArchiView и
+            предоставлять диагностику ошибок Node.
+
+            responsibilities:
+              R1: Определять расположение ресурсов и команду запуска CLI для исходной и автономной поставки.
+              R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических полей.
+            boundaries:
+              B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от рабочей папки пользователя.
+            invariants: {}
+      - index: 111
+        fact:
+          id: sha256:7dced7100af4616e7b2739aaeed2f9144590c569513ddc8b4b27730a3cf0fe91
+          kind: file
+          path: src/runtime/errors.ts
+          start_line: 1
+          end_line: 12
+          text: >
+            /** Normalize unknown exceptions while retaining filesystem/process
+            diagnostics. */
+
+            export interface ErrorDetails extends Error { code?: string |
+            number; stderr?: string; exitCode?: number | null; }
+
+            export function errorDetails(error: unknown): ErrorDetails {
+              if (error instanceof Error) return error;
+              const value = error && typeof error === "object" ? error as Record<string, unknown> : {};
+              const result: ErrorDetails = new Error(typeof value.message === "string" ? value.message : String(error));
+              if (typeof value.code === "string" || typeof value.code === "number") result.code = value.code;
+              if (typeof value.stderr === "string") result.stderr = value.stderr;
+              if (typeof value.exitCode === "number" || value.exitCode === null) result.exitCode = value.exitCode;
+              return result;
+            }
+      - index: 112
+        fact:
+          id: sha256:8c11efb3622237b9af345e0527c031c736eb89a3abe2100f506834700eb3f05c
+          kind: file
+          path: src/runtime/package-paths.ts
+          start_line: 1
+          end_line: 23
+          text: >
+            import { fileURLToPath } from "node:url";
+
+            import { existsSync } from "node:fs";
+
+            /** Use the nearest package manifest both in a source checkout and
+            inside each distribution. */
+
+            function packageDirectory(moduleUrl: string): URL {
+              let directory = new URL("./", moduleUrl);
+              while (!existsSync(new URL("package.json", directory))) {
+                const parent = new URL("../", directory);
+                if (parent.href === directory.href) throw new Error("ArchiView package.json is missing");
+                directory = parent;
+              }
+              return directory;
+            }
+
+
+            export const packageUrl = packageDirectory(import.meta.url);
+
+            const sourceCli = new URL("src/archiview/cli.ts", packageUrl);
+
+            const sourceCheckout = existsSync(sourceCli);
+
+            export const webAssetUrl = new URL(sourceCheckout ?
+            "dist/web/archiview/" : "web/archiview/", packageUrl);
+
+
+            /** Runtime argv for source execution and autonomous installed CLI
+            bundles. */
+
+            export function cliArguments(): string[] {
+              return sourceCheckout ? ["--import", import.meta.resolve("tsx"), fileURLToPath(sourceCli)] : [fileURLToPath(new URL("src/cli.mjs", packageUrl))];
+            }
+      - index: 203
+        fact:
+          id: sha256:946698f0fe228c5f036b75b25276b3a6edfcfc50d35713f1d78c7b56ebc48066
+          kind: module
+          path: src/runtime
+          text: '{"contract":"documented","format":"yaml","sources":["src/runtime/errors.ts","src/runtime/package-paths.ts"]}'
 review_status:
   self:
     current:
@@ -967,12 +872,18 @@ review_status:
         - code: baseline_identity
         - code: own_code
           side: baseline
+        - code: own_contract
+          side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
+        - code: own_contract
+          side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: own_contract
+          side: baseline
       verdict: null
       verdicts: []
       review_ids:

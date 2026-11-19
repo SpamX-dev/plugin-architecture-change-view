@@ -5,10 +5,13 @@ export type { AnalysisStatus, PreparedAnalysis } from "./analysis-record.js";
 import type { ClauseInput, ReviewReport, Side } from "../reviews/types.js";
 import type { Comparison, ComparisonModule, Fact, Snapshot } from "../snapshots/types.js";
 import type { compareContracts, RoleChange } from "../snapshots/contract-diff.js";
+import type { StructuredPatchHunk } from "diff";
 
 export interface RepositoryArgs { repository?: string }
 export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number; published?: boolean; watch?: boolean };
 export type ModuleArgs = RepositoryArgs & { view: string; path: string; analysis?: boolean };
+export type FileDiffArgs = RepositoryArgs & { view: string; path: string; file: string };
+export interface FileDiff { hunks: StructuredPatchHunk[]; message?: string; unchangedText?: string }
 export type SnapshotArgs = RepositoryArgs & { view: string; label?: string };
 
 export type TimelineEntry = Pick<Snapshot, "id" | "kind" | "label" | "revision" | "isHead" | "subject" | "baseRevision">
@@ -79,6 +82,7 @@ export interface SessionOperations {
   getComparison(args?: ComparisonArgs): Promise<ComparisonView>;
   getReviewStatuses(args: RepositoryArgs & {view: string}): Promise<{modules: (ModuleReviewState & {key: string})[]; diagnostics: string[]}>;
   getModule(args: ModuleArgs): Promise<ModuleDetail>;
+  getFileDiff(args: FileDiffArgs): Promise<FileDiff>;
   prepareAnalysis(args: ModuleArgs): Promise<PreparedAnalysis>;
   getAnalysis(args: RepositoryArgs & { id: string }): Promise<AnalysisStatus>;
   buildReview(args: ModuleArgs): Promise<{ automatic: boolean; module_id?: string | null }>;

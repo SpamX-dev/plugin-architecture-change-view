@@ -18,6 +18,7 @@ const operations: Operation[] = [
   ["wait_for_changes", "waitForChanges", "Wait for the selected working tree or its saved reviews to change.", { repository: string, cursor: string }, ["cursor"], true],
   ["get_review_statuses", "getReviewStatuses", "Load analysis statuses for the selected tree.", { view: string, repository: string }, ["view"], true],
   ["get_module", "getModule", "Load module details from an existing comparison.", { ...selectedModule, analysis: {type:"boolean"} }, ["view", "path"], true],
+  ["get_file_diff", "getFileDiff", "Read a file's diff or unchanged text in the selected module comparison.", { ...selectedModule, file: string }, ["view", "path", "file"], true],
   ["prepare_analysis", "prepareAnalysis", "Prepare immutable inputs for an explicit module analysis.", selectedModule, ["view", "path"], false],
   ["get_analysis", "getAnalysis", "Read the saved status of a prepared analysis.", { id: string, repository: string }, ["id"], true],
   ["build_review", "buildReview", "Refresh a structural report for a selected module.", selectedModule, ["view", "path"], false],

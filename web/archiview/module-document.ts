@@ -1,9 +1,10 @@
 import type { ModuleDetail, ComparisonView, ClauseReference, ReviewBundle, FindingTarget } from "./types.js";
 import { byId, el, icon, notice } from "./dom.js";
-import { badge } from "./change-status.js";
+import { labels } from "./change-status.js";
 import { renderContract, renderContractRoles, savedClauseText, clauseSectionLabel } from "./contract.js";
 import { moduleTrail } from "./module-path.js";
-import { timelineDate, timelineLabel } from "./timeline.js";
+import { timelineDate } from "./timeline.js";
+import { diffBox, diffLine, openDiffDialog } from "./diff.js";
 
 /** Показывает структурированный контракт либо исторический документ удалённого модуля. */
 export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: ComparisonView,
@@ -54,38 +55,13 @@ function renderDiff(panel: HTMLElement, detail: ModuleDetail, view: ComparisonVi
   }
   const added = detail.diff.filter((row) => row.kind === "added").length;
   const removed = detail.diff.filter((row) => row.kind === "removed").length;
-  const heading = el("div", "diff-heading");
-  heading.append(icon("file"), el("strong", "", (detail.after ?? detail.before)?.documentPath),
-    el("span", "diff-added-count", "+" + added), el("span", "diff-removed-count", "−" + removed));
-  const labels = el("div", "diff-labels");
-  labels.append(el("span", "", "Было"), el("span", "", "Стало"),
-    el("span", "", view.before.label + " → " + timelineLabel(view.target)));
-  const rows = el("div", "diff-lines");
-  for (const row of detail.diff) {
-    const line = el("div", "diff-line " + row.kind);
-    line.append(el("span", "line-number", row.beforeLine ?? ""),
-      el("span", "line-number", row.afterLine ?? ""),
-      el("span", "line-sign", row.kind === "added" ? "+" : row.kind === "removed" ? "−" : " "),
-      el("code", "line-content", row.text || " "));
-    rows.append(line);
-  }
-  const box = el("div", "diff-box");
-  box.append(heading, labels, rows);
-  panel.append(box);
+  const rows = diffBox(panel, (detail.after ?? detail.before)!.documentPath, view, added, removed);
+  for (const row of detail.diff) rows.append(diffLine(row));
 }
 
 /** Открывает исходный YAML-диф из контракта без отдельного представления модуля. */
 function openDocumentDiff(detail: ModuleDetail, view: ComparisonView) {
-  const dialog = el("dialog", "contract-diff-dialog");
-  const heading = el("div", "evidence-heading");
-  const close = el("button", "button button-quiet", "Закрыть");
-  close.onclick = () => dialog.close();
-  heading.append(el("strong", "", "Изменения контракта"), close);
-  dialog.append(heading);
-  renderDiff(dialog, detail, view);
-  dialog.addEventListener("close", () => dialog.remove());
-  document.body.append(dialog);
-  dialog.showModal();
+  renderDiff(openDiffDialog("Изменения контракта"), detail, view);
 }
 
 /**
@@ -116,7 +92,7 @@ export function renderHistoricalClause(reference: ClauseReference, review: Revie
 
 /** Группирует собственные файлы обеих версий по их путям от корня репозитория. */
 export function renderFiles(panel: HTMLElement, detail: ModuleDetail, copyText: (text: string) => Promise<void>,
-  collapsedDirectories: Set<string>) {
+  collapsedDirectories: Set<string>, showDiff: (file: string) => void) {
   const changed = new Map(detail.files.map((file) => [file.path, file.status]));
   const paths = [...new Set([...(detail.before?.files ?? []).map((file) => file.path),
     ...(detail.after?.files ?? []).map((file) => file.path)])].sort((a, b) =>
@@ -154,7 +130,14 @@ export function renderFiles(panel: HTMLElement, detail: ModuleDetail, copyText: 
     const slash = file.lastIndexOf("/");
     const row = el("div", "file-row");
     row.title = file;
-    row.append(icon("file"), el("code", "file-path", file.slice(slash + 1)), badge(changed.get(file) ?? "unchanged", true));
+    const status = changed.get(file) ?? "unchanged";
+    const button = el("button", "status-badge small " + status, labels[status]);
+    button.type = "button";
+    button.title = "Открыть просмотр файла";
+    button.setAttribute("aria-label", labels[status] + " — " + file);
+    button.setAttribute("aria-haspopup", "dialog");
+    button.addEventListener("click", () => showDiff(file));
+    row.append(icon("file"), el("code", "file-path", file.slice(slash + 1)), button);
     const copy = el("button", "text-button", "Путь");
     copy.type = "button";
     copy.setAttribute("aria-label", "Копировать путь " + file);

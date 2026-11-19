@@ -3,7 +3,8 @@ import { compareSnapshots } from "../snapshots/comparison.js";
 import { createReportModel, type ReportModel } from "../reports/model.js";
 import { readPublishedTree, PublicationChanged } from "../storage/published-reader.js";
 import { errorDetails } from "../runtime/errors.js";
-import type { ComparisonView, ModuleArgs, ModuleDetail } from "./api.js";
+import type { ComparisonView, FileDiffArgs, ModuleArgs, ModuleDetail } from "./api.js";
+import { fileDiff } from "./file-diff.js";
 import { ApplicationError } from "./errors.js";
 import { metadata, moduleDetail, moduleSummary, reviewSummary } from "./module-view.js";
 import type { SessionView } from "./session-view.js";
@@ -30,10 +31,14 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
     reviewDiagnostics: [...new Set(published.reports.flatMap(report => report.storage_diagnostics ?? []))],
     target, timeline: [target], baselines: baseline ? [metadata(baseline)] : [], historyHasMore: false });
   let model: ReportModel | undefined;
-  async function getModule(args: ModuleArgs): Promise<ModuleDetail> {
+  function selectedModule(args: ModuleArgs) {
     if (args.view !== id) throw new ApplicationError("STALE_VIEW", "Обновите сравнение");
     const module = modules.find(item => item.key === args.path);
     if (!module) throw new ApplicationError("NOT_FOUND", "Модуль не найден");
+    return module;
+  }
+  async function getModule(args: ModuleArgs): Promise<ModuleDetail> {
+    const module = selectedModule(args);
     try {
       const entries = await readReviews(module.moduleId ?? "directory:" + module.directory);
       model ??= createReportModel(baseline, current);
@@ -44,5 +49,6 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
       throw cause;
     }
   }
-  return { comparison, getModule };
+  const getFileDiff = (args: FileDiffArgs) => fileDiff(selectedModule(args), baseline, current, args.file);
+  return { comparison, getModule, getFileDiff };
 }

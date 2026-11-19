@@ -11,6 +11,7 @@ import path from "node:path";
 import test from "node:test";
 import {stringify} from "yaml";
 import {createArchiView} from "../src/archiview/http.js";
+import type { FileDiff } from "../src/application/api.js";
 const git=(root: string,args: string[])=>execFileSync("git",args,{cwd:root,windowsHide:true,encoding:"utf8"}).trim();
 const contract={schema_version:1,id:"root",title:"Пример",kind:"module",purpose:"Возвращать значение.",responsibilities:{R1:"Возвращать значение."},boundaries:{},invariants:{}};
 async function workBytes(app: { reports: { work: string } }){
@@ -51,10 +52,16 @@ test("timeline shows revisions, live HEAD, cumulative working changes; browsing 
  assert.equal(w2.before.id,w1.before.id);
  assert.deepEqual(w2.timeline.filter(s=>s.kind==="change"),[]);
  assert.equal(w2.counts.changed,1);
+ const fileDiff = (view: string) => fetch(url + "/api/file-diff?" + new URLSearchParams({view, path: ".", file: "code.js"}));
+ assert.equal((await fileDiff(w1.id)).status, 409);
+ const workingDiff: FileDiff = await (await fileDiff(w2.id)).json();
+ assert.deepEqual(workingDiff.hunks[0].lines, ["-export const value = 3;", "+export const value = 5;"]);
  const before=await workBytes(app);
  const revision=await get("?target=git-"+revisions[1]);
  assert.equal(revision.after.id,"git-"+revisions[1]);
  assert.equal(revision.before.id,"git-"+revisions[0]);
+ const historicalDiff: FileDiff = await (await fileDiff(revision.id)).json();
+ assert.deepEqual(historicalDiff.hunks[0].lines, ["-export const value = 1;", "+export const value = 2;"]);
  assert.deepEqual(await workBytes(app),before);
  const first=await get("?target=git-"+revisions[0]+"&baseline=auto");
  assert.equal(first.before.id,"initial");

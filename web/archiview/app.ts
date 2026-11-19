@@ -11,6 +11,7 @@ import { createModuleTree } from "./module-tree.js";
 import { createAnalysisControls } from "./analysis-controls.js";
 import { renderTimeline, timelineDate } from "./timeline.js";
 import { renderDocument, renderHistoricalClause, renderFiles } from "./module-document.js";
+import { openFileDiff } from "./diff.js";
 import { renderProjectSelection } from "./project-selection.js";
 
 interface AppState {
@@ -291,7 +292,11 @@ export async function startApp({ client, bridge, host, chooseProject }: {
         },
         ...navigation });
     }
-    else renderFiles(panel, state.detail, copyText, collapsedFileDirectories);
+    else {
+      const view = currentView(), detail = state.detail;
+      renderFiles(panel, detail, copyText, collapsedFileDirectories, file => openFileDiff(file, view, () =>
+        client.getFileDiff({ view: view.id, path: detail.key, file, repository: view.workspace?.repository })));
+    }
     renderAnalysisControls();
   }
 

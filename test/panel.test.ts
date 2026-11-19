@@ -4,7 +4,7 @@ import { writeModuleTree } from "./support.js";
 import type { Fact } from "../src/snapshots/types.js";
 import type { ComparisonResponse } from "./support.js";
 import { uiData, panelMetadata, processEnvironment, firstTextContent, structuredData } from "./support.js";
-import type { ComparisonView, ModuleDetail, PreparedAnalysis } from "../src/application/api.js";
+import type { ComparisonView, FileDiff, ModuleDetail, PreparedAnalysis } from "../src/application/api.js";
 import type { ReviewInput } from "../src/reports/types.js";
 import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
@@ -41,7 +41,7 @@ test("autonomous MCP panel serves project operations with no listening sockets a
     cwd: distribution, env: { ...process.env, PLUGIN_ROOT: distribution }, stderr: "pipe" }));
   const tools = (await client.listTools()).tools;
   const hidden = tools.filter((tool) => tool.name.startsWith("archiview_ui_"));
-  assert.equal(hidden.length, 11);
+  assert.equal(hidden.length, 12);
   for (const tool of hidden) assert.deepEqual(panelMetadata(tool).ui.visibility, ["app"]);
   assert.deepEqual(tools.filter((tool) => !tool._meta || !panelMetadata(tool).ui?.visibility || panelMetadata(tool).ui.visibility.includes("model")).map((tool) => tool.name),
     ["archiview_open", "module_inventory", "module_context"]);
@@ -68,6 +68,9 @@ test("autonomous MCP panel serves project operations with no listening sockets a
   assert.equal(view.modules.length, 2);
   const detail = uiData<ModuleDetail>(await call("get_module", { view: view.id, path: "child" }));
   assert.equal(detail.moduleId, "child");
+  const diff = uiData<FileDiff>(await call("get_file_diff", { view: view.id, path: "child", file: "child/code.js" }));
+  assert.deepEqual(diff.hunks[0].lines, ["+export const value = 1;"]);
+  await assert.rejects(call("get_file_diff", { view: view.id, path: ".", file: "child/code.js" }).then(uiData), { code: "NOT_FOUND" });
   await assert.rejects(call("get_module", { view: view.id, path: "../outside" }).then(uiData), { code: "NOT_FOUND" });
   await assert.rejects(call("get_module", { view: "expired", path: "child" }).then(uiData), { code: "STALE_VIEW" });
   await assert.rejects(call("get_comparison", { url: "http://example.com" }).then(uiData), { code: "INVALID_ARGUMENT" });

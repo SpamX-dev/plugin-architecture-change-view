@@ -106,7 +106,7 @@ function fakeSession() {
     async getReviewStatuses() { return {modules:[], diagnostics:[]}; },
     async getComparison(args) { calls.push(["getComparison", args]); return comparison; },
     async prepareAnalysis(args) { calls.push(["prepareAnalysis", args]); return analysis; },
-    getModule: unused, getAnalysis: unused, buildReview: unused, saveSnapshot: unused,
+    getModule: unused, getFileDiff: unused, getAnalysis: unused, buildReview: unused, saveSnapshot: unused,
   };
   return { calls, comparison, analysis, ...operations };
 }

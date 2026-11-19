@@ -15,6 +15,7 @@ import path from "node:path";
 import test from "node:test";
 import { stringify } from "yaml";
 import { createArchiView } from "../src/archiview/http.js";
+import type { ComparisonView } from "../src/application/api.js";
 
 test("standalone CLI serves the shell before opening a project session", { timeout: 15000 }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-cli-start-"));
@@ -83,6 +84,32 @@ test("a malformed request-target returns 400 and the server keeps serving", asyn
   const next = await fetch(app.url + "/api/comparison");
   assert.equal(next.status, 200);
   assert.equal((await next.json()).complete, true);
+});
+
+test("CLI shutdown releases an active watch connection when another server takes the same port", async t => {
+  const app = await serve(t);
+  const view: ComparisonView = await (await fetch(app.url + "/api/comparison?watch=true")).json();
+  assert.ok(view.watchCursor);
+  const changes = app.url + "/api/changes?cursor=" + view.watchCursor;
+  const received = once(app.server, "request");
+  const waiting = fetch(changes, { signal: AbortSignal.timeout(5000) });
+  await received;
+  const stopped = once(app.server, "close");
+  app.server.shutdown();
+
+  const replacement = await createArchiView({ root: app.root });
+  replacement.server.listen(Number(new URL(app.url).port), "127.0.0.1");
+  await once(replacement.server, "listening");
+  t.after(() => replacement.server.shutdown());
+  const last = await waiting;
+  assert.equal(last.status, 200);
+  assert.equal(last.headers.get("connection"), "close");
+  assert.equal((await last.json()).cursor, view.watchCursor);
+  await stopped;
+
+  const next = await (await fetch(changes)).json();
+  assert.notEqual(next.cursor.split(".")[0], view.watchCursor.split(".")[0]);
+  assert.equal(next.reviewsChanged, true);
 });
 
 test("HTTP serves the published view and rejects malformed publication selectors", async (t) => {

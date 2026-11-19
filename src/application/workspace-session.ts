@@ -87,6 +87,13 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
     if (view.startsWith("published-") || !session) throw new ApplicationError("STALE_VIEW", "Обновите сравнение");
     return session;
   }
+  async function readableView(args: { repository?: string; view: string }) {
+    if (!args.view.startsWith("published-")) return viewSession(args.repository, args.view);
+    const project = await projectPath(selection(args.repository));
+    const published = publishedViews.get(args.view);
+    if (published?.comparison.root !== project) throw new ApplicationError("STALE_VIEW", "Обновите сравнение");
+    return published;
+  }
   const operations: SessionOperations = {
     async getComparison(args = {}) {
       if (!repositories.includes(".") || (args.repository !== undefined && !repositories.includes(args.repository))) {
@@ -116,15 +123,8 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
       return (await open(selection(args.repository))).waitForChanges(args, signal);
     },
     async getReviewStatuses(args) { return (await viewSession(args.repository, args.view)).getReviewStatuses(args); },
-    async getModule(args) {
-      if (args.view.startsWith("published-")) {
-        const project = await projectPath(selection(args.repository));
-        const published = publishedViews.get(args.view);
-        if (published?.comparison.root !== project) throw new ApplicationError("STALE_VIEW", "Обновите сравнение");
-        return published.getModule(args);
-      }
-      return (await viewSession(args.repository, args.view)).getModule(args);
-    },
+    async getModule(args) { return (await readableView(args)).getModule(args); },
+    async getFileDiff(args) { return (await readableView(args)).getFileDiff(args); },
     async prepareAnalysis(args) { return (await viewSession(args.repository, args.view)).prepareAnalysis(args); },
     async getAnalysis(args) { return (await open(selection(args.repository))).getAnalysis(args); },
     async buildReview(args) { return (await viewSession(args.repository, args.view)).buildReview(args); },

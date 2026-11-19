@@ -356,12 +356,17 @@ test("module files keep their directory and status on both sides of the comparis
   await mkdir(path.join(root, "docs"), { recursive: true });
   const oldPath = path.join(root, "docs/guide.md");
   await writeFile(oldPath, "Original guide");
-  await promisify(execFile)("git", ["add", "docs/guide.md"], { cwd: root });
+  await writeFile(path.join(root, "docs/notes.md"), "Old notes\n");
+  await writeFile(path.join(root, "docs/reference.md"), "First reference line\nSecond reference line\n");
+  await promisify(execFile)("git", ["add", "docs"], { cwd: root });
   await promisify(execFile)("git", ["-c", "user.name=Test", "-c", "user.email=test@example.test", "commit", "-qm", "Add guide"], { cwd: root });
   await rm(oldPath);
+  await writeFile(path.join(root, "docs/notes.md"), "Updated notes\n");
   await mkdir(path.join(root, "docs/v2"));
   await writeFile(path.join(root, "docs/v2/guide.md"), "New guide");
   await writeFile(path.join(root, "guide.md"), "Project guide");
+  await writeFile(path.join(root, "binary.dat"), Buffer.from([0, 255]));
+  await writeFile(path.join(root, "empty.txt"), "");
 
   const origin = await sourceCliOrigin(defer, root);
   const page = await (await browserContext(defer)).newPage();
@@ -375,6 +380,34 @@ test("module files keep their directory and status on both sides of the comparis
   await nested.locator(".new").waitFor();
   await nested.getByRole("button", { name: "Копировать путь docs/v2/guide.md" }).click();
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "docs/v2/guide.md");
+
+  const dialog = page.getByRole("dialog", { name: "Просмотр файла" });
+  assert.equal(await nested.getByRole("button").count(), 2, "only the status and copy-path actions are present");
+  await nested.getByRole("button", { name: "Новый — docs/v2/guide.md" }).click();
+  await dialog.getByText("New guide", { exact: true }).waitFor();
+  assert.deepEqual(await dialog.locator(".added .line-number").allTextContents(), ["", "1"]);
+  await dialog.getByText("Нет перевода строки в конце файла").waitFor();
+  await page.keyboard.press("Escape");
+  await files.getByRole("button", { name: "Удалён — docs/guide.md", exact: true }).click();
+  await dialog.getByText("Original guide", { exact: true }).waitFor();
+  assert.deepEqual(await dialog.locator(".removed .line-number").allTextContents(), ["1", ""]);
+  await dialog.getByRole("button", { name: "Закрыть" }).click();
+  for (const [file, message] of [["binary.dat", "Двоичный файл"], ["empty.txt", "Добавлен пустой файл."]]) {
+    await files.getByRole("button", { name: "Новый — " + file, exact: true }).click();
+    await dialog.getByText(message, { exact: false }).waitFor();
+    await page.keyboard.press("Escape");
+  }
+  await files.getByRole("button", { name: "Изменён — docs/notes.md" }).press("Enter");
+  await dialog.locator(".added").getByText("Updated notes", { exact: true }).waitFor();
+  assert.equal(await dialog.locator(".removed .line-content").innerText(), "Old notes");
+  await page.keyboard.press("Escape");
+  const unchanged = files.getByRole("button", { name: "Без изменений — docs/reference.md" });
+  await unchanged.press("Space");
+  await dialog.getByText("Second reference line", { exact: true }).waitFor();
+  assert.deepEqual(await dialog.locator(".same .line-content").allTextContents(), ["First reference line", "Second reference line"]);
+  assert.equal(await dialog.locator(".added, .removed").count(), 0);
+  await page.keyboard.press("Escape");
+  assert.ok(await unchanged.evaluate(button => button === document.activeElement));
 
   await docs.locator(":scope > summary").press("Enter");
   await nested.waitFor({ state: "hidden" });

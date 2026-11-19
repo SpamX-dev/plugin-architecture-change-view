@@ -84,6 +84,7 @@ async function json<T>(url: string, expectedStatus = 200, body?: Record<string, 
 test("opening a checkout serves its published tree and card even when its raw archives are unavailable", async (t) => {
   const { root, a, b } = await fixture(t);
   const publisher = await createWorkspaceSession({ root });
+  await writeFile(path.join(a, "index.js"), "export const v = 2;\n");
   for (const repository of ["a", "b"]) {
     const first = await publisher.getComparison({ repository, published: true, baseline: "auto" });
     assert.equal(first.published, undefined, "a checkout without work must serve a live result");
@@ -98,6 +99,8 @@ test("opening a checkout serves its published tree and card even when its raw ar
   const before = await publicationTimes();
   // The checkout has moved on since publication and the raw archives cannot be traversed.
   await writeFile(path.join(a, ".archiview/modules/shared.yaml"), contractYaml("shared", "New local purpose."));
+  await writeFile(path.join(a, "index.js"), "export const v = 3;\n");
+  await writeFile(path.join(b, "index.js"), "export const v = 4;\n");
   await writeFile(path.join(b, ".archiview/modules/shared.yaml"), contractYaml("shared", "Other local purpose."));
   for (const name of ["modules"]) {
     const archive = path.join(a, ".archiview", "snapshots", name);
@@ -112,6 +115,12 @@ test("opening a checkout serves its published tree and card even when its raw ar
   assert.notEqual(left.id, right.id);
   const module = await viewer.getModule({ repository: "a", view: left.id, path: "." });
   assert.equal(module.after?.document.contract?.purpose, "Read project data.");
+  const diffArgs = { repository: "a", view: left.id, path: ".", file: "index.js" };
+  assert.deepEqual((await viewer.getFileDiff(diffArgs)).hunks[0].lines, ["-export const v = 1;", "+export const v = 2;"]);
+  assert.deepEqual(await viewer.getFileDiff({ ...diffArgs, repository: "b", view: right.id }), {
+    hunks: [], unchangedText: "export const v = 1;\n",
+  });
+  await assert.rejects(viewer.getFileDiff({ ...diffArgs, repository: "b" }), { code: "STALE_VIEW" });
   await assert.rejects(viewer.getModule({ repository: "b", view: left.id, path: "." }), { code: "STALE_VIEW" });
   await assert.rejects(viewer.buildReview({ repository: "a", view: left.id, path: "." }), { code: "STALE_VIEW" });
   assert.deepEqual(await publicationTimes(), before);
