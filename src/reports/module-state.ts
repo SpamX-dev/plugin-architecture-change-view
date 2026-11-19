@@ -5,6 +5,7 @@ import path from "node:path";
 import { canonical, digest } from "../serialization/digest.js";
 
 const NORMALIZATION = "archiview/module-state/v1";
+// Historical snapshots can contain purpose. Include it only when replaying those saved inputs.
 export const SEMANTIC_FIELDS = ["id", "kind", "purpose", "responsibilities", "boundaries", "invariants"] as const;
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 export const sorted = <T>(values: Iterable<T>, key: (value:T) => string = (v) => canonical(v)) => [...values].sort((a, b) => compare(key(a), key(b)));
@@ -28,7 +29,7 @@ export class ModuleStateContext {
 }
 
 /** Смысл контракта отделён от заголовка, оформления YAML и сырого arch.yaml. */
-export function semanticContract(contract: Contract | null | undefined): Partial<Contract> | null {
+export function semanticContract(contract: (Contract & { purpose?: string }) | null | undefined): Partial<Contract> | null {
   return contract ? Object.fromEntries(SEMANTIC_FIELDS.filter((key) => contract[key] !== undefined)
     .map((key) => [key, structuredClone(contract[key])])) : null;
 }

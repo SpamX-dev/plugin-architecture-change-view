@@ -61,7 +61,6 @@ export function renderContractHeading(panel: HTMLElement, document: ContractDocu
   header.append(el("span", "contract-kind", contract.kind === "group" ? "ГРУППА МОДУЛЕЙ" : "КОНТРАКТ МОДУЛЯ"),
     el("code", "contract-id", contract.id));
   if (!options.titleElement) header.append(title);
-  header.append(el("p", "contract-purpose", contract.purpose));
   panel.append(header);
   decorateContractChange(options.groupElement ?? header,
     options.contractDiff.heading, "Описание модуля");

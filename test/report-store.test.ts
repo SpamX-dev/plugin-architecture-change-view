@@ -54,7 +54,7 @@ async function fixture(t: TestContext) {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const root = path.join(directory, "source");
   await mkdir(path.join(root, "child"), { recursive: true });
-  const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module", purpose: "Читать собственные записи.",
+  const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module",
     responsibilities: { R1: "Возвращать записи." }, boundaries: { B1: "Не обращаться к сети." }, invariants: {} });
   initTestRepository(root);
   await writeModuleTree(root, { root: ".", child: "child" });

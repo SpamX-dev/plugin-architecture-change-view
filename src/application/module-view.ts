@@ -1,5 +1,6 @@
 import path from "node:path";
 import { isPrototype } from "../contracts/types.js";
+import { currentContractYaml } from "../contracts/document.js";
 import { diffLines } from "diff";
 import { compareContracts, compareRoles } from "../snapshots/contract-diff.js";
 import type { Snapshot } from "../snapshots/types.js";
@@ -89,7 +90,10 @@ export function reviewSummary(matching: ReviewEntry[], model: ReportModel) {
 export function moduleDetail(module: SessionView["modules"][number], matching: ReviewEntry[], model: ReportModel | undefined,
   _modules: SessionView["modules"], root: string, work: string): ModuleDetail {
   const files = contentFileChanges(module);
-  return structuredClone({ ...module, files, filesChanged: files.length, reviews: matching.map((bundle) => ({
+  const document = (module.after ?? module.before)?.document;
+  const yaml = document?.text && document.contract ? currentContractYaml(document.text) : undefined;
+  return structuredClone({ ...module, ...(yaml && yaml !== document?.text ? { contractYaml: yaml } : {}),
+    files, filesChanged: files.length, reviews: matching.map((bundle) => ({
     report: bundle.report, stale: model!.reviewFreshness(bundle).current.status !== "fresh",
     // Путь берётся из фактического хранилища, включая явно заданное внешнее.
     // ID попытки и замечания выбирают запись внутри общей истории модуля.

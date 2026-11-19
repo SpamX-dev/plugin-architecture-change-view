@@ -10,7 +10,6 @@ export interface Contract {
   id: string;
   title: string;
   kind: string;
-  purpose: string;
   responsibilities: Record<string, string>;
   boundaries: Record<string, string>;
   invariants: Record<string, string>;

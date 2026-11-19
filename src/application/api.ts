@@ -18,7 +18,7 @@ export type ClauseChange = { section: Section; clauseId: string } & (
 );
 export type ChangeClauseArgs = ModuleArgs & ClauseChange;
 export type PrototypeChange = RepositoryArgs & { view: string; path: string } & (
-  | { action: "create"; moduleId: string; title: string; purpose: string; responsibility: string }
+  | { action: "create"; moduleId: string; title: string; responsibility: string }
   | { action: "edit"; text: string }
   | { action: "delete" }
 );
@@ -85,6 +85,8 @@ export interface DocumentDiffLine {
   text: string;
 }
 export interface ModuleDetail extends ComparisonModule, ModuleReviewState {
+  /** YAML in the current format when the selected snapshot uses a retired field. */
+  contractYaml?: string;
   deletedClause?: { section: Section; clauseId: string; undoToken: string };
   reviews: ModuleReview[];
   diff: DocumentDiffLine[];

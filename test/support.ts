@@ -20,9 +20,9 @@ export async function writeModuleTree(root: string, directories: Record<string, 
   await writeFile(path.join(root, ".archiview/modules.tree"), stringify(directories));
 }
 
-export function contractYaml(id: string, purpose = "Read project data.") {
-  return stringify({ schema_version: 1, id, title: id, kind: "module", purpose,
-    responsibilities: { R1: purpose }, boundaries: {}, invariants: {} });
+export function contractYaml(id: string, responsibility = "Read project data.") {
+  return stringify({ schema_version: 1, id, title: id, kind: "module",
+    responsibilities: { R1: responsibility }, boundaries: {}, invariants: {} });
 }
 
 function record(value: unknown): asserts value is Record<string, unknown> {

@@ -46,7 +46,7 @@ async function browserProject(defer: DeferCleanup) {
   defer(() => rm(root, { recursive: true, force: true, maxRetries: 5 }));
   await mkdir(path.join(root, "src"));
   const contract = (id: string, title: string) => stringify({ schema_version: 1, id, title, kind: "module",
-    purpose: "Показывать проверяемую функцию", responsibilities: { R1: "Предоставлять функцию" }, boundaries: {}, invariants: {} });
+    responsibilities: { R1: "Предоставлять функцию" }, boundaries: {}, invariants: {} });
   await writeModuleTree(root, { "browser-project": ".", "browser-feature": "src" });
   await writeFile(path.join(root, ".archiview/modules/browser-project.yaml"), contract("browser-project", "Браузерный проект"));
   await writeFile(path.join(root, ".archiview/modules/browser-feature.yaml"), contract("browser-feature", "Функция браузера"));
@@ -289,7 +289,7 @@ test("a user can create, edit, reopen and delete a module prototype", browserOpt
   for (const rootPath of ["", "/"]) {
     await button("Новый прототип").click();
     await dialog.getByLabel("Путь от корня репозитория").fill(rootPath);
-    for (const label of ["ID модуля", "Название", "Назначение", "Первая обязанность"])
+    for (const label of ["ID модуля", "Название", "Первая обязанность"])
       await dialog.getByLabel(label, { exact: true }).fill("aaa");
     await button("Создать").click();
     await page.locator('.tree-row[data-directory="aaa"][aria-selected="true"]').waitFor();
@@ -302,12 +302,13 @@ test("a user can create, edit, reopen and delete a module prototype", browserOpt
   await dialog.getByLabel("Путь от корня репозитория").fill("future/catalog");
   await dialog.getByLabel("ID модуля").fill("catalog");
   await dialog.getByLabel("Название", { exact: true }).fill("Каталог");
-  await dialog.getByLabel("Назначение", { exact: true }).fill("Хранить товары");
+  assert.equal(await dialog.getByLabel("Назначение", { exact: true }).count(), 0);
   await dialog.getByLabel("Первая обязанность").fill("Выдавать карточку товара");
   await button("Создать").click();
   await page.getByRole("heading", { name: "Каталог", exact: true }).waitFor();
   await button("Редактировать контракт").click();
   const yaml = dialog.getByLabel("Контракт YAML");
+  assert.doesNotMatch(await yaml.inputValue(), /^purpose:/m);
   await yaml.fill((await yaml.inputValue()).replace("title: Каталог", "title: Каталог магазина"));
   await button("Сохранить").click();
   await page.getByRole("heading", { name: "Каталог магазина", exact: true }).waitFor();
@@ -361,7 +362,7 @@ test("the prototype parent picker builds the saved path from the chosen module a
   await trigger.click();
   await page.keyboard.press("Escape");
   assert.equal(await trigger.getAttribute("aria-expanded"), "false");
-  for (const label of ["Название", "Назначение", "Первая обязанность"])
+  for (const label of ["Название", "Первая обязанность"])
     await dialog.getByLabel(label, { exact: true }).fill("Товары");
   await dialog.getByRole("button", { name: "Создать", exact: true }).click();
   await page.locator('.tree-row[data-directory="src/tools/items"][aria-selected="true"]').waitFor();
@@ -662,7 +663,7 @@ test("a reused directory retains its exact module under search and status filter
   await rm(path.join(root, ".archiview/modules/browser-feature.yaml"));
   await writeModuleTree(root, { "browser-project": ".", replacement: "src" });
   await writeFile(path.join(root, ".archiview/modules/replacement.yaml"), stringify({ schema_version: 1, id: "replacement", title: "Новая функция",
-    kind: "module", purpose: "Заменить прежнюю функцию", responsibilities: { R1: "Показать замену" }, boundaries: {}, invariants: {},
+    kind: "module", responsibilities: { R1: "Показать замену" }, boundaries: {}, invariants: {},
     extensions: { "archiview.roles": ["http-client"], "example.owner": "team" } }));
   const origin = await listen(defer, (await createArchiView({ root })).server);
   const page = await (await browserContext(defer)).newPage();
@@ -713,7 +714,7 @@ test("a workspace keeps identical modules, history and deep links scoped to each
     await writeModuleTree(repo, { project: ".", feature: "src" });
     for (const id of ["project", "feature"]) {
       await writeFile(path.join(repo, ".archiview/modules", id + ".yaml"), stringify({
-        schema_version: 1, id, kind: "module", title: name + " " + id, purpose: "Contract of " + name,
+        schema_version: 1, id, kind: "module", title: name + " " + id,
         responsibilities: { R1: name + " implementation" }, boundaries: {}, invariants: {},
       }));
     }

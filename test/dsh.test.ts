@@ -191,7 +191,7 @@ test("tools: путь файла из рабочей папки чата dsh в�
   const scaffold = registered.get("archiview_scaffold") as unknown as {
     execute(args: { repository: string; plan: string }, exec: typeof execution): Promise<{ modules: {id: string}[] }>;
   };
-  const plan = JSON.stringify([{ directory: "future", id: "future", title: "Future", purpose: "Plan",
+  const plan = JSON.stringify([{ directory: "future", id: "future", title: "Future",
     responsibilities: { R1: "Design" } }]);
   const result = await scaffold.execute({ repository: "server", plan }, execution);
   assert.equal(result.modules[0].id, "future");

@@ -19,7 +19,7 @@ function snapshot({ source = "export const value = 1;\n", child = true, contract
   const modules = [{ id: "root", directory: "." }, ...(child ? [{ id: "child", directory: "child" }] : [])]
     .map(({ id, directory }) => {
       const prefix = directory === "." ? "" : directory + "/";
-      const text = stringify({ schema_version: 1, id, title: id, kind: "module", purpose: "Предоставлять данные.",
+      const text = stringify({ schema_version: 1, id, title: id, kind: "module",
         responsibilities: { R1: contractText }, boundaries: { B1: "Не обращаться к сети." }, invariants: {} });
       const contents = { [prefix + "arch.yaml"]: text, [prefix + "index.mjs"]: source };
       const files = Object.entries(contents).map(([path, text]) => {

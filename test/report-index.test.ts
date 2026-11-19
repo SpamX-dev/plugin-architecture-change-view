@@ -19,7 +19,7 @@ import { parseYaml } from "../src/serialization/yaml.js";
 const cli = fileURLToPath(new URL("../src/archiview/cli.ts", import.meta.url));
 const git = (root: string, args: string[]) => execFileSync("git", args, { cwd: root, windowsHide: true, encoding: "utf8" }).trim();
 const run = (root: string, args: string[]) => execFileSync(process.execPath, ["--import", import.meta.resolve("tsx"), cli, "--root", root, ...args], { windowsHide: true, encoding: "utf8" });
-const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module", purpose: "Предоставлять значение.",
+const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module",
   responsibilities: { R1: "Читать значение." }, boundaries: {}, invariants: {} });
 
 /** Каждый сценарий владеет своей Git identity, временной папкой и файлами. */

@@ -16,12 +16,17 @@ test("planned contracts survive Git, stale edits, retries and deletion of a pare
   await mkdir(root);
   const git = (...args: string[]) => execFileSync("git", args, { cwd: root, windowsHide: true });
   git("init", "-q");
-  const entry = (directory: string, id: string) => ({ directory, id, title: id, purpose: "Считать товары",
+  const entry = (directory: string, id: string) => ({ directory, id, title: id,
     responsibilities: { R1: "Вести остаток" } });
   const entries = [entry(".", "app"), entry("src/cart", "cart"), entry("src/cart/item", "item")];
   const scaffold = (items: typeof entries) => createScaffold(workspace, "project", JSON.stringify(items));
   const [first, second] = await Promise.all([scaffold(entries), scaffold(entries)]);
   assert.deepEqual(first, second);
+  const cart = path.join(root, ".archiview/modules/cart.yaml");
+  const cartYaml = await readFile(cart, "utf8");
+  assert.doesNotMatch(cartYaml, /^purpose:/m);
+  await writeFile(cart, cartYaml + "purpose: Старое назначение\n");
+  assert.deepEqual(await scaffold(entries), first);
   await assert.rejects(stat(path.join(root, "src")), {code: "ENOENT"});
   const treeFile = path.join(root, ".archiview/modules.tree");
   const tree = await readFile(treeFile, "utf8");
@@ -47,8 +52,12 @@ test("planned contracts survive Git, stale edits, retries and deletion of a pare
   await assert.rejects(session.changePrototype({ ...selected, action: "delete", view: historical.id }), { code: "INVALID_ARGUMENT" });
   const detail = await session.getModule(selected);
   const text = detail.after!.document.text!;
+  assert.ok(detail.contractYaml);
+  assert.doesNotMatch(detail.contractYaml, /^purpose:/m);
+  await assert.rejects(session.changePrototype({ ...selected, action: "edit", text }), { code: "INVALID_ARGUMENT" });
   await assert.rejects(session.changePrototype({ ...selected, action: "edit", text: "invalid" }), { code: "INVALID_ARGUMENT" });
   await session.changeClause({ ...selected, action: "add", section: "boundaries", clauseId: "B1", text: "Одна корзина" });
+  assert.doesNotMatch(await readFile(cart, "utf8"), /^purpose:/m);
   await assert.rejects(session.changePrototype({ ...selected, action: "delete" }), { code: "STALE_VIEW" });
   await assert.rejects(session.changePrototype({ ...selected, action: "edit", text }), { code: "STALE_VIEW" });
   await mkdir(path.join(root, "src/cart"), { recursive: true });

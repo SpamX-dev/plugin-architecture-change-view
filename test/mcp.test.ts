@@ -65,7 +65,7 @@ test("serves a matching skill descriptor and read-only module tools over stdio",
   await assert.rejects(client.callTool({ name: "module_inventory",
     arguments: { directory: "src" } }), /Invalid tool arguments/);
   const plan = JSON.stringify(["service", "service/domain"].map(directory => ({ directory,
-    id: directory.split("/").at(-1), title: directory, purpose: "Расчёт", responsibilities: { R1: "Вычислять сумму" } })));
+    id: directory.split("/").at(-1), title: directory, responsibilities: { R1: "Вычислять сумму" } })));
   const scaffold = await client.callTool({ name: "module_scaffold", arguments: { plan } });
   assert.deepEqual(JSON.parse(firstTextContent(scaffold)).modules.map((m: {id: string}) => m.id), ["service", "domain"]);
   const planned = await client.callTool({ name: "module_context", arguments: { path: "service/domain" } });

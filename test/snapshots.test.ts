@@ -135,7 +135,7 @@ test("a nested checkout takes ownership of formerly tracked sources without chan
   assert.equal(historical?.modules.find(m => m.directory === "child/src")?.document.contract?.id, "library");
   assert.equal(historical?.facts.find(f => f.path === "child/src/index.ts")?.text, "old source");
   const current = await captureWorkingTree(child);
-  assert.equal(current.modules.find(m => m.directory === "src")?.document.contract?.purpose, "Child's contract");
+  assert.equal(current.modules.find(m => m.directory === "src")?.document.contract?.responsibilities.R1, "Child's contract");
   assert.equal(current.facts.find(f => f.path === "src/index.ts")?.text, "new child source");
 });
 

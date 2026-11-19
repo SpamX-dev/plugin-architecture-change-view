@@ -4,7 +4,7 @@ import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { isMap, isScalar, parseDocument } from "yaml";
 import { assertModuleDirectory, MAX_DOCUMENT_BYTES, MODULE_DIRECTORY, moduleDocumentPath, readContractStorageFile, readModuleTree } from "../contracts/module-tree.js";
-import { contractDocument } from "../contracts/document.js";
+import { contractDocument, currentContractYaml } from "../contracts/document.js";
 import type { Contract, Section } from "../contracts/types.js";
 import { isPrototype } from "../contracts/types.js";
 import { assertStateLocation, STATE_DIRECTORY } from "../project/paths.js";
@@ -76,12 +76,13 @@ export function createContractEditor(root: string) {
       await checkOwner();
       const source = await readContractStorageFile(root, relative);
       if (source === null || normalize(source) !== expected) throw stale();
+      const editable = currentContractYaml(source);
       let result: string;
       if (change.action === "restore") {
         if (!deleted || deleted.token !== change.undoToken || deleted.file !== file ||
             deleted.section !== change.section || deleted.clauseId !== change.clauseId || deleted.after !== source) throw stale();
         result = deleted.before;
-      } else result = changedText(source, contract, change);
+      } else result = changedText(editable, contract, change);
       if (result === source) return {};
       if (Buffer.byteLength(result) > MAX_DOCUMENT_BYTES) throw new ApplicationError("REQUEST_TOO_LARGE", "Контракт превышает 128 КиБ");
       const temporary = path.join(directory, ".edit-" + randomUUID());
@@ -92,7 +93,7 @@ export function createContractEditor(root: string) {
         await rename(temporary, file);
       } finally { await rm(temporary, { force: true }); }
       if (change.action === "delete") {
-        deleted = { token: randomUUID(), file, section: change.section, clauseId: change.clauseId, before: source, after: result };
+        deleted = { token: randomUUID(), file, section: change.section, clauseId: change.clauseId, before: editable, after: result };
         return { undoToken: deleted.token };
       }
       if (deleted?.file === file) deleted = undefined;

@@ -23,7 +23,7 @@ export function compareRoles(before: Partial<Contract> | null | undefined, after
   return changes;
 }
 
-/** Compare the saved pair once, including removed clauses and the four-field heading. */
+/** Compare the saved pair once, including removed clauses and heading metadata. */
 export function compareContracts(before: Partial<Contract> | null | undefined, after: Partial<Contract> | null | undefined, compare = true) {
   const fields: ContractFieldChange[] = [];
   function add(key: string, oldValue: unknown, newValue: unknown) {
@@ -31,7 +31,7 @@ export function compareContracts(before: Partial<Contract> | null | undefined, a
       newValue === undefined ? "removed" : canonical(oldValue) === canonical(newValue) ? "unchanged" : "modified";
     fields.push({ key, before: oldValue, after: newValue, status });
   }
-  const headingKeys = ["title", "kind", "id", "purpose"] as const;
+  const headingKeys = ["title", "kind", "id"] as const;
   for (const key of [...headingKeys, "rationale", "owners", "tags", "references", "extensions"] as const)
     if (before?.[key] !== undefined || after?.[key] !== undefined) add(key, before?.[key], after?.[key]);
   for (const section of ["responsibilities", "boundaries", "invariants"] as const) {

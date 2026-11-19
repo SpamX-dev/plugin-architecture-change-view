@@ -13,7 +13,7 @@ import {stringify} from "yaml";
 import {createArchiView} from "../src/archiview/http.js";
 import type { FileDiff } from "../src/application/api.js";
 const git=(root: string,args: string[])=>execFileSync("git",args,{cwd:root,windowsHide:true,encoding:"utf8"}).trim();
-const contract={schema_version:1,id:"root",title:"Пример",kind:"module",purpose:"Возвращать значение.",responsibilities:{R1:"Возвращать значение."},boundaries:{},invariants:{}};
+const contract={schema_version:1,id:"root",title:"Пример",kind:"module",responsibilities:{R1:"Возвращать значение."},boundaries:{},invariants:{}};
 async function workBytes(app: { reports: { work: string } }){
  const names=(await readdir(app.reports.work)).sort();
  return Promise.all(names.map(async f=>[f,await readFile(path.join(app.reports.work,f),"utf8")]));
@@ -81,7 +81,7 @@ test("a complete working tree with an incomplete HEAD opens without replacing pu
  const root=await mkdtemp(path.join(os.tmpdir(),"archiview-incomplete-head-"));
  t.after(()=>rm(root,{recursive:true,force:true}));
  await writeModuleTree(root, { root: "." });
- await writeFile(path.join(root,".archiview/modules/root.yaml"),stringify({...contract,purpose:"X".repeat(140*1024)}));
+ await writeFile(path.join(root,".archiview/modules/root.yaml"),stringify({...contract,title:"X".repeat(140*1024)}));
  await writeFile(path.join(root,"code.js"),"export const value = 1;\n");
  git(root,["init","-q"]);git(root,["config","user.name","Timeline Test"]);git(root,["config","user.email","timeline@example.invalid"]);
  git(root,["add",".archiview/modules.tree", ".archiview/modules/root.yaml","code.js"]);git(root,["commit","-qm","Oversized historical contract"]);

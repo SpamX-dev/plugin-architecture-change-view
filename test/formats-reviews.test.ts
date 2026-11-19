@@ -13,7 +13,7 @@ import test from "node:test";
 import { stringify } from "yaml";
 import { digest } from "../src/serialization/digest.js";
 import { parseYaml } from "../src/serialization/yaml.js";
-import { validateArch } from "../src/contracts/document.js";
+import { contractDocument, currentContractYaml, validateArch } from "../src/contracts/document.js";
 import { validateReview } from "../src/reviews/schema.js";
 import { moduleContext, moduleInventory } from "../src/contracts/inventory.js";
 import { captureWorkingTree } from "../src/snapshots/capture.js";
@@ -26,8 +26,21 @@ import { createArchiView } from "../src/archiview/http.js";
 
 /** Фикстура задаёт проверяемые обязанности явно, не выводя их из имени каталога. */
 const contract = (id: string) => ({ schema_version: 1, id, title: "Контракт " + id, kind: "module",
-  purpose: "Предоставлять данные выбранного модуля.", responsibilities: { R1: "Читать записи." },
+  responsibilities: { R1: "Читать записи." },
   boundaries: { B1: "Не выполнять сетевые запросы." }, invariants: { I1: "Не изменять входные данные." } });
+
+test("legacy purpose is readable as saved evidence and omitted from current contracts", () => {
+  const current = contract("root");
+  const text = stringify(current).replaceAll("\n", "\r\n") + "purpose: |-\r\n  Старое\r\n  назначение\r\n";
+  assert.deepEqual(contractDocument(text).contract, current);
+  assert.equal(contractDocument(text).text, text);
+  assert.throws(() => parseYaml(text, validateArch), /purpose/);
+  assert.deepEqual(contractDocument(text, "yaml", true).contract, { ...current, purpose: "Старое\nназначение" });
+  const yaml = currentContractYaml(text);
+  assert.deepEqual(parseYaml(yaml, validateArch), current);
+  assert.ok(yaml.includes("\r\n"));
+  assert.equal(currentContractYaml(yaml), yaml);
+});
 
 /** Каждый сценарий владеет временным проектом и внешним каталогом результатов. */
 async function fixture(t: TestContext) {

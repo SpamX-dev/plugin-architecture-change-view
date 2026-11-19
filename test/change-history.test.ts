@@ -26,7 +26,7 @@ async function fixture(t: TestContext, useGit = true) {
   initTestRepository(root);
   await writeModuleTree(root, { root: "." });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify({ schema_version: 1, id: "root", title: "Root", kind: "module",
-    purpose: "Читать записи.", responsibilities: { R1: "Читать записи." }, boundaries: {}, invariants: {} }));
+    responsibilities: { R1: "Читать записи." }, boundaries: {}, invariants: {} }));
   await writeFile(path.join(root, "code.js"), "export const read = () => 0;\n");
   const git = async (...args: string[]) => (await run("git", args, { cwd: root, windowsHide: true })).stdout.trim();
   const commit = async (subject: string) => {

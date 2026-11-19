@@ -16,7 +16,8 @@ export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: C
     "Показано описание из выбранной базы сравнения.", "removed-notice"));
   if (selected.document.state === "documented" && selected.document.contract) {
     if (detail.moved) panel.append(notice("Модуль перемещён", detail.baselinePath + " → " + detail.currentPath));
-    renderContract(panel, selected.document, { contractDiff: detail.contractDiff, previousReferences: detail.before?.document.contract?.references,
+    renderContract(panel, { ...selected.document, text: detail.contractYaml ?? selected.document.text },
+      { contractDiff: detail.contractDiff, previousReferences: detail.before?.document.contract?.references,
       rawChanged: detail.documentChanged, showRawDiff: () => openDocumentDiff(detail, view), hideHeading: true,
       review: detail.reviews.find((bundle) => bundle.report.id === detail.review?.id) ?? detail.reviews[0],
       openFinding, clauseControls }); return;

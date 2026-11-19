@@ -50,7 +50,7 @@ async function serve(t: TestContext) {
   initTestRepository(root);
   await writeModuleTree(root, { root: "." });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify({ schema_version: 1, id: "root", title: "Пример",
-    kind: "module", purpose: "Возвращать значение.", responsibilities: { R1: "Возвращать значение." },
+    kind: "module", responsibilities: { R1: "Возвращать значение." },
     boundaries: {}, invariants: {} }));
   await writeFile(path.join(root, "code.js"), "export const value = 1;\n");
   const app = await createArchiView({ root });
@@ -65,7 +65,7 @@ test("clause writes require the live mapping and source version; undo restores o
   const file = path.join(app.root, ".archiview/modules/root.yaml");
   const original = [
     "# Contract", "schema_version: 1", "id: root", "title: 'Пример'", "kind: module",
-    "purpose: >-", "  Первая строка", "  и продолжение.", "responsibilities: {R1: Пример}",
+    "rationale: >-", "  Первая строка", "  и продолжение.", "responsibilities: {R1: Пример}",
     "boundaries:", "  legacy.id: Прежний ключ # комментарий", "  B7: Другой пункт", "invariants: {}", "",
   ].join("\r\n");
   await writeFile(file, original);

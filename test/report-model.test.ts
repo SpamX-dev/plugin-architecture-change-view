@@ -34,7 +34,7 @@ function definition(): Definition[] {
     { id: "provider", directory: "provider", sources: { "provider.js": "export const value = 1;\n", "api.d.ts": "export declare const value: number;\n" } },
   ];
   return modules.map((module) => ({ ...module, contract: { schema_version: 1, id: module.id,
-    title: "Контракт " + module.id, kind: "module", purpose: "Читать проверяемые данные.",
+    title: "Контракт " + module.id, kind: "module",
     responsibilities: { R1: "Предоставлять чтение данных." },
     boundaries: { B1: "Не обращаться к сети." }, invariants: { I1: "Не изменять входные данные." } } }));
 }
@@ -523,7 +523,7 @@ test("native snapshot parsed contract must agree with preserved YAML text", () =
   const current = snapshot();
   const draft = reviewed(null, current, "child", { draft: true });
   const saved = draft.current.modules.find((module) => module.directory === "parent/child");
-  saved!.document.contract!.purpose = "Поддельный разобранный контракт.";
+  saved!.document.contract!.title = "Поддельный разобранный контракт.";
   const { scope_digest, ...content } = draft.current;
   draft.current.scope_digest = digest(content);
   assert.throws(() => createReviewEntry(draft), /contract text disagrees/);

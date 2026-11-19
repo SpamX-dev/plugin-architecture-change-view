@@ -3,7 +3,7 @@ import { link, lstat, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { isMap, parseDocument, stringify } from "yaml";
-import { validateArch } from "../contracts/document.js";
+import { contractDocument, validateArch } from "../contracts/document.js";
 import {
   assertModuleDirectory, listModuleContractPaths, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY,
   MODULE_TREE_FILE, moduleDocumentPath, parseModuleTree, readContractStorageFile, validateModuleMapping,
@@ -23,7 +23,7 @@ const normalize = (text: string) => text.replace(/\r\n?/g, "\n");
 
 /** An agent supplies the same contract fields as in modules/<id>.yaml, plus the future directory. */
 export const SCAFFOLD_DESCRIPTION = "Create a module scaffold in one Git repository. Pass plan as a YAML list. " +
-  "Each entry requires directory (relative, / separator), id, title, purpose and responsibilities (ID to text map). " +
+  "Each entry requires directory (relative, / separator), id, title and responsibilities (ID to text map). " +
   "Optional contract fields include kind, boundaries, invariants and extensions. No source directories are created.";
 
 function prototypeEntry(value: unknown) {
@@ -96,7 +96,7 @@ export async function createPrototypes(root: string, values: unknown) {
       const file = moduleDocumentPath(contract.id);
       if (registered.get(directory) === contract.id) {
         const existing = await readContractStorageFile(root, file);
-        if (existing && isDeepStrictEqual(parseYaml(existing, validateArch), contract)) continue;
+        if (existing && isDeepStrictEqual(contractDocument(existing).contract, contract)) continue;
       }
       if (occupied.has(file.toLowerCase()) || doc.has(contract.id))
         throw invalid("ID модуля уже используется: " + contract.id);

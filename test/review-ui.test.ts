@@ -131,7 +131,7 @@ test("contract fields distinguish new, removed and changed clauses while preserv
   const original = structuredClone({ before, after });
   const changes = new Map(compareContracts(before, after).fields.map((item) => [item.key, item]));
   assert.equal(changes.get("title")!.status, "unchanged");
-  assert.equal(changes.get("purpose")!.status, "added");
+  assert.equal(changes.has("purpose"), false);
   assert.deepEqual(changes.get("responsibilities.R1"), {
     key: "responsibilities.R1", before: "Было.", after: "Стало.", status: "modified" });
   assert.equal(changes.get("responsibilities.R2")!.status, "removed");
@@ -150,13 +150,13 @@ test("role comparison ignores order and treats a first snapshot as neutral", () 
 });
 
 test("heading uses the strictest field change and retains both versions in one diff", () => {
-  const before = { title: "Прежнее название", kind: "module", id: "one", responsibilities: { R1: "Прежний пункт" } };
-  const after = { ...before, title: "Новое название", purpose: "Добавленное назначение", responsibilities: {} };
+  const before = { title: "Прежнее название", id: "one", responsibilities: { R1: "Прежний пункт" } };
+  const after = { ...before, title: "Новое название", kind: "module" as const, responsibilities: {} };
   const original = structuredClone({ before, after });
   const change = compareContracts(before, after).heading;
   assert.equal(change.status, "modified", "a removed clause outside the heading does not affect its status");
-  assert.deepEqual(change.before, { title: "Прежнее название", kind: "module", id: "one" });
-  assert.deepEqual(change.after, { title: "Новое название", kind: "module", id: "one", purpose: "Добавленное назначение" });
+  assert.deepEqual(change.before, { title: "Прежнее название", id: "one" });
+  assert.deepEqual(change.after, { title: "Новое название", kind: "module", id: "one" });
   assert.equal(compareContracts(after, before).heading.status, "removed", "a removed heading field outranks a changed title");
   assert.equal(compareContracts(null, after).heading.status, "added");
   assert.equal(compareContracts(after, null).heading.status, "removed");
@@ -477,7 +477,7 @@ test("a legacy assessment fix points to the saved assessment rather than a synth
 test("historical clause navigation distinguishes a changed text from a reused stable ID", () => {
   const { bundle } = clauseReviewFixture();
   const reference = bundle.contracts.current[0].reference;
-  const contract: Contract = { schema_version: 1, id: "child", title: "Child", purpose: "Read data", kind: "module",
+  const contract: Contract = { schema_version: 1, id: "child", title: "Child", kind: "module",
     responsibilities: { R1: "Возвращать данные." }, boundaries: {}, invariants: {} };
   assert.equal(savedClauseMatchesContract(bundle, reference, contract), true);
   assert.equal(savedClauseMatchesContract(bundle, reference, { ...contract,
