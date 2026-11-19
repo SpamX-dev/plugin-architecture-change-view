@@ -322,6 +322,52 @@ test("a user can create, edit, reopen and delete a module prototype", browserOpt
   await button("Новый прототип").waitFor({ state: "hidden" });
 });
 
+test("the prototype parent picker builds the saved path from the chosen module and ID", browserOptions, async t => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  await mkdir(path.join(root, "src/tools"));
+  await writeFile(path.join(root, "src/tools/format.ts"), "export const format = String;");
+  const app = await createArchiView({ root });
+  const origin = await listen(defer, app.server);
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(origin);
+  await page.getByRole("button", { name: "Новый прототип" }).click();
+  const dialog = page.getByRole("dialog");
+  const trigger = dialog.getByRole("button", { name: /Родительский модуль/ });
+  const tree = dialog.getByRole("tree", { name: "Родительский модуль" });
+  const id = dialog.getByLabel("ID модуля", { exact: true });
+  const directory = dialog.getByLabel("Путь от корня репозитория");
+  await id.fill("catalog");
+  assert.equal(await directory.inputValue(), "catalog");
+  await trigger.click();
+  const src = tree.getByRole("treeitem", { name: /Функция браузера/ });
+  await src.locator(".prototype-branch-toggle").click();
+  await tree.getByRole("treeitem", { name: /src\/tools/ }).click();
+  await tree.waitFor({ state: "hidden" });
+  assert.equal(await directory.inputValue(), "src/tools/catalog");
+  await id.fill("stock");
+  assert.equal(await directory.inputValue(), "src/tools/stock");
+  await directory.fill("custom/manual");
+  await id.fill("items");
+  assert.equal(await directory.inputValue(), "custom/manual");
+  await trigger.click();
+  await tree.getByRole("treeitem", { name: "Корень репозитория" }).click();
+  assert.equal(await directory.inputValue(), "items");
+  await trigger.press("ArrowDown");
+  await src.focus();
+  await src.press("ArrowRight");
+  await page.keyboard.press("Enter");
+  assert.equal(await directory.inputValue(), "src/tools/items");
+  await trigger.click();
+  await page.keyboard.press("Escape");
+  assert.equal(await trigger.getAttribute("aria-expanded"), "false");
+  for (const label of ["Название", "Назначение", "Первая обязанность"])
+    await dialog.getByLabel(label, { exact: true }).fill("Товары");
+  await dialog.getByRole("button", { name: "Создать", exact: true }).click();
+  await page.locator('.tree-row[data-directory="src/tools/items"][aria-selected="true"]').waitFor();
+  assert.equal(parse(await readFile(path.join(root, ".archiview/modules.tree"), "utf8")).items, "src/tools/items");
+});
+
 test("contract clauses can be edited, added, deleted and restored from the working tree", browserOptions, async t => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);

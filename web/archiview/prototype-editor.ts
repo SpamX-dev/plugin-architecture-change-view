@@ -2,6 +2,7 @@ import type { PrototypeChange } from "../../src/application/api.js";
 import type { ArchiViewClient, ComparisonView, ModuleDetail } from "./types.js";
 import { errorMessage } from "./types.js";
 import { el } from "./dom.js";
+import { prototypeLocation } from "./prototype-location.js";
 
 type Mode = "create" | "edit" | "delete";
 const headings: Record<Mode, string> = {
@@ -28,19 +29,12 @@ export function prototypeDialog(mode: Mode, client: ArchiViewClient, view: Compa
   const selection = { repository: view.workspace?.repository, view: view.id, path: detail?.key ?? "." };
   let change: () => PrototypeChange;
   if (mode === "create") {
-    const directory = field("Путь от корня репозитория");
-    directory.required = false;
-    directory.placeholder = "Например, src/catalog";
-    const hint = el("small", "", "Пустой путь или / создаёт модуль в корне, в каталоге с именем его ID.");
-    hint.id = "prototype-path-hint";
-    directory.setAttribute("aria-describedby", hint.id);
-    directory.after(hint);
-    const id = field("ID модуля");
-    id.placeholder = "catalog";
+    const location = prototypeLocation(dialog, view.modules);
+    fields.append(location.element);
     const name = field("Название");
     const purpose = field("Назначение", true);
     const responsibility = field("Первая обязанность", true);
-    change = () => ({ ...selection, action: "create", path: directory.value.trim(), moduleId: id.value.trim(),
+    change = () => ({ ...selection, action: "create", path: location.directory, moduleId: location.moduleId,
       title: name.value.trim(), purpose: purpose.value.trim(), responsibility: responsibility.value.trim() });
   } else if (mode === "edit") {
     const yaml = field("Контракт YAML", true, detail?.after?.document.text ?? "");
