@@ -85,10 +85,10 @@ export async function openFileDiff(file: string, view: ComparisonView, load: () 
   let next = iterator.next();
   const more = el("button", "button button-quiet diff-more", "Показать ещё");
   function appendPage() {
-    for (let i = 0; i < 500 && !next.done; i++, next = iterator.next()) rows.append(next.value);
+    for (let i = 0; i < 500 && !next.done; i++, next = iterator.next()) rows.insertBefore(next.value, more);
     if (next.done) more.remove();
   }
   more.onclick = appendPage;
-  dialog.append(more);
+  rows.append(more);
   appendPage();
 }

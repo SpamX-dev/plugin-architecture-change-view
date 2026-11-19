@@ -419,6 +419,33 @@ test("module files keep their directory and status on both sides of the comparis
   await nested.waitFor();
 });
 
+test("the file viewer keeps its header in place while scrolling and loading more rows", browserOptions, async t => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  await writeFile(path.join(root, "long.md"), Array.from({ length: 550 }, (_, i) => "Line " + (i + 1)).join("\n"));
+  const app = await createArchiView({ root });
+  const origin = await listen(defer, app.server);
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(origin);
+  await page.getByRole("tab", { name: /^Файлы/ }).click();
+  await page.getByRole("button", { name: "Новый — long.md" }).click();
+  const dialog = page.getByRole("dialog", { name: "Просмотр файла" });
+  const rows = dialog.locator(".diff-lines");
+  await rows.getByText("Line 1", { exact: true }).waitFor();
+  const header = dialog.locator(".evidence-heading, .diff-heading, .diff-labels");
+  const positions = () => header.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().top));
+  const initial = await positions();
+  const more = rows.getByRole("button", { name: "Показать ещё" });
+  await more.scrollIntoViewIfNeeded();
+  assert.ok(await rows.evaluate(node => node.scrollTop > 0));
+  assert.deepEqual(await positions(), initial);
+  await more.click();
+  await rows.getByText("Line 550", { exact: true }).scrollIntoViewIfNeeded();
+  assert.deepEqual(await positions(), initial);
+  await dialog.getByRole("button", { name: "Закрыть" }).click();
+  await dialog.waitFor({ state: "hidden" });
+});
+
 test("the file tab starts at each snapshot's module directory and excludes its contract", browserOptions, async t => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);
