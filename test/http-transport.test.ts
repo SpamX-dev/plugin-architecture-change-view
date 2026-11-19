@@ -7,8 +7,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { cp, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -17,17 +16,22 @@ import { stringify } from "yaml";
 import { createArchiView } from "../src/archiview/http.js";
 import type { ComparisonView } from "../src/application/api.js";
 
-test("standalone CLI serves the shell before opening a project session", { timeout: 15000 }, async () => {
+test("standalone CLI serves its startup UI even after a rebuild, before opening a project session", { timeout: 15000 }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-cli-start-"));
   initTestRepository(root);
-  const entry = fileURLToPath(new URL("../src/archiview/packaged-cli.ts", import.meta.url));
-  const child = spawn(process.execPath, ["--import", "tsx", entry, "--root", root, "--port", "0"], { windowsHide: true });
+  const distribution = path.join(root, "dist");
+  await cp(new URL("../dist/dsh/", import.meta.url), distribution, { recursive: true });
+  const script = path.join(distribution, "web/archiview/app.mjs");
+  const original = await readFile(script, "utf8");
+  const child = spawn(process.execPath, [path.join(distribution, "src/cli.mjs"), "--root", root, "--port", "0"], { windowsHide: true });
   const closed = once(child, "close");
   try {
     for await (const line of createInterface({ input: child.stdout })) {
       const match = /^ArchiView Local: (http:\/\/127\.0\.0\.1:\d+)$/.exec(line);
       if (!match) continue;
       assert.equal((await fetch(match[1])).status, 200);
+      await writeFile(script, "export const version = 'next';");
+      assert.equal(await (await fetch(match[1] + "/app.mjs")).text(), original);
       await assert.rejects(stat(path.join(root, ".archiview")), { code: "ENOENT" });
       return;
     }

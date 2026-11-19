@@ -286,6 +286,18 @@ test("a user can create, edit, reopen and delete a module prototype", browserOpt
   await page.goto(await listen(defer, app.server));
   const button = (name: string) => page.getByRole("button", { name, exact: true });
   const dialog = page.getByRole("dialog");
+  for (const rootPath of ["", "/"]) {
+    await button("Новый прототип").click();
+    await dialog.getByLabel("Путь от корня репозитория").fill(rootPath);
+    for (const label of ["ID модуля", "Название", "Назначение", "Первая обязанность"])
+      await dialog.getByLabel(label, { exact: true }).fill("aaa");
+    await button("Создать").click();
+    await page.locator('.tree-row[data-directory="aaa"][aria-selected="true"]').waitFor();
+    assert.equal(parse(await readFile(path.join(root, ".archiview/modules.tree"), "utf8")).aaa, "aaa");
+    await button("Удалить прототип").click();
+    await dialog.getByRole("button", { name: "Удалить", exact: true }).click();
+    await page.locator('.tree-row[data-directory="aaa"]').waitFor({ state: "detached" });
+  }
   await button("Новый прототип").click();
   await dialog.getByLabel("Путь от корня репозитория").fill("future/catalog");
   await dialog.getByLabel("ID модуля").fill("catalog");

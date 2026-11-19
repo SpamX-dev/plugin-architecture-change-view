@@ -29,7 +29,12 @@ export function prototypeDialog(mode: Mode, client: ArchiViewClient, view: Compa
   let change: () => PrototypeChange;
   if (mode === "create") {
     const directory = field("Путь от корня репозитория");
-    directory.placeholder = "src/catalog";
+    directory.required = false;
+    directory.placeholder = "Например, src/catalog";
+    const hint = el("small", "", "Пустой путь или / создаёт модуль в корне, в каталоге с именем его ID.");
+    hint.id = "prototype-path-hint";
+    directory.setAttribute("aria-describedby", hint.id);
+    directory.after(hint);
     const id = field("ID модуля");
     id.placeholder = "catalog";
     const name = field("Название");

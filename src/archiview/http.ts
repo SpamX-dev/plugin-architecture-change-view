@@ -3,7 +3,7 @@ import type { SessionOperations } from "../application/api.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 /** HTTP-адаптер самостоятельного ArchiView: статические ресурсы, маршрутизация и защита origin. */
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { existsSync, readFileSync } from "node:fs";
 import { createWorkspaceSession } from "../application/workspace-session.js";
 import { applicationError, ApplicationError } from "../application/errors.js";
 import { packageUrl, webAssetUrl } from "../runtime/package-paths.js";
@@ -54,17 +54,18 @@ export async function createArchiView({ root, stateDirectory, panelToken, publis
 }
 
 export function createArchiViewHttpServer(session: SessionOperations & { close?(): void | Promise<void> }, panelToken?: string) {
-  const assets = new Map<string, [URL, string]>(([
+  // Keep this process's UI and API together if another checkout build replaces dist/web.
+  const assets = new Map<string, [Buffer, string]>(([
     ["/", ["index.html", "text/html"]], ["/app.mjs", ["app.mjs", "text/javascript"]],
     ["/client.mjs", ["client.mjs", "text/javascript"]],
     ["/favicon.svg", ["favicon.svg", "image/svg+xml"]],
     ["/panel-bridge.mjs", ["panel-bridge.mjs", "text/javascript"]],
     ["/review.mjs", ["review.mjs", "text/javascript"]], ["/styles.css", ["styles.css", "text/css"]],
-  ] satisfies [string, [string, string]][]).map(([route, [file, type]]) => [route, [new URL(file, webAssetUrl), type]]));
+  ] satisfies [string, [string, string]][]).map(([route, [file, type]]) => [route, [readFileSync(new URL(file, webAssetUrl)), type]]));
   let sdkUrl;
   try { sdkUrl = new URL(import.meta.resolve("@modelcontextprotocol/ext-apps/app-with-deps")); }
   catch { sdkUrl = new URL("web/archiview/mcp-app-sdk.mjs", packageUrl); }
-  assets.set("/mcp-app-sdk.mjs", [sdkUrl, "text/javascript"]);
+  if (existsSync(sdkUrl)) assets.set("/mcp-app-sdk.mjs", [readFileSync(sdkUrl), "text/javascript"]);
   const json = (response: ServerResponse, status: number, value: unknown) => {
     response.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
     response.end(JSON.stringify(value));
@@ -111,8 +112,7 @@ export function createArchiViewHttpServer(session: SessionOperations & { close?(
         return response.end();
       }
       if (request.method === "GET" && assets.has(url.pathname)) {
-        const [asset, contentType] = assets.get(url.pathname)!;
-        const content = await readFile(asset);
+        const [content, contentType] = assets.get(url.pathname)!;
         response.writeHead(200, { "Content-Type": contentType.startsWith("text/") ? contentType + "; charset=utf-8" : contentType });
         return response.end(content);
       }

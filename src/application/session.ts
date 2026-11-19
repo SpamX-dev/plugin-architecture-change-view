@@ -435,9 +435,11 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     if (findView(args.view).target?.id !== "current")
       throw new ApplicationError("INVALID_ARGUMENT", "Прототипы доступны для изменения в текущем состоянии");
     if (args.action === "create") {
-      await createPrototypes(root, [{ directory: args.path, id: args.moduleId, title: args.title,
+      const path = args.path.trim();
+      const directory = path === "" || path === "/" ? args.moduleId : path;
+      await createPrototypes(root, [{ directory, id: args.moduleId, title: args.title,
         purpose: args.purpose, responsibilities: { R1: args.responsibility } }]);
-      return { directory: args.path };
+      return { directory };
     }
     const { module } = selectedModule(args);
     if (!module.after) throw new ApplicationError("STALE_VIEW", "Прототип отсутствует в текущем состоянии");
