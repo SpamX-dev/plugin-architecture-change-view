@@ -90,13 +90,20 @@ export function renderHistoricalClause(reference: ClauseReference, review: Revie
   card.focus({ preventScroll: true });
 }
 
-/** Группирует собственные файлы обеих версий по их путям от корня репозитория. */
+/** Каждая сторона сравнения задаёт свой каталог модуля, в том числе при переносе. */
 export function renderFiles(panel: HTMLElement, detail: ModuleDetail, copyText: (text: string) => Promise<void>,
   collapsedDirectories: Set<string>, showDiff: (file: string) => void) {
   const changed = new Map(detail.files.map((file) => [file.path, file.status]));
-  const paths = [...new Set([...(detail.before?.files ?? []).map((file) => file.path),
-    ...(detail.after?.files ?? []).map((file) => file.path)])].sort((a, b) =>
-    Number(changed.has(b)) - Number(changed.has(a)) || a.localeCompare(b));
+  const relativePaths = new Map<string, string>();
+  for (const side of [detail.before, detail.after]) {
+    if (!side) continue;
+    const prefix = side.directory === "." ? "" : side.directory + "/";
+    for (const { path } of side.files) {
+      if (path !== side.documentPath && path.startsWith(prefix)) relativePaths.set(path, path.slice(prefix.length));
+    }
+  }
+  const paths = [...relativePaths].sort(([a, relativeA], [b, relativeB]) =>
+    Number(changed.has(b)) - Number(changed.has(a)) || relativeA.localeCompare(relativeB) || a.localeCompare(b));
   const box = el("div", "files-box");
   const header = el("div", "files-heading");
   header.append(el("strong", "", "Файлы модуля"), el("span", "", paths.length + " всего"));
@@ -126,8 +133,8 @@ export function renderFiles(panel: HTMLElement, detail: ModuleDetail, copyText: 
     return group;
   }
 
-  for (const file of paths) {
-    const slash = file.lastIndexOf("/");
+  for (const [file, relative] of paths) {
+    const slash = relative.lastIndexOf("/");
     const row = el("div", "file-row");
     row.title = file;
     const status = changed.get(file) ?? "unchanged";
@@ -137,13 +144,13 @@ export function renderFiles(panel: HTMLElement, detail: ModuleDetail, copyText: 
     button.setAttribute("aria-label", labels[status] + " — " + file);
     button.setAttribute("aria-haspopup", "dialog");
     button.addEventListener("click", () => showDiff(file));
-    row.append(icon("file"), el("code", "file-path", file.slice(slash + 1)), button);
+    row.append(icon("file"), el("code", "file-path", relative.slice(slash + 1)), button);
     const copy = el("button", "text-button", "Путь");
     copy.type = "button";
     copy.setAttribute("aria-label", "Копировать путь " + file);
     copy.addEventListener("click", () => copyText(file));
     row.append(copy);
-    directoryGroup(file.substring(0, slash)).append(row);
+    directoryGroup(relative.substring(0, slash)).append(row);
   }
   panel.append(box);
 }

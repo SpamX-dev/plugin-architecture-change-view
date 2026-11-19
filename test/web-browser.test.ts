@@ -1,4 +1,4 @@
-import { writeModuleTree } from "./support.js";
+import { commitTestFiles, writeModuleTree } from "./support.js";
 /** Real browser acceptance of the built standalone app; never opens a host client. */
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
@@ -417,6 +417,45 @@ test("module files keep their directory and status on both sides of the comparis
   assert.equal(await docs.getAttribute("open"), null);
   await docs.locator(":scope > summary").click();
   await nested.waitFor();
+});
+
+test("the file tab starts at each snapshot's module directory and excludes its contract", browserOptions, async t => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const name = "browser-feature.yaml";
+  await mkdir(path.join(root, "src/docs"));
+  await writeFile(path.join(root, "src/docs", name), "module notes");
+  commitTestFiles(root);
+  const contractPath = path.join(root, ".archiview/modules", name);
+  await writeFile(contractPath, (await readFile(contractPath, "utf8")).replace("Функция браузера", "Новый заголовок"));
+
+  const origin = await sourceCliOrigin(defer, root);
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(origin + "/#src");
+  await page.getByRole("heading", { name: "Новый заголовок", exact: true }).waitFor();
+  await page.getByRole("tab", { name: /^Файлы/ }).click();
+  const files = page.locator(".files-box");
+  await files.getByText("2 всего").waitFor();
+  assert.equal(await page.locator("#files-count").isVisible(), false);
+  assert.equal(await page.locator("#module-meta").getByText("Описание изменено").isVisible(), true);
+  await files.locator(':scope > .file-row[title="src/feature.ts"]').waitFor();
+  assert.deepEqual(await files.locator("summary").allTextContents(), ["docs/"]);
+  await files.getByRole("button", { name: "Копировать путь src/docs/" + name }).click();
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "src/docs/" + name);
+
+  await rename(path.join(root, "src"), path.join(root, "renamed"));
+  await writeModuleTree(root, { "browser-project": ".", "browser-feature": "renamed" });
+  await page.goto(origin + "/#renamed");
+  await page.reload();
+  await page.getByRole("tab", { name: /^Файлы/ }).click();
+  await files.getByText("4 всего").waitFor();
+  assert.equal(await page.locator("#files-count").innerText(), "4");
+  assert.deepEqual(await files.locator("summary").allTextContents(), ["docs/"]);
+  const docs = files.locator(":scope > details");
+  await docs.getByRole("button", { name: "Удалён — src/docs/" + name }).click();
+  await page.getByRole("dialog").getByText("module notes", { exact: true }).waitFor();
+  await page.keyboard.press("Escape");
+  await docs.getByRole("button", { name: "Новый — renamed/docs/" + name }).waitFor();
 });
 
 test("files remain browsable while independent review statuses load, fail and retry", browserOptions, async t => {

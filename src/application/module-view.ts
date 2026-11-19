@@ -59,7 +59,13 @@ function documentDiff(before?: string | null, after?: string | null) {
   return rows;
 }
 
-export function moduleSummary({ before, after, files, ...module }: SessionView["modules"][number]) {
+function contentFileChanges({ files, before, after }: SessionView["modules"][number]) {
+  return files.filter(file => file.path !== before?.documentPath && file.path !== after?.documentPath);
+}
+
+export function moduleSummary(entry: SessionView["modules"][number]) {
+  const { before, after, files, ...module } = entry;
+  module.filesChanged = contentFileChanges(entry).length;
   const roles = compareRoles(before?.document.contract, after?.document.contract, module.status !== "initial")
     .filter(role => role.status !== "removed");
   return roles.length ? { ...module, roles } : module;
@@ -81,7 +87,8 @@ export function reviewSummary(matching: ReviewEntry[], model: ReportModel) {
 
 export function moduleDetail(module: SessionView["modules"][number], matching: ReviewEntry[], model: ReportModel | undefined,
   _modules: SessionView["modules"], root: string, work: string): ModuleDetail {
-  return structuredClone({ ...module, reviews: matching.map((bundle) => ({
+  const files = contentFileChanges(module);
+  return structuredClone({ ...module, files, filesChanged: files.length, reviews: matching.map((bundle) => ({
     report: bundle.report, stale: model!.reviewFreshness(bundle).current.status !== "fresh",
     // Путь берётся из фактического хранилища, включая явно заданное внешнее.
     // ID попытки и замечания выбирают запись внутри общей истории модуля.
