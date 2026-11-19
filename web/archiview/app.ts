@@ -49,6 +49,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
   const state: AppState = { view: null, detail: null, selected: null, tab: "document",
     selection: 0, refresh: 0, target: "current", historyLimit: 50, bridge: null, findingFixes: new Map() };
   const tree = createModuleTree(() => state.view, () => state.selected, chooseTreeModule);
+  const collapsedFileDirectories = new Set<string>();
   const fixesByRepository = new Map<string, Map<string, FixRecord>>();
   let refreshing = false;
   let subscription: AbortController | undefined;
@@ -139,6 +140,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     const view = currentView();
     const module = view.modules.find((item) => item.key === directory) ?? view.modules.find((item) => item.directory === directory);
     if (!module) return;
+    if (module.key !== state.selected) collapsedFileDirectories.clear();
     selectedClause = clause;
     state.selected = module.key;
     state.detail = null;
@@ -289,7 +291,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
         },
         ...navigation });
     }
-    else renderFiles(panel, state.detail, copyText);
+    else renderFiles(panel, state.detail, copyText, collapsedFileDirectories);
     renderAnalysisControls();
   }
 
@@ -341,6 +343,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
 
   async function showComparison(view: ComparisonView, historyLimit: number, key?: string, clause?: ClauseNavigation, reviewId?: string, automatic = false) {
     const sameRepository = state.view?.root === view.root;
+    if (!sameRepository) collapsedFileDirectories.clear();
     state.view = view;
     statusLoaded = false; reviewError = detailError = undefined;
     state.target = view.target.id;

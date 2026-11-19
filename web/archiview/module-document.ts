@@ -114,8 +114,9 @@ export function renderHistoricalClause(reference: ClauseReference, review: Revie
   card.focus({ preventScroll: true });
 }
 
-/** Показывает файлы выбранного модуля и их индивидуальные статусы. */
-export function renderFiles(panel: HTMLElement, detail: ModuleDetail, copyText: (text: string) => Promise<void>) {
+/** Группирует собственные файлы обеих версий по их путям от корня репозитория. */
+export function renderFiles(panel: HTMLElement, detail: ModuleDetail, copyText: (text: string) => Promise<void>,
+  collapsedDirectories: Set<string>) {
   const changed = new Map(detail.files.map((file) => [file.path, file.status]));
   const paths = [...new Set([...(detail.before?.files ?? []).map((file) => file.path),
     ...(detail.after?.files ?? []).map((file) => file.path)])].sort((a, b) =>
@@ -125,16 +126,41 @@ export function renderFiles(panel: HTMLElement, detail: ModuleDetail, copyText: 
   header.append(el("strong", "", "Файлы модуля"), el("span", "", paths.length + " всего"));
   box.append(header);
   if (!paths.length) box.append(el("p", "file-empty", "Собственных файлов нет. Откройте вложенный модуль."));
+  const directories = new Map<string, HTMLDetailsElement>();
+  function directoryGroup(path: string): HTMLElement {
+    if (!path) return box;
+    const existing = directories.get(path);
+    if (existing) return existing;
+
+    const slash = path.lastIndexOf("/");
+    const parent = directoryGroup(path.substring(0, slash));
+    const group = el("details", "file-directory");
+    const summary = el("summary");
+    summary.title = path + "/";
+    summary.append(icon("folder"), el("code", "", path.slice(slash + 1) + "/"));
+    group.append(summary);
+    group.open = !collapsedDirectories.has(path);
+    group.addEventListener("toggle", () => {
+      if (!group.isConnected) return;
+      if (group.open) collapsedDirectories.delete(path);
+      else collapsedDirectories.add(path);
+    });
+    directories.set(path, group);
+    parent.append(group);
+    return group;
+  }
+
   for (const file of paths) {
+    const slash = file.lastIndexOf("/");
     const row = el("div", "file-row");
     row.title = file;
-    row.append(icon("file"), el("code", "file-path", file.split("/").at(-1)), badge(changed.get(file) ?? "unchanged", true));
+    row.append(icon("file"), el("code", "file-path", file.slice(slash + 1)), badge(changed.get(file) ?? "unchanged", true));
     const copy = el("button", "text-button", "Путь");
     copy.type = "button";
     copy.setAttribute("aria-label", "Копировать путь " + file);
     copy.addEventListener("click", () => copyText(file));
     row.append(copy);
-    box.append(row);
+    directoryGroup(file.substring(0, slash)).append(row);
   }
   panel.append(box);
 }

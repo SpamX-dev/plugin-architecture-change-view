@@ -350,6 +350,42 @@ test("a native watch updates the selected files and review status after atomic s
   assert.deepEqual(errors, []);
 });
 
+test("module files keep their directory and status on both sides of the comparison", browserOptions, async t => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  await mkdir(path.join(root, "docs"), { recursive: true });
+  const oldPath = path.join(root, "docs/guide.md");
+  await writeFile(oldPath, "Original guide");
+  await promisify(execFile)("git", ["add", "docs/guide.md"], { cwd: root });
+  await promisify(execFile)("git", ["-c", "user.name=Test", "-c", "user.email=test@example.test", "commit", "-qm", "Add guide"], { cwd: root });
+  await rm(oldPath);
+  await mkdir(path.join(root, "docs/v2"));
+  await writeFile(path.join(root, "docs/v2/guide.md"), "New guide");
+  await writeFile(path.join(root, "guide.md"), "Project guide");
+
+  const origin = await sourceCliOrigin(defer, root);
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(origin);
+  await page.getByRole("tab", { name: /^Файлы/ }).click();
+  const files = page.locator(".files-box");
+  const docs = files.locator(":scope > details").filter({ has: page.getByTitle("docs/", { exact: true }) });
+  await docs.locator(':scope > .file-row[title="docs/guide.md"] .removed').waitFor();
+  await files.locator(':scope > .file-row[title="guide.md"] .new').waitFor();
+  const nested = docs.locator(':scope > details > .file-row[title="docs/v2/guide.md"]');
+  await nested.locator(".new").waitFor();
+  await nested.getByRole("button", { name: "Копировать путь docs/v2/guide.md" }).click();
+  assert.equal(await page.evaluate(() => navigator.clipboard.readText()), "docs/v2/guide.md");
+
+  await docs.locator(":scope > summary").press("Enter");
+  await nested.waitFor({ state: "hidden" });
+  await page.getByRole("tab", { name: "Контракт", exact: true }).click();
+  await page.getByRole("tab", { name: /^Файлы/ }).click();
+  await docs.locator(":scope > summary").waitFor();
+  assert.equal(await docs.getAttribute("open"), null);
+  await docs.locator(":scope > summary").click();
+  await nested.waitFor();
+});
+
 test("files remain browsable while independent review statuses load, fail and retry", browserOptions, async t => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);
