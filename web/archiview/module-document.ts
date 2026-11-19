@@ -5,10 +5,11 @@ import { renderContract, renderContractRoles, savedClauseText, clauseSectionLabe
 import { moduleTrail } from "./module-path.js";
 import { timelineDate } from "./timeline.js";
 import { diffBox, diffLine, openDiffDialog } from "./diff.js";
+import type { ClauseControls } from "./clause-editor.js";
 
 /** Показывает структурированный контракт либо исторический документ удалённого модуля. */
 export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: ComparisonView,
-  selectModule: (key: string) => Promise<void>, openFinding: (target: FindingTarget) => void) {
+  selectModule: (key: string) => Promise<void>, openFinding: (target: FindingTarget) => void, clauseControls?: ClauseControls) {
   const selected = detail.after ?? detail.before;
   if (!selected) return;
   if (detail.status === "removed") panel.append(notice("Модуль удалён",
@@ -18,7 +19,7 @@ export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: C
     renderContract(panel, selected.document, { contractDiff: detail.contractDiff, previousReferences: detail.before?.document.contract?.references,
       rawChanged: detail.documentChanged, showRawDiff: () => openDocumentDiff(detail, view), hideHeading: true,
       review: detail.reviews.find((bundle) => bundle.report.id === detail.review?.id) ?? detail.reviews[0],
-      openFinding }); return;
+      openFinding, clauseControls }); return;
   }
   if (selected.document.state !== "documented") {
     const box = notice(selected.document.state === "missing" ? "Контракт модуля ещё не создан" :

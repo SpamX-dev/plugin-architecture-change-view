@@ -12,7 +12,7 @@ import { packageUrl, webAssetUrl } from "../runtime/package-paths.js";
 const errorStatus: Record<string, number> = { INVALID_ARGUMENT: 400, REPOSITORY_UNAVAILABLE: 400, NOT_FOUND: 404, STALE_VIEW: 409, INCOMPLETE_VIEW: 422 };
 
 /** Читает ограниченный JSON-запрос; проверка предметных аргументов остаётся в сервисе. */
-async function bodyOf(request: IncomingMessage): Promise<Record<string, unknown>> {
+async function bodyOf(request: IncomingMessage, limit = 4096): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];
   let bytes = 0;
   for await (const chunk of request) {
@@ -20,7 +20,7 @@ async function bodyOf(request: IncomingMessage): Promise<Record<string, unknown>
     if (typeof input !== "string" && !(input instanceof Uint8Array)) throw new ApplicationError("INVALID_ARGUMENT", "Некорректное тело запроса");
     const data = Buffer.from(input);
     bytes += data.byteLength;
-    if (bytes > 4096) throw new ApplicationError("REQUEST_TOO_LARGE", "Слишком большой запрос");
+    if (bytes > limit) throw new ApplicationError("REQUEST_TOO_LARGE", "Слишком большой запрос");
     chunks.push(data);
   }
   // Decode once: a TCP chunk may end in the middle of a Cyrillic UTF-8 character.
@@ -134,6 +134,7 @@ export function createArchiViewHttpServer(session: SessionOperations & { close?(
       if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))
         return json(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: url.pathname.split("/").at(-1) })));
       if (request.method === "POST") {
+        if (url.pathname === "/api/contract-clause") return json(response, 200, await callSessionOperation(session, "changeClause", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
         if (url.pathname === "/api/analysis") return json(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/reviews") return json(response, 200, await callSessionOperation(session, "buildReview", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/snapshots") return json(response, 201, await callSessionOperation(session, "saveSnapshot", repositoryArguments(repository, await bodyOf(request))));

@@ -3,6 +3,7 @@ import type { ClauseReference, Finding as SavedFinding, FreshnessReason, ReviewR
 import type { Contract } from "../../src/contracts/types.js";
 import type { SnapshotReference, Fact } from "../../src/snapshots/types.js";
 import type { AggregateAssessment } from "../../src/reports/types.js";
+import type { ClauseControls } from "./clause-editor.js";
 
 export type { ComparisonArgs, ComparisonView, ModuleDetail, ModuleSummary, TimelineEntry } from "../../src/application/api.js";
 export type { Assessment, ClauseCheck as Check, ClauseReference, Coverage, EvidenceReference, Observation, Side } from "../../src/reviews/types.js";
@@ -35,6 +36,7 @@ export interface ArchiViewClient extends SessionOperations {
   setProject(args: { projectRoot: string }): Promise<{ root: string }>;
 }
 export interface ContractRenderOptions {
+  clauseControls?: ClauseControls;
   contractDiff: ModuleDetail["contractDiff"]; previousReferences?: Contract["references"]; titleElement?: HTMLElement; groupElement?: HTMLElement;
   hideHeading?: boolean; rawChanged?: boolean; showRawDiff?: () => void; review?: ReviewBundle; openFinding?: (target: FindingTarget) => void;
 }

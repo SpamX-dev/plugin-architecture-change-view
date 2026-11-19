@@ -2,6 +2,7 @@ import type { SessionOperations } from "../application/api.js";
 /** Каталог операций панели. Хост видит схемы, но visibility=app исключает их из инструментов модели. */
 import { ApplicationError } from "../application/errors.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { MAX_DOCUMENT_BYTES } from "../contracts/module-tree.js";
 
 type Rule = { type: "string"; maxLength: number } | { type: "integer"; minimum: number; maximum: number } | { type: "boolean" };
 type Method = "getProject" | "chooseProject" | "setProject" | keyof SessionOperations;
@@ -19,6 +20,10 @@ const operations: Operation[] = [
   ["get_review_statuses", "getReviewStatuses", "Load analysis statuses for the selected tree.", { view: string, repository: string }, ["view"], true],
   ["get_module", "getModule", "Load module details from an existing comparison.", { ...selectedModule, analysis: {type:"boolean"} }, ["view", "path"], true],
   ["get_file_diff", "getFileDiff", "Read a file's diff or unchanged text in the selected module comparison.", { ...selectedModule, file: string }, ["view", "path", "file"], true],
+  ["change_clause", "changeClause", "Edit, add, delete or restore a clause in the selected working contract.", {
+    ...selectedModule, section: string, clauseId: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, action: string,
+    text: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, undoToken: string,
+  }, ["view", "path", "section", "clauseId", "action"], false],
   ["prepare_analysis", "prepareAnalysis", "Prepare immutable inputs for an explicit module analysis.", selectedModule, ["view", "path"], false],
   ["get_analysis", "getAnalysis", "Read the saved status of a prepared analysis.", { id: string, repository: string }, ["id"], true],
   ["build_review", "buildReview", "Refresh a structural report for a selected module.", selectedModule, ["view", "path"], false],
@@ -29,7 +34,7 @@ export const UI_TOOL_METHODS = new Map(operations.map(([name, method]) => ["arch
 export const UI_TOOLS = operations.map(([name, , description, properties, required, readOnlyHint]) => ({
   name: "archiview_ui_" + name, description,
   inputSchema: { type: "object" as const, properties, required, additionalProperties: false },
-  annotations: { readOnlyHint, destructiveHint: false, openWorldHint: false },
+  annotations: { readOnlyHint, destructiveHint: name === "change_clause", openWorldHint: false },
   _meta: { ui: { visibility: ["app"] } },
 })) satisfies Tool[];
 

@@ -156,7 +156,7 @@ function sendError(response: ServerResponse, cause: unknown) {
  * @returns {Promise<Record<string, unknown>>} объект аргументов.
  * @throws {ApplicationError} при превышении предела или неверной форме.
  */
-async function readJson(request: IncomingMessage): Promise<Record<string, unknown>> {
+async function readJson(request: IncomingMessage, limit = MAX_BODY_BYTES): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];
   let bytes = 0;
   for await (const chunk of request) {
@@ -164,7 +164,7 @@ async function readJson(request: IncomingMessage): Promise<Record<string, unknow
     if (typeof input !== "string" && !(input instanceof Uint8Array)) throw new ApplicationError("INVALID_ARGUMENT", "Некорректное тело запроса");
     const data = Buffer.from(input);
     bytes += data.byteLength;
-    if (bytes > MAX_BODY_BYTES) throw new ApplicationError("REQUEST_TOO_LARGE", "Слишком большой запрос");
+    if (bytes > limit) throw new ApplicationError("REQUEST_TOO_LARGE", "Слишком большой запрос");
     chunks.push(data);
   }
   // Decode once: a TCP chunk may end in the middle of a Cyrillic UTF-8 character.
@@ -211,6 +211,9 @@ async function runApiOperation(request: IncomingMessage, response: ServerRespons
   }
   if (method === "GET" && match !== null) {
     return sendJson(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: match[1] })));
+  }
+  if (method === "POST" && relative === "contract-clause") {
+    return sendJson(response, 200, await callSessionOperation(session, "changeClause", repositoryArguments(repository, await readJson(request, 1024 * 1024))));
   }
   if (method === "POST" && relative === "analysis") {
     return sendJson(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await readJson(request))));

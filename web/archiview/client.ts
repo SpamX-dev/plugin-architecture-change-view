@@ -37,6 +37,7 @@ export function createArchiViewClient({ mode, connection, fetcher = globalThis.f
     waitForChanges: (args, signal) => request("wait_for_changes", "GET", "/api/changes", args, true, undefined, signal),
     getReviewStatuses: args => request("get_review_statuses", "GET", "/api/review-statuses", args),
     getModule: args => request("get_module", "GET", "/api/module", args),
+    changeClause: args => request("change_clause", "POST", "/api/contract-clause", args),
     getFileDiff: args => request("get_file_diff", "GET", "/api/file-diff", args),
     prepareAnalysis: args => request("prepare_analysis", "POST", "/api/analysis", args, true, readPreparedAnalysis),
     getAnalysis: args => request("get_analysis", "GET", "/api/analysis/" + encodeURIComponent(args.id), args, false, readAnalysisStatus),

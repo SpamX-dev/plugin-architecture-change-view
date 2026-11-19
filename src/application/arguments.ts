@@ -47,6 +47,19 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
       if (typeof args.view !== "string" || typeof args.path !== "string" || typeof args.file !== "string" || !args.file)
         throw new ApplicationError("INVALID_ARGUMENT", "Нужны view, path и file");
       return session.getFileDiff({ view: args.view, path: args.path, file: args.file, ...selector });
+    case "changeClause": {
+      const { view, path, section, clauseId, action, text, undoToken } = args;
+      if (typeof view !== "string" || typeof path !== "string" || typeof clauseId !== "string" || !clauseId.trim() ||
+          (section !== "responsibilities" && section !== "boundaries" && section !== "invariants"))
+        throw new ApplicationError("INVALID_ARGUMENT", "Нужны модуль, раздел и ID пункта");
+      const target = { ...selector, view, path, clauseId };
+      if ((action === "edit" || action === "add") && typeof text === "string" && text.trim())
+        return session.changeClause({ ...target, section, action, text });
+      if (action === "delete") return session.changeClause({ ...target, section, action });
+      if (action === "restore" && typeof undoToken === "string")
+        return session.changeClause({ ...target, section, action, undoToken });
+      throw new ApplicationError("INVALID_ARGUMENT", "Некорректные параметры изменения пункта");
+    }
     case "prepareAnalysis":
     case "buildReview":
       if (typeof args.view !== "string" || typeof args.path !== "string")

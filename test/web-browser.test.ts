@@ -278,6 +278,53 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   assert.deepEqual(errors, []);
 });
 
+test("contract clauses can be edited, added, deleted and restored from the working tree", browserOptions, async t => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const file = path.join(root, ".archiview/modules/browser-feature.yaml");
+  const app = await createArchiView({ root });
+  const origin = await listen(defer, app.server);
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(origin + "/#src");
+  const button = (name: string) => page.getByRole("button", { name, exact: true });
+  const dialog = page.getByRole("dialog");
+  await button("Редактировать R1").click();
+  assert.equal(await button("Удалить").isDisabled(), true);
+  await dialog.getByLabel("Текст пункта").fill("Новая формулировка обязанности");
+  await button("Сохранить").click();
+  await dialog.waitFor({ state: "detached" });
+  assert.equal(parse(await readFile(file, "utf8")).responsibilities.R1, "Новая формулировка обязанности");
+  for (const [section, id] of [["Границы", "B1"], ["Инварианты", "I1"]]) {
+    await button("Добавить пункт · " + section).click();
+    await dialog.getByLabel("ID нового пункта").fill(id);
+    await dialog.getByLabel("Текст пункта").fill("Текст " + id);
+    await button("Добавить").click();
+    await dialog.waitFor({ state: "detached" });
+    await button("Редактировать " + id).waitFor();
+  }
+  const beforeDelete = await readFile(file, "utf8");
+  await button("Редактировать B1").click();
+  await button("Удалить").click();
+  await button("Восстановить B1").waitFor();
+  assert.deepEqual(parse(await readFile(file, "utf8")).boundaries, {});
+  await page.reload();
+  await button("Восстановить B1").click();
+  await button("Редактировать B1").waitFor();
+  assert.equal(await readFile(file, "utf8"), beforeDelete);
+  await button("Редактировать I1").click();
+  await dialog.getByLabel("Текст пункта").fill("Черновик");
+  const external = beforeDelete.replace("Текст I1", "Внешняя правка");
+  await writeFile(file, external);
+  await button("Сохранить").click();
+  await dialog.getByRole("alert").filter({ hasText: "Контракт изменился" }).waitFor();
+  assert.equal(await dialog.getByLabel("Текст пункта").inputValue(), "Черновик");
+  assert.equal(await readFile(file, "utf8"), external);
+  await button("Отмена").click();
+  await page.locator("#timeline").selectOption({ label: "HEAD" });
+  await page.locator(".clause-row p").filter({ hasText: "Предоставлять функцию" }).waitFor();
+  assert.equal(await page.getByRole("button", { name: /Редактировать|Добавить пункт|Восстановить/ }).count(), 0);
+});
+
 test("a native watch updates the selected files and review status after atomic saves, removals and commits", browserOptions, async t => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);

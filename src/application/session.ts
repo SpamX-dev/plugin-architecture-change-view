@@ -21,6 +21,7 @@ import { ChangeHistory } from "../storage/change-history.js";
 import { digest } from "../serialization/digest.js";
 import { AnalysisRequests } from "./analysis.js";
 import { metadata, moduleDetail, moduleSummary, reviewSummary } from "./module-view.js";
+import { createContractEditor } from "./contract-editor.js";
 
 /** Открывает хранилища одного проекта; вызывается лениво при первом запросе данных. */
 export async function createArchiViewSession({ root: requestedRoot, stateDirectory, deferPublication = true }: { root: string; stateDirectory?: string; deferPublication?: boolean }) {
@@ -33,6 +34,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   const analysis = new AnalysisRequests(store, reports);
   const reader = new GitTreeReader(root, store.snapshotRoot);
   const watcher = new RepositoryWatch(root, store.directory);
+  const editor = createContractEditor(root);
   const captureOptions = { snapshotRoot: store.snapshotRoot };
   const gitSnapshots = new Map<string, Snapshot | null>();
   function launchSnapshot(working: Snapshot): Snapshot {
@@ -356,7 +358,9 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     if (args.analysis !== false) await ensureReviews(view);
     const matching = args.analysis === false ? [] : view.reviews.filter((bundle) => module.moduleId ? bundle.report.module.id === module.moduleId :
       (bundle.report.module.current_path ?? bundle.report.module.baseline_path) === module.directory);
-    return moduleDetail(module, matching, matching.length ? view.reportModel : undefined, view.modules, root, reports.work);
+    const detail = moduleDetail(module, matching, matching.length ? view.reportModel : undefined, view.modules, root, reports.work);
+    if (view.target?.id === "current" && module.after) detail.deletedClause = editor.deletedClause(module.after);
+    return detail;
   }
 
   async function getFileDiff(args: FileDiffArgs) {
@@ -420,6 +424,12 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   }
 
   const waitForChanges: SessionOperations["waitForChanges"] = ({cursor}, signal) => watcher.wait(cursor, signal);
-  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
+  const changeClause: SessionOperations["changeClause"] = args => {
+    const { view, module } = selectedModule(args);
+    if (view.target?.id !== "current" || !module.after?.document.contract)
+      throw new ApplicationError("INVALID_ARGUMENT", "Редактирование доступно для контракта в текущем состоянии");
+    return editor.changeClause(module.after, args);
+  };
+  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, changeClause, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
   return { root, store, reviews, reports, changes, analysis, ...operations, close: () => watcher.close() };
 }

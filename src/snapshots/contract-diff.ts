@@ -35,8 +35,10 @@ export function compareContracts(before: Partial<Contract> | null | undefined, a
   for (const key of [...headingKeys, "rationale", "owners", "tags", "references", "extensions"] as const)
     if (before?.[key] !== undefined || after?.[key] !== undefined) add(key, before?.[key], after?.[key]);
   for (const section of ["responsibilities", "boundaries", "invariants"] as const) {
-    for (const id of new Set([...Object.keys(after?.[section] ?? {}), ...Object.keys(before?.[section] ?? {})]))
-      add(section + "." + id, before?.[section]?.[id], after?.[section]?.[id]);
+    const previous = new Map(Object.entries(before?.[section] ?? {}));
+    const current = new Map(Object.entries(after?.[section] ?? {}));
+    for (const id of new Set([...current.keys(), ...previous.keys()]))
+      add(section + "." + id, previous.get(id), current.get(id));
   }
   const headingValues = (contract: Partial<Contract> | null | undefined) => contract == null ? undefined :
     Object.fromEntries(headingKeys.filter((key) => contract[key] !== undefined).map((key) => [key, contract[key]]));

@@ -1,5 +1,5 @@
 import type { Section, Contract, ClauseReference, ReviewBundle, ContractDocument, ContractRenderOptions } from "./types.js";
-import { el } from "./dom.js";
+import { el, icon } from "./dom.js";
 import { ROLE_EXTENSION } from "../../src/contracts/roles.js";
 import { roleBadge } from "./role-badge.js";
 import { clauseFindingTargets, findingBug } from "./findings.js";
@@ -97,7 +97,28 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
   renderContractRoles(paper, options.contractDiff, contract.extensions);
   for (const [section, title] of (Object.entries(sections) as [Section, string][])) {
     const block = el("section", "clause-section");
-    block.append(el("h3", "", title));
+    const heading = el("div", "clause-section-heading");
+    heading.append(el("h3", "", title));
+    block.append(heading);
+    const controls = options.clauseControls;
+    if (controls) {
+      const add = el("button", "text-button", "+ Добавить пункт");
+      add.type = "button";
+      add.setAttribute("aria-label", "Добавить пункт · " + title);
+      add.onclick = () => controls.open(section, title);
+      heading.append(add);
+      const undo = controls.undo;
+      if (undo?.section === section) {
+        const bar = el("div", "clause-undo");
+        const restore = el("button", "text-button", "Восстановить " + undo.id);
+        restore.onclick = async () => {
+          restore.disabled = true;
+          try { await undo.restore(); } finally { restore.disabled = false; }
+        };
+        bar.append(el("span", "", "Пункт " + undo.id + " удалён"), restore);
+        block.append(bar);
+      }
+    }
     const entries = changes.filter((item) => item.key.startsWith(section + "."));
     if (!entries.length) block.append(el("p", "empty-clauses", "Пункты не заданы"));
     for (const change of entries) {
@@ -111,8 +132,17 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
       decorate(row, change.key, id);
       if (change.status === "unchanged") row.title = "Пункт не изменялся";
       const findings = clauseFindingTargets(options.review, contract, section, id);
-      if (findings.length) {
+      if (findings.length || controls && Object.hasOwn(contract[section], id)) {
         const issues = el("div", "clause-issues");
+        if (controls && Object.hasOwn(contract[section], id)) {
+          const edit = el("button", "clause-edit-action");
+          edit.type = "button";
+          edit.title = "Редактировать " + id;
+          edit.setAttribute("aria-label", edit.title);
+          edit.append(icon("edit"));
+          edit.onclick = () => controls.open(section, title, id);
+          issues.append(edit);
+        }
         for (const finding of findings) {
           const button = el("button", "clause-issue " + finding.severity);
           button.type = "button";

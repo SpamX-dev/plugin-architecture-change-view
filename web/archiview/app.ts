@@ -13,6 +13,7 @@ import { renderTimeline, timelineDate } from "./timeline.js";
 import { renderDocument, renderHistoricalClause, renderFiles } from "./module-document.js";
 import { openFileDiff } from "./diff.js";
 import { renderProjectSelection } from "./project-selection.js";
+import { createClauseEditor } from "./clause-editor.js";
 
 interface AppState {
   view: ComparisonView | null;
@@ -68,6 +69,16 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     selection: () => ({ view: refreshing || !state.detail || state.view?.published ? null : state.view, module: state.view?.modules.find((entry) => entry.key === state.selected) }),
     refresh, toast });
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
+  const clauseControls = createClauseEditor(client, async (view, key, change) => {
+    if (state.view?.root !== view.root || state.target !== "current") return;
+    await refresh();
+    // After the dialog closes, return to the edited clause or its undo action.
+    requestAnimationFrame(() => {
+      if (state.view?.root !== view.root || state.selected !== key || state.tab !== "document" || state.target !== "current") return;
+      const row = '[data-clause-section="' + change.section + '"][data-clause-id="' + CSS.escape(change.clauseId) + '"]';
+      byId("document-panel").querySelector<HTMLButtonElement>(change.action === "delete" ? ".clause-undo button" : row + " .clause-edit-action")?.focus();
+    });
+  }, toast);
 
   function currentView(): ComparisonView { if (!state.view) throw new Error("Project comparison is not loaded"); return state.view; }
 
@@ -275,7 +286,7 @@ export async function startApp({ client, bridge, host, chooseProject }: {
       if (state.tab !== "document") return;
     }
     if (state.tab === "document") {
-      renderDocument(panel, state.detail, currentView(), selectModule, openReviewFinding);
+      renderDocument(panel, state.detail, currentView(), selectModule, openReviewFinding, clauseControls(currentView(), state.detail));
       if (selectedClause) revealClause(selectedClause, state.detail);
     }
     else if (["checks", "findings"].includes(state.tab)) {

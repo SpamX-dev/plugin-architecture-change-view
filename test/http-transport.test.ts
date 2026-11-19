@@ -1,4 +1,4 @@
-import { initTestRepository } from "./support.js";
+import { commitTestFiles, initTestRepository } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
-import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import net from "node:net";
 import os from "node:os";
@@ -55,6 +55,46 @@ async function serve(t: TestContext) {
   t.after(() => new Promise<void>((resolve) => { app.server.closeAllConnections(); app.server.close(() => resolve()); }));
   return { ...app, root, url: "http://127.0.0.1:" + (app.server.address() as AddressInfo).port };
 }
+
+test("clause writes require the live mapping and source version; undo restores original YAML bytes", async t => {
+  const app = await serve(t);
+  const file = path.join(app.root, ".archiview/modules/root.yaml");
+  const original = [
+    "# Contract", "schema_version: 1", "id: root", "title: 'Пример'", "kind: module",
+    "purpose: >-", "  Первая строка", "  и продолжение.", "responsibilities: {R1: Пример}",
+    "boundaries:", "  legacy.id: Прежний ключ # комментарий", "  B7: Другой пункт", "invariants: {}", "",
+  ].join("\r\n");
+  await writeFile(file, original);
+  commitTestFiles(app.root);
+  const live = await app.getComparison();
+  const post = (body: object) => fetch(app.url + "/api/contract-clause", { method: "POST",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: ".", view: live.id, ...body }) });
+  const deletion = { section: "boundaries", action: "delete", clauseId: "legacy.id" };
+  const commit = await app.getComparison({ target: live.timeline.find(entry => entry.kind === "git")!.id });
+  assert.equal((await post({ ...deletion, view: commit.id })).status, 400);
+  assert.equal((await post({ action: "delete", section: "responsibilities", clauseId: "R1" })).status, 400);
+  assert.equal((await post({ action: "add", section: "boundaries", clauseId: "B7", text: "Повтор" })).status, 400);
+  const race = await Promise.all([post(deletion), post(deletion)]);
+  assert.deepEqual(race.map(r => r.status).sort(), [200, 409]);
+  const undo = await race.find(r => r.ok)!.json();
+  assert.equal(await readFile(file, "utf8"), original.replace("  legacy.id: Прежний ключ # комментарий\r\n", ""));
+  const current = await app.getComparison();
+  const restore = { ...deletion, view: current.id, action: "restore", undoToken: undo.undoToken };
+  assert.equal((await post({ ...restore, undoToken: "expired" })).status, 409);
+  assert.equal((await post(restore)).status, 200);
+  assert.equal(await readFile(file, "utf8"), original);
+  const multiline = "Первая строка\n" + "Длинное значение ".repeat(450);
+  assert.equal((await post({ action: "add", section: "invariants", clauseId: "__proto__", text: multiline })).status, 200);
+  const edited = await app.getComparison();
+  const detail = await app.getModule({ view: edited.id, path: "." });
+  const field = detail.contractDiff.fields.find(item => item.key === "invariants.__proto__");
+  assert.equal(field?.status, "added");
+  assert.equal(field.after, multiline);
+  const beforeRemap = await readFile(file, "utf8");
+  await writeModuleTree(app.root, { other: "." });
+  assert.equal((await post({ ...deletion, view: edited.id })).status, 409);
+  assert.equal(await readFile(file, "utf8"), beforeRemap);
+});
 
 /**
  * Отправляет сырую строку запроса: fetch не позволяет передать синтаксически

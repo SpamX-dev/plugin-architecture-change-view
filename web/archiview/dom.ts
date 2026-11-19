@@ -1,5 +1,6 @@
 /** Статические SVG-значки, не содержащие пользовательских строк. */
 const icons = {
+  edit: '<path d="m15 5 4 4M4 20l4-1 12-12a2.8 2.8 0 0 0-4-4L4.8 15.5 4 20Z"/>',
   folder: '<path d="M3 6.5h6l2 2h10v11H3z"/><path d="M3 9h18"/>',
   file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 12h6m-6 4h6"/>',
   refresh: '<path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/>',

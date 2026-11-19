@@ -6,10 +6,17 @@ import type { ClauseInput, ReviewReport, Side } from "../reviews/types.js";
 import type { Comparison, ComparisonModule, Fact, Snapshot } from "../snapshots/types.js";
 import type { compareContracts, RoleChange } from "../snapshots/contract-diff.js";
 import type { StructuredPatchHunk } from "diff";
+import type { Section } from "../contracts/types.js";
 
 export interface RepositoryArgs { repository?: string }
 export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number; published?: boolean; watch?: boolean };
 export type ModuleArgs = RepositoryArgs & { view: string; path: string; analysis?: boolean };
+export type ClauseChange = { section: Section; clauseId: string } & (
+  | { action: "add" | "edit"; text: string }
+  | { action: "delete" }
+  | { action: "restore"; undoToken: string }
+);
+export type ChangeClauseArgs = ModuleArgs & ClauseChange;
 export type FileDiffArgs = RepositoryArgs & { view: string; path: string; file: string };
 export interface FileDiff { hunks: StructuredPatchHunk[]; message?: string; unchangedText?: string }
 export type SnapshotArgs = RepositoryArgs & { view: string; label?: string };
@@ -73,6 +80,7 @@ export interface DocumentDiffLine {
   text: string;
 }
 export interface ModuleDetail extends ComparisonModule, ModuleReviewState {
+  deletedClause?: { section: Section; clauseId: string; undoToken: string };
   reviews: ModuleReview[];
   diff: DocumentDiffLine[];
   contractDiff: ReturnType<typeof compareContracts>;
@@ -82,6 +90,7 @@ export interface SessionOperations {
   getComparison(args?: ComparisonArgs): Promise<ComparisonView>;
   getReviewStatuses(args: RepositoryArgs & {view: string}): Promise<{modules: (ModuleReviewState & {key: string})[]; diagnostics: string[]}>;
   getModule(args: ModuleArgs): Promise<ModuleDetail>;
+  changeClause(args: ChangeClauseArgs): Promise<{ undoToken?: string }>;
   getFileDiff(args: FileDiffArgs): Promise<FileDiff>;
   prepareAnalysis(args: ModuleArgs): Promise<PreparedAnalysis>;
   getAnalysis(args: RepositoryArgs & { id: string }): Promise<AnalysisStatus>;

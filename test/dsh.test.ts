@@ -106,6 +106,7 @@ function fakeSession() {
     async getReviewStatuses() { return {modules:[], diagnostics:[]}; },
     async getComparison(args) { calls.push(["getComparison", args]); return comparison; },
     async prepareAnalysis(args) { calls.push(["prepareAnalysis", args]); return analysis; },
+    async changeClause(args) { calls.push(["changeClause", args]); return {}; },
     getModule: unused, getFileDiff: unused, getAnalysis: unused, buildReview: unused, saveSnapshot: unused,
   };
   return { calls, comparison, analysis, ...operations };
@@ -467,6 +468,16 @@ test("routes: подготовка анализа принимает JSON-тел
   }), response);
   assert.equal(response.statusCode, 201);
   assert.deepEqual(session.calls[0], ["prepareAnalysis", { view: "v1", path: "src" }]);
+});
+
+test("dsh forwards contract text and the selected repository", async () => {
+  const session = fakeSession();
+  const handler = prefixHandler(createRouteTable({ guard: () => false, getSession: () => session }));
+  const args = { view: "v1", path: ".", action: "edit", section: "boundaries", clauseId: "B1", text: "Текст ".repeat(800) };
+  const response = fakeResponse();
+  await handler(fakeRequest({ method: "POST", url: "/archiview/api/contract-clause?repository=feature", body: args }), response);
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(session.calls, [["changeClause", { ...args, repository: "feature" }]]);
 });
 
 test("routes: неизвестная операция и слишком большое тело отклоняются", async () => {
