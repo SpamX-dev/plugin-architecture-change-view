@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-distribution
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 960dd3500a69ebe0993c25e8ca85c123bccc1b5f34867e61362b508d4aadc572
+check_hash: 2e43f432617e48720d404e778c34db7cbbaf4d1df3497dc0eff6ef33d0fa82ee
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,272 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      id: faff1ed3907911564e7aa16a1a87c51571af85e9
     state:
       exists: true
       directory: scripts
-      self_digest: sha256:4052cce4158f86e2a85be6ee3c85d8359a08753d2a2a967fb620800c9837b642
-      subtree_digest: sha256:a8c154bd02bafa99a31124458e302be47bf53da2195b8dca1c515b28c7337b17
+      self_digest: sha256:fdf31956477c9fff0549a494a9eeb7a8916c93e07df04ec9d1a4e0ade69dd2d6
+      subtree_digest: sha256:ef65cffa19f7e52d589ff996ab957fdc13ed08684645f9953182d143ee243fa7
   current:
     exists: true
     directory: scripts
-    self_digest: sha256:fdf31956477c9fff0549a494a9eeb7a8916c93e07df04ec9d1a4e0ade69dd2d6
-    subtree_digest: sha256:ef65cffa19f7e52d589ff996ab957fdc13ed08684645f9953182d143ee243fa7
+    self_digest: sha256:5a83b64835d94fd4ee04c8b2a86e0168e349fd88fcd29df01bb2f140edeef2fe
+    subtree_digest: sha256:7daea8df313e39fa474097b42e93cddcfd24101b9f845d8f03e7e8fd9425cb44
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
-  module_id: archiview-distribution
-  directory: scripts
-  parent_id: architecture-change-view
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: archiview-distribution
-    directory: scripts
-    own_files:
-      - path: scripts/build-dsh.ts
-        digest: sha256:4ddfe3209000620dc605de155aebd3cec75641d3dc325b3afcb2a31afa0535d1
-        normalization: text-lf/v1
-      - path: scripts/build-plugin.ts
-        digest: sha256:1523cde98115a8d765833a4ac75f5eb95e8b58bea56d28f11354f29c31816775
-        normalization: text-lf/v1
-      - path: scripts/build-portable.ts
-        digest: sha256:6fbbbd69d08a07bedf0e6de5c3543a9d7dd88b72d7a70d4ba0362d3b7eda6f25
-        normalization: text-lf/v1
-      - path: scripts/build-web.ts
-        digest: sha256:22e04ebb4ec3a8710610ce0bda9b2f58a4d07b2c62d4ca0bc70cb77e80fd8569
-        normalization: text-lf/v1
-      - path: scripts/distribution.ts
-        digest: sha256:3767d4e2376ef321080511ffda28a5b10142778c5095f8790ec84c68c87f0be8
-        normalization: text-lf/v1
-      - path: scripts/install-plugin.ts
-        digest: sha256:9de1400dc6fc017d8027c9e4e1faed0dd06dc05a5fec64fd2cf15a29bcd25579
-        normalization: text-lf/v1
-      - path: scripts/install-portable.ps1
-        digest: sha256:67521522e1ffcd3559e9ab2e01444165f07bb2e2871fea4a72aa5cdf9b4ec2c4
-        normalization: text-lf/v1
-      - path: scripts/install-portable.ts
-        digest: sha256:c60939dc4f3e4926d970643fabd56a225665eb96e81b03b891200895f5660bb9
-        normalization: text-lf/v1
-      - path: scripts/preview-panel.ts
-        digest: sha256:2fb11317cad7021040639c2cf2cf96695814516817d1010a920fe40f66a91ec9
-        normalization: text-lf/v1
-      - path: scripts/test-web.ts
-        digest: sha256:2634b5e1fce805b683797e35b240d8ae40d70bc5e79c2935d0e3ceaafadf46c4
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: archiview-distribution
-      title: Сборка локального плагина
-      kind: module
-      extensions:
-        archiview.roles:
-          - builds
-          - tools
-      purpose: Собирать автономные пакеты локальных плагинов Codex и dsh из исходников
-        ArchiView.
-      responsibilities:
-        R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый
-          каталог без зависимости от node_modules установленного плагина.
-        R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для
-          проверки UI, bridge и отказа хоста без запуска модели.
-        R3: По отдельной явной команде устанавливать пакет Codex штатным установщиком и
-          разрешать пути его MCP-конфигурации относительно фактического
-          установленного каталога. Находить CLI через явно заданный путь, PATH
-          или установку приложения Codex в Windows.
-        R4: Собирать переносимый Windows x64-архив с локальным marketplace, установщиком
-          и Node с его лицензией; устанавливать встроенный рантайм относительно
-          фактического каталога кеша целевой машины.
-      boundaries:
-        B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
-      invariants:
-        I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не
-          заменяются.
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
-        text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-  technical_digest: sha256:4052cce4158f86e2a85be6ee3c85d8359a08753d2a2a967fb620800c9837b642
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: archiview-distribution
-    directory: scripts
-    own_files:
-      - path: scripts/build-dsh.ts
-        digest: sha256:4ddfe3209000620dc605de155aebd3cec75641d3dc325b3afcb2a31afa0535d1
-        normalization: text-lf/v1
-      - path: scripts/build-plugin.ts
-        digest: sha256:1523cde98115a8d765833a4ac75f5eb95e8b58bea56d28f11354f29c31816775
-        normalization: text-lf/v1
-      - path: scripts/build-portable.ts
-        digest: sha256:6fbbbd69d08a07bedf0e6de5c3543a9d7dd88b72d7a70d4ba0362d3b7eda6f25
-        normalization: text-lf/v1
-      - path: scripts/build-web.ts
-        digest: sha256:22e04ebb4ec3a8710610ce0bda9b2f58a4d07b2c62d4ca0bc70cb77e80fd8569
-        normalization: text-lf/v1
-      - path: scripts/distribution.ts
-        digest: sha256:3767d4e2376ef321080511ffda28a5b10142778c5095f8790ec84c68c87f0be8
-        normalization: text-lf/v1
-      - path: scripts/install-plugin.ts
-        digest: sha256:9de1400dc6fc017d8027c9e4e1faed0dd06dc05a5fec64fd2cf15a29bcd25579
-        normalization: text-lf/v1
-      - path: scripts/install-portable.ps1
-        digest: sha256:67521522e1ffcd3559e9ab2e01444165f07bb2e2871fea4a72aa5cdf9b4ec2c4
-        normalization: text-lf/v1
-      - path: scripts/install-portable.ts
-        digest: sha256:c60939dc4f3e4926d970643fabd56a225665eb96e81b03b891200895f5660bb9
-        normalization: text-lf/v1
-      - path: scripts/preview-panel.ts
-        digest: sha256:2fb11317cad7021040639c2cf2cf96695814516817d1010a920fe40f66a91ec9
-        normalization: text-lf/v1
-      - path: scripts/test-web.ts
-        digest: sha256:2634b5e1fce805b683797e35b240d8ae40d70bc5e79c2935d0e3ceaafadf46c4
-        normalization: text-lf/v1
-    contract:
-      id: archiview-distribution
-      kind: module
-      purpose: Собирать автономные пакеты локальных плагинов Codex и dsh из исходников
-        ArchiView.
-      responsibilities:
-        R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый
-          каталог без зависимости от node_modules установленного плагина.
-        R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для
-          проверки UI, bridge и отказа хоста без запуска модели.
-        R3: По отдельной явной команде устанавливать пакет Codex штатным установщиком и
-          разрешать пути его MCP-конфигурации относительно фактического
-          установленного каталога. Находить CLI через явно заданный путь, PATH
-          или установку приложения Codex в Windows.
-        R4: Собирать переносимый Windows x64-архив с локальным marketplace, установщиком
-          и Node с его лицензией; устанавливать встроенный рантайм относительно
-          фактического каталога кеша целевой машины.
-      boundaries:
-        B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
-      invariants:
-        I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не
-          заменяются.
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
-        text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-    children: []
-  self_digest: sha256:32dbb50c88548cf4270990d28eba3b795f6b8b1255c4edab08cdba0e0e747bc0
-  subtree:
-    self: sha256:4052cce4158f86e2a85be6ee3c85d8359a08753d2a2a967fb620800c9837b642
-    children: []
-  subtree_digest: sha256:a8c154bd02bafa99a31124458e302be47bf53da2195b8dca1c515b28c7337b17
-  semantic_subtree:
-    self: sha256:32dbb50c88548cf4270990d28eba3b795f6b8b1255c4edab08cdba0e0e747bc0
-    children: []
-  semantic_subtree_digest: sha256:3956a1564f00e6612983b7decf95bfb9ad2b6ff007d62908e2178d4291f0430c
-current:
   module_id: archiview-distribution
   directory: scripts
   parent_id: architecture-change-view
@@ -525,11 +275,227 @@ current:
     self: sha256:7c46cd35a4adec2957af4296c5132a5e8cb4a0fe74f1e84e1818083f081ea405
     children: []
   semantic_subtree_digest: sha256:a03a55fb663d39d8878134eb7b34fa68fa8854db3c7b2f33fe29817205cf2ea6
+current:
+  module_id: archiview-distribution
+  directory: scripts
+  parent_id: architecture-change-view
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-distribution
+    directory: scripts
+    own_files:
+      - path: scripts/build-dsh.ts
+        digest: sha256:4ddfe3209000620dc605de155aebd3cec75641d3dc325b3afcb2a31afa0535d1
+        normalization: text-lf/v1
+      - path: scripts/build-plugin.ts
+        digest: sha256:1523cde98115a8d765833a4ac75f5eb95e8b58bea56d28f11354f29c31816775
+        normalization: text-lf/v1
+      - path: scripts/build-portable.ts
+        digest: sha256:6fbbbd69d08a07bedf0e6de5c3543a9d7dd88b72d7a70d4ba0362d3b7eda6f25
+        normalization: text-lf/v1
+      - path: scripts/build-web.ts
+        digest: sha256:22e04ebb4ec3a8710610ce0bda9b2f58a4d07b2c62d4ca0bc70cb77e80fd8569
+        normalization: text-lf/v1
+      - path: scripts/distribution.ts
+        digest: sha256:3767d4e2376ef321080511ffda28a5b10142778c5095f8790ec84c68c87f0be8
+        normalization: text-lf/v1
+      - path: scripts/install-plugin.ts
+        digest: sha256:9de1400dc6fc017d8027c9e4e1faed0dd06dc05a5fec64fd2cf15a29bcd25579
+        normalization: text-lf/v1
+      - path: scripts/install-portable.ps1
+        digest: sha256:67521522e1ffcd3559e9ab2e01444165f07bb2e2871fea4a72aa5cdf9b4ec2c4
+        normalization: text-lf/v1
+      - path: scripts/install-portable.ts
+        digest: sha256:c60939dc4f3e4926d970643fabd56a225665eb96e81b03b891200895f5660bb9
+        normalization: text-lf/v1
+      - path: scripts/preview-panel.ts
+        digest: sha256:2fb11317cad7021040639c2cf2cf96695814516817d1010a920fe40f66a91ec9
+        normalization: text-lf/v1
+      - path: scripts/test-web.ts
+        digest: sha256:2634b5e1fce805b683797e35b240d8ae40d70bc5e79c2935d0e3ceaafadf46c4
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-distribution
+      title: Сборка локального плагина
+      kind: module
+      extensions:
+        archiview.roles:
+          - builds
+          - tools
+      purpose: Готовить переносимые поставки ArchiView и обеспечивать их установку и
+        локальную проверку.
+      responsibilities:
+        R1: Собирать автономные пакеты Codex и dsh, для запуска которых не нужна
+          установка зависимостей через npm.
+        R2: Предоставлять протокольный стенд для проверки панели, передачи поручения и
+          отказа хоста.
+        R3: Устанавливать плагин Codex штатным установщиком с привязкой конфигурации к
+          его фактическому каталогу.
+        R4: Собирать переносимый архив для Windows x64 с установщиком, локальным
+          marketplace, встроенным Node и его лицензией.
+      boundaries:
+        B1: Сборка ограничивается подготовкой пакета. Установка в пользовательский
+          профиль выполняется только по явной команде.
+        B2: Сборка пишет результаты в dist, сохраняя исходники и данные проектов.
+        B3: Сборка отклоняет поставку при ошибках строгой проверки типов приложения,
+          адаптеров, интерфейса, скриптов или тестов.
+        B4: Стенд работает с временным проектом без обращения к модели.
+      invariants: {}
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B4
+        text: Панель обращается к агенту только по явному поручению пользователя
+          провести анализ или исправить замечание.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B5
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
+  technical_digest: sha256:5a83b64835d94fd4ee04c8b2a86e0168e349fd88fcd29df01bb2f140edeef2fe
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-distribution
+    directory: scripts
+    own_files:
+      - path: scripts/build-dsh.ts
+        digest: sha256:4ddfe3209000620dc605de155aebd3cec75641d3dc325b3afcb2a31afa0535d1
+        normalization: text-lf/v1
+      - path: scripts/build-plugin.ts
+        digest: sha256:1523cde98115a8d765833a4ac75f5eb95e8b58bea56d28f11354f29c31816775
+        normalization: text-lf/v1
+      - path: scripts/build-portable.ts
+        digest: sha256:6fbbbd69d08a07bedf0e6de5c3543a9d7dd88b72d7a70d4ba0362d3b7eda6f25
+        normalization: text-lf/v1
+      - path: scripts/build-web.ts
+        digest: sha256:22e04ebb4ec3a8710610ce0bda9b2f58a4d07b2c62d4ca0bc70cb77e80fd8569
+        normalization: text-lf/v1
+      - path: scripts/distribution.ts
+        digest: sha256:3767d4e2376ef321080511ffda28a5b10142778c5095f8790ec84c68c87f0be8
+        normalization: text-lf/v1
+      - path: scripts/install-plugin.ts
+        digest: sha256:9de1400dc6fc017d8027c9e4e1faed0dd06dc05a5fec64fd2cf15a29bcd25579
+        normalization: text-lf/v1
+      - path: scripts/install-portable.ps1
+        digest: sha256:67521522e1ffcd3559e9ab2e01444165f07bb2e2871fea4a72aa5cdf9b4ec2c4
+        normalization: text-lf/v1
+      - path: scripts/install-portable.ts
+        digest: sha256:c60939dc4f3e4926d970643fabd56a225665eb96e81b03b891200895f5660bb9
+        normalization: text-lf/v1
+      - path: scripts/preview-panel.ts
+        digest: sha256:2fb11317cad7021040639c2cf2cf96695814516817d1010a920fe40f66a91ec9
+        normalization: text-lf/v1
+      - path: scripts/test-web.ts
+        digest: sha256:2634b5e1fce805b683797e35b240d8ae40d70bc5e79c2935d0e3ceaafadf46c4
+        normalization: text-lf/v1
+    contract:
+      id: archiview-distribution
+      kind: module
+      purpose: Готовить переносимые поставки ArchiView и обеспечивать их установку и
+        локальную проверку.
+      responsibilities:
+        R1: Собирать автономные пакеты Codex и dsh, для запуска которых не нужна
+          установка зависимостей через npm.
+        R2: Предоставлять протокольный стенд для проверки панели, передачи поручения и
+          отказа хоста.
+        R3: Устанавливать плагин Codex штатным установщиком с привязкой конфигурации к
+          его фактическому каталогу.
+        R4: Собирать переносимый архив для Windows x64 с установщиком, локальным
+          marketplace, встроенным Node и его лицензией.
+      boundaries:
+        B1: Сборка ограничивается подготовкой пакета. Установка в пользовательский
+          профиль выполняется только по явной команде.
+        B2: Сборка пишет результаты в dist, сохраняя исходники и данные проектов.
+        B3: Сборка отклоняет поставку при ошибках строгой проверки типов приложения,
+          адаптеров, интерфейса, скриптов или тестов.
+        B4: Стенд работает с временным проектом без обращения к модели.
+      invariants: {}
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B4
+        text: Панель обращается к агенту только по явному поручению пользователя
+          провести анализ или исправить замечание.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B5
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
+    children: []
+  self_digest: sha256:e50560dec6f0c4e44b71ffe9384122bd8f6d166f3036ed4e3c4cb0d6b559e6bf
+  subtree:
+    self: sha256:5a83b64835d94fd4ee04c8b2a86e0168e349fd88fcd29df01bb2f140edeef2fe
+    children: []
+  subtree_digest: sha256:7daea8df313e39fa474097b42e93cddcfd24101b9f845d8f03e7e8fd9425cb44
+  semantic_subtree:
+    self: sha256:e50560dec6f0c4e44b71ffe9384122bd8f6d166f3036ed4e3c4cb0d6b559e6bf
+    children: []
+  semantic_subtree_digest: sha256:75aa2ae8a5126d40406a7d6d57f2af4353b9426530909d2c6f21918c4c99763c
 change:
   existence: retained
-  own: false
+  own: true
   own_code: false
-  own_contract: false
+  own_contract: true
   inherited_constraints: true
   descendants: false
   child_composition: false
@@ -539,19 +505,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 229
-  comparison_key: sha256:7da7254a0a66f9d27ec9b6f9a7adf4ab17c541a918826ea024b3c2f7739ca2d6
+  generation: 230
+  comparison_key: sha256:dbbcc9929208174b5364c72ca96a3186ff40bffa50a1a9697a4763ed2695b719
   baseline:
     metadata:
-      id: git-d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
-      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
+      id: git-faff1ed3907911564e7aa16a1a87c51571af85e9
+      digest: sha256:51ac76e85886d11780df766f66e795cd45b742a439f5fc5ce763415fd4b8ce48
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T14:53:38.101Z
+      capturedAt: 2026-11-19T08:54:36.342Z
       kind: git
-      revision: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      revision: faff1ed3907911564e7aa16a1a87c51571af85e9
       label: HEAD
-      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
+      fingerprint: 857d1f43852fb597c51de3c3dfacd50edf82ab25ecdac496396088445d837560
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -1551,7 +1517,7 @@ publication:
             + "\n"); process.exitCode = 1; });
 
             child.once("exit", (code) => { process.exitCode = code ?? 1; });
-      - index: 183
+      - index: 187
         fact:
           id: sha256:ce55de2db3f7aff2a55288bc448c67262f2d262fffb5bfb115d718159eaad05c
           kind: module
@@ -1559,17 +1525,84 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["scripts/build-dsh.ts","scripts/build-plugin.ts","scripts/build-portable.ts","scripts/build-web.ts","scripts/distribution.ts","scripts/install-plugin.ts","scripts/install-portable.ps1","scripts/install-portable.ts","scripts/preview-panel.ts","scripts/test-web.ts"]}'
   current:
     metadata:
-      id: working-17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
-      digest: sha256:17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
+      id: launch-c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
+      digest: sha256:ceaa4d2c1d904878f438bd3dafffa6e84373a3020bc10380e6abb3f3e3443861
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-13T06:45:51.736Z
-      kind: working
-      label: Рабочее дерево
-      fingerprint: 8aab78b922d900e815b80f4c7e0671a4309fe40acea7b649b63dc3003bbadab6
+      capturedAt: 2026-11-19T08:54:38.403Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
       complete: true
       diagnostics: []
       evidenceLimitations: []
+      observations:
+        architecture-change-view:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-distribution:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-skills:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-module-boundaries-skill:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-core:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-application:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-http:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-codex:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-contracts:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        dsh-adapter:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        dsh-client-panel:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-mcp:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-project-location:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-reports:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-reviews:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-node-runtime:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-serialization:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-snapshots:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-storage:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-tests:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-web:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-client:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
     module_index: 1
     module:
       directory: scripts
@@ -1586,20 +1619,20 @@ publication:
 
           extensions:
             archiview.roles: [builds, tools]
-          purpose: Собирать автономные пакеты локальных плагинов Codex и dsh из
-          исходников ArchiView.
+          purpose: Готовить переносимые поставки ArchiView и обеспечивать их
+          установку и локальную проверку.
 
           responsibilities:
-            R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый каталог без зависимости от node_modules установленного плагина.
-            R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для проверки UI, bridge и отказа хоста без запуска модели.
-            R3: По отдельной явной команде устанавливать пакет Codex штатным установщиком и разрешать пути его MCP-конфигурации относительно фактического установленного каталога.
-              Находить CLI через явно заданный путь, PATH или установку приложения Codex в Windows.
-            R4: Собирать переносимый Windows x64-архив с локальным marketplace, установщиком и Node с его лицензией;
-              устанавливать встроенный рантайм относительно фактического каталога кеша целевой машины.
+            R1: Собирать автономные пакеты Codex и dsh, для запуска которых не нужна установка зависимостей через npm.
+            R2: Предоставлять протокольный стенд для проверки панели, передачи поручения и отказа хоста.
+            R3: Устанавливать плагин Codex штатным установщиком с привязкой конфигурации к его фактическому каталогу.
+            R4: Собирать переносимый архив для Windows x64 с установщиком, локальным marketplace, встроенным Node и его лицензией.
           boundaries:
-            B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
-          invariants:
-            I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не заменяются.
+            B1: Сборка ограничивается подготовкой пакета. Установка в пользовательский профиль выполняется только по явной команде.
+            B2: Сборка пишет результаты в dist, сохраняя исходники и данные проектов.
+            B3: Сборка отклоняет поставку при ошибках строгой проверки типов приложения, адаптеров, интерфейса, скриптов или тестов.
+            B4: Стенд работает с временным проектом без обращения к модели.
+          invariants: {}
         format: yaml
         contract:
           schema_version: 1
@@ -1610,29 +1643,29 @@ publication:
             archiview.roles:
               - builds
               - tools
-          purpose: Собирать автономные пакеты локальных плагинов Codex и dsh из исходников
-            ArchiView.
+          purpose: Готовить переносимые поставки ArchiView и обеспечивать их установку и
+            локальную проверку.
           responsibilities:
-            R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый
-              каталог без зависимости от node_modules установленного плагина.
-            R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для
-              проверки UI, bridge и отказа хоста без запуска модели.
-            R3: По отдельной явной команде устанавливать пакет Codex штатным установщиком и
-              разрешать пути его MCP-конфигурации относительно фактического
-              установленного каталога. Находить CLI через явно заданный путь,
-              PATH или установку приложения Codex в Windows.
-            R4: Собирать переносимый Windows x64-архив с локальным marketplace, установщиком
-              и Node с его лицензией; устанавливать встроенный рантайм
-              относительно фактического каталога кеша целевой машины.
+            R1: Собирать автономные пакеты Codex и dsh, для запуска которых не нужна
+              установка зависимостей через npm.
+            R2: Предоставлять протокольный стенд для проверки панели, передачи поручения и
+              отказа хоста.
+            R3: Устанавливать плагин Codex штатным установщиком с привязкой конфигурации к
+              его фактическому каталогу.
+            R4: Собирать переносимый архив для Windows x64 с установщиком, локальным
+              marketplace, встроенным Node и его лицензией.
           boundaries:
-            B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
-          invariants:
-            I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не
-              заменяются.
+            B1: Сборка ограничивается подготовкой пакета. Установка в пользовательский
+              профиль выполняется только по явной команде.
+            B2: Сборка пишет результаты в dist, сохраняя исходники и данные проектов.
+            B3: Сборка отклоняет поставку при ошибках строгой проверки типов приложения,
+              адаптеров, интерфейса, скриптов или тестов.
+            B4: Стенд работает с временным проектом без обращения к модели.
+          invariants: {}
       documentPath: .archiview/modules/archiview-distribution.yaml
       files:
         - path: .archiview/modules/archiview-distribution.yaml
-          hash: 9929ab9451065109a91a6bc151aff0dd8178b9f5
+          hash: 5f45d59ef844b55f7f691645b27403d8f4c5de9f
         - path: scripts/build-dsh.ts
           hash: f49feceec0cd9917176ef36f1e911b6a6968d56b
         - path: scripts/build-plugin.ts
@@ -1654,11 +1687,11 @@ publication:
         - path: scripts/test-web.ts
           hash: 628621c8847be0bf780e8a9e9b8dfe4b524f7e25
       sourceFiles: 10
-      fingerprint: 924170e4c0eb74c0927aaab9b639bbabf7930b6aeda8a75fb17a108f115a46f5
+      fingerprint: 27da2dca3912aa719470d1cd84c96a0b704f27a448a0d1daa49c9eab3b5b62a0
     facts:
       - index: 9
         fact:
-          id: sha256:a12cf1d47ddf1ca9a1ac46250bf377c6b3f5e25b3bd8a29872559ef6dd16429c
+          id: sha256:bbf620e47ccc149e35892ea2ccc322b55b5ed19c0f0b8930d990b08d8d1f6aae
           kind: file
           path: .archiview/modules/archiview-distribution.yaml
           start_line: 1
@@ -1674,20 +1707,20 @@ publication:
 
             extensions:
               archiview.roles: [builds, tools]
-            purpose: Собирать автономные пакеты локальных плагинов Codex и dsh
-            из исходников ArchiView.
+            purpose: Готовить переносимые поставки ArchiView и обеспечивать их
+            установку и локальную проверку.
 
             responsibilities:
-              R1: Упаковывать сервер, CLI, веб-ресурсы, схемы обмена и скиллы в переносимый каталог без зависимости от node_modules установленного плагина.
-              R2: Предоставлять явно обозначенный протокольный стенд во временном проекте для проверки UI, bridge и отказа хоста без запуска модели.
-              R3: По отдельной явной команде устанавливать пакет Codex штатным установщиком и разрешать пути его MCP-конфигурации относительно фактического установленного каталога.
-                Находить CLI через явно заданный путь, PATH или установку приложения Codex в Windows.
-              R4: Собирать переносимый Windows x64-архив с локальным marketplace, установщиком и Node с его лицензией;
-                устанавливать встроенный рантайм относительно фактического каталога кеша целевой машины.
+              R1: Собирать автономные пакеты Codex и dsh, для запуска которых не нужна установка зависимостей через npm.
+              R2: Предоставлять протокольный стенд для проверки панели, передачи поручения и отказа хоста.
+              R3: Устанавливать плагин Codex штатным установщиком с привязкой конфигурации к его фактическому каталогу.
+              R4: Собирать переносимый архив для Windows x64 с установщиком, локальным marketplace, встроенным Node и его лицензией.
             boundaries:
-              B1: Сборка не меняет пользовательскую конфигурацию Codex и не публикует плагин.
-            invariants:
-              I1: Сгенерированные файлы находятся в dist; исходные файлы и данные проектов не заменяются.
+              B1: Сборка ограничивается подготовкой пакета. Установка в пользовательский профиль выполняется только по явной команде.
+              B2: Сборка пишет результаты в dist, сохраняя исходники и данные проектов.
+              B3: Сборка отклоняет поставку при ошибках строгой проверки типов приложения, адаптеров, интерфейса, скриптов или тестов.
+              B4: Стенд работает с временным проектом без обращения к модели.
+            invariants: {}
       - index: 38
         fact:
           id: sha256:57834647d6780db90671e9c3969a0d4aece258f7ed9942948c9189624b472c46
@@ -2565,7 +2598,7 @@ publication:
             + "\n"); process.exitCode = 1; });
 
             child.once("exit", (code) => { process.exitCode = code ?? 1; });
-      - index: 185
+      - index: 187
         fact:
           id: sha256:ce55de2db3f7aff2a55288bc448c67262f2d262fffb5bfb115d718159eaad05c
           kind: module
@@ -2574,17 +2607,87 @@ publication:
 review_status:
   self:
     current:
-      status: fresh
-      reasons: []
-      verdict: consistent
-      verdicts:
-        - consistent
+      status: stale
+      reasons:
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+      verdict: null
+      verdicts: []
       review_ids:
+        - review-4d74054c-d3a5-4088-9108-b5f2e9e38e85
+        - review-9730e50e-997f-4af0-939d-b18e66869100
+        - review-8d154949-1cad-49e3-8a06-ae4d65c00b6d
+        - review-aef5e0d0-5be9-4bf6-9f8c-433884c7c27f
+        - review-b004214a-7f8f-4c7a-814a-d08bce636af5
+        - review-08a080fb-7200-4d8c-9ee9-055ebfe6afb2
         - review-a618e585-0144-4c81-8769-b8279ab0ec8c
       conflict: false
       coverage:
         status: partial
         limitations:
+          - Прочитаны все три собственных файла и все восемь пунктов текущего и
+            базового состояний; внешние инструменты сборки (esbuild,
+            @modelcontextprotocol/ext-apps) в сохранённый снимок не входят.
+          - "Полнота зависимостей не подтверждена: селекторы не задавались,
+            dependency_coverage.status остаётся unknown; выводы по упаковке не
+            проверяют поведение бандлеров."
+          - "Исполнение сборки не использовалось как доказательство: выводы
+            опираются на сохранённые facts снимка, а текущие файлы могли
+            измениться после снятия."
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Зависимости расширены 14 точными selectors из исходных снимков; их
+            полнота остаётся unknown. Реализации npm-пакетов esbuild/MCP SDK,
+            CLI Codex и Windows-хоста не включены и не проверены.
+            --dependencies-complete не использован.
+          - "R1 обеих сторон: проверены правила сборки, встраивания, копирования
+            и манифесты, но автономность конечных Codex/dsh-артефактов и
+            отсутствие оставшихся динамических импортов не проверены; полная
+            обязанность отмечена not_checked."
+          - "R4 current: состав ZIP, локальный marketplace и вычисление путей
+            изучены статически; сборка ZIP, получение точной лицензии Node по
+            сети и установка на целевом Windows x64 без Node/npm не выполнялись.
+            Пункт отмечен not_checked."
+          - "R2 проверен по коду и в VM с подставными panel/DOM: это проверка
+            скрипта стенда, без реального браузера и хоста Codex. R3 проверен по
+            коду и исполнением сохранённого установщика в изоляции; фактический
+            plugin add, поиск CLI через PATH/каталоги приложения Windows не
+            исполнялись."
+          - "Область self: 7 собственных исходников current, 4 baseline;
+            дочерних модулей нет. Проверка размещения scripts относительно
+            родителя принадлежит композиции родителя и сюда не включена."
+          - Целевая повторная проверка I1 и связанной границы B1 после
+            исправления одного замечания. Полный семантический анализ остальных
+            обязанностей не повторялся; они явно not_checked.
+          - Полнота локальных зависимостей всего модуля остаётся unknown. Явно
+            сохранены package.json и точный регрессионный тест; расположение
+            scripts и чтение контекста не создают зависимости от реализации
+            предков.
+          - "Реальная сборка dsh, состав npm-публикации и перенесённый CLI
+            проверены. Живой GUI/рантайм dsh, публикация пакета и переносимый
+            ZIP Codex этой задачей не проверялись. Полный набор тестов: 185
+            успешны, 2 пропущены (нативный загрузчик Codex и установка ZIP с
+            необязательными внешними условиями)."
+          - Текущие собственные пункты проверены по сохранённым исходникам и
+            выполненным тестам; исторический baseline целиком повторно не
+            анализировался и не запускался.
+          - Зависимости от внешних SDK, npm, Windows и Codex CLI не являются
+            исчерпывающим неизменяемым окружением; перечень зависимостей не
+            объявлен полным.
+          - Клиентские панели Codex/dsh не открывались согласно заданию;
+            установка проверена в изолированных профилях и через протокол MCP.
+          - Состав проверен на Windows при штатной и чистой сборках. Реальный
+            процесс dsh и установка на других ОС отдельно не запускались.
+            Полнота внешних зависимостей сборки не подтверждалась.
+          - Проверены снимки, обычная сборка, перенос и установка в Windows.
+            Аварийное завершение ОС в промежутке между переименованиями отдельно
+            не моделировалось.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Полнота внешних зависимостей не подтверждена; входы сохраняют
             dependency_coverage.status=unknown.
           - Проверка статическая, с целевыми контрактными тестами. Живые
@@ -2598,45 +2701,43 @@ review_status:
             затем 8/8 browser acceptance pass в установленном Chrome. Native
             Codex loader и ZIP relocation в этой попытке не выполнялись. Эти
             наблюдения не подменяют snapshot evidence отдельных checks."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       current_violation: false
     change:
       status: stale
       reasons:
-        - code: own_code
-        - code: own_contract
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
-        - code: own_code
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
-        - code: own_code
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
-        - code: own_code
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
-        - code: own_code
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
-        - code: own_code
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
+        - code: module_changed_since_analysis
         - code: baseline_identity
       verdict: null
       verdicts: []
@@ -2731,6 +2832,64 @@ review_status:
       current:
         status: partial
         limitations:
+          - Прочитаны все три собственных файла и все восемь пунктов текущего и
+            базового состояний; внешние инструменты сборки (esbuild,
+            @modelcontextprotocol/ext-apps) в сохранённый снимок не входят.
+          - "Полнота зависимостей не подтверждена: селекторы не задавались,
+            dependency_coverage.status остаётся unknown; выводы по упаковке не
+            проверяют поведение бандлеров."
+          - "Исполнение сборки не использовалось как доказательство: выводы
+            опираются на сохранённые facts снимка, а текущие файлы могли
+            измениться после снятия."
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Зависимости расширены 14 точными selectors из исходных снимков; их
+            полнота остаётся unknown. Реализации npm-пакетов esbuild/MCP SDK,
+            CLI Codex и Windows-хоста не включены и не проверены.
+            --dependencies-complete не использован.
+          - "R1 обеих сторон: проверены правила сборки, встраивания, копирования
+            и манифесты, но автономность конечных Codex/dsh-артефактов и
+            отсутствие оставшихся динамических импортов не проверены; полная
+            обязанность отмечена not_checked."
+          - "R4 current: состав ZIP, локальный marketplace и вычисление путей
+            изучены статически; сборка ZIP, получение точной лицензии Node по
+            сети и установка на целевом Windows x64 без Node/npm не выполнялись.
+            Пункт отмечен not_checked."
+          - "R2 проверен по коду и в VM с подставными panel/DOM: это проверка
+            скрипта стенда, без реального браузера и хоста Codex. R3 проверен по
+            коду и исполнением сохранённого установщика в изоляции; фактический
+            plugin add, поиск CLI через PATH/каталоги приложения Windows не
+            исполнялись."
+          - "Область self: 7 собственных исходников current, 4 baseline;
+            дочерних модулей нет. Проверка размещения scripts относительно
+            родителя принадлежит композиции родителя и сюда не включена."
+          - Целевая повторная проверка I1 и связанной границы B1 после
+            исправления одного замечания. Полный семантический анализ остальных
+            обязанностей не повторялся; они явно not_checked.
+          - Полнота локальных зависимостей всего модуля остаётся unknown. Явно
+            сохранены package.json и точный регрессионный тест; расположение
+            scripts и чтение контекста не создают зависимости от реализации
+            предков.
+          - "Реальная сборка dsh, состав npm-публикации и перенесённый CLI
+            проверены. Живой GUI/рантайм dsh, публикация пакета и переносимый
+            ZIP Codex этой задачей не проверялись. Полный набор тестов: 185
+            успешны, 2 пропущены (нативный загрузчик Codex и установка ZIP с
+            необязательными внешними условиями)."
+          - Текущие собственные пункты проверены по сохранённым исходникам и
+            выполненным тестам; исторический baseline целиком повторно не
+            анализировался и не запускался.
+          - Зависимости от внешних SDK, npm, Windows и Codex CLI не являются
+            исчерпывающим неизменяемым окружением; перечень зависимостей не
+            объявлен полным.
+          - Клиентские панели Codex/dsh не открывались согласно заданию;
+            установка проверена в изолированных профилях и через протокол MCP.
+          - Состав проверен на Windows при штатной и чистой сборках. Реальный
+            процесс dsh и установка на других ОС отдельно не запускались.
+            Полнота внешних зависимостей сборки не подтверждалась.
+          - Проверены снимки, обычная сборка, перенос и установка в Windows.
+            Аварийное завершение ОС в промежутке между переименованиями отдельно
+            не моделировалось.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Полнота внешних зависимостей не подтверждена; входы сохраняют
             dependency_coverage.status=unknown.
           - Проверка статическая, с целевыми контрактными тестами. Живые
@@ -2744,8 +2903,6 @@ review_status:
             затем 8/8 browser acceptance pass в установленном Chrome. Native
             Codex loader и ZIP relocation в этой попытке не выполнялись. Эти
             наблюдения не подменяют snapshot evidence отдельных checks."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       change:
@@ -2826,10 +2983,10 @@ review_status:
           - code: dependency_tracking_disabled
   subtree:
     current:
-      status: fresh
+      status: stale
       counts:
-        fresh: 1
-        stale: 0
+        fresh: 0
+        stale: 1
         unknown: 0
         not_reviewed: 0
       conflict: false
@@ -2837,6 +2994,64 @@ review_status:
       coverage:
         status: partial
         limitations:
+          - Прочитаны все три собственных файла и все восемь пунктов текущего и
+            базового состояний; внешние инструменты сборки (esbuild,
+            @modelcontextprotocol/ext-apps) в сохранённый снимок не входят.
+          - "Полнота зависимостей не подтверждена: селекторы не задавались,
+            dependency_coverage.status остаётся unknown; выводы по упаковке не
+            проверяют поведение бандлеров."
+          - "Исполнение сборки не использовалось как доказательство: выводы
+            опираются на сохранённые facts снимка, а текущие файлы могли
+            измениться после снятия."
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Зависимости расширены 14 точными selectors из исходных снимков; их
+            полнота остаётся unknown. Реализации npm-пакетов esbuild/MCP SDK,
+            CLI Codex и Windows-хоста не включены и не проверены.
+            --dependencies-complete не использован.
+          - "R1 обеих сторон: проверены правила сборки, встраивания, копирования
+            и манифесты, но автономность конечных Codex/dsh-артефактов и
+            отсутствие оставшихся динамических импортов не проверены; полная
+            обязанность отмечена not_checked."
+          - "R4 current: состав ZIP, локальный marketplace и вычисление путей
+            изучены статически; сборка ZIP, получение точной лицензии Node по
+            сети и установка на целевом Windows x64 без Node/npm не выполнялись.
+            Пункт отмечен not_checked."
+          - "R2 проверен по коду и в VM с подставными panel/DOM: это проверка
+            скрипта стенда, без реального браузера и хоста Codex. R3 проверен по
+            коду и исполнением сохранённого установщика в изоляции; фактический
+            plugin add, поиск CLI через PATH/каталоги приложения Windows не
+            исполнялись."
+          - "Область self: 7 собственных исходников current, 4 baseline;
+            дочерних модулей нет. Проверка размещения scripts относительно
+            родителя принадлежит композиции родителя и сюда не включена."
+          - Целевая повторная проверка I1 и связанной границы B1 после
+            исправления одного замечания. Полный семантический анализ остальных
+            обязанностей не повторялся; они явно not_checked.
+          - Полнота локальных зависимостей всего модуля остаётся unknown. Явно
+            сохранены package.json и точный регрессионный тест; расположение
+            scripts и чтение контекста не создают зависимости от реализации
+            предков.
+          - "Реальная сборка dsh, состав npm-публикации и перенесённый CLI
+            проверены. Живой GUI/рантайм dsh, публикация пакета и переносимый
+            ZIP Codex этой задачей не проверялись. Полный набор тестов: 185
+            успешны, 2 пропущены (нативный загрузчик Codex и установка ZIP с
+            необязательными внешними условиями)."
+          - Текущие собственные пункты проверены по сохранённым исходникам и
+            выполненным тестам; исторический baseline целиком повторно не
+            анализировался и не запускался.
+          - Зависимости от внешних SDK, npm, Windows и Codex CLI не являются
+            исчерпывающим неизменяемым окружением; перечень зависимостей не
+            объявлен полным.
+          - Клиентские панели Codex/dsh не открывались согласно заданию;
+            установка проверена в изолированных профилях и через протокол MCP.
+          - Состав проверен на Windows при штатной и чистой сборках. Реальный
+            процесс dsh и установка на других ОС отдельно не запускались.
+            Полнота внешних зависимостей сборки не подтверждалась.
+          - Проверены снимки, обычная сборка, перенос и установка в Windows.
+            Аварийное завершение ОС в промежутке между переименованиями отдельно
+            не моделировалось.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Полнота внешних зависимостей не подтверждена; входы сохраняют
             dependency_coverage.status=unknown.
           - Проверка статическая, с целевыми контрактными тестами. Живые
@@ -2850,8 +3065,6 @@ review_status:
             затем 8/8 browser acceptance pass в установленном Chrome. Native
             Codex loader и ZIP relocation в этой попытке не выполнялись. Эти
             наблюдения не подменяют snapshot evidence отдельных checks."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
     change:

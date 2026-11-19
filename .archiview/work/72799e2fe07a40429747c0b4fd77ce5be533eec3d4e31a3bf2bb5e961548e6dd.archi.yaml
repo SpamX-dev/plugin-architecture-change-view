@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-reviews
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 12b581751bb0ab4c9545f2f2137c675b6ad139f87a01e3e08673ebc13041b7c3
+check_hash: 7609dcdfaea98a0a138bbc1b6e29ac31e0b752ba7142ebb5c9533f1afb994ce4
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,318 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      id: faff1ed3907911564e7aa16a1a87c51571af85e9
     state:
       exists: true
       directory: src/reviews
-      self_digest: sha256:02cf772650dc02092862eeb9805594e81aa0091a8435bac7aec7c2a1d4e82931
-      subtree_digest: sha256:b23c2cd5b76e0e935caea23643739e0a8555b75c125b1abe59f7329fddcbaef6
+      self_digest: sha256:37eae78a49b274fb43440171b0ada92baaa52d26e431702119ba6dc3787a3149
+      subtree_digest: sha256:c38dea5445989c2877a0940b70f05577424b5cb5c9f102fe4d808edaa8a062a9
   current:
     exists: true
     directory: src/reviews
-    self_digest: sha256:37eae78a49b274fb43440171b0ada92baaa52d26e431702119ba6dc3787a3149
-    subtree_digest: sha256:c38dea5445989c2877a0940b70f05577424b5cb5c9f102fe4d808edaa8a062a9
+    self_digest: sha256:b2c4fc63b1245e68470e0055852976fb84c6ce361a3c9a16ab88dcc3ebb716b6
+    subtree_digest: sha256:9895072ad7d7f794a54be7120e3dd262c51594e866de3199ff72aa86ed7b3a6c
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
-  module_id: archiview-reviews
-  directory: src/reviews
-  parent_id: architecture-core
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: archiview-reviews
-    directory: src/reviews
-    own_files:
-      - path: src/reviews/bundle.ts
-        digest: sha256:fb3bd6ffbabb519d1444939924d03ab74dda434643918021669ace601051e0de
-        normalization: text-lf/v1
-      - path: src/reviews/schema.ts
-        digest: sha256:659fe281ac6cbda8b379a02055eb792b9030eac2eaafeb69ca47d3abb7ba7281
-        normalization: text-lf/v1
-      - path: src/reviews/types.ts
-        digest: sha256:1805704a9fc34eaf090bb2aa2aa26e52f151678b0e59ee5b90f6cba48ea86b68
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: archiview-reviews
-      title: Содержимое архитектурной проверки
-      kind: module
-      extensions:
-        archiview.roles:
-          - data-types
-          - domain
-      purpose: Описывать проверку по контрактам и доказательствам выбранных снимков и
-        проверять её целостность.
-      responsibilities:
-        R1: Определять состав манифеста, проверяемые пункты и структуру результата.
-        R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно
-          структурную оценку.
-      boundaries:
-        B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого
-          модуля.
-      invariants:
-        I1: Структурная проверка оставляет смысловые пункты непроверенными.
-        I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
-        I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
-          Замечание также может ссылаться на границу или инвариант предка из
-          сохранённого контекста проверяемого модуля, не добавляя проверку всего
-          предка.
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
-        text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-      - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:02cf772650dc02092862eeb9805594e81aa0091a8435bac7aec7c2a1d4e82931
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: archiview-reviews
-    directory: src/reviews
-    own_files:
-      - path: src/reviews/bundle.ts
-        digest: sha256:fb3bd6ffbabb519d1444939924d03ab74dda434643918021669ace601051e0de
-        normalization: text-lf/v1
-      - path: src/reviews/schema.ts
-        digest: sha256:659fe281ac6cbda8b379a02055eb792b9030eac2eaafeb69ca47d3abb7ba7281
-        normalization: text-lf/v1
-      - path: src/reviews/types.ts
-        digest: sha256:1805704a9fc34eaf090bb2aa2aa26e52f151678b0e59ee5b90f6cba48ea86b68
-        normalization: text-lf/v1
-    contract:
-      id: archiview-reviews
-      kind: module
-      purpose: Описывать проверку по контрактам и доказательствам выбранных снимков и
-        проверять её целостность.
-      responsibilities:
-        R1: Определять состав манифеста, проверяемые пункты и структуру результата.
-        R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно
-          структурную оценку.
-      boundaries:
-        B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого
-          модуля.
-      invariants:
-        I1: Структурная проверка оставляет смысловые пункты непроверенными.
-        I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
-        I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
-          Замечание также может ссылаться на границу или инвариант предка из
-          сохранённого контекста проверяемого модуля, не добавляя проверку всего
-          предка.
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
-        text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-      - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
-    children: []
-  self_digest: sha256:86becf9864faeaec226ab5dc49008f80bb63fcefd0fb7fb4e1ddfddc05dabee1
-  subtree:
-    self: sha256:02cf772650dc02092862eeb9805594e81aa0091a8435bac7aec7c2a1d4e82931
-    children: []
-  subtree_digest: sha256:b23c2cd5b76e0e935caea23643739e0a8555b75c125b1abe59f7329fddcbaef6
-  semantic_subtree:
-    self: sha256:86becf9864faeaec226ab5dc49008f80bb63fcefd0fb7fb4e1ddfddc05dabee1
-    children: []
-  semantic_subtree_digest: sha256:b2d9ba2f844fd61685c586ef87b9443edb78c6ee66092021e8f3c38866a7b8c6
-current:
   module_id: archiview-reviews
   directory: src/reviews
   parent_id: architecture-core
@@ -617,11 +321,217 @@ current:
     self: sha256:ae9d204ee912d99a046160fc38474b03a3ab2b22c9c302e1f899a27934279f5f
     children: []
   semantic_subtree_digest: sha256:d0bfac34777868944bcbb7c46443564f467abef12869bdaa1c47cb2a6df62ca0
+current:
+  module_id: archiview-reviews
+  directory: src/reviews
+  parent_id: architecture-core
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-reviews
+    directory: src/reviews
+    own_files:
+      - path: src/reviews/bundle.ts
+        digest: sha256:fb3bd6ffbabb519d1444939924d03ab74dda434643918021669ace601051e0de
+        normalization: text-lf/v1
+      - path: src/reviews/schema.ts
+        digest: sha256:659fe281ac6cbda8b379a02055eb792b9030eac2eaafeb69ca47d3abb7ba7281
+        normalization: text-lf/v1
+      - path: src/reviews/types.ts
+        digest: sha256:1805704a9fc34eaf090bb2aa2aa26e52f151678b0e59ee5b90f6cba48ea86b68
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-reviews
+      title: Содержимое архитектурной проверки
+      kind: module
+      extensions:
+        archiview.roles:
+          - data-types
+          - domain
+      purpose: Связывать проверку модуля с контрактами и доказательствами из выбранных
+        снимков.
+      responsibilities:
+        R1: Формировать манифест проверки с областью анализа и проверяемыми пунктами
+          контрактов.
+        R2: Проверять, что ссылки результата разрешаются в сохранённых данных указанной
+          стороны сравнения.
+        R3: Формировать результат автоматической проверки структуры контрактов.
+      boundaries:
+        B2: Структурная проверка оставляет выполнение смысловых пунктов непроверенным.
+        B3: При собственной проверке модуля в чеклист входят только пункты его
+          контракта.
+        B4: В замечании по собственной проверке допустима ссылка на границу или
+          инвариант предка, сохранённые в контексте модуля.
+        B5: При проверке ссылок учитывать только доказательства из области манифеста.
+      invariants: {}
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B4
+        text: Панель обращается к агенту только по явному поручению пользователя
+          провести анализ или исправить замечание.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B5
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+  technical_digest: sha256:b2c4fc63b1245e68470e0055852976fb84c6ce361a3c9a16ab88dcc3ebb716b6
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-reviews
+    directory: src/reviews
+    own_files:
+      - path: src/reviews/bundle.ts
+        digest: sha256:fb3bd6ffbabb519d1444939924d03ab74dda434643918021669ace601051e0de
+        normalization: text-lf/v1
+      - path: src/reviews/schema.ts
+        digest: sha256:659fe281ac6cbda8b379a02055eb792b9030eac2eaafeb69ca47d3abb7ba7281
+        normalization: text-lf/v1
+      - path: src/reviews/types.ts
+        digest: sha256:1805704a9fc34eaf090bb2aa2aa26e52f151678b0e59ee5b90f6cba48ea86b68
+        normalization: text-lf/v1
+    contract:
+      id: archiview-reviews
+      kind: module
+      purpose: Связывать проверку модуля с контрактами и доказательствами из выбранных
+        снимков.
+      responsibilities:
+        R1: Формировать манифест проверки с областью анализа и проверяемыми пунктами
+          контрактов.
+        R2: Проверять, что ссылки результата разрешаются в сохранённых данных указанной
+          стороны сравнения.
+        R3: Формировать результат автоматической проверки структуры контрактов.
+      boundaries:
+        B2: Структурная проверка оставляет выполнение смысловых пунктов непроверенным.
+        B3: При собственной проверке модуля в чеклист входят только пункты его
+          контракта.
+        B4: В замечании по собственной проверке допустима ссылка на границу или
+          инвариант предка, сохранённые в контексте модуля.
+        B5: При проверке ссылок учитывать только доказательства из области манифеста.
+      invariants: {}
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B4
+        text: Панель обращается к агенту только по явному поручению пользователя
+          провести анализ или исправить замечание.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B5
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+    children: []
+  self_digest: sha256:d375f07cd929b6f1022aa1331d17b0fd858d770b2ba6de87e4acce77bb4aeda8
+  subtree:
+    self: sha256:b2c4fc63b1245e68470e0055852976fb84c6ce361a3c9a16ab88dcc3ebb716b6
+    children: []
+  subtree_digest: sha256:9895072ad7d7f794a54be7120e3dd262c51594e866de3199ff72aa86ed7b3a6c
+  semantic_subtree:
+    self: sha256:d375f07cd929b6f1022aa1331d17b0fd858d770b2ba6de87e4acce77bb4aeda8
+    children: []
+  semantic_subtree_digest: sha256:4b4eef9de64a925715e997633acbbb62af06d9aca12a0aa5fffa711011037733
 change:
   existence: retained
-  own: false
+  own: true
   own_code: false
-  own_contract: false
+  own_contract: true
   inherited_constraints: true
   descendants: false
   child_composition: false
@@ -631,19 +541,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 229
-  comparison_key: sha256:7da7254a0a66f9d27ec9b6f9a7adf4ab17c541a918826ea024b3c2f7739ca2d6
+  generation: 230
+  comparison_key: sha256:dbbcc9929208174b5364c72ca96a3186ff40bffa50a1a9697a4763ed2695b719
   baseline:
     metadata:
-      id: git-d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
-      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
+      id: git-faff1ed3907911564e7aa16a1a87c51571af85e9
+      digest: sha256:51ac76e85886d11780df766f66e795cd45b742a439f5fc5ce763415fd4b8ce48
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T14:53:38.101Z
+      capturedAt: 2026-11-19T08:54:36.342Z
       kind: git
-      revision: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      revision: faff1ed3907911564e7aa16a1a87c51571af85e9
       label: HEAD
-      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
+      fingerprint: 857d1f43852fb597c51de3c3dfacd50edf82ab25ecdac496396088445d837560
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -749,7 +659,7 @@ publication:
               I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
                 Замечание также может ссылаться на границу или инвариант предка из сохранённого
                 контекста проверяемого модуля, не добавляя проверку всего предка.
-      - index: 106
+      - index: 107
         fact:
           id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
           kind: file
@@ -981,7 +891,7 @@ publication:
               }
               return bundle;
             }
-      - index: 107
+      - index: 108
         fact:
           id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
           kind: file
@@ -1075,7 +985,7 @@ publication:
               for (const check of value.checks) if (["consistent", "violation"].includes(check.verdict) && !check.evidence.length) fail("review.checks." + check.id, "нужны доказательства");
               return value;
             }
-      - index: 108
+      - index: 109
         fact:
           id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
           kind: file
@@ -1230,7 +1140,7 @@ publication:
               baseline: Snapshot | null;
               current: Snapshot;
             }
-      - index: 196
+      - index: 200
         fact:
           id: sha256:bbf51d0cdf62d543a8d49cb69809eeb6db73efd3bea84e8fc71977c4d8b8d488
           kind: module
@@ -1238,17 +1148,84 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/reviews/bundle.ts","src/reviews/schema.ts","src/reviews/types.ts"]}'
   current:
     metadata:
-      id: working-17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
-      digest: sha256:17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
+      id: launch-c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
+      digest: sha256:ceaa4d2c1d904878f438bd3dafffa6e84373a3020bc10380e6abb3f3e3443861
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-13T06:45:51.736Z
-      kind: working
-      label: Рабочее дерево
-      fingerprint: 8aab78b922d900e815b80f4c7e0671a4309fe40acea7b649b63dc3003bbadab6
+      capturedAt: 2026-11-19T08:54:38.403Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
       complete: true
       diagnostics: []
       evidenceLimitations: []
+      observations:
+        architecture-change-view:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-distribution:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-skills:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-module-boundaries-skill:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-core:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-application:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-http:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-codex:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-contracts:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        dsh-adapter:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        dsh-client-panel:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-mcp:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-project-location:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-reports:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-reviews:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-node-runtime:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-serialization:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-snapshots:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-storage:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-tests:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-web:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-client:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
     module_index: 14
     module:
       directory: src/reviews
@@ -1265,20 +1242,19 @@ publication:
 
           extensions:
             archiview.roles: [data-types, domain]
-          purpose: Описывать проверку по контрактам и доказательствам выбранных
-          снимков и проверять её целостность.
+          purpose: Связывать проверку модуля с контрактами и доказательствами из
+          выбранных снимков.
 
           responsibilities:
-            R1: Определять состав манифеста, проверяемые пункты и структуру результата.
-            R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно структурную оценку.
+            R1: Формировать манифест проверки с областью анализа и проверяемыми пунктами контрактов.
+            R2: Проверять, что ссылки результата разрешаются в сохранённых данных указанной стороны сравнения.
+            R3: Формировать результат автоматической проверки структуры контрактов.
           boundaries:
-            B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого модуля.
-          invariants:
-            I1: Структурная проверка оставляет смысловые пункты непроверенными.
-            I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
-            I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
-              Замечание также может ссылаться на границу или инвариант предка из сохранённого
-              контекста проверяемого модуля, не добавляя проверку всего предка.
+            B2: Структурная проверка оставляет выполнение смысловых пунктов непроверенным.
+            B3: При собственной проверке модуля в чеклист входят только пункты его контракта.
+            B4: В замечании по собственной проверке допустима ссылка на границу или инвариант предка, сохранённые в контексте модуля.
+            B5: При проверке ссылок учитывать только доказательства из области манифеста.
+          invariants: {}
         format: yaml
         contract:
           schema_version: 1
@@ -1289,26 +1265,26 @@ publication:
             archiview.roles:
               - data-types
               - domain
-          purpose: Описывать проверку по контрактам и доказательствам выбранных снимков и
-            проверять её целостность.
+          purpose: Связывать проверку модуля с контрактами и доказательствами из выбранных
+            снимков.
           responsibilities:
-            R1: Определять состав манифеста, проверяемые пункты и структуру результата.
-            R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно
-              структурную оценку.
+            R1: Формировать манифест проверки с областью анализа и проверяемыми пунктами
+              контрактов.
+            R2: Проверять, что ссылки результата разрешаются в сохранённых данных указанной
+              стороны сравнения.
+            R3: Формировать результат автоматической проверки структуры контрактов.
           boundaries:
-            B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого
-              модуля.
-          invariants:
-            I1: Структурная проверка оставляет смысловые пункты непроверенными.
-            I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
-            I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
-              Замечание также может ссылаться на границу или инвариант предка из
-              сохранённого контекста проверяемого модуля, не добавляя проверку
-              всего предка.
+            B2: Структурная проверка оставляет выполнение смысловых пунктов непроверенным.
+            B3: При собственной проверке модуля в чеклист входят только пункты его
+              контракта.
+            B4: В замечании по собственной проверке допустима ссылка на границу или
+              инвариант предка, сохранённые в контексте модуля.
+            B5: При проверке ссылок учитывать только доказательства из области манифеста.
+          invariants: {}
       documentPath: .archiview/modules/archiview-reviews.yaml
       files:
         - path: .archiview/modules/archiview-reviews.yaml
-          hash: bdf93ee82c46df2070578466e634fe0aa5f07736
+          hash: cf8ac848b18fa2684ec0da0e8b7f00d005321ab3
         - path: src/reviews/bundle.ts
           hash: 90285eae895337b40a3f739c3148ff0188675996
         - path: src/reviews/schema.ts
@@ -1316,15 +1292,15 @@ publication:
         - path: src/reviews/types.ts
           hash: e8b0c54a7ca64f46ed4caa5a7d5ee22f3953b8dc
       sourceFiles: 3
-      fingerprint: 2a2fea22a81e531adb7ab6efa584ba058f37c1da4f211e63e99917fcf6c4f476
+      fingerprint: f08f3181a4aeab2dd39c6727a4295bc28c74ea9f0648fc18fcc52c342e5d70a9
     facts:
       - index: 16
         fact:
-          id: sha256:c3087f2f0d1cec9294d578e00085768178f5ad58f2b954713bae515cabc93ddb
+          id: sha256:f92599a0fb3ca4e6311d9e69d3c294381ee5f8a3b1c0be6c52b4b763bf6e747e
           kind: file
           path: .archiview/modules/archiview-reviews.yaml
           start_line: 1
-          end_line: 19
+          end_line: 18
           text: >
             schema_version: 1
 
@@ -1336,21 +1312,20 @@ publication:
 
             extensions:
               archiview.roles: [data-types, domain]
-            purpose: Описывать проверку по контрактам и доказательствам
-            выбранных снимков и проверять её целостность.
+            purpose: Связывать проверку модуля с контрактами и доказательствами
+            из выбранных снимков.
 
             responsibilities:
-              R1: Определять состав манифеста, проверяемые пункты и структуру результата.
-              R2: Проверять ссылки отчёта на сохранённые факты и пункты, формировать явно структурную оценку.
+              R1: Формировать манифест проверки с областью анализа и проверяемыми пунктами контрактов.
+              R2: Проверять, что ссылки результата разрешаются в сохранённых данных указанной стороны сравнения.
+              R3: Формировать результат автоматической проверки структуры контрактов.
             boundaries:
-              B1: Публикация попыток, уплотнение и расчёт актуальности выполняются вне этого модуля.
-            invariants:
-              I1: Структурная проверка оставляет смысловые пункты непроверенными.
-              I2: Ссылки разрешаются в снимке указанной стороны с учётом области манифеста.
-              I3: В собственной проверке модуля чеклист содержит только пункты его контракта.
-                Замечание также может ссылаться на границу или инвариант предка из сохранённого
-                контекста проверяемого модуля, не добавляя проверку всего предка.
-      - index: 106
+              B2: Структурная проверка оставляет выполнение смысловых пунктов непроверенным.
+              B3: При собственной проверке модуля в чеклист входят только пункты его контракта.
+              B4: В замечании по собственной проверке допустима ссылка на границу или инвариант предка, сохранённые в контексте модуля.
+              B5: При проверке ссылок учитывать только доказательства из области манифеста.
+            invariants: {}
+      - index: 107
         fact:
           id: sha256:f055a2ca4fd8420181e4667125090ce66b728d028ba1b6bd9f0ecf1e3d7f973c
           kind: file
@@ -1582,7 +1557,7 @@ publication:
               }
               return bundle;
             }
-      - index: 107
+      - index: 108
         fact:
           id: sha256:ea7a88686e2caf1f4d976fc294aecbea92deb0ce63b58d749afe4f1e39ea6d7c
           kind: file
@@ -1676,7 +1651,7 @@ publication:
               for (const check of value.checks) if (["consistent", "violation"].includes(check.verdict) && !check.evidence.length) fail("review.checks." + check.id, "нужны доказательства");
               return value;
             }
-      - index: 108
+      - index: 109
         fact:
           id: sha256:96761880726f96a3c304b84799761bb0cb08c4e1592520fba4699524f418f154
           kind: file
@@ -1831,7 +1806,7 @@ publication:
               baseline: Snapshot | null;
               current: Snapshot;
             }
-      - index: 198
+      - index: 200
         fact:
           id: sha256:bbf51d0cdf62d543a8d49cb69809eeb6db73efd3bea84e8fc71977c4d8b8d488
           kind: module
@@ -1840,17 +1815,31 @@ publication:
 review_status:
   self:
     current:
-      status: fresh
-      reasons: []
-      verdict: consistent
-      verdicts:
-        - consistent
+      status: stale
+      reasons:
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+      verdict: null
+      verdicts: []
       review_ids:
+        - review-dd19adff-aa9e-4d2c-85f1-c003d6584081
+        - review-e281e226-92cf-47ab-81fc-a39c62aefb05
         - review-c0c88b26-ee06-4e92-b541-affee1191d0c
       conflict: false
       coverage:
         status: partial
         limitations:
+          - Проверены код и семантика импорта прежнего формата. Семь штатных
+            тестов formats-reviews прошли. Приём строки вне области заключён из
+            кода валидатора. Полнота всех зависимостей последующего
+            использования отчёта не установлена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены обе области чеклиста и формат прежнего пакета.
+            Сопутствующие ссылки замечаний на связанные модули остаются
+            отдельной частью формата.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -1865,28 +1854,25 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       current_violation: false
     change:
       status: stale
       reasons:
-        - code: own_code
-        - code: own_contract
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
-        - code: own_code
-        - code: own_contract
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
+        - code: module_changed_since_analysis
         - code: baseline_identity
       verdict: null
       verdicts: []
@@ -1930,6 +1916,16 @@ review_status:
       current:
         status: partial
         limitations:
+          - Проверены код и семантика импорта прежнего формата. Семь штатных
+            тестов formats-reviews прошли. Приём строки вне области заключён из
+            кода валидатора. Полнота всех зависимостей последующего
+            использования отчёта не установлена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены обе области чеклиста и формат прежнего пакета.
+            Сопутствующие ссылки замечаний на связанные модули остаются
+            отдельной частью формата.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -1944,8 +1940,6 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       change:
@@ -1979,10 +1973,10 @@ review_status:
           - code: dependency_tracking_disabled
   subtree:
     current:
-      status: fresh
+      status: stale
       counts:
-        fresh: 1
-        stale: 0
+        fresh: 0
+        stale: 1
         unknown: 0
         not_reviewed: 0
       conflict: false
@@ -1990,6 +1984,16 @@ review_status:
       coverage:
         status: partial
         limitations:
+          - Проверены код и семантика импорта прежнего формата. Семь штатных
+            тестов formats-reviews прошли. Приём строки вне области заключён из
+            кода валидатора. Полнота всех зависимостей последующего
+            использования отчёта не установлена.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены обе области чеклиста и формат прежнего пакета.
+            Сопутствующие ссылки замечаний на связанные модули остаются
+            отдельной частью формата.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -2004,8 +2008,6 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
     change:

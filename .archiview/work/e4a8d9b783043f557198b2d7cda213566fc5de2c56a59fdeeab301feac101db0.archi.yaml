@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-node-runtime
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 5d6b683e7bf579df56e6f3e8b10a1e38b890d9a856324c58fa5c917640078a56
+check_hash: 0107d991b1747d52f913afd8189f9e042653b70af038310bc82b60642b4140f3
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,303 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      id: faff1ed3907911564e7aa16a1a87c51571af85e9
     state:
       exists: true
       directory: src/runtime
-      self_digest: sha256:4738e9e9bb85562607361f3de5cb361355923636f950bd03897f858a7bc018c0
-      subtree_digest: sha256:1eb50e5ac1fe42642201eeb15fc178c368b47eec6959cfb91430289166907b39
+      self_digest: sha256:7b3a0e58966a8455887400130bb32951c5c0a5a0045a921894e2ebafd63a30e0
+      subtree_digest: sha256:709e923a5a80ec1d5fdf3282526a6de44b31f0f263937fa3bb6c7c87efd06b0e
   current:
     exists: true
     directory: src/runtime
-    self_digest: sha256:7b3a0e58966a8455887400130bb32951c5c0a5a0045a921894e2ebafd63a30e0
-    subtree_digest: sha256:709e923a5a80ec1d5fdf3282526a6de44b31f0f263937fa3bb6c7c87efd06b0e
+    self_digest: sha256:4b03f04975db5327a97db9e4aaac4700c8e4c4409086d894c50cf377af03e995
+    subtree_digest: sha256:d40140504c73ccff1eeabc23e7a956a1b67e540781d8e64c3cc818e4ea6be337
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
-  module_id: archiview-node-runtime
-  directory: src/runtime
-  parent_id: architecture-core
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: archiview-node-runtime
-    directory: src/runtime
-    own_files:
-      - path: src/runtime/errors.ts
-        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
-        normalization: text-lf/v1
-      - path: src/runtime/package-paths.ts
-        digest: sha256:af6a0065988b958d651e4e519c288ff18651856e779afd7f7bdffe4e6ea56a56
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: archiview-node-runtime
-      title: Среда выполнения Node
-      kind: module
-      extensions:
-        archiview.roles:
-          - runtime
-      purpose: Предоставлять общие для модулей Node сведения о среде выполнения
-        ArchiView.
-      responsibilities:
-        R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной
-          и автономной поставке.
-        R2: Представлять ошибки платформы с сохранением диагностических полей файловых и
-          дочерних процессов.
-      boundaries:
-        B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат
-          потребителям.
-      invariants:
-        I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
-        text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-      - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:4738e9e9bb85562607361f3de5cb361355923636f950bd03897f858a7bc018c0
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: archiview-node-runtime
-    directory: src/runtime
-    own_files:
-      - path: src/runtime/errors.ts
-        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
-        normalization: text-lf/v1
-      - path: src/runtime/package-paths.ts
-        digest: sha256:af6a0065988b958d651e4e519c288ff18651856e779afd7f7bdffe4e6ea56a56
-        normalization: text-lf/v1
-    contract:
-      id: archiview-node-runtime
-      kind: module
-      purpose: Предоставлять общие для модулей Node сведения о среде выполнения
-        ArchiView.
-      responsibilities:
-        R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной
-          и автономной поставке.
-        R2: Представлять ошибки платформы с сохранением диагностических полей файловых и
-          дочерних процессов.
-      boundaries:
-        B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат
-          потребителям.
-      invariants:
-        I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
-        text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-      - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
-    children: []
-  self_digest: sha256:b4b3005c4c91d8fb48ef62b08972a1d39f0117d322e65fb06df038cb2b720674
-  subtree:
-    self: sha256:4738e9e9bb85562607361f3de5cb361355923636f950bd03897f858a7bc018c0
-    children: []
-  subtree_digest: sha256:1eb50e5ac1fe42642201eeb15fc178c368b47eec6959cfb91430289166907b39
-  semantic_subtree:
-    self: sha256:b4b3005c4c91d8fb48ef62b08972a1d39f0117d322e65fb06df038cb2b720674
-    children: []
-  semantic_subtree_digest: sha256:deab900a84d4610fd34a8c63f40da1117d9b2d355e82ab1a3339859c63e1b624
-current:
   module_id: archiview-node-runtime
   directory: src/runtime
   parent_id: architecture-core
@@ -587,11 +306,200 @@ current:
     self: sha256:7e1c5786adbcdaa6ae6d52fb0303fbbfe1ba0aa1c95ae1b714def21028d00903
     children: []
   semantic_subtree_digest: sha256:cb6d48397ae1f9495a907b5185d9d4ded3bc468904edf59384880cdb8163b04f
+current:
+  module_id: archiview-node-runtime
+  directory: src/runtime
+  parent_id: architecture-core
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-node-runtime
+    directory: src/runtime
+    own_files:
+      - path: src/runtime/errors.ts
+        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
+        normalization: text-lf/v1
+      - path: src/runtime/package-paths.ts
+        digest: sha256:af6a0065988b958d651e4e519c288ff18651856e779afd7f7bdffe4e6ea56a56
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-node-runtime
+      title: Среда выполнения Node
+      kind: module
+      extensions:
+        archiview.roles:
+          - runtime
+      purpose: Находить ресурсы действующего пакета ArchiView и предоставлять
+        диагностику ошибок Node.
+      responsibilities:
+        R1: Определять расположение ресурсов и команду запуска CLI для исходной и
+          автономной поставки.
+        R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических
+          полей.
+      boundaries:
+        B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от
+          рабочей папки пользователя.
+      invariants: {}
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B4
+        text: Панель обращается к агенту только по явному поручению пользователя
+          провести анализ или исправить замечание.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B5
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+  technical_digest: sha256:4b03f04975db5327a97db9e4aaac4700c8e4c4409086d894c50cf377af03e995
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-node-runtime
+    directory: src/runtime
+    own_files:
+      - path: src/runtime/errors.ts
+        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
+        normalization: text-lf/v1
+      - path: src/runtime/package-paths.ts
+        digest: sha256:af6a0065988b958d651e4e519c288ff18651856e779afd7f7bdffe4e6ea56a56
+        normalization: text-lf/v1
+    contract:
+      id: archiview-node-runtime
+      kind: module
+      purpose: Находить ресурсы действующего пакета ArchiView и предоставлять
+        диагностику ошибок Node.
+      responsibilities:
+        R1: Определять расположение ресурсов и команду запуска CLI для исходной и
+          автономной поставки.
+        R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических
+          полей.
+      boundaries:
+        B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от
+          рабочей папки пользователя.
+      invariants: {}
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B4
+        text: Панель обращается к агенту только по явному поручению пользователя
+          провести анализ или исправить замечание.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B5
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+    children: []
+  self_digest: sha256:de27a9d827117217726ce50736d204b71bd6279fe808eb89535c5f765de9bbe1
+  subtree:
+    self: sha256:4b03f04975db5327a97db9e4aaac4700c8e4c4409086d894c50cf377af03e995
+    children: []
+  subtree_digest: sha256:d40140504c73ccff1eeabc23e7a956a1b67e540781d8e64c3cc818e4ea6be337
+  semantic_subtree:
+    self: sha256:de27a9d827117217726ce50736d204b71bd6279fe808eb89535c5f765de9bbe1
+    children: []
+  semantic_subtree_digest: sha256:e5778a34f7c2a48d641b3d3fc0c60140977868615f29bff8bc757a062d98fb83
 change:
   existence: retained
-  own: false
+  own: true
   own_code: false
-  own_contract: false
+  own_contract: true
   inherited_constraints: true
   descendants: false
   child_composition: false
@@ -601,19 +509,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 229
-  comparison_key: sha256:7da7254a0a66f9d27ec9b6f9a7adf4ab17c541a918826ea024b3c2f7739ca2d6
+  generation: 230
+  comparison_key: sha256:dbbcc9929208174b5364c72ca96a3186ff40bffa50a1a9697a4763ed2695b719
   baseline:
     metadata:
-      id: git-d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
-      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
+      id: git-faff1ed3907911564e7aa16a1a87c51571af85e9
+      digest: sha256:51ac76e85886d11780df766f66e795cd45b742a439f5fc5ce763415fd4b8ce48
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T14:53:38.101Z
+      capturedAt: 2026-11-19T08:54:36.342Z
       kind: git
-      revision: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      revision: faff1ed3907911564e7aa16a1a87c51571af85e9
       label: HEAD
-      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
+      fingerprint: 857d1f43852fb597c51de3c3dfacd50edf82ab25ecdac496396088445d837560
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -704,7 +612,7 @@ publication:
               B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат потребителям.
             invariants:
               I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
-      - index: 109
+      - index: 110
         fact:
           id: sha256:7dced7100af4616e7b2739aaeed2f9144590c569513ddc8b4b27730a3cf0fe91
           kind: file
@@ -727,7 +635,7 @@ publication:
               if (typeof value.exitCode === "number" || value.exitCode === null) result.exitCode = value.exitCode;
               return result;
             }
-      - index: 110
+      - index: 111
         fact:
           id: sha256:8c11efb3622237b9af345e0527c031c736eb89a3abe2100f506834700eb3f05c
           kind: file
@@ -769,7 +677,7 @@ publication:
             export function cliArguments(): string[] {
               return sourceCheckout ? ["--import", import.meta.resolve("tsx"), fileURLToPath(sourceCli)] : [fileURLToPath(new URL("src/cli.mjs", packageUrl))];
             }
-      - index: 197
+      - index: 201
         fact:
           id: sha256:946698f0fe228c5f036b75b25276b3a6edfcfc50d35713f1d78c7b56ebc48066
           kind: module
@@ -777,17 +685,84 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/runtime/errors.ts","src/runtime/package-paths.ts"]}'
   current:
     metadata:
-      id: working-17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
-      digest: sha256:17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
+      id: launch-c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
+      digest: sha256:ceaa4d2c1d904878f438bd3dafffa6e84373a3020bc10380e6abb3f3e3443861
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-13T06:45:51.736Z
-      kind: working
-      label: Рабочее дерево
-      fingerprint: 8aab78b922d900e815b80f4c7e0671a4309fe40acea7b649b63dc3003bbadab6
+      capturedAt: 2026-11-19T08:54:38.403Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
       complete: true
       diagnostics: []
       evidenceLimitations: []
+      observations:
+        architecture-change-view:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-distribution:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-skills:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-module-boundaries-skill:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-core:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-application:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-http:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-codex:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-contracts:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        dsh-adapter:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        dsh-client-panel:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-mcp:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-project-location:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-reports:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-reviews:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-node-runtime:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-serialization:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-snapshots:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-storage:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-tests:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-web:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-client:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
     module_index: 15
     module:
       directory: src/runtime
@@ -804,16 +779,15 @@ publication:
 
           extensions:
             archiview.roles: [runtime]
-          purpose: Предоставлять общие для модулей Node сведения о среде
-          выполнения ArchiView.
+          purpose: Находить ресурсы действующего пакета ArchiView и
+          предоставлять диагностику ошибок Node.
 
           responsibilities:
-            R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной и автономной поставке.
-            R2: Представлять ошибки платформы с сохранением диагностических полей файловых и дочерних процессов.
+            R1: Определять расположение ресурсов и команду запуска CLI для исходной и автономной поставки.
+            R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических полей.
           boundaries:
-            B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат потребителям.
-          invariants:
-            I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
+            B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от рабочей папки пользователя.
+          invariants: {}
         format: yaml
         contract:
           schema_version: 1
@@ -823,36 +797,35 @@ publication:
           extensions:
             archiview.roles:
               - runtime
-          purpose: Предоставлять общие для модулей Node сведения о среде выполнения
-            ArchiView.
+          purpose: Находить ресурсы действующего пакета ArchiView и предоставлять
+            диагностику ошибок Node.
           responsibilities:
-            R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной
-              и автономной поставке.
-            R2: Представлять ошибки платформы с сохранением диагностических полей файловых и
-              дочерних процессов.
+            R1: Определять расположение ресурсов и команду запуска CLI для исходной и
+              автономной поставки.
+            R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических
+              полей.
           boundaries:
-            B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат
-              потребителям.
-          invariants:
-            I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
+            B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от
+              рабочей папки пользователя.
+          invariants: {}
       documentPath: .archiview/modules/archiview-node-runtime.yaml
       files:
         - path: .archiview/modules/archiview-node-runtime.yaml
-          hash: b2ccdd12e46e4acdeaa069a595005f5066fef107
+          hash: 0b0bf38ec928778c89ef8f15899b6c64173613e7
         - path: src/runtime/errors.ts
           hash: aa925db7c51cef391247aa59d1890d45a210a7c3
         - path: src/runtime/package-paths.ts
           hash: 1f6d499f97c16bd5e61e7e7794f09d8c6187a1d3
       sourceFiles: 2
-      fingerprint: fc888fb9bd849840571aeabfe2519ef380a4e3e14437c913bab75079553c31fa
+      fingerprint: ecadfb7e4e2ff09754317071593599518a8055100150bcc98583f5b9d5ea500b
     facts:
       - index: 13
         fact:
-          id: sha256:edd225bccc2e12a6b6fc5b559317f42e4c29f174f9353c6b25fb280ed1f21346
+          id: sha256:a52d059d67a4d4c9af6689d8c05df607438bdd6cbb098f60e50cd08be78cd321
           kind: file
           path: .archiview/modules/archiview-node-runtime.yaml
           start_line: 1
-          end_line: 15
+          end_line: 14
           text: >
             schema_version: 1
 
@@ -864,17 +837,16 @@ publication:
 
             extensions:
               archiview.roles: [runtime]
-            purpose: Предоставлять общие для модулей Node сведения о среде
-            выполнения ArchiView.
+            purpose: Находить ресурсы действующего пакета ArchiView и
+            предоставлять диагностику ошибок Node.
 
             responsibilities:
-              R1: Разрешать ресурсы и команду CLI относительно действующего пакета в исходной и автономной поставке.
-              R2: Представлять ошибки платформы с сохранением диагностических полей файловых и дочерних процессов.
+              R1: Определять расположение ресурсов и команду запуска CLI для исходной и автономной поставки.
+              R2: Приводить ошибки Node к общему виду с сохранением доступных диагностических полей.
             boundaries:
-              B1: Выбор рабочего проекта, вычисление отчётов и протокол хоста принадлежат потребителям.
-            invariants:
-              I1: Поиск ресурсов пакета не зависит от рабочей папки пользователя.
-      - index: 109
+              B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от рабочей папки пользователя.
+            invariants: {}
+      - index: 110
         fact:
           id: sha256:7dced7100af4616e7b2739aaeed2f9144590c569513ddc8b4b27730a3cf0fe91
           kind: file
@@ -897,7 +869,7 @@ publication:
               if (typeof value.exitCode === "number" || value.exitCode === null) result.exitCode = value.exitCode;
               return result;
             }
-      - index: 110
+      - index: 111
         fact:
           id: sha256:8c11efb3622237b9af345e0527c031c736eb89a3abe2100f506834700eb3f05c
           kind: file
@@ -939,7 +911,7 @@ publication:
             export function cliArguments(): string[] {
               return sourceCheckout ? ["--import", import.meta.resolve("tsx"), fileURLToPath(sourceCli)] : [fileURLToPath(new URL("src/cli.mjs", packageUrl))];
             }
-      - index: 199
+      - index: 201
         fact:
           id: sha256:946698f0fe228c5f036b75b25276b3a6edfcfc50d35713f1d78c7b56ebc48066
           kind: module
@@ -948,17 +920,29 @@ publication:
 review_status:
   self:
     current:
-      status: fresh
-      reasons: []
-      verdict: consistent
-      verdicts:
-        - consistent
+      status: stale
+      reasons:
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+        - code: module_changed_since_analysis
+      verdict: null
+      verdicts: []
       review_ids:
+        - review-59ffdcc7-b2db-4853-baee-c574761ae067
+        - review-172f0533-1845-42dd-9046-cc7eacf4cd25
         - review-f8a8f2f2-ee4c-4849-b99c-58b80bac9a29
       conflict: false
       coverage:
         status: partial
         limitations:
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -973,22 +957,21 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       current_violation: false
     change:
       status: stale
       reasons:
-        - code: own_code
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
-        - code: own_code
+        - code: module_changed_since_analysis
         - code: baseline_identity
         - code: own_code
           side: baseline
+        - code: module_changed_since_analysis
         - code: baseline_identity
       verdict: null
       verdicts: []
@@ -1030,6 +1013,14 @@ review_status:
       current:
         status: partial
         limitations:
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -1044,8 +1035,6 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
       change:
@@ -1077,10 +1066,10 @@ review_status:
           - code: dependency_tracking_disabled
   subtree:
     current:
-      status: fresh
+      status: stale
       counts:
-        fresh: 1
-        stale: 0
+        fresh: 0
+        stale: 1
         unknown: 0
         not_reviewed: 0
       conflict: false
@@ -1088,6 +1077,14 @@ review_status:
       coverage:
         status: partial
         limitations:
+          - Проверки запуска и ошибок выполнены на Windows в локальной версии
+            Node. Поведение на других платформах и версиях Node отдельно не
+            запускалось. Полнота внешнего окружения сборки не удостоверялась.
+          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
+            не определяются.
+          - Проверены исходная и автономные раскладки, профильная регрессия Node
+            на Windows. Другие платформы отдельно не запускались.
+          - Полнота перечня внешних зависимостей не подтверждена.
           - Прочитан весь собственный код и проверен каждый собственный пункт;
             полнота внешних зависимостей не доказана, dependency_coverage
             сохранён unknown.
@@ -1102,8 +1099,6 @@ review_status:
           - "Дополнительная проверка main: typecheck pass; общая suite 250
             pass,10 skip; затем 8/8 браузерных сценариев прошли в установленном
             Chrome. Живой native Codex loader не проверен."
-          - Отслеживание зависимостей LLM отключено; зависимости через AST пока
-            не определяются.
         reasons:
           - code: dependency_tracking_disabled
     change:

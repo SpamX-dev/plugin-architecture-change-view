@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-mcp
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: b8fc1483f4320a21d436c34409e591c686c6928cafb488828a94837f18344048
+check_hash: 07fcaf4259614a51e580f5855d4b534592ea6381a38517612982a36459085143
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,305 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      id: faff1ed3907911564e7aa16a1a87c51571af85e9
     state:
       exists: true
       directory: src/mcp
-      self_digest: sha256:c505e677ff7ad2b38651566851d474dcba2721d3d3226b0386a20f37c585c1a2
-      subtree_digest: sha256:c3e41d1977fd9330ea83515daa15b36164ad97b439515c93e579e8f03cd74df0
+      self_digest: sha256:34a8cbf922df8940f96925eeebb70a77872ced4521948b55b03e23083877f4de
+      subtree_digest: sha256:111a453dd664041b5958087a53b6bf6e99f83719c3942cf5428bfb9a02535201
   current:
     exists: true
     directory: src/mcp
-    self_digest: sha256:34a8cbf922df8940f96925eeebb70a77872ced4521948b55b03e23083877f4de
-    subtree_digest: sha256:111a453dd664041b5958087a53b6bf6e99f83719c3942cf5428bfb9a02535201
+    self_digest: sha256:2560da666918987dff3a70f12a605713f814d42d6ce38103bf594077fb3568a0
+    subtree_digest: sha256:a49593e513f39f08f1d7e201d6a6273237e5b5df437b11767b7821073ed29bff
   analyzer:
     name: archiview-structure
     version: 1.0.2
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
-  module_id: archiview-mcp
-  directory: src/mcp
-  parent_id: architecture-core
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: archiview-mcp
-    directory: src/mcp
-    own_files:
-      - path: src/mcp/server.ts
-        digest: sha256:0ef224584ce07b6fdbfca287dd22c41a005a5db92c44978c7d7852b9f671d9b8
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: archiview-mcp
-      title: MCP-сервер ArchiView
-      kind: module
-      extensions:
-        archiview.roles:
-          - mcp-server
-      purpose: Предоставлять MCP-клиенту правила ведения контрактов и доступ к
-        контексту выбранного проекта через stdio.
-      responsibilities:
-        R1: Публиковать скилл module-boundaries как ресурс MCP и предоставлять
-          инструменты инвентаризации каталогов и чтения цепочки контрактов.
-        R2: При запуске с панелью регистрировать её ресурс и инструменты на том же
-          сервере и передавать запросы адаптеру Codex.
-      boundaries:
-        B1: Сервер проверяет аргументы протокола и передаёт выбранный корень и параметры
-          обхода модулю контрактов.
-        B2: Данные панели и выполнение её операций предоставляет адаптер Codex.
-      invariants:
-        I1: Инструменты чтения работают в выбранном проекте. Метаданные сервера и текст
-          скилла читаются из пакета ArchiView.
-        I2: Обычный запуск по stdio предоставляет только скилл и инструменты чтения
-          контрактов. Панель включается параметром --panel.
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
-        text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-      - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
-  technical_digest: sha256:c505e677ff7ad2b38651566851d474dcba2721d3d3226b0386a20f37c585c1a2
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: archiview-mcp
-    directory: src/mcp
-    own_files:
-      - path: src/mcp/server.ts
-        digest: sha256:0ef224584ce07b6fdbfca287dd22c41a005a5db92c44978c7d7852b9f671d9b8
-        normalization: text-lf/v1
-    contract:
-      id: archiview-mcp
-      kind: module
-      purpose: Предоставлять MCP-клиенту правила ведения контрактов и доступ к
-        контексту выбранного проекта через stdio.
-      responsibilities:
-        R1: Публиковать скилл module-boundaries как ресурс MCP и предоставлять
-          инструменты инвентаризации каталогов и чтения цепочки контрактов.
-        R2: При запуске с панелью регистрировать её ресурс и инструменты на том же
-          сервере и передавать запросы адаптеру Codex.
-      boundaries:
-        B1: Сервер проверяет аргументы протокола и передаёт выбранный корень и параметры
-          обхода модулю контрактов.
-        B2: Данные панели и выполнение её операций предоставляет адаптер Codex.
-      invariants:
-        I1: Инструменты чтения работают в выбранном проекте. Метаданные сервера и текст
-          скилла читаются из пакета ArchiView.
-        I2: Обычный запуск по stdio предоставляет только скилл и инструменты чтения
-          контрактов. Панель включается параметром --panel.
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Запись и содержательный анализ контрактов выполняет агент своими файловыми
-          инструментами. Просмотр не изменяет исходники проекта.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: Извлечение символов, разрешение зависимостей и индексация AST находятся за
-          пределами ArchiView и относятся к ast-index.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I1
-        text: Чтение ограничено выбранным корнем проекта. Вкладка чата получает этот
-          корень от хоста; явно настроенный для модельных инструментов корень
-          ограничивает их чтение.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I2
-        text: Снимки и результаты анализа по умолчанию находятся в переносимой папке
-          .archiview внутри корня проекта. Эта папка исключена из анализа
-          исходников; прежние сохранённые факты и отчёты не переписываются при
-          переносе проекта.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I3
-        text: Устойчивую ответственность задаёт контракт в .archiview/modules; карта
-          modules.tree связывает его id с каталогом проекта. Эвристические
-          оценки и текущий код не разрешают её расширять.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I4
-        text: Структурная проверка не выдаёт наличие файла за семантическое
-          соответствие.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I5
-        text: Приложение, адаптеры, интерфейс, сборочные скрипты и тесты проверяются
-          строгим TypeScript перед сборкой; классы сохраняют единственную
-          ответственность внутри границ своих модулей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I6
-        text: Обе интеграции получают правила ведения контрактов из канонического скилла
-          пакета.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I7
-        text: Панель обращается к агенту только по явному поручению пользователя
-          проанализировать модуль или исправить замечание.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I8
-        text: Каждый Git-репозиторий рабочей папки версионирует свои контракты вместе с
-          кодом. Панель и агент сохраняют принадлежность модуля его репозиторию.
-      - module_id: architecture-core
-        section: boundaries
-        id: B1
-        text: Адаптеры вызывают общие прикладные операции просмотра. Прикладной сервис
-          принимает данные проекта и возвращает результат независимо от
-          транспорта, хоста и способа отображения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: Семантический вывод ответственности выполняет агент или внешний
-          анализатор. Наличие контракта не доказывает его выполнения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B5
-        text: Адаптеры и сборщики снимков используют общую модель контрактов. Чтение и
-          проверка контрактов доступны независимо от MCP, HTTP и хоста.
-      - module_id: architecture-core
-        section: invariants
-        id: I1
-        text: Пути исходников разрешаются внутри выбранного корня; ссылки, зависимости,
-          сборка и папки .archiview не расширяют анализ. Запись данных
-          допускается в .archiview корня проекта либо явно выбранном внешнем
-          хранилище; ссылки не меняют эту область.
-      - module_id: architecture-core
-        section: invariants
-        id: I2
-        text: Неполнота обхода и доказательств сообщается явно.
-      - module_id: architecture-core
-        section: invariants
-        id: I3
-        text: Снимки и отчёты не заменяют контракт модуля и не согласуют новую
-          ответственность.
-      - module_id: architecture-core
-        section: invariants
-        id: I4
-        text: Ссылки отчёта разрешаются в сохранённых снимках, а не в текущих изменяемых
-          файлах.
-      - module_id: architecture-core
-        section: invariants
-        id: I5
-        text: Структурное различие контрактов не создаёт замечание; оценка нарушения
-          требует отдельного анализа.
-      - module_id: architecture-core
-        section: invariants
-        id: I6
-        text: Успешная проверка индекса означает, что подготовленные к коммиту отчёты
-          описывают состояние исходников и контрактов из того же индекса Git.
-    children: []
-  self_digest: sha256:6cf55dc10b20360ca018f4a69a7f2d4ede31704e4432cbbdcb7ba27645605231
-  subtree:
-    self: sha256:c505e677ff7ad2b38651566851d474dcba2721d3d3226b0386a20f37c585c1a2
-    children: []
-  subtree_digest: sha256:c3e41d1977fd9330ea83515daa15b36164ad97b439515c93e579e8f03cd74df0
-  semantic_subtree:
-    self: sha256:6cf55dc10b20360ca018f4a69a7f2d4ede31704e4432cbbdcb7ba27645605231
-    children: []
-  semantic_subtree_digest: sha256:8c9c2035169e5fd9cfbda5c56efd5c452969a25a3679066d0eb141b1f9f3469a
-current:
   module_id: archiview-mcp
   directory: src/mcp
   parent_id: architecture-core
@@ -591,11 +308,202 @@ current:
     self: sha256:6c6e5e27dbc9e3fe1439d440137c7c3ae219648c7a23929eb6b57d12c11407da
     children: []
   semantic_subtree_digest: sha256:ab028fd43ce47bad23ebfe6e72504aebd21190ea43e373a67d959d7006f63a4e
+current:
+  module_id: archiview-mcp
+  directory: src/mcp
+  parent_id: architecture-core
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-mcp
+    directory: src/mcp
+    own_files:
+      - path: src/mcp/server.ts
+        digest: sha256:0ef224584ce07b6fdbfca287dd22c41a005a5db92c44978c7d7852b9f671d9b8
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-mcp
+      title: MCP-сервер ArchiView
+      kind: module
+      extensions:
+        archiview.roles:
+          - mcp-server
+      purpose: Предоставлять агенту ArchiView через MCP по stdio в контексте выбранной
+        рабочей папки.
+      responsibilities:
+        R1: Публиковать канонический скилл module-boundaries из пакета ArchiView как
+          ресурс MCP.
+        R3: Давать агенту инвентаризацию каталогов проекта.
+        R4: Предоставлять цепочку действующих контрактов по указанному пути.
+        R2: При включении панели предоставлять её ресурс и инструменты в той же
+          MCP-сессии.
+      boundaries:
+        B1: Принимать запросы чтения контрактов только с допустимыми аргументами и в
+          пределах выбранного проекта.
+        B3: Регистрировать операции панели только при явном запуске с параметром
+          --panel.
+      invariants: {}
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B4
+        text: Панель обращается к агенту только по явному поручению пользователя
+          провести анализ или исправить замечание.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B5
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+  technical_digest: sha256:2560da666918987dff3a70f12a605713f814d42d6ce38103bf594077fb3568a0
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-mcp
+    directory: src/mcp
+    own_files:
+      - path: src/mcp/server.ts
+        digest: sha256:0ef224584ce07b6fdbfca287dd22c41a005a5db92c44978c7d7852b9f671d9b8
+        normalization: text-lf/v1
+    contract:
+      id: archiview-mcp
+      kind: module
+      purpose: Предоставлять агенту ArchiView через MCP по stdio в контексте выбранной
+        рабочей папки.
+      responsibilities:
+        R1: Публиковать канонический скилл module-boundaries из пакета ArchiView как
+          ресурс MCP.
+        R3: Давать агенту инвентаризацию каталогов проекта.
+        R4: Предоставлять цепочку действующих контрактов по указанному пути.
+        R2: При включении панели предоставлять её ресурс и инструменты в той же
+          MCP-сессии.
+      boundaries:
+        B1: Принимать запросы чтения контрактов только с допустимыми аргументами и в
+          пределах выбранного проекта.
+        B3: Регистрировать операции панели только при явном запуске с параметром
+          --panel.
+      invariants: {}
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B1
+        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
+          контракты проекта без изменений.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B2
+        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
+          исходного кода.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B3
+        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
+          пределах репозитория, которому он принадлежит.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B4
+        text: Панель обращается к агенту только по явному поручению пользователя
+          провести анализ или исправить замечание.
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B5
+        text: Автоматическая проверка структуры может подтвердить наличие контракта и
+          корректность формата, но не выполнение обязанностей.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+    children: []
+  self_digest: sha256:4954ff908ab03eac6fe6a5b2e26d97e2fb4d23f8afb7132c153c34fc5456cb36
+  subtree:
+    self: sha256:2560da666918987dff3a70f12a605713f814d42d6ce38103bf594077fb3568a0
+    children: []
+  subtree_digest: sha256:a49593e513f39f08f1d7e201d6a6273237e5b5df437b11767b7821073ed29bff
+  semantic_subtree:
+    self: sha256:4954ff908ab03eac6fe6a5b2e26d97e2fb4d23f8afb7132c153c34fc5456cb36
+    children: []
+  semantic_subtree_digest: sha256:76a79870bd20f97b91534ece9439b2af9b985381744de411cbb5643cd9ea546f
 change:
   existence: retained
-  own: false
+  own: true
   own_code: false
-  own_contract: false
+  own_contract: true
   inherited_constraints: true
   descendants: false
   child_composition: false
@@ -605,19 +513,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 229
-  comparison_key: sha256:7da7254a0a66f9d27ec9b6f9a7adf4ab17c541a918826ea024b3c2f7739ca2d6
+  generation: 230
+  comparison_key: sha256:dbbcc9929208174b5364c72ca96a3186ff40bffa50a1a9697a4763ed2695b719
   baseline:
     metadata:
-      id: git-d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
-      digest: sha256:af9f212d9105ac0835922c1859fead6bde645c5af5341075f1dd37c342eb690a
+      id: git-faff1ed3907911564e7aa16a1a87c51571af85e9
+      digest: sha256:51ac76e85886d11780df766f66e795cd45b742a439f5fc5ce763415fd4b8ce48
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-12T14:53:38.101Z
+      capturedAt: 2026-11-19T08:54:36.342Z
       kind: git
-      revision: d5296f8f6e1740e921e5e219b82ad7c51bf2bfd8
+      revision: faff1ed3907911564e7aa16a1a87c51571af85e9
       label: HEAD
-      fingerprint: b7ab65d678f064915ba28308111789eb162d4125c76b5e7eb0f4f89b28015118
+      fingerprint: 857d1f43852fb597c51de3c3dfacd50edf82ab25ecdac496396088445d837560
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -714,7 +622,7 @@ publication:
             invariants:
               I1: Инструменты чтения работают в выбранном проекте. Метаданные сервера и текст скилла читаются из пакета ArchiView.
               I2: Обычный запуск по stdio предоставляет только скилл и инструменты чтения контрактов. Панель включается параметром --panel.
-      - index: 91
+      - index: 92
         fact:
           id: sha256:9a45425976ded8f6726aed0fcbbca468bd66d06256ddf7122aa73a4b0d367bd6
           kind: file
@@ -882,7 +790,7 @@ publication:
               if (panel) server.onclose = () => { panel.close().catch(() => {}); };
               await server.connect(new StdioServerTransport());
             }
-      - index: 193
+      - index: 197
         fact:
           id: sha256:33df1402e62a8a44df9d71353500b5c4543ff979db4c749fa4d79339b2936fe8
           kind: module
@@ -890,17 +798,84 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/mcp/server.ts"]}'
   current:
     metadata:
-      id: working-17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
-      digest: sha256:17456cef10ef8010feeac15c4ba63db10397e7a56c4ed10fc11689b2223e83ed
+      id: launch-c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
+      digest: sha256:ceaa4d2c1d904878f438bd3dafffa6e84373a3020bc10380e6abb3f3e3443861
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-13T06:45:51.736Z
-      kind: working
-      label: Рабочее дерево
-      fingerprint: 8aab78b922d900e815b80f4c7e0671a4309fe40acea7b649b63dc3003bbadab6
+      capturedAt: 2026-11-19T08:54:38.403Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: c4323b52945feaefd958b62a6cab738b458d7d0ebf09199d21d9eabbac12d115
       complete: true
       diagnostics: []
       evidenceLimitations: []
+      observations:
+        architecture-change-view:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-distribution:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-skills:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-module-boundaries-skill:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-core:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-application:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-http:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-codex:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-contracts:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        dsh-adapter:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        dsh-client-panel:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-mcp:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-project-location:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-reports:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-reviews:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-node-runtime:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-serialization:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-snapshots:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-storage:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-tests:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        architecture-web:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
+        archiview-client:
+          lineage: b5ac1e28-c5b2-4c9e-828d-df84c61064ea
+          revision: 1
     module_index: 11
     module:
       directory: src/mcp
@@ -917,18 +892,18 @@ publication:
 
           extensions:
             archiview.roles: [mcp-server]
-          purpose: Предоставлять MCP-клиенту правила ведения контрактов и доступ
-          к контексту выбранного проекта через stdio.
+          purpose: Предоставлять агенту ArchiView через MCP по stdio в контексте
+          выбранной рабочей папки.
 
           responsibilities:
-            R1: Публиковать скилл module-boundaries как ресурс MCP и предоставлять инструменты инвентаризации каталогов и чтения цепочки контрактов.
-            R2: При запуске с панелью регистрировать её ресурс и инструменты на том же сервере и передавать запросы адаптеру Codex.
+            R1: Публиковать канонический скилл module-boundaries из пакета ArchiView как ресурс MCP.
+            R3: Давать агенту инвентаризацию каталогов проекта.
+            R4: Предоставлять цепочку действующих контрактов по указанному пути.
+            R2: При включении панели предоставлять её ресурс и инструменты в той же MCP-сессии.
           boundaries:
-            B1: Сервер проверяет аргументы протокола и передаёт выбранный корень и параметры обхода модулю контрактов.
-            B2: Данные панели и выполнение её операций предоставляет адаптер Codex.
-          invariants:
-            I1: Инструменты чтения работают в выбранном проекте. Метаданные сервера и текст скилла читаются из пакета ArchiView.
-            I2: Обычный запуск по stdio предоставляет только скилл и инструменты чтения контрактов. Панель включается параметром --panel.
+            B1: Принимать запросы чтения контрактов только с допустимыми аргументами и в пределах выбранного проекта.
+            B3: Регистрировать операции панели только при явном запуске с параметром --panel.
+          invariants: {}
         format: yaml
         contract:
           schema_version: 1
@@ -938,34 +913,33 @@ publication:
           extensions:
             archiview.roles:
               - mcp-server
-          purpose: Предоставлять MCP-клиенту правила ведения контрактов и доступ к
-            контексту выбранного проекта через stdio.
+          purpose: Предоставлять агенту ArchiView через MCP по stdio в контексте выбранной
+            рабочей папки.
           responsibilities:
-            R1: Публиковать скилл module-boundaries как ресурс MCP и предоставлять
-              инструменты инвентаризации каталогов и чтения цепочки контрактов.
-            R2: При запуске с панелью регистрировать её ресурс и инструменты на том же
-              сервере и передавать запросы адаптеру Codex.
+            R1: Публиковать канонический скилл module-boundaries из пакета ArchiView как
+              ресурс MCP.
+            R3: Давать агенту инвентаризацию каталогов проекта.
+            R4: Предоставлять цепочку действующих контрактов по указанному пути.
+            R2: При включении панели предоставлять её ресурс и инструменты в той же
+              MCP-сессии.
           boundaries:
-            B1: Сервер проверяет аргументы протокола и передаёт выбранный корень и параметры
-              обхода модулю контрактов.
-            B2: Данные панели и выполнение её операций предоставляет адаптер Codex.
-          invariants:
-            I1: Инструменты чтения работают в выбранном проекте. Метаданные сервера и текст
-              скилла читаются из пакета ArchiView.
-            I2: Обычный запуск по stdio предоставляет только скилл и инструменты чтения
-              контрактов. Панель включается параметром --panel.
+            B1: Принимать запросы чтения контрактов только с допустимыми аргументами и в
+              пределах выбранного проекта.
+            B3: Регистрировать операции панели только при явном запуске с параметром
+              --panel.
+          invariants: {}
       documentPath: .archiview/modules/archiview-mcp.yaml
       files:
         - path: .archiview/modules/archiview-mcp.yaml
-          hash: adc7ee7994fc80fd7e182b897fcdd90b38692c5f
+          hash: 31b1907250554bbc0dced84d30759dc9aaebd990
         - path: src/mcp/server.ts
           hash: 5f9808ccd71c78b490f8a4a4d2ab9f9266675a26
       sourceFiles: 1
-      fingerprint: 7ef41983b1789cb4ef0fd27443b9bfd5cb0253f5ccbdf646b3086faccbcffe7d
+      fingerprint: 8454ce0395e3428acc0638fdc3839c072a1e969cfd0e223d3de4b341abb8eb5b
     facts:
       - index: 11
         fact:
-          id: sha256:639fb792154e8f95e9d8c5055ea0e2132e1711dc60cf152e7b7923ce76ed75f5
+          id: sha256:7b4425327e3d27d2b5b0a27827b96a02bbb5874d0493d8127d02bfd6e4fbebac
           kind: file
           path: .archiview/modules/archiview-mcp.yaml
           start_line: 1
@@ -981,19 +955,19 @@ publication:
 
             extensions:
               archiview.roles: [mcp-server]
-            purpose: Предоставлять MCP-клиенту правила ведения контрактов и
-            доступ к контексту выбранного проекта через stdio.
+            purpose: Предоставлять агенту ArchiView через MCP по stdio в
+            контексте выбранной рабочей папки.
 
             responsibilities:
-              R1: Публиковать скилл module-boundaries как ресурс MCP и предоставлять инструменты инвентаризации каталогов и чтения цепочки контрактов.
-              R2: При запуске с панелью регистрировать её ресурс и инструменты на том же сервере и передавать запросы адаптеру Codex.
+              R1: Публиковать канонический скилл module-boundaries из пакета ArchiView как ресурс MCP.
+              R3: Давать агенту инвентаризацию каталогов проекта.
+              R4: Предоставлять цепочку действующих контрактов по указанному пути.
+              R2: При включении панели предоставлять её ресурс и инструменты в той же MCP-сессии.
             boundaries:
-              B1: Сервер проверяет аргументы протокола и передаёт выбранный корень и параметры обхода модулю контрактов.
-              B2: Данные панели и выполнение её операций предоставляет адаптер Codex.
-            invariants:
-              I1: Инструменты чтения работают в выбранном проекте. Метаданные сервера и текст скилла читаются из пакета ArchiView.
-              I2: Обычный запуск по stdio предоставляет только скилл и инструменты чтения контрактов. Панель включается параметром --panel.
-      - index: 91
+              B1: Принимать запросы чтения контрактов только с допустимыми аргументами и в пределах выбранного проекта.
+              B3: Регистрировать операции панели только при явном запуске с параметром --panel.
+            invariants: {}
+      - index: 92
         fact:
           id: sha256:9a45425976ded8f6726aed0fcbbca468bd66d06256ddf7122aa73a4b0d367bd6
           kind: file
@@ -1161,7 +1135,7 @@ publication:
               if (panel) server.onclose = () => { panel.close().catch(() => {}); };
               await server.connect(new StdioServerTransport());
             }
-      - index: 195
+      - index: 197
         fact:
           id: sha256:33df1402e62a8a44df9d71353500b5c4543ff979db4c749fa4d79339b2936fe8
           kind: module
@@ -1170,11 +1144,11 @@ publication:
 review_status:
   self:
     current:
-      status: fresh
-      reasons: []
-      verdict: consistent
-      verdicts:
-        - consistent
+      status: stale
+      reasons:
+        - code: module_changed_since_analysis
+      verdict: null
+      verdicts: []
       review_ids:
         - review-276dff47-cbd5-49f1-832a-c3605bd99b9a
       conflict: false
@@ -1203,6 +1177,7 @@ review_status:
     change:
       status: stale
       reasons:
+        - code: module_changed_since_analysis
         - code: baseline_identity
       verdict: null
       verdicts: []
@@ -1277,10 +1252,10 @@ review_status:
           - code: dependency_tracking_disabled
   subtree:
     current:
-      status: fresh
+      status: stale
       counts:
-        fresh: 1
-        stale: 0
+        fresh: 0
+        stale: 1
         unknown: 0
         not_reviewed: 0
       conflict: false
