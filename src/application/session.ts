@@ -360,7 +360,11 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     const matching = args.analysis === false ? [] : view.reviews.filter((bundle) => module.moduleId ? bundle.report.module.id === module.moduleId :
       (bundle.report.module.current_path ?? bundle.report.module.baseline_path) === module.directory);
     const detail = moduleDetail(module, matching, matching.length ? view.reportModel : undefined, view.modules, root, reports.work);
-    if (view.target?.id === "current" && module.after) detail.deletedClause = editor.deletedClause(module.after);
+    if (view.target?.id === "current" && module.after) {
+      detail.deletedClauses = editor.deletedClauses(module.after);
+      const last = detail.deletedClauses.at(-1);
+      if (last) detail.deletedClause = { section: last.section, clauseId: last.clauseId, undoToken: last.undoToken };
+    }
     return detail;
   }
 
@@ -429,7 +433,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     const { view, module } = selectedModule(args);
     if (view.target?.id !== "current" || !module.after?.document.contract)
       throw new ApplicationError("INVALID_ARGUMENT", "Редактирование доступно для контракта в текущем состоянии");
-    return editor.changeClause(module.after, args);
+    return editor.changeClause(module.after, args, module.before?.document);
   };
   const changePrototype: SessionOperations["changePrototype"] = async args => {
     if (findView(args.view).target?.id !== "current")

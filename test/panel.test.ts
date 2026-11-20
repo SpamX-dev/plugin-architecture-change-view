@@ -92,7 +92,8 @@ test("autonomous MCP panel serves project operations with no listening sockets a
   await assert.rejects(call("prepare_analysis", { view: view.id, path: "child" }).then(uiData), { code: "STALE_VIEW" });
   const latest = uiData<ComparisonView>(await call("get_comparison"));
   assert.equal(uiData(await call("build_review", { view: latest.id, path: "child" })).module_id, "child");
-  uiData(await call("change_clause", { view: latest.id, path: "child", action: "add", section: "invariants", clauseId: "I1", text: "Проверено из панели" }));
+  const added = uiData(await call("change_clause", { view: latest.id, path: "child", action: "add", section: "invariants", text: "Проверено из панели" }));
+  assert.equal(added.clauseId, "I1");
   assert.equal(parse(await readFile(path.join(root, ".archiview/modules/child.yaml"), "utf8")).invariants.I1, "Проверено из панели");
   uiData(await call("change_prototype", { view: latest.id, path: "planned", action: "create", moduleId: "planned",
     title: "Запланированный модуль", purpose: "Суммировать стоимость" }));

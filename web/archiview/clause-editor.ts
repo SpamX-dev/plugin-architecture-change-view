@@ -1,52 +1,67 @@
-import { clauseEntries } from "../../src/contracts/types.js";
-import type { ClauseChange } from "../../src/application/api.js";
+import type { ClauseChange, DeletedClause } from "../../src/application/api.js";
+import type { ContractFieldChange } from "../../src/snapshots/contract-diff.js";
 import type { ArchiViewClient, ComparisonView, ModuleDetail, Section } from "./types.js";
 import { errorMessage } from "./types.js";
 import { el } from "./dom.js";
 
+interface ClauseItem { id: string; change: ContractFieldChange }
+
 export interface ClauseControls {
-  open(section: Section, title: string, id?: string): void;
-  undo?: { section: Section; id: string; restore(): Promise<void> };
+  open(section: Section, title: string, item?: ClauseItem): void;
 }
 
-function clauseDialog(title: string, section: Section, clauses: Record<string, string>, id: string | undefined,
+function clauseDialog(title: string, section: Section, item: ClauseItem | undefined, deleted: DeletedClause[],
   save: (change: ClauseChange) => Promise<void>) {
+  const id = item?.id;
+  const removed = item?.change.status === "removed";
+  const name = section === "purpose" ? "назначение" : id;
   const dialog = el("dialog", "clause-dialog");
-  const heading = el("h2", "", id === undefined ? "Новый пункт" : "Редактировать " + (section === "purpose" ? "назначение" : id));
+  const heading = el("h2", "", id === undefined ? "Новый пункт" : (removed ? "Восстановить " : "Редактировать ") + name);
   heading.id = "clause-dialog-title";
   dialog.setAttribute("aria-labelledby", heading.id);
   const form = el("form");
   const fields = el("fieldset");
   fields.append(el("legend", "", title));
-  const key = el("input");
-  if (id === undefined) {
-    const label = el("label", "", "ID нового пункта");
-    key.placeholder = { purpose: "", boundaries: "B…", invariants: "I…" }[section];
-    key.required = true;
-    key.autocomplete = "off";
-    label.append(key);
-    fields.append(label);
-  }
   const label = el("label", "", "Текст пункта");
   const input = el("textarea");
-  input.value = id === undefined ? "" : clauses[id] ?? "";
+  const deletion = deleted.find(clause => clause.clauseId === id);
+  input.value = String((removed ? deletion?.text ?? item?.change.before : item?.change.after) ?? "");
+  input.readOnly = removed;
   input.required = true;
   input.rows = 5;
   label.append(input);
   fields.append(label);
+  if (!item && deleted.length) {
+    const recover = el("div", "clause-dialog-actions");
+    for (const clause of deleted) {
+      const restore = el("button", "text-button", "Восстановить " + clause.clauseId);
+      restore.type = "button";
+      restore.title = clause.text;
+      restore.onclick = () => commit({ action: "restore", section, clauseId: clause.clauseId, undoToken: clause.undoToken });
+      recover.append(restore);
+    }
+    fields.append(recover);
+  }
   const error = el("div", "clause-edit-error");
   error.setAttribute("role", "alert");
   const actions = el("div", "clause-dialog-actions");
   const cancel = el("button", "button button-quiet", "Отмена");
   cancel.type = "button";
   cancel.onclick = () => dialog.close();
-  const submit = el("button", "button button-primary", id === undefined ? "Добавить" : "Сохранить");
+  const submit = el("button", "button button-primary", removed ? "Восстановить" : id === undefined ? "Добавить" : "Сохранить");
   submit.type = "submit";
-  if (id !== undefined && section !== "purpose") {
+  if (id !== undefined && section !== "purpose" && !removed) {
     const remove = el("button", "button clause-delete", "Удалить");
     remove.type = "button";
     remove.onclick = () => commit({ action: "delete", section, clauseId: id });
     actions.append(remove);
+  }
+  if (item?.change.status === "modified") {
+    const revert = el("button", "button button-quiet", "Откатить");
+    revert.type = "button";
+    revert.title = "Вернуть текст из базы сравнения";
+    revert.onclick = () => commit({ action: "revert", section, clauseId: item.id });
+    actions.append(revert);
   }
   actions.append(cancel, submit);
   fields.append(error, actions);
@@ -66,34 +81,35 @@ function clauseDialog(title: string, section: Section, clauses: Record<string, s
   }
   form.onsubmit = event => {
     event.preventDefault();
-    const clauseId = id ?? key.value.trim();
-    if (!clauseId || !input.value.trim()) { error.textContent = "Заполните ID и текст пункта"; return; }
-    void commit({ action: id === undefined ? "add" : "edit", section, clauseId, text: input.value });
+    if (removed && id !== undefined) {
+      void commit(deletion ? { action: "restore", section, clauseId: id, undoToken: deletion.undoToken } : { action: "revert", section, clauseId: id });
+      return;
+    }
+    if (!input.value.trim()) { error.textContent = "Введите текст пункта"; return; }
+    if (id !== undefined) void commit({ action: "edit", section, clauseId: id, text: input.value });
+    else if (section !== "purpose") void commit({ action: "add", section, text: input.value });
   };
   dialog.oncancel = event => { if (fields.disabled) event.preventDefault(); };
   dialog.addEventListener("close", () => dialog.remove(), { once: true });
   document.body.append(dialog);
   dialog.showModal();
-  (id === undefined ? key : input).focus();
+  (removed ? submit : input).focus();
 }
 
-export function createClauseEditor(client: ArchiViewClient, saved: (view: ComparisonView, key: string, change: ClauseChange) => Promise<void>,
-  showError: (message: string) => void) {
+export function createClauseEditor(client: ArchiViewClient, saved: (view: ComparisonView, key: string, clause: { section: Section; clauseId: string }) => Promise<void>) {
   return (view: ComparisonView, detail: ModuleDetail): ClauseControls | undefined => {
     const contract = detail.after?.document.contract;
     if (!contract || view.published || view.target.id !== "current") return;
-    const deleted = detail.deletedClause;
     async function save(change: ClauseChange) {
-      await client.changeClause({ view: view.id, repository: view.workspace?.repository, path: detail.key, ...change });
-      await saved(view, detail.key, change);
+      const { clauseId } = await client.changeClause({ view: view.id, repository: view.workspace?.repository, path: detail.key, ...change });
+      await saved(view, detail.key, { section: change.section, clauseId });
     }
     return {
-      open: (section, title, id) => clauseDialog(title, section, clauseEntries(contract, section), id, save),
-      undo: deleted
-        ? { section: deleted.section, id: deleted.clauseId, async restore() {
-          try { await save({ action: "restore", section: deleted.section, clauseId: deleted.clauseId, undoToken: deleted.undoToken }); }
-          catch (cause) { showError(errorMessage(cause)); }
-        } } : undefined,
+      open(section, title, item) {
+        const deleted = (detail.deletedClauses ?? []).filter(clause => clause.section === section &&
+          (item ? clause.clauseId === item.id : !detail.contractDiff.fields.some(field => field.key === section + "." + clause.clauseId)));
+        clauseDialog(title, section, item, deleted, save);
+      },
     };
   };
 }

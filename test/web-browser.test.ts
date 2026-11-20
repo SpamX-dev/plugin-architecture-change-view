@@ -374,38 +374,70 @@ test("contract clauses can be edited, added, deleted and restored from the worki
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);
   const file = path.join(root, ".archiview/modules/browser-feature.yaml");
+  const base = parse(await readFile(file, "utf8"));
+  base.boundaries = { B1: "Первая граница", B2: "Вторая граница", B3: "Третья граница" };
+  await writeFile(file, stringify(base));
+  commitTestFiles(root);
+  const working = structuredClone(base);
+  working.boundaries.B1 = "Изменение перед удалением";
+  delete working.boundaries.B2;
+  await writeFile(file, stringify(working));
   const app = await createArchiView({ root });
   const origin = await listen(defer, app.server);
   const page = await (await browserContext(defer)).newPage();
   await page.goto(origin + "/#src");
   const button = (name: string) => page.getByRole("button", { name, exact: true });
   const dialog = page.getByRole("dialog");
+  const finish = async (name: string) => {
+    await dialog.getByRole("button", { name, exact: true }).click();
+    await dialog.waitFor({ state: "detached" });
+  };
+  const row = (id: string) => page.locator('.clause-row[data-clause-id="' + id + '"]');
   await page.locator(".contract-paper").getByRole("button", { name: "Редактировать назначение" }).click();
   assert.equal(await button("Удалить").count(), 0);
   await dialog.getByLabel("Текст пункта").fill("Новая формулировка обязанности");
-  await button("Сохранить").click();
-  await dialog.waitFor({ state: "detached" });
+  await finish("Сохранить");
   assert.equal(parse(await readFile(file, "utf8")).purpose, "Новая формулировка обязанности");
-  for (const [section, id] of [["Границы", "B1"], ["Инварианты", "I1"]]) {
+  for (const id of ["B1", "B3"]) {
+    await button("Редактировать " + id).click();
+    await finish("Удалить");
+    assert.equal(await row(id).getAttribute("data-change-status"), "removed");
+    assert.equal(await page.getByText("Пункт " + id + " удалён", { exact: true }).count(), 0);
+  }
+  for (const [section, id] of [["Границы", "B4"], ["Инварианты", "I1"]]) {
     await button("Добавить пункт · " + section).click();
-    await dialog.getByLabel("ID нового пункта").fill(id);
+    assert.equal(await dialog.getByRole("textbox").count(), 1);
     await dialog.getByLabel("Текст пункта").fill("Текст " + id);
-    await button("Добавить").click();
-    await dialog.waitFor({ state: "detached" });
+    await finish("Добавить");
     await button("Редактировать " + id).waitFor();
   }
-  const beforeDelete = await readFile(file, "utf8");
-  await button("Редактировать B1").click();
-  await button("Удалить").click();
-  await button("Восстановить B1").waitFor();
-  assert.deepEqual(parse(await readFile(file, "utf8")).boundaries, {});
   await page.reload();
-  await button("Восстановить B1").click();
-  await button("Редактировать B1").waitFor();
-  assert.equal(await readFile(file, "utf8"), beforeDelete);
+  await button("Редактировать B1").click();
+  assert.equal(await dialog.getByLabel("Текст пункта").inputValue(), working.boundaries.B1);
+  assert.equal(await dialog.getByLabel("Текст пункта").isEditable(), false);
+  await finish("Восстановить");
+  assert.deepEqual(parse(await readFile(file, "utf8")).boundaries, { B1: working.boundaries.B1, B4: "Текст B4" });
+  await button("Редактировать B1").click();
+  await finish("Откатить");
+  assert.equal(await row("B1").getAttribute("data-change-status"), "unchanged");
+  for (const id of ["B2", "B3"]) {
+    await button("Редактировать " + id).click();
+    assert.equal(await dialog.getByLabel("Текст пункта").inputValue(), base.boundaries[id]);
+    await finish("Восстановить");
+  }
+  await button("Редактировать B4").click();
+  await finish("Удалить");
+  assert.equal(await row("B4").count(), 0);
+  assert.deepEqual(Object.entries(parse(await readFile(file, "utf8")).boundaries), Object.entries(base.boundaries));
+  await button("Добавить пункт · Границы").click();
+  await finish("Восстановить B4");
+  assert.equal(await row("B4").getAttribute("data-change-status"), "added");
+  await button("Редактировать назначение").click();
+  await finish("Откатить");
+  assert.equal(parse(await readFile(file, "utf8")).purpose, base.purpose);
   await button("Редактировать I1").click();
   await dialog.getByLabel("Текст пункта").fill("Черновик");
-  const external = beforeDelete.replace("Текст I1", "Внешняя правка");
+  const external = (await readFile(file, "utf8")).replace("Текст I1", "Внешняя правка");
   await writeFile(file, external);
   await button("Сохранить").click();
   await dialog.getByRole("alert").filter({ hasText: "Контракт изменился" }).waitFor();
@@ -413,6 +445,7 @@ test("contract clauses can be edited, added, deleted and restored from the worki
   assert.equal(await readFile(file, "utf8"), external);
   await button("Отмена").click();
   await page.locator("#timeline").selectOption({ label: "HEAD" });
+  await button("Редактировать назначение").waitFor({ state: "detached" });
   await page.locator(".clause-row p").filter({ hasText: "Предоставлять функцию" }).waitFor();
   assert.equal(await page.getByRole("button", { name: /Редактировать|Добавить пункт|Восстановить/ }).count(), 0);
 });

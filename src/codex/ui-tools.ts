@@ -24,10 +24,10 @@ const operations: Operation[] = [
     ...selectedModule, action: string, moduleId: string, title: string,
     purpose: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, text: { type: "string", maxLength: MAX_DOCUMENT_BYTES },
   }, ["view", "path", "action"], false],
-  ["change_clause", "changeClause", "Edit, add, delete or restore a clause in the selected working contract.", {
+  ["change_clause", "changeClause", "Edit, add, delete, restore or revert a clause to its comparison baseline in the selected working contract.", {
     ...selectedModule, section: string, clauseId: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, action: string,
     text: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, undoToken: string,
-  }, ["view", "path", "section", "clauseId", "action"], false],
+  }, ["view", "path", "section", "action"], false],
   ["prepare_analysis", "prepareAnalysis", "Prepare immutable inputs for an explicit module analysis.", selectedModule, ["view", "path"], false],
   ["get_analysis", "getAnalysis", "Read the saved status of a prepared analysis.", { id: string, repository: string }, ["id"], true],
   ["build_review", "buildReview", "Refresh a structural report for a selected module.", selectedModule, ["view", "path"], false],

@@ -74,13 +74,16 @@ export async function startApp({ client, bridge, host, chooseProject }: {
   const clauseControls = createClauseEditor(client, async (view, key, change) => {
     if (state.view?.root !== view.root || state.target !== "current") return;
     await refresh();
-    // After the dialog closes, return to the edited clause or its undo action.
+    // Cancelling an addition removes its row. Return focus to that section in this case.
     requestAnimationFrame(() => {
       if (state.view?.root !== view.root || state.selected !== key || state.tab !== "document" || state.target !== "current") return;
       const row = '[data-clause-section="' + change.section + '"][data-clause-id="' + CSS.escape(change.clauseId) + '"]';
-      byId("document-panel").querySelector<HTMLButtonElement>(change.action === "delete" ? ".clause-undo button" : row + " .clause-edit-action")?.focus();
+      const panel = byId("document-panel");
+      const focus = panel.querySelector<HTMLButtonElement>(row + " .clause-edit-action") ??
+        panel.querySelector<HTMLButtonElement>('[data-add-clause="' + change.section + '"]');
+      focus?.focus();
     });
-  }, toast);
+  });
 
   function currentView(): ComparisonView { if (!state.view) throw new Error("Project comparison is not loaded"); return state.view; }
 

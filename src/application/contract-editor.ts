@@ -2,16 +2,16 @@ import { randomUUID } from "node:crypto";
 import { lstat, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
-import { isMap, isScalar, parseDocument } from "yaml";
+import { isMap, isScalar, parseDocument, type Pair, type YAMLMap } from "yaml";
 import { assertModuleDirectory, MAX_DOCUMENT_BYTES, MODULE_DIRECTORY, moduleDocumentPath, readContractStorageFile, readModuleTree } from "../contracts/module-tree.js";
 import { contractDocument, currentContractYaml } from "../contracts/document.js";
-import type { StoredContract, Section } from "../contracts/types.js";
-import { isPrototype } from "../contracts/types.js";
+import { clauseEntries, isPrototype, type ContractDocument, type Section, type StoredContract } from "../contracts/types.js";
 import { assertStateLocation, STATE_DIRECTORY } from "../project/paths.js";
 import { repositoryDirectoryOwnership } from "../project/workspace.js";
 import type { SnapshotModule } from "../snapshots/types.js";
 import { withFileLock } from "../storage/file-lock.js";
-import type { ClauseChange } from "./api.js";
+import { nextClauseId, rememberClauseId } from "../storage/clause-ids.js";
+import type { ClauseChange, DeletedClause } from "./api.js";
 import { ApplicationError } from "./errors.js";
 
 const stale = () => new ApplicationError("STALE_VIEW", "Контракт изменился. Откройте актуальную версию пункта.");
@@ -25,7 +25,38 @@ function sectionRange(doc: ReturnType<typeof parseDocument>, section: Section) {
     return { start: pair.key.range[0], end: pair.value.range[2] };
 }
 
-function changedText(source: string, stored: StoredContract, change: Exclude<ClauseChange, { action: "restore" }>) {
+type ClauseWrite = { section: Section; clauseId: string } & ({ action: "add" | "edit"; text: string } | { action: "delete" });
+const pairKey = (pair?: Pair) => isScalar(pair?.key) ? pair.key.value : undefined;
+
+/** Keep the deleted YAML entry, including its comments and place among surviving neighbours. */
+function clausePosition(source: string, section: Section, clauseId: string) {
+  const map = parseDocument(source, { intAsBigInt: true }).get(section, true);
+  if (!isMap(map)) return;
+  const index = map.items.findIndex(pair => pairKey(pair) === clauseId);
+  if (index >= 0) return { pair: map.items[index], index, next: pairKey(map.items[index + 1]), previous: pairKey(map.items[index - 1]) };
+}
+
+type ClausePosition = NonNullable<ReturnType<typeof clausePosition>>;
+
+function insertRestoredClause(map: YAMLMap, position: ClausePosition, baselineOrder: string[]) {
+  const indices = new Map(map.items.map((pair, index) => [pairKey(pair), index]));
+  function between(next: unknown, previous: unknown) {
+    const following = indices.get(next);
+    if (following !== undefined) return following;
+    const preceding = indices.get(previous);
+    if (preceding !== undefined) return preceding + 1;
+  }
+  let index = between(position.next, position.previous);
+  const base = baselineOrder.findIndex(key => key === pairKey(position.pair));
+  if (index === undefined && base >= 0) {
+    const next = baselineOrder.slice(base + 1).find(key => indices.has(key));
+    const previous = baselineOrder.slice(0, base).findLast(key => indices.has(key));
+    index = between(next, previous);
+  }
+  map.items.splice(index ?? position.index, 0, position.pair.clone());
+}
+
+function changedText(source: string, stored: StoredContract, change: ClauseWrite, position?: ClausePosition, baselineOrder: string[] = []) {
   const { section, clauseId, action } = change;
   const { responsibilities, ...expected } = stored;
   const doc = parseDocument(source, { intAsBigInt: true });
@@ -46,9 +77,10 @@ function changedText(source: string, stored: StoredContract, change: Exclude<Cla
       doc.deleteIn([section, clauseId]);
       clauses.delete(clauseId);
     } else {
-      doc.setIn([section, clauseId], change.text);
-      clauses.set(clauseId, change.text);
       const map = doc.get(section, true);
+      if (position && isMap(map)) insertRestoredClause(map, position, baselineOrder);
+      else doc.setIn([section, clauseId], change.text);
+      clauses.set(clauseId, change.text);
       if (action === "add" && isMap(map) && map.items.length === 1 && isMap(doc.contents) && !doc.contents.flow) map.flow = false;
     }
     expected[section] = Object.fromEntries(clauses);
@@ -65,14 +97,16 @@ function changedText(source: string, stored: StoredContract, change: Exclude<Cla
   return eol(formatted);
 }
 
-/** A session can undo its last deletion as long as the on-disk result still matches. */
+/** Restore one clause into the checked working document, leaving independent edits intact. */
 export function createContractEditor(root: string) {
-  let deleted: { token: string; file: string; section: Section; clauseId: string; before: string; after: string } | undefined;
-  async function changeClause(module: SnapshotModule, change: ClauseChange): Promise<{ undoToken?: string }> {
+  const deletions = new Map<string, { file: string; clause: DeletedClause; position: ReturnType<typeof clausePosition> }>();
+  let exactUndo: { token: string; before: string; after: string } | undefined;
+  async function changeClause(module: SnapshotModule, change: ClauseChange, baseline?: ContractDocument) {
     const contract = module.document.contract;
     if (!contract || module.document.text == null) throw stale();
     const expected = normalize(module.document.text);
     const relative = moduleDocumentPath(contract.id);
+    const { section } = change;
     const file = path.join(root, relative);
     const directory = path.join(root, MODULE_DIRECTORY);
     await assertStateLocation(root, path.join(root, STATE_DIRECTORY), directory);
@@ -85,34 +119,50 @@ export function createContractEditor(root: string) {
       await checkOwner();
       const source = await readContractStorageFile(root, relative);
       if (source === null || normalize(source) !== expected) throw stale();
+      const clauseId = change.action === "add" ? change.clauseId ?? await nextClauseId(root, contract, change.section, baseline?.contract) : change.clauseId;
+      const key = JSON.stringify([relative, section, clauseId]);
       const editable = currentContractYaml(source);
+      const original = baseline?.contract && clauseEntries(baseline.contract, section);
       let result: string;
       if (change.action === "restore") {
-        if (!deleted || deleted.token !== change.undoToken || deleted.file !== file ||
-            deleted.section !== change.section || deleted.clauseId !== change.clauseId || deleted.after !== source) throw stale();
-        result = deleted.before;
-      } else result = changedText(editable, contract, change);
-      if (result === source) return {};
+        const deleted = deletions.get(key);
+        if (!deleted || deleted.clause.undoToken !== change.undoToken || Object.hasOwn(clauseEntries(contract, section), clauseId)) throw stale();
+        result = exactUndo?.token === change.undoToken && exactUndo.after === source ? exactUndo.before :
+          changedText(editable, contract, { action: "add", section, clauseId, text: deleted.clause.text }, deleted.position, Object.keys(original ?? {}));
+      } else if (change.action === "revert") {
+        if (!original || !Object.hasOwn(original, clauseId))
+          throw new ApplicationError("INVALID_ARGUMENT", "В базе сравнения нет такого пункта");
+        const action = section === "purpose" || Object.hasOwn(contract[section], clauseId) ? "edit" : "add";
+        const position = action === "add" && baseline?.text ? clausePosition(baseline.text, section, clauseId) : undefined;
+        result = changedText(editable, contract, { action, section, clauseId, text: original[clauseId] }, position, Object.keys(original));
+      } else result = changedText(editable, contract, { ...change, clauseId });
+      if (result === source) return { clauseId };
       if (Buffer.byteLength(result) > MAX_DOCUMENT_BYTES) throw new ApplicationError("REQUEST_TOO_LARGE", "Контракт превышает 128 КиБ");
       const temporary = path.join(directory, ".edit-" + randomUUID());
       try {
         await writeFile(temporary, result, { flag: "wx", mode: (await lstat(file)).mode });
+        if (section !== "purpose" && (change.action === "add" || change.action === "delete"))
+          await rememberClauseId(root, contract.id, section, clauseId);
         await checkOwner();
         if (await readContractStorageFile(root, relative) !== source) throw stale();
         await rename(temporary, file);
       } finally { await rm(temporary, { force: true }); }
       if (change.action === "delete") {
-        deleted = { token: randomUUID(), file, section: change.section, clauseId: change.clauseId, before: editable, after: result };
-        return { undoToken: deleted.token };
+        const undoToken = randomUUID();
+        deletions.set(key, { file: relative, clause: { section, clauseId, undoToken, text: clauseEntries(contract, section)[clauseId] },
+          position: clausePosition(editable, section, clauseId) });
+        exactUndo = { token: undoToken, before: editable, after: result };
+        return { clauseId, undoToken };
       }
-      if (deleted?.file === file) deleted = undefined;
-      return {};
+      deletions.delete(key);
+      return { clauseId };
     });
   }
-  function deletedClause(module: SnapshotModule) {
-    if (deleted && deleted.file === path.join(root, module.documentPath) &&
-        module.document.text != null && normalize(deleted.after) === normalize(module.document.text))
-      return { section: deleted.section, clauseId: deleted.clauseId, undoToken: deleted.token };
+  function deletedClauses(module: SnapshotModule) {
+    const contract = module.document.contract;
+    if (!contract) return [];
+    return Array.from(deletions.values()).filter(({ file, clause }) => file === module.documentPath &&
+      !Object.hasOwn(clauseEntries(contract, clause.section), clause.clauseId)).map(({ clause }) => ({ ...clause }));
   }
-  return { changeClause, deletedClause };
+  return { changeClause, deletedClauses };
 }

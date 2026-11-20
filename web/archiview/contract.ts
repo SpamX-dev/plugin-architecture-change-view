@@ -62,16 +62,16 @@ function clauseRow(contract: StoredContract, section: Section, id: string, title
   decorateContractChange(row, change, section === "purpose" ? title : id);
   if (change.status === "unchanged") row.title = "Пункт не изменялся";
   const findings = clauseFindingTargets(options.review, contract, section, id);
-  const editable = controls && (section === "purpose" || Object.hasOwn(contract[section], id));
-  if (findings.length || editable) {
+  if (findings.length || controls) {
     const issues = el("div", "clause-issues");
-    if (editable) {
+    if (controls) {
       const edit = el("button", "clause-edit-action");
       edit.type = "button";
       edit.title = "Редактировать " + (section === "purpose" ? "назначение" : id);
       edit.setAttribute("aria-label", edit.title);
+      edit.setAttribute("aria-haspopup", "dialog");
       edit.append(icon("edit"));
-      edit.onclick = () => controls.open(section, title, id);
+      edit.onclick = () => controls.open(section, title, { id, change });
       issues.append(edit);
     }
     for (const finding of findings) {
@@ -149,20 +149,10 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
     if (controls) {
       const add = el("button", "text-button", "+ Добавить пункт");
       add.type = "button";
+      add.dataset.addClause = section;
       add.setAttribute("aria-label", "Добавить пункт · " + title);
       add.onclick = () => controls.open(section, title);
       heading.append(add);
-      const undo = controls.undo;
-      if (undo?.section === section) {
-        const bar = el("div", "clause-undo");
-        const restore = el("button", "text-button", "Восстановить " + undo.id);
-        restore.onclick = async () => {
-          restore.disabled = true;
-          try { await undo.restore(); } finally { restore.disabled = false; }
-        };
-        bar.append(el("span", "", "Пункт " + undo.id + " удалён"), restore);
-        block.append(bar);
-      }
     }
     const entries = changes.filter((item) => item.key.startsWith(section + "."));
     if (!entries.length) block.append(el("p", "empty-clauses", "Пункты не заданы"));

@@ -3,7 +3,7 @@ import { lstat } from "node:fs/promises";
 import { git, gitFileHashes, readGitHeadRevision } from "./capture.js";
 import { snapshotModules } from "./module-layout.js";
 import { excludedProjectPath, regularProjectFile } from "../contracts/source-files.js";
-import { MODULE_TREE_FILE, isModuleContractPath, readContractStorageFile, decodeContractText, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES } from "../contracts/module-tree.js";
+import { MODULE_TREE_FILE, isModuleContractPath, moduleDocumentPath, readContractStorageFile, decodeContractText, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES } from "../contracts/module-tree.js";
 import { repositoryDirectoryOwnership } from "../project/workspace.js";
 import { digest } from "../serialization/digest.js";
 import { snapshotDigest } from "./identity.js";
@@ -31,6 +31,11 @@ async function commitRecords(root: string, revision: string) {
     records.set(file, record);
     if (contract(file)) contracts.push(record);
   }
+  await readContractBlobs(root, contracts, diagnostics);
+  return { records, diagnostics };
+}
+
+async function readContractBlobs(root: string, contracts: FileRecord[], diagnostics: string[]) {
   for (let start = 0; start < contracts.length; start += 64) {
     const group = contracts.slice(start, start + 64);
     const sizes = (await git(root, ["cat-file", "--batch-check=%(objectsize)"],
@@ -55,7 +60,24 @@ async function commitRecords(root: string, revision: string) {
       offset = end + 1;
     }
   }
-  return { records, diagnostics };
+}
+
+/** Read distinct versions of this module's contract from reachable Git history and the index. */
+export async function gitContractTexts(root: string, moduleId: string) {
+  const file = moduleDocumentPath(moduleId);
+  const selector = ":(literal)" + file;
+  const [committed, staged] = await Promise.all([
+    git(root, ["rev-list", "--objects", "--all", "--full-history", "--filter=object:type=blob", "--filter-provided-objects", "--no-object-names", "--", selector]),
+    git(root, ["ls-files", "--stage", "-z", "--", selector]),
+  ]);
+  const hashes = new Set(committed.toString().split(/\s+/).filter(Boolean));
+  for (const row of fields(staged)) {
+    const [mode, hash] = row.split(" ", 2);
+    if (regular(mode)) hashes.add(hash);
+  }
+  const records: FileRecord[] = Array.from(hashes, hash => ({ path: file, hash }));
+  await readContractBlobs(root, records, []);
+  return records.flatMap(record => record.text === undefined ? [] : [record.text]);
 }
 
 async function snapshot(root: string, origin: string, records: Map<string, FileRecord>, diagnostics: string[], revision?: string): Promise<Snapshot> {

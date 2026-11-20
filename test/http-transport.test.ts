@@ -5,14 +5,14 @@ import type { TestContext } from "node:test";
 /** Проверяет, что некорректная цель запроса становится ответом транспорта, а не падением сервера. */
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { cp, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { stringify } from "yaml";
+import { parse, stringify } from "yaml";
 import { createArchiView } from "../src/archiview/http.js";
 import type { ComparisonView } from "../src/application/api.js";
 
@@ -60,6 +60,42 @@ async function serve(t: TestContext) {
   return { ...app, root, url: "http://127.0.0.1:" + (app.server.address() as AddressInfo).port };
 }
 
+test("automatic clause IDs follow each section's Git, staged and uncommitted numbering across sessions", async t => {
+  const app = await serve(t);
+  const file = ".archiview/modules/root.yaml";
+  const target = path.join(app.root, file);
+  const base = parse(await readFile(target, "utf8"));
+  const write = (boundaries: Record<string, string>, invariants: Record<string, string>) =>
+    writeFile(target, stringify({ ...base, boundaries, invariants }));
+  await write({ B12: "Историческая граница" }, {});
+  commitTestFiles(app.root);
+  const boundaries = { B2: "Граница", legacy: "Словесный ID", I99: "Другой префикс" };
+  await write(boundaries, {});
+  commitTestFiles(app.root);
+  await write(boundaries, { I8: "В индексе" });
+  execFileSync("git", ["add", "--", file], { cwd: app.root, windowsHide: true });
+  await write(boundaries, {});
+  const current = await app.getComparison();
+  const add = (view: string, section: "boundaries" | "invariants") => fetch(app.url + "/api/contract-clause", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ view, section, path: ".", action: "add", text: "Новый пункт" }),
+  });
+  const race = await Promise.all([add(current.id, "boundaries"), add(current.id, "boundaries")]);
+  assert.deepEqual(race.map(response => response.status).sort(), [200, 409]);
+  assert.equal((await race.find(response => response.ok)!.json()).clauseId, "B13");
+  assert.equal((await (await add((await app.getComparison()).id, "invariants")).json()).clauseId, "I9");
+  await app.changeClause({ view: (await app.getComparison()).id, path: ".", section: "boundaries", action: "delete", clauseId: "B13" });
+
+  const reopened = await createArchiView({ root: app.root });
+  t.after(() => reopened.close());
+  const result = await reopened.changeClause({ view: (await reopened.getComparison()).id, path: ".",
+    section: "boundaries", action: "add", text: "После удаления" });
+  assert.equal(result.clauseId, "B14");
+  const contract = parse(await readFile(target, "utf8"));
+  assert.deepEqual(contract.boundaries, { ...boundaries, B14: "После удаления" });
+  assert.deepEqual(contract.invariants, { I9: "Новый пункт" });
+});
+
 test("clause writes require the live mapping and source version; undo restores original YAML bytes", async t => {
   const app = await serve(t);
   const file = path.join(app.root, ".archiview/modules/root.yaml");
@@ -94,9 +130,20 @@ test("clause writes require the live mapping and source version; undo restores o
   const field = detail.contractDiff.fields.find(item => item.key === "invariants.__proto__");
   assert.equal(field?.status, "added");
   assert.equal(field.after, multiline);
+  const beforeSecondDeletion = await readFile(file, "utf8");
+  const second = await post({ ...deletion, view: edited.id });
+  assert.equal(second.status, 200);
+  const secondToken = (await second.json()).undoToken;
+  const absent = await app.getComparison();
+  assert.equal((await post({ view: absent.id, action: "edit", section: "boundaries", clauseId: "B7", text: "Соседняя правка" })).status, 200);
+  const changed = await app.getComparison();
+  assert.equal((await post({ ...restore, view: changed.id })).status, 409);
+  assert.equal((await post({ ...restore, view: changed.id, undoToken: secondToken })).status, 200);
+  assert.equal(await readFile(file, "utf8"), beforeSecondDeletion.replace("Другой пункт", "Соседняя правка"));
   const beforeRemap = await readFile(file, "utf8");
+  const mapped = await app.getComparison();
   await writeModuleTree(app.root, { other: "." });
-  assert.equal((await post({ ...deletion, view: edited.id })).status, 409);
+  assert.equal((await post({ ...deletion, view: mapped.id })).status, 409);
   assert.equal(await readFile(file, "utf8"), beforeRemap);
 });
 

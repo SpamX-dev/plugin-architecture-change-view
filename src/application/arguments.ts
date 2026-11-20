@@ -59,17 +59,21 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
     }
     case "changeClause": {
       const { view, path, section, clauseId, action, text, undoToken } = args;
-      if (typeof view !== "string" || typeof path !== "string" || typeof clauseId !== "string" || !clauseId.trim() ||
+      if (typeof view !== "string" || typeof path !== "string" ||
           (section !== "purpose" && section !== "boundaries" && section !== "invariants"))
-        throw new ApplicationError("INVALID_ARGUMENT", "Нужны модуль, раздел и ID пункта");
-      const target = { ...selector, view, path, clauseId };
-      if (section === "purpose" && (clauseId !== "purpose" || action !== "edit"))
+        throw new ApplicationError("INVALID_ARGUMENT", "Нужны модуль и раздел контракта");
+      const target = { ...selector, view, path };
+      if (action === "add" && section !== "purpose" && typeof text === "string" && text.trim() &&
+          (clauseId === undefined || typeof clauseId === "string" && clauseId.trim()))
+        return session.changeClause({ ...target, section, action, text, ...(clauseId === undefined ? {} : { clauseId }) });
+      if (typeof clauseId !== "string" || !clauseId.trim()) throw new ApplicationError("INVALID_ARGUMENT", "Нужен ID пункта");
+      if (section === "purpose" && (clauseId !== "purpose" || (action !== "edit" && action !== "revert")))
         throw new ApplicationError("INVALID_ARGUMENT", "Назначение модуля можно только редактировать");
-      if ((action === "edit" || action === "add") && typeof text === "string" && text.trim())
-        return session.changeClause({ ...target, section, action, text });
-      if (action === "delete") return session.changeClause({ ...target, section, action });
+      if (action === "edit" && typeof text === "string" && text.trim())
+        return session.changeClause({ ...target, section, clauseId, action, text });
+      if (action === "delete" || action === "revert") return session.changeClause({ ...target, section, clauseId, action });
       if (action === "restore" && typeof undoToken === "string")
-        return session.changeClause({ ...target, section, action, undoToken });
+        return session.changeClause({ ...target, section, clauseId, action, undoToken });
       throw new ApplicationError("INVALID_ARGUMENT", "Некорректные параметры изменения пункта");
     }
     case "prepareAnalysis":
