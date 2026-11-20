@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: architecture-core
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 77faccb56dcffcc608148f7410a01e4a9246f40fa39aa346d15bdf2edc98567b
+check_hash: 0fb433c77a5847fd12022a8aa89ba7f519652392a3bd247f091bea9e29b58c62
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,12 +10,12 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 1aac2b873069ba24ef5d53ba48b04362360911e0
+      id: 69519fbb7cfa426d6d87d22af027e71e32dfc55e
     state:
       exists: true
       directory: src
-      self_digest: sha256:29b057e34c162a36ff9a255b50b62f4974d1ac7f688be48e1f75214ec1e63508
-      subtree_digest: sha256:db1885d77e29717cedc785c7e260642f63738f81fb30868c99fb8530df1d075f
+      self_digest: sha256:b34bbb60e7d9f2cac227447f03bd19edd30267fbf760788d4c549b05a24b3083
+      subtree_digest: sha256:cbb781a35c5026ed1d2b54f61ab7f22da56efd8a2b9f6fbe4be89ae661f9dcc5
   current:
     exists: true
     directory: src
@@ -56,6 +56,8 @@ baseline:
       extensions:
         archiview.roles:
           - root
+      purpose: Давать всем способам доступа ArchiView согласованное представление
+        одного проекта и его истории.
       boundaries:
         B6: При обходе учитывать исходники только внутри выбранного корня, исключая
           зависимости, результаты сборки и служебные данные ArchiView.
@@ -105,7 +107,7 @@ baseline:
         id: I9
         text: Самостоятельный локальный запуск входит в обязательные варианты поставки
           приложения.
-  technical_digest: sha256:29b057e34c162a36ff9a255b50b62f4974d1ac7f688be48e1f75214ec1e63508
+  technical_digest: sha256:b34bbb60e7d9f2cac227447f03bd19edd30267fbf760788d4c549b05a24b3083
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -115,6 +117,8 @@ baseline:
     contract:
       id: architecture-core
       kind: group
+      purpose: Давать всем способам доступа ArchiView согласованное представление
+        одного проекта и его истории.
       boundaries:
         B6: При обходе учитывать исходники только внутри выбранного корня, исключая
           зависимости, результаты сборки и служебные данные ArchiView.
@@ -169,6 +173,8 @@ baseline:
         contract:
           id: archiview-application
           kind: module
+          purpose: Вести просмотр из общей рабочей папки и выполнять операции в контексте
+            выбранного репозитория.
           boundaries:
             B3: Сессия работает с выбранным корнем проекта на протяжении своей жизни.
             B4: История, снимки и запросы анализа доступны только в контексте
@@ -187,6 +193,8 @@ baseline:
         contract:
           id: archiview-codex
           kind: module
+          purpose: Открывать ArchiView в боковой панели Codex для рабочей папки текущего
+            чата.
           boundaries:
             B2: Для автоматического выбора папки использовать только доступные через хост
               сведения о чате и его рабочих папках.
@@ -206,6 +214,8 @@ baseline:
         contract:
           id: archiview-contracts
           kind: module
+          purpose: Определять, какие каталоги проекта требуют контракта и какие
+            согласованные правила действуют для выбранного пути.
           boundaries:
             B2: Для пути внутри вложенного репозитория использовать карту этого репозитория.
               Область уникальности ID ограничена одной картой.
@@ -218,6 +228,8 @@ baseline:
         contract:
           id: archiview-http
           kind: module
+          purpose: Давать самостоятельный локальный доступ к просмотру проекта и операциям
+            с переносимыми отчётами.
           boundaries:
             B3: При самостоятельном запуске принимать соединения только на локальном
               интерфейсе.
@@ -236,6 +248,8 @@ baseline:
         contract:
           id: archiview-mcp
           kind: module
+          purpose: Предоставлять агенту ArchiView через MCP по stdio в контексте выбранной
+            рабочей папки.
           boundaries:
             B1: Принимать запросы чтения контрактов только с допустимыми аргументами и в
               пределах выбранного проекта.
@@ -248,6 +262,8 @@ baseline:
         contract:
           id: archiview-node-runtime
           kind: module
+          purpose: Находить ресурсы действующего пакета ArchiView и предоставлять
+            диагностику ошибок Node.
           boundaries:
             B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от
               рабочей папки пользователя.
@@ -258,6 +274,8 @@ baseline:
         contract:
           id: archiview-project-location
           kind: module
+          purpose: Определять принадлежность исходников и допустимое место хранения
+            истории проекта.
           boundaries:
             B2: Отклонять путь данных, если его фактическое расположение выходит за пределы
               выбранного хранилища.
@@ -272,6 +290,8 @@ baseline:
         contract:
           id: archiview-reports
           kind: module
+          purpose: Определять состояние модулей и актуальность архитектурных оценок для
+            выбранной пары снимков.
           boundaries:
             B2: Определять актуальность текущего состояния и оценки перехода между снимками
               раздельно.
@@ -292,6 +312,8 @@ baseline:
         contract:
           id: archiview-reviews
           kind: module
+          purpose: Связывать проверку модуля с контрактами и доказательствами из выбранных
+            снимков.
           boundaries:
             B2: Структурная проверка оставляет выполнение смысловых пунктов непроверенным.
             B3: При собственной проверке модуля в чеклист входят только пункты его
@@ -306,6 +328,8 @@ baseline:
         contract:
           id: archiview-serialization
           kind: module
+          purpose: Читать структурированные данные ArchiView и получать воспроизводимый
+            отпечаток их содержимого.
           boundaries:
             B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
               поддерживаемых типов.
@@ -318,6 +342,8 @@ baseline:
         contract:
           id: archiview-snapshots
           kind: module
+          purpose: Фиксировать состояния исходников и показывать, как между ними
+            изменились модули проекта.
           boundaries:
             B2: Для рабочего дерева учитывать также новые файлы исходников, ещё не
               добавленные в Git.
@@ -334,6 +360,7 @@ baseline:
         contract:
           id: archiview-storage
           kind: module
+          purpose: Сохранять историю проекта для последующего просмотра и переноса.
           boundaries:
             B4: Хранилище публикует сравнение только при полноте каждого входящего в него
               снимка.
@@ -349,6 +376,8 @@ baseline:
         contract:
           id: dsh-adapter
           kind: module
+          purpose: Предоставлять агенту DeepSeek Harness контекст контрактов, а
+            пользователю — панель ArchiView для проекта его чата.
           boundaries:
             B5: Обращаться к проекту и создавать сессию только после проверки запроса
               политикой соединения хоста.
@@ -363,67 +392,67 @@ baseline:
               сервисов хоста.
           invariants: {}
         document_state: documented
-  self_digest: sha256:ed4aac3a40e3309b7056bb1c828c0bfee223363e839039cfbcda684dcc1630fd
+  self_digest: sha256:d848e54b4e20d38827aefa5cb88e1b447d341795e50e9e6c721314108de1520f
   subtree:
-    self: sha256:29b057e34c162a36ff9a255b50b62f4974d1ac7f688be48e1f75214ec1e63508
+    self: sha256:b34bbb60e7d9f2cac227447f03bd19edd30267fbf760788d4c549b05a24b3083
     children:
       - module_id: archiview-application
-        digest: sha256:d5bff272df3fdab2b855090ca292ed127a01157fc07c12ba5ea9077c5806b48a
+        digest: sha256:e0b459734a393cf96789dd389eac64b2804d34fedda4c64105eb031e98d86139
       - module_id: archiview-codex
-        digest: sha256:d463ab555c1d2530c599617c3797c18125b78934ff3eab9a6f1a7d47d41ad67c
+        digest: sha256:8386a3cc732eeb8de6cac9034d10c536da9d9cc329f5732e036bf992f51e24c4
       - module_id: archiview-contracts
-        digest: sha256:0171937d0e77ab944a4df4feb1dc06c131cbfd53f4b494dc83ed7070766c0138
+        digest: sha256:bcfeb61385f7631f8d3a69fd054a0c43972356c5524ad638545faef6eeb2cbaf
       - module_id: archiview-http
-        digest: sha256:f93e26a6a81c00ad383361510660f70e31e2b9d426863f91f52a13a13a70fdd0
+        digest: sha256:ddbcf4304597a657da27c7a633fb46c1e5d67ec678ef3b85e444f3a4f41bf329
       - module_id: archiview-mcp
-        digest: sha256:7206fa80dd1a0bebb05076b1421d5fdff434fab40e6e0dd3ed63b471fa40818d
+        digest: sha256:2f51f31de1beee04438a482e969761fccfeef98acd6cfeaebcefe7b8eebd8ca3
       - module_id: archiview-node-runtime
-        digest: sha256:e1d6595ed790b4ac4b712c84c8cb0044861acaa834c3e0a3f9193c88851a67fa
+        digest: sha256:80ded5815ab764ea4ba5e9de105c997a8cdba0a4bd40cec0299a7671defc3802
       - module_id: archiview-project-location
-        digest: sha256:693473bd5f65247989106504e77d36f64743b690cf48bdf03fbda9fa2614e653
+        digest: sha256:e6c7b9b2ab973202423abd22cb2e4e753c10ae4d6dd3c974ea3ac19bd466ab17
       - module_id: archiview-reports
-        digest: sha256:ba4511896145cd76e50e23bd1d9d83c858837a8585766aa7fdbefdb309c9ba00
+        digest: sha256:fac1ce4465812b6dcb4465399e3a53c3c3a1ad01cace93f01fbeee7a4d84eebf
       - module_id: archiview-reviews
-        digest: sha256:81687804eb5bc3bf4ce3eba8e8fc77062739ec8fc192e09d6dedabe73b5e45f8
+        digest: sha256:bd2499d7b1aa2fa672f4d43b648f8c42cfdd09f175bf015f4d3892b8d54587c6
       - module_id: archiview-serialization
-        digest: sha256:ca5d375b28b832f63cff75b74b617761daf7a71322f7dcd14d0d53ead22283e7
+        digest: sha256:5bc828127c02ca57d665cb39175adcb9a77d33e2d42352f04a9c845ac3c0a713
       - module_id: archiview-snapshots
-        digest: sha256:2a17caba634c1931ca7311663476c85834c41dae06f3070eb1dd9bada8a4f9df
+        digest: sha256:097c57c6f24abb2a82ae084f20979c5948052deb73bcdd222b09be6aa6512392
       - module_id: archiview-storage
-        digest: sha256:45ba5b591e066400bfe13eeaedb2302cbea8051bba102647cfc1c1b12401a5dd
+        digest: sha256:f4d9c94d7de45a60d77b73117360389473ccda69e62f21848e790346a2a5e239
       - module_id: dsh-adapter
-        digest: sha256:c0550a89dc1cf2c7844f9fd6b8266d1553496536de456c7ac52ece989d3091d9
-  subtree_digest: sha256:db1885d77e29717cedc785c7e260642f63738f81fb30868c99fb8530df1d075f
+        digest: sha256:eb3247f911045b3ac71653a540833196f48f142df89d03053786e4ac8da6356b
+  subtree_digest: sha256:cbb781a35c5026ed1d2b54f61ab7f22da56efd8a2b9f6fbe4be89ae661f9dcc5
   semantic_subtree:
-    self: sha256:ed4aac3a40e3309b7056bb1c828c0bfee223363e839039cfbcda684dcc1630fd
+    self: sha256:d848e54b4e20d38827aefa5cb88e1b447d341795e50e9e6c721314108de1520f
     children:
       - module_id: archiview-application
-        digest: sha256:e994b8d6173295e62e8bb9f4f71113fae15e67ea346b91fb402cf76266dec57b
+        digest: sha256:661ace026350192fb756f4a02a4e6bbe7d088584a24e0b0fae2cf59037c3c7f8
       - module_id: archiview-codex
-        digest: sha256:7df1f7a8b09b248b6b77ce11929f1f7d111105a1d9bf3d9c5d0a14be499fd832
+        digest: sha256:eeb0faed2a734fc9472ecff4d872fd80e87d424bc5ceadac49a84ccddc5a3fd1
       - module_id: archiview-contracts
-        digest: sha256:f1db51ffcc9b0a96157a5202d2da2de731ffb8a86422426085b809aede2b2d52
+        digest: sha256:eed49ff5b0dbda195266ed05283bf347d57d6d0a3d0f52d06ecf3807eb599dc7
       - module_id: archiview-http
-        digest: sha256:960c60597d1219e0ca5b17417ee7feef5d02e729c9f334125ec37d2192a1554e
+        digest: sha256:f5145e1051a91319ddf72c06358a0bd71ae73e600146a3bc4f0c38905579e974
       - module_id: archiview-mcp
-        digest: sha256:f88032e506646c9ae3242e0a0456828d90949c3242d8cffc99f724f690c95670
+        digest: sha256:b8cc8d523c900739efde29bbd72e5af9450c27865e87fd5eafdee5537155854d
       - module_id: archiview-node-runtime
-        digest: sha256:234b35ec0f389d1e7964ef2d60d3c16eda9b31caba841c21068cc28016233eff
+        digest: sha256:b9ca771d4a3e2bb650a3e251f0f901af7c148e4511c4e5916f03aa84b9cc2d0c
       - module_id: archiview-project-location
-        digest: sha256:5a7ed9bc4f161551eb35a3030d05de02841743273f870053da6db9648f234754
+        digest: sha256:41fb0f573594249512113e6d8a7dbbca86fae77d7978be4ae869c79289648bb9
       - module_id: archiview-reports
-        digest: sha256:27022be317ee65478bd4b4ea9ec3ec316162fbb2d0a7846c6e4be96343b681a6
+        digest: sha256:8cb001eb90f7db096910a39a7dded45c2f339616808b10e2fdaa52ef2edd6f52
       - module_id: archiview-reviews
-        digest: sha256:6497cd21dc33174c9b92fa3db860e074f22792274347882160195208d901f544
+        digest: sha256:a2ec81a2bfe4e576c275e8c8e44e54c4a5a6d19a7e3b8ed6a4bf9b24a3010467
       - module_id: archiview-serialization
-        digest: sha256:66a175403cb3a30ea14af32c3f82369b28595baaa42b6f80ec79c69c184c70d0
+        digest: sha256:7bbcffc373039cfcbf008364ee3d6e650e7671d22c22c87e3e7bf8396ce16644
       - module_id: archiview-snapshots
-        digest: sha256:3b61f483cf8a471f8459912d9a05e89c30d0b09d7c286241fdfa4cadc4b8aef0
+        digest: sha256:6e362ba289ed039b141ae49a3fc38154e6c51288ab4e89db2d5a01b92d039afb
       - module_id: archiview-storage
-        digest: sha256:2f9d2d8595a33299c8c956a774fd81ba9e938d6d2e53b4b9cdafd017e37b0d22
+        digest: sha256:15b244682738b187ab95e64b1492bc34d64bc94253ec18857c8a9ecaabb7105d
       - module_id: dsh-adapter
-        digest: sha256:3357ec385ccf3d200a9cd35f7585819d1a22e43bb110dfcbc504f22d1457c335
-  semantic_subtree_digest: sha256:0eac153e26e0a4b6fd5cd5e1e1e39a3cafd1eb69501c7c7892af31139202d8dd
+        digest: sha256:9cfb10d5687237319b7ed6f4c5da13c639a1bb57bb93f4a25efa9eecc7999348
+  semantic_subtree_digest: sha256:55ff33d9fa52cd458d1fdec4a2f03fd0914ce4c187d8cc1f4724ad97c38e50c6
 current:
   module_id: architecture-core
   directory: src
@@ -854,31 +883,31 @@ current:
   semantic_subtree_digest: sha256:55ff33d9fa52cd458d1fdec4a2f03fd0914ce4c187d8cc1f4724ad97c38e50c6
 change:
   existence: retained
-  own: true
+  own: false
   own_code: false
-  own_contract: true
+  own_contract: false
   inherited_constraints: false
-  descendants: true
-  child_composition: true
+  descendants: false
+  child_composition: false
   moved: false
 structure:
   complete: true
   diagnostics: []
   document_state: documented
 publication:
-  generation: 239
-  comparison_key: sha256:9f975b96024259055228a1cf41371d1e8ab0b8c4fde0c959e3d977053a2b38dc
+  generation: 240
+  comparison_key: sha256:3893c8daae8a975923b14a857623a49996d7590351831de9b12ca2c89e48eb51
   baseline:
     metadata:
-      id: git-1aac2b873069ba24ef5d53ba48b04362360911e0
-      digest: sha256:be53fb099afab3eb272a368a999b60aae108f0e90c2eacacafdd6a47d1eeafec
+      id: git-69519fbb7cfa426d6d87d22af027e71e32dfc55e
+      digest: sha256:275b10df22a558cbef4b0d2dc0c5cf1740c79a17cef7046aba9577d778215b30
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T08:13:43.784Z
+      capturedAt: 2026-11-20T09:33:53.363Z
       kind: git
-      revision: 1aac2b873069ba24ef5d53ba48b04362360911e0
+      revision: 69519fbb7cfa426d6d87d22af027e71e32dfc55e
       label: HEAD
-      fingerprint: d014bcaf820b703815c1ea391e439e86561923c813f6e4f046fe4a723fd3f2c5
+      fingerprint: 467875bf8b3a07dd5823194a055b3d65d9e3437dc27dceb6b86f5a629edd4654
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -899,10 +928,9 @@ publication:
 
           extensions:
             archiview.roles: [root]
-          responsibilities:
-            R11: Предоставлять прикладные операции над общими данными проекта независимо от выбранного хоста или транспорта.
-            R12: Предоставлять чтение контрактов по пути исходника также при работе без панели.
-            R13: Сообщать потребителю о неполном обходе исходников и недостающих доказательствах.
+          purpose: Давать всем способам доступа ArchiView согласованное
+          представление одного проекта и его истории.
+
           boundaries:
             B6: При обходе учитывать исходники только внутри выбранного корня, исключая зависимости, результаты сборки и служебные данные ArchiView.
             B7: Записывать данные истории только в каталог ArchiView проекта либо в явно выбранное внешнее хранилище.
@@ -918,6 +946,8 @@ publication:
           extensions:
             archiview.roles:
               - root
+          purpose: Давать всем способам доступа ArchiView согласованное представление
+            одного проекта и его истории.
           boundaries:
             B6: При обходе учитывать исходники только внутри выбранного корня, исключая
               зависимости, результаты сборки и служебные данные ArchiView.
@@ -927,21 +957,20 @@ publication:
               автоматического вывода о нарушении ответственности.
             B8: Разрешать исторические доказательства по содержимому выбранных снимков.
           invariants: {}
-        action: Укажите назначение модуля в поле purpose.
       documentPath: .archiview/modules/architecture-core.yaml
       files:
         - path: .archiview/modules/architecture-core.yaml
-          hash: 43b9bbf443b3d0d93716f70fd0269402f60e7a44
+          hash: 97dd4d0e801f4c7cb6e4d69f09500a16b7f401ce
       sourceFiles: 0
-      fingerprint: 514c686aa90ebbdbb548a12dfe99e562a32f6a529c1ae631a8d014d3af7c8a87
+      fingerprint: de6bc60ac80d18bb9dd6cfc8c5582956825d774b6cc69e6e1b96c9f1f1c2d6c5
     facts:
       - index: 2
         fact:
-          id: sha256:e2ba5c61667b378f523c060d8efc3df784e966916648865a3bb424efb7b3ba1d
+          id: sha256:19e4fd9dadeb57f04813b33794f50b4e6c8d7cf717de38da83b7b2b0c1e0d73f
           kind: file
           path: .archiview/modules/architecture-core.yaml
           start_line: 1
-          end_line: 17
+          end_line: 14
           text: >
             schema_version: 1
 
@@ -953,10 +982,9 @@ publication:
 
             extensions:
               archiview.roles: [root]
-            responsibilities:
-              R11: Предоставлять прикладные операции над общими данными проекта независимо от выбранного хоста или транспорта.
-              R12: Предоставлять чтение контрактов по пути исходника также при работе без панели.
-              R13: Сообщать потребителю о неполном обходе исходников и недостающих доказательствах.
+            purpose: Давать всем способам доступа ArchiView согласованное
+            представление одного проекта и его истории.
+
             boundaries:
               B6: При обходе учитывать исходники только внутри выбранного корня, исключая зависимости, результаты сборки и служебные данные ArchiView.
               B7: Записывать данные истории только в каталог ArchiView проекта либо в явно выбранное внешнее хранилище.
@@ -971,14 +999,14 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":[]}'
   current:
     metadata:
-      id: launch-467875bf8b3a07dd5823194a055b3d65d9e3437dc27dceb6b86f5a629edd4654
-      digest: sha256:cbdd48b1d2671ec02f371138702f96df1feaad6666ee3713a347a6d06dc130e0
+      id: launch-28fafb6c7c302db850689cbac16a6582b113d98717ce92aa34cdfd6f56ed62a1
+      digest: sha256:39e9d6937abb4f6a8f293b6c9ddc7f3fe3b8bb4f9b611b09bb4b8ef195f7eda2
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T08:13:47.453Z
+      capturedAt: 2026-11-20T09:33:55.653Z
       kind: launch
       label: Начальное состояние
-      fingerprint: 467875bf8b3a07dd5823194a055b3d65d9e3437dc27dceb6b86f5a629edd4654
+      fingerprint: 28fafb6c7c302db850689cbac16a6582b113d98717ce92aa34cdfd6f56ed62a1
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -1042,13 +1070,13 @@ publication:
           revision: 10
         architecture-tests:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 34
+          revision: 35
         architecture-web:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 15
         archiview-client:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 36
+          revision: 37
         prototype-smoke-1674b57d:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2

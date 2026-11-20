@@ -103,11 +103,6 @@ export function renderContractHeading(panel: HTMLElement, document: ContractDocu
   header.append(el("span", "contract-kind", contract.kind === "group" ? "ГРУППА МОДУЛЕЙ" : "КОНТРАКТ МОДУЛЯ"),
     el("code", "contract-id", contract.id));
   if (!options.titleElement) header.append(title);
-  const purpose = options.contractDiff.fields.find(item => item.key === "purpose") ??
-    { key: "purpose", before: undefined, after: contract.purpose, status: "unchanged" };
-  const row = clauseRow(contract, "purpose", "purpose", "Назначение", purpose, options);
-  row.classList.add("contract-purpose");
-  header.append(row);
   panel.append(header);
   decorateContractChange(options.groupElement ?? header,
     options.contractDiff.heading, "Описание модуля");
@@ -141,6 +136,10 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
   const paper = el("article", "contract-paper");
   if (!options.hideHeading) renderContractHeading(paper, document, options);
   renderContractRoles(paper, options.contractDiff, contract.extensions);
+  const purpose = byKey.get("purpose") ?? { key: "purpose", before: undefined, after: contract.purpose, status: "unchanged" };
+  const purposeSection = el("section", "clause-section contract-purpose");
+  purposeSection.append(el("h3", "", "Назначение"), clauseRow(contract, "purpose", "purpose", "Назначение", purpose, options));
+  paper.append(purposeSection);
   for (const [section, title] of (Object.entries(sections) as [Section, string][])) {
     const block = el("section", "clause-section");
     const heading = el("div", "clause-section-heading");

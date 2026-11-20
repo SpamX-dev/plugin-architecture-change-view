@@ -380,7 +380,7 @@ test("contract clauses can be edited, added, deleted and restored from the worki
   await page.goto(origin + "/#src");
   const button = (name: string) => page.getByRole("button", { name, exact: true });
   const dialog = page.getByRole("dialog");
-  await button("Редактировать назначение").click();
+  await page.locator(".contract-paper").getByRole("button", { name: "Редактировать назначение" }).click();
   assert.equal(await button("Удалить").count(), 0);
   await dialog.getByLabel("Текст пункта").fill("Новая формулировка обязанности");
   await button("Сохранить").click();
@@ -678,6 +678,9 @@ test("a reused directory retains its exact module under search and status filter
   assert.deepEqual(await badges('.tree-row[data-directory="."]'), [["ui", "added"], ["domain", "unchanged"]]);
   await rootRow.click();
   await page.getByRole("heading", { name: "Роли по контракту" }).waitFor();
+  assert.deepEqual((await page.locator(".contract-paper h3").allTextContents()).slice(0, 4),
+    ["Роли по контракту", "Назначение", "Границы", "Инварианты"]);
+  assert.equal(await page.locator("[data-clause-section=purpose]").count(), 1);
   assert.deepEqual(await badges(".contract-roles"), [["ui", "added"], ["domain", "unchanged"], ["storage", "removed"]]);
   await page.locator(".filter-chip.removed").click();
   assert.deepEqual(await rows.evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.key)), ["src::removed"]);
