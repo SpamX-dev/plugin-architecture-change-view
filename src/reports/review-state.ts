@@ -1,5 +1,5 @@
 import type { SnapshotData } from "../snapshots/types.js";
-import type { Contract } from "../contracts/types.js";
+import type { StoredContract as Contract } from "../contracts/types.js";
 import type {
   ModuleState,
   DependencySelector,

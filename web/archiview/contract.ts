@@ -1,10 +1,11 @@
+import { clauseEntries, type StoredContract } from "../../src/contracts/types.js";
 import type { Section, Contract, ClauseReference, ReviewBundle, ContractDocument, ContractRenderOptions } from "./types.js";
 import { el, icon } from "./dom.js";
 import { ROLE_EXTENSION } from "../../src/contracts/roles.js";
 import { roleBadge } from "./role-badge.js";
 import { clauseFindingTargets, findingBug } from "./findings.js";
 
-const sections: Record<Section, string> = { responsibilities: "Ответственность", boundaries: "Границы", invariants: "Инварианты" };
+const sections = { boundaries: "Границы", invariants: "Инварианты" } as const;
 type FieldChange = ContractRenderOptions["contractDiff"]["fields"][number];
 
 /** Диф выбранного поля показывает обе сохранённые версии без чтения рабочих файлов. */
@@ -44,8 +45,49 @@ function decorateContractChange(node: HTMLElement, change: FieldChange | undefin
     button.onclick = () => showContractChange(change, label);
     node.append(button);
     node.title = button.title;
-    node.onclick = (event) => { if (!(event.target instanceof Element && event.target.closest("button, a"))) showContractChange(change, label); };
+    node.onclick = (event) => { if (event.target instanceof Element && !event.target.closest("button, a") && event.target.closest(".contract-change") === node) showContractChange(change, label); };
     return node;
+}
+
+function clauseRow(contract: StoredContract, section: Section, id: string, title: string,
+  change: FieldChange, options: ContractRenderOptions) {
+  const controls = options.clauseControls;
+  const row = el("div", "clause-row");
+  row.dataset.contractClause = "";
+  row.dataset.clauseSection = section;
+  row.dataset.clauseId = id;
+  row.dataset.changeStatus = change.status;
+  if (section !== "purpose") row.append(el("code", "clause-id", id));
+  row.append(el("p", "", section === "purpose" ? contract.purpose ?? "Назначение не задано" : change.after ?? change.before));
+  decorateContractChange(row, change, section === "purpose" ? title : id);
+  if (change.status === "unchanged") row.title = "Пункт не изменялся";
+  const findings = clauseFindingTargets(options.review, contract, section, id);
+  const editable = controls && (section === "purpose" || Object.hasOwn(contract[section], id));
+  if (findings.length || editable) {
+    const issues = el("div", "clause-issues");
+    if (editable) {
+      const edit = el("button", "clause-edit-action");
+      edit.type = "button";
+      edit.title = "Редактировать " + (section === "purpose" ? "назначение" : id);
+      edit.setAttribute("aria-label", edit.title);
+      edit.append(icon("edit"));
+      edit.onclick = () => controls.open(section, title, id);
+      issues.append(edit);
+    }
+    for (const finding of findings) {
+      const button = el("button", "clause-issue " + finding.severity);
+      button.type = "button";
+      button.title = finding.label;
+      button.setAttribute("aria-label", "Открыть замечание: " + finding.summary);
+      button.dataset.findingId = finding.findingId;
+      button.append(findingBug());
+      button.onclick = () => options.openFinding?.(finding);
+      button.disabled = !options.openFinding;
+      issues.append(button);
+    }
+    row.append(issues);
+  }
+  return row;
 }
 
 /** Единый заголовок модуля содержит метаданные контракта без повторного названия. */
@@ -61,6 +103,11 @@ export function renderContractHeading(panel: HTMLElement, document: ContractDocu
   header.append(el("span", "contract-kind", contract.kind === "group" ? "ГРУППА МОДУЛЕЙ" : "КОНТРАКТ МОДУЛЯ"),
     el("code", "contract-id", contract.id));
   if (!options.titleElement) header.append(title);
+  const purpose = options.contractDiff.fields.find(item => item.key === "purpose") ??
+    { key: "purpose", before: undefined, after: contract.purpose, status: "unchanged" };
+  const row = clauseRow(contract, "purpose", "purpose", "Назначение", purpose, options);
+  row.classList.add("contract-purpose");
+  header.append(row);
   panel.append(header);
   decorateContractChange(options.groupElement ?? header,
     options.contractDiff.heading, "Описание модуля");
@@ -122,40 +169,7 @@ export function renderContract(panel: HTMLElement, document: ContractDocument, o
     if (!entries.length) block.append(el("p", "empty-clauses", "Пункты не заданы"));
     for (const change of entries) {
       const id = change.key.slice(section.length + 1);
-      const row = el("div", "clause-row");
-      row.dataset.contractClause = "";
-      row.dataset.clauseSection = section;
-      row.dataset.clauseId = id;
-      row.dataset.changeStatus = change.status;
-      row.append(el("code", "clause-id", id), el("p", "", change.after ?? change.before));
-      decorate(row, change.key, id);
-      if (change.status === "unchanged") row.title = "Пункт не изменялся";
-      const findings = clauseFindingTargets(options.review, contract, section, id);
-      if (findings.length || controls && Object.hasOwn(contract[section], id)) {
-        const issues = el("div", "clause-issues");
-        if (controls && Object.hasOwn(contract[section], id)) {
-          const edit = el("button", "clause-edit-action");
-          edit.type = "button";
-          edit.title = "Редактировать " + id;
-          edit.setAttribute("aria-label", edit.title);
-          edit.append(icon("edit"));
-          edit.onclick = () => controls.open(section, title, id);
-          issues.append(edit);
-        }
-        for (const finding of findings) {
-          const button = el("button", "clause-issue " + finding.severity);
-          button.type = "button";
-          button.title = finding.label;
-          button.setAttribute("aria-label", "Открыть замечание: " + finding.summary);
-          button.dataset.findingId = finding.findingId;
-          button.append(findingBug());
-          button.onclick = () => options.openFinding?.(finding);
-          button.disabled = !options.openFinding;
-          issues.append(button);
-        }
-        row.append(issues);
-      }
-      block.append(row);
+      block.append(clauseRow(contract, section, id, title, change, options));
     }
     paper.append(block);
   }
@@ -210,12 +224,14 @@ export function savedClauseText(bundle: ReviewBundle | null | undefined, ref: Cl
 }
 
 /** Navigation may highlight a live clause only when it still has the saved meaning. */
-export function savedClauseMatchesContract(bundle: ReviewBundle, ref: ClauseReference, contract: Contract | null | undefined): boolean {
+export function savedClauseMatchesContract(bundle: ReviewBundle, ref: ClauseReference, contract: StoredContract | null | undefined): boolean {
   const saved = savedClauseText(bundle, ref);
-  return saved !== null && contract?.id === ref.module_id && contract[ref.section]?.[ref.id] === saved;
+  return saved !== null && contract?.id === ref.module_id && clauseEntries(contract, ref.section)[ref.id] === saved;
 }
 
 /** Подпись раздела нужна переходам и историческим карточкам, а не только дифу. */
 export function clauseSectionLabel(section: string) {
-  return sections[section as Section] ?? section;
+  if (section === "purpose") return "Назначение";
+  if (section === "responsibilities") return "Ответственность";
+  return sections[section as keyof typeof sections] ?? section;
 }

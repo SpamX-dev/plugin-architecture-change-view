@@ -38,8 +38,8 @@ export function technicalReport(projectId: string, baseline: SnapshotData | null
 }
 
 
-/** Обе версии используют одинаковые правила технического состояния; новые версии добавляются после проверки совместимости. */
-export const SUPPORTED_TECHNICAL_ANALYZER_VERSIONS = Object.freeze(["1.0.1", "1.0.2"]);
+/** Read older publications using the analyzer version recorded in their signed inputs. */
+export const SUPPORTED_TECHNICAL_ANALYZER_VERSIONS = Object.freeze(["1.0.1", "1.0.2", "1.1.0"]);
 
 /** Проверяет минимум переносимой технической схемы и её содержательный отпечаток. */
 export function validateArchiReport(input: unknown): TechnicalReport {

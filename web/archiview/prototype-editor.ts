@@ -32,9 +32,9 @@ export function prototypeDialog(mode: Mode, client: ArchiViewClient, view: Compa
     const location = prototypeLocation(dialog, view.modules);
     fields.append(location.element);
     const name = field("Название");
-    const responsibility = field("Первая обязанность", true);
+    const purpose = field("Назначение", true);
     change = () => ({ ...selection, action: "create", path: location.directory, moduleId: location.moduleId,
-      title: name.value.trim(), responsibility: responsibility.value.trim() });
+      title: name.value.trim(), purpose: purpose.value.trim() });
   } else if (mode === "edit") {
     const yaml = field("Контракт YAML", true, detail?.contractYaml ?? detail?.after?.document.text ?? "");
     yaml.classList.add("prototype-yaml");

@@ -27,7 +27,7 @@ async function fixture(t: TestContext) {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-auto-http-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module",
-    responsibilities: { R1: "Возвращать значение." }, boundaries: {}, invariants: {} });
+    purpose: "Возвращать значение.", boundaries: {}, invariants: {} });
   await mkdir(path.join(root, "child"));
   initTestRepository(root);
   await writeModuleTree(root, { root: ".", child: "child" });

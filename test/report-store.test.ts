@@ -55,7 +55,7 @@ async function fixture(t: TestContext) {
   const root = path.join(directory, "source");
   await mkdir(path.join(root, "child"), { recursive: true });
   const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module",
-    responsibilities: { R1: "Возвращать записи." }, boundaries: { B1: "Не обращаться к сети." }, invariants: {} });
+    purpose: "Возвращать записи.", boundaries: { B1: "Не обращаться к сети." }, invariants: {} });
   initTestRepository(root);
   await writeModuleTree(root, { root: ".", child: "child" });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract("root")));
@@ -230,7 +230,7 @@ test("unsupported analyzer versions reach the panel as a clear error and cannot 
   const { root, store, baseline, current, comparison } = await fixture(t);
   await store.rebuild(baseline, current, comparison.modules);
   const files = await publicationVersion(store, "9.0.0");
-  const message = "Версия анализатора технического отчёта «9.0.0» не поддерживается. Поддерживаемые версии: 1.0.1, 1.0.2.";
+  const message = "Версия анализатора технического отчёта «9.0.0» не поддерживается. Поддерживаемые версии: 1.0.1, 1.0.2, 1.1.0.";
   await assert.rejects(store.publishedComparison(), (error: unknown) => error instanceof Error && error.message.includes(message));
   const panel = createCodexPanel(root);
   t.after(() => panel.close());

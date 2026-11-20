@@ -22,7 +22,7 @@ export async function writeModuleTree(root: string, directories: Record<string, 
 
 export function contractYaml(id: string, responsibility = "Read project data.") {
   return stringify({ schema_version: 1, id, title: id, kind: "module",
-    responsibilities: { R1: responsibility }, boundaries: {}, invariants: {} });
+    purpose: responsibility, boundaries: {}, invariants: {} });
 }
 
 function record(value: unknown): asserts value is Record<string, unknown> {

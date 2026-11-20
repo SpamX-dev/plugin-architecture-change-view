@@ -438,7 +438,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       const path = args.path.trim();
       const directory = path === "" || path === "/" ? args.moduleId : path;
       await createPrototypes(root, [{ directory, id: args.moduleId, title: args.title,
-        responsibilities: { R1: args.responsibility } }]);
+        purpose: args.purpose }]);
       return { directory };
     }
     const { module } = selectedModule(args);

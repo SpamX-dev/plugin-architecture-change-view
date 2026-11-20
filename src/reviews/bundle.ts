@@ -8,6 +8,7 @@ import type {
  * пункты ответственности получают not_checked, а наблюдения — явное ограничение.
  * Полноценный внешний анализ использует тот же формат и сохранённые доказательства.
  */
+import { clauseEntries, type ReviewSection } from "../contracts/types.js";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { canonical, digest } from "../serialization/digest.js";
@@ -15,7 +16,7 @@ import { validateReview } from "./schema.js";
 import { snapshotDigest } from "../snapshots/identity.js";
 
 /** Версия включает алгоритм структурной проверки; настройки участвуют в manifest. */
-export const ANALYZER = { name: "archiview-structure", version: "1.0.2",
+export const ANALYZER = { name: "archiview-structure", version: "1.1.0",
   config_digest: digest({ semantic: false, inherited: ["boundaries", "invariants"] }) };
 
 /** Точная ссылка на сохранённое содержание, независимо от пользовательской метки. */
@@ -26,16 +27,17 @@ export const snapshotReference = (snapshot: Snapshot | null | undefined) => snap
  * Собственная проверка содержит только локальный контракт. Режим effective
  * нужен для проверки целостности прежних неизменяемых отчётов с пунктами предков.
  */
-export function effectiveClauses(snapshot: SnapshotData | null, directory: string | null | undefined, side: Side, contractScope = "effective"): ClauseInput[] {
+export function effectiveClauses(snapshot: SnapshotData | null, directory: string | null | undefined, side: Side, contractScope = "effective", clauseFormat: "purpose" | "legacy" = "purpose"): ClauseInput[] {
   if (!["own", "effective"].includes(contractScope)) throw new Error("Unsupported contract scope");
   if (!snapshot || directory == null) return [];
   const parents = new Set([directory]);
   let parent = directory;
   while (contractScope === "effective" && parent !== ".") { parent = path.posix.dirname(parent); parents.add(parent); }
+  const local: ReviewSection = clauseFormat === "legacy" ? "responsibilities" : "purpose";
   return snapshot.modules.filter((m) => parents.has(m.directory) && m.document.state === "documented" && m.document.contract)
-    .flatMap((m) => (["responsibilities", "boundaries", "invariants"] as const)
-      .filter((section) => section !== "responsibilities" || m.directory === directory)
-      .flatMap((section) => Object.entries(m.document.contract![section]).map(([id, text]) => ({
+    .flatMap((m) => ([local, "boundaries", "invariants"] as const)
+      .filter((section) => section !== local || m.directory === directory)
+      .flatMap((section) => Object.entries(clauseEntries(m.document.contract!, section)).map(([id, text]) => ({
         reference: { snapshot: side, module_id: m.document.contract!.id, section, id }, text,
       }))));
 }
@@ -46,7 +48,7 @@ type ReviewedModule = Pick<ComparisonModule, "moduleId" | "baselinePath" | "curr
 export function reviewManifest(before: Snapshot | null, after: Snapshot, module: ReviewedModule, analyzer = ANALYZER, contractScope = "own"): ReviewManifest {
   return { schema_version: 1, comparison: { baseline: snapshotReference(before), current: snapshotReference(after) },
     module: { id: module.moduleId ?? null, baseline_path: module.baselinePath ?? null, current_path: module.currentPath ?? null },
-    analyzer, scope: "module", ...(contractScope === "own" ? { contract_scope: "own" } : {}), contracts: {
+    analyzer, scope: "module", clause_format: "purpose", ...(contractScope === "own" ? { contract_scope: "own" } : {}), contracts: {
       baseline: effectiveClauses(before, module.baselinePath, "baseline", contractScope),
       current: effectiveClauses(after, module.currentPath, "current", contractScope),
     }, instructions: "Проверять структуру контрактов; смысл кода не анализировать.", context: {} };
@@ -71,6 +73,17 @@ export function requiredClauseChecks(manifest: ReviewManifest, hasCurrent: boole
 /** Новый локальный чеклист не может расширяться пунктами чужого контракта. */
 export function validateContractScope(report: ReviewReport, manifest: ReviewManifest,
   snapshots?: { baseline: SnapshotData | null; current: SnapshotData }) {
+  if (manifest.clause_format !== undefined && manifest.clause_format !== "purpose") throw new Error("Unsupported clause format");
+  for (const side of ["baseline", "current"] as const) {
+    const owner = snapshots?.[side]?.modules.find(m => m.directory === report.module[`${side}_path`]);
+    const contract = owner?.document.contract;
+    if (!contract) continue;
+    if (!manifest.clause_format && !contract.responsibilities) throw new Error("Current contracts require purpose clause format");
+    if (manifest.clause_format && !contract.purpose && report.analysis.coverage.status === "complete")
+      throw new Error("Complete review requires a declared purpose: " + side);
+  }
+  if (manifest.clause_format && report.findings.some(f => f.clauses.some(ref => ref.section === "responsibilities")))
+    throw new Error("A new finding must reference purpose, boundaries or invariants");
   const scope = manifest.contract_scope ?? "effective";
   if (!["own", "effective"].includes(scope)) throw new Error("Unsupported contract scope");
   if (scope === "own" && report.checks.some((check) => check.contract.module_id !== report.module.id))
@@ -96,7 +109,7 @@ export function validateContractScope(report: ReviewReport, manifest: ReviewMani
 /** Формирует честный частичный отчёт без подмены анализа наличием документов. */
 export function createStructuralReview(before: Snapshot | null, after: Snapshot, module: ReviewedModule, { contractScope = "own" }: {contractScope?:string} = {}): ReviewBundle {
   const manifest = reviewManifest(before, after, module, ANALYZER, contractScope);
-  const limitations = ["Семантика кода не анализировалась. Соответствие обязанностям, границам и инвариантам требует отдельного анализа.",
+  const limitations = ["Семантика кода не анализировалась. Соответствие назначению, границам и инвариантам требует отдельного анализа.",
     ...before?.evidenceLimitations ?? [], ...after.evidenceLimitations ?? []];
   const findings: Finding[] = [];
   const checks: ClauseCheck[] = [];
@@ -104,6 +117,8 @@ export function createStructuralReview(before: Snapshot | null, after: Snapshot,
     .filter((f) => f.kind === kind && f.path === file).map((f) => ({ snapshot: side, fact_id: f.id }));
   for (const [snapshot, side, entry] of ([[before, "baseline", module.before], [after, "current", module.after]] as const)) {
     if (!entry) continue;
+    if (entry.document.contract && !entry.document.contract.purpose)
+      limitations.push(side + ": в сохранённом контракте отсутствует назначение модуля.");
     if (!entry.document.contract || entry.document.state !== "documented") {
       const evidence = fact(snapshot, side, "module", entry.directory);
       const migrated = side === "baseline" && entry.document.state !== "invalid" && module.after?.document.state === "documented" && module.after.document.contract;
@@ -159,12 +174,12 @@ export function validateReviewBundle(bundle: ReviewBundle) {
     if (directory !== null && !module) throw new Error("Review module path is missing: " + side);
     if (module?.document.contract && report.module.id !== null && module.document.contract.id !== report.module.id) throw new Error("Review module identity mismatch");
     if (digest(manifest.contracts?.[side]) !== digest(effectiveClauses(snapshot, directory, side,
-      manifest.contract_scope ?? "effective"))) throw new Error("Effective contracts mismatch: " + side);
+      manifest.contract_scope ?? "effective", manifest.clause_format ?? "legacy"))) throw new Error("Effective contracts mismatch: " + side);
   }
   const resolveClause = (ref: ClauseReference) => {
     const snapshot = ref.snapshot === "baseline" ? baseline : current;
     const matches = snapshot?.modules.filter((m) => m.document.state === "documented" && m.document.contract?.id === ref.module_id) ?? [];
-    if (matches.length !== 1 || !Object.hasOwn(matches[0].document.contract![ref.section], ref.id)) throw new Error("Unresolved contract clause: " + ref.module_id + "/" + ref.id);
+    if (matches.length !== 1 || !Object.hasOwn(clauseEntries(matches[0].document.contract!, ref.section), ref.id)) throw new Error("Unresolved contract clause: " + ref.module_id + "/" + ref.id);
   };
   const resolveEvidence = (ref: EvidenceReference) => {
     const snapshot = ref.snapshot === "baseline" ? baseline : current;

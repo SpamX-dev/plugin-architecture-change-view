@@ -81,7 +81,7 @@ test("a resource contract includes its skill directory without including other s
   await writeModuleTree(root, { example: "skills/example" });
   await writeFile(path.join(root, ".archiview/modules/example.yaml"), [
     "schema_version: 1", "id: example", "title: Example", "kind: module",
-    "responsibilities: { R1: Define the instructions }",
+    "purpose: Define the instructions",
     "boundaries: {}", "invariants: {}", "extensions: { archiview.roles: [resources] }",
   ].join("\n"));
   const inventory = await moduleInventory(root);
@@ -252,7 +252,7 @@ test("a workspace routes existing and new source files to their own checkout", a
   assert.deepEqual(inventory.repositories, ["apps/left", "right"]);
   assert.equal(inventory.complete, true, inventory.diagnostics.join("\n"));
   assert.deepEqual(inventory.modules.filter(m => m.contract?.id === "component").map(m => [
-    m.repository, m.directory, m.document, m.files, m.contract?.responsibilities.R1,
+    m.repository, m.directory, m.document, m.files, m.contract?.purpose,
   ]), [
     ["apps/left", "apps/left/src", "apps/left/.archiview/modules/component.yaml", ["apps/left/src/file.ts"], "apps/left"],
     ["right", "right/src", "right/.archiview/modules/component.yaml", ["right/src/file.ts"], "right"],
@@ -265,7 +265,7 @@ test("a workspace routes existing and new source files to their own checkout", a
   for (const file of ["apps/left/src/file.ts", "apps/left/src/new.ts", "right/src/new-file"]) {
     const result = await moduleContext(root, file);
     assert.equal(result.directory, "src");
-    assert.ok(result.contracts.every(m => m.contract?.responsibilities.R1 === result.repository));
+    assert.ok(result.contracts.every(m => m.contract?.purpose === result.repository));
     assert.deepEqual(result.contracts.map(m => m.contract?.id), ["app", "component"]);
   }
   const planned = await moduleContext(root, "right/src/new/entry.ts");
@@ -293,7 +293,7 @@ test("nested checkouts and linked worktrees retain independent roots", async (t)
   const result = await moduleInventory(parent);
   assert.equal(result.sourceFiles, 2);
   assert.deepEqual(result.repositories, [".", "libs/child"]);
-  assert.equal((await moduleContext(parent, "libs/child/src/main.ts")).contracts[0].contract?.responsibilities.R1, "child");
+  assert.equal((await moduleContext(parent, "libs/child/src/main.ts")).contracts[0].contract?.purpose, "child");
   assert.equal((await moduleContext(root, "linked/src/index.ts")).repository, "linked");
   await writeFile(path.join(parent, "libs/shared.ts"), "");
   const subtree = path.join(parent, "libs");

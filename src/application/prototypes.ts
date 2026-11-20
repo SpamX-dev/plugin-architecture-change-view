@@ -23,7 +23,7 @@ const normalize = (text: string) => text.replace(/\r\n?/g, "\n");
 
 /** An agent supplies the same contract fields as in modules/<id>.yaml, plus the future directory. */
 export const SCAFFOLD_DESCRIPTION = "Create a module scaffold in one Git repository. Pass plan as a YAML list. " +
-  "Each entry requires directory (relative, / separator), id, title and responsibilities (ID to text map). " +
+  "Each entry requires directory (relative, / separator), id, title and purpose (the result promised by this module). " +
   "Optional contract fields include kind, boundaries, invariants and extensions. No source directories are created.";
 
 function prototypeEntry(value: unknown) {

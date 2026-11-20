@@ -114,7 +114,7 @@ test("opening a checkout serves its published tree and card even when its raw ar
   assert.equal(right.published, true);
   assert.notEqual(left.id, right.id);
   const module = await viewer.getModule({ repository: "a", view: left.id, path: "." });
-  assert.equal(module.after?.document.contract?.responsibilities.R1, "Read project data.");
+  assert.equal(module.after?.document.contract?.purpose, "Read project data.");
   const diffArgs = { repository: "a", view: left.id, path: ".", file: "index.js" };
   assert.deepEqual((await viewer.getFileDiff(diffArgs)).hunks[0].lines, ["-export const v = 1;", "+export const v = 2;"]);
   assert.deepEqual(await viewer.getFileDiff({ ...diffArgs, repository: "b", view: right.id }), {
@@ -126,7 +126,7 @@ test("opening a checkout serves its published tree and card even when its raw ar
   assert.deepEqual(await publicationTimes(), before);
   const live = await viewer.getComparison({ repository: "b", baseline: "auto" });
   assert.equal(live.published, undefined);
-  assert.equal((await viewer.getModule({ repository: "b", view: live.id, path: "." })).after?.document.contract?.responsibilities.R1, "Other local responsibility.");
+  assert.equal((await viewer.getModule({ repository: "b", view: live.id, path: "." })).after?.document.contract?.purpose, "Other local responsibility.");
 });
 
 test("standalone and DSH isolate concurrent comparisons, snapshots and analyses for clones with identical module IDs", async (t) => {

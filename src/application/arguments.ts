@@ -48,11 +48,11 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
         throw new ApplicationError("INVALID_ARGUMENT", "Нужны view, path и file");
       return session.getFileDiff({ view: args.view, path: args.path, file: args.file, ...selector });
     case "changePrototype": {
-      const { action, path, view, moduleId, title, responsibility, text } = args;
+      const { action, path, view, moduleId, title, purpose, text } = args;
       if (typeof view !== "string" || typeof path !== "string") throw new ApplicationError("INVALID_ARGUMENT", "Нужны view и path");
       const target = { ...selector, path, view };
-      if (action === "create" && typeof moduleId === "string" && typeof title === "string" && typeof responsibility === "string")
-        return session.changePrototype({ ...target, action, moduleId, title, responsibility });
+      if (action === "create" && typeof moduleId === "string" && typeof title === "string" && typeof purpose === "string")
+        return session.changePrototype({ ...target, action, moduleId, title, purpose });
       if (action === "edit" && typeof text === "string") return session.changePrototype({ ...target, action, text });
       if (action === "delete") return session.changePrototype({ ...target, action });
       throw new ApplicationError("INVALID_ARGUMENT", "Некорректные параметры изменения прототипа");
@@ -60,9 +60,11 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
     case "changeClause": {
       const { view, path, section, clauseId, action, text, undoToken } = args;
       if (typeof view !== "string" || typeof path !== "string" || typeof clauseId !== "string" || !clauseId.trim() ||
-          (section !== "responsibilities" && section !== "boundaries" && section !== "invariants"))
+          (section !== "purpose" && section !== "boundaries" && section !== "invariants"))
         throw new ApplicationError("INVALID_ARGUMENT", "Нужны модуль, раздел и ID пункта");
       const target = { ...selector, view, path, clauseId };
+      if (section === "purpose" && (clauseId !== "purpose" || action !== "edit"))
+        throw new ApplicationError("INVALID_ARGUMENT", "Назначение модуля можно только редактировать");
       if ((action === "edit" || action === "add") && typeof text === "string" && text.trim())
         return session.changeClause({ ...target, section, action, text });
       if (action === "delete") return session.changeClause({ ...target, section, action });

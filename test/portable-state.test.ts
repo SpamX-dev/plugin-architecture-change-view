@@ -24,7 +24,7 @@ import { compareSnapshots } from "../src/snapshots/comparison.js";
 
 /** Минимальный контракт фиксирует обязанности явно, независимо от расположения тестовой папки. */
 const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module",
-  responsibilities: { R1: "Предоставлять значение." }, boundaries: {}, invariants: {} });
+  purpose: "Предоставлять значение.", boundaries: {}, invariants: {} });
 
 /** Создаёт отдельный проект; все пути и процессы сценария принадлежат временному каталогу. */
 async function fixture(t: TestContext) {

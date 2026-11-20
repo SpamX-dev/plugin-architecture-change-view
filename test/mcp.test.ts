@@ -18,7 +18,7 @@ test("serves a matching skill descriptor and read-only module tools over stdio",
   await mkdir(path.join(root, "src"));
   initTestRepository(root);
   await writeModuleTree(root, { root: "." });
-  const document = "schema_version: 1\nid: root\ntitle: Root\nkind: module\npurpose: Read\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\n";
+  const document = "schema_version: 1\nid: root\ntitle: Root\nkind: module\npurpose: Read\nboundaries: {}\ninvariants: {}\n";
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), document);
   await writeFile(path.join(root, "src/main.js"), "export const main = 1;");
   const client = new Client({ name: "module-test", version: "1.0.0" });
@@ -65,7 +65,7 @@ test("serves a matching skill descriptor and read-only module tools over stdio",
   await assert.rejects(client.callTool({ name: "module_inventory",
     arguments: { directory: "src" } }), /Invalid tool arguments/);
   const plan = JSON.stringify(["service", "service/domain"].map(directory => ({ directory,
-    id: directory.split("/").at(-1), title: directory, responsibilities: { R1: "Вычислять сумму" } })));
+    id: directory.split("/").at(-1), title: directory, purpose: "Вычислять сумму" })));
   const scaffold = await client.callTool({ name: "module_scaffold", arguments: { plan } });
   assert.deepEqual(JSON.parse(firstTextContent(scaffold)).modules.map((m: {id: string}) => m.id), ["service", "domain"]);
   const planned = await client.callTool({ name: "module_context", arguments: { path: "service/domain" } });

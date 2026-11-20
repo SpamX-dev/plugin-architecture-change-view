@@ -20,7 +20,7 @@ function snapshot({ source = "export const value = 1;\n", child = true, contract
     .map(({ id, directory }) => {
       const prefix = directory === "." ? "" : directory + "/";
       const text = stringify({ schema_version: 1, id, title: id, kind: "module",
-        responsibilities: { R1: contractText }, boundaries: { B1: "Не обращаться к сети." }, invariants: {} });
+        purpose: contractText, boundaries: { B1: "Не обращаться к сети." }, invariants: {} });
       const contents = { [prefix + "arch.yaml"]: text, [prefix + "index.mjs"]: source };
       const files = Object.entries(contents).map(([path, text]) => {
         const content = { kind: "file", path, text, start_line: 1, end_line: text.split("\n").length };
@@ -47,12 +47,12 @@ test("prepared model captures mutable inputs before its first calculation and ne
   const model = createReportModel(null, current);
   // Сохраняем прежние id/digest: глобальный кэш по этим полям пропустил бы изменение.
   current.facts.find((fact) => fact.path === "index.mjs")!.text = "export const value = 2;\n";
-  current.modules[0].document.contract!.responsibilities.R1 = "Читать новые данные.";
+  current.modules[0].document.contract!.purpose = "Читать новые данные.";
   current.diagnostics.push("Изменённые входы.");
   assert.deepEqual(model.createTechnicalReport("fixture-project", { moduleId: "root" }), expected);
   const next = createReportModel(null, current).createTechnicalReport("fixture-project", { moduleId: "root" });
   assert.notEqual(next.check_hash, expected.check_hash);
-  assert.equal(next.current!.technical.contract!.responsibilities.R1, "Читать новые данные.");
+  assert.equal(next.current!.technical.contract!.purpose, "Читать новые данные.");
   assert.deepEqual(next.structure.diagnostics, ["Изменённые входы."]);
   assert.deepEqual(next, createTechnicalReport("fixture-project", null, current, { moduleId: "root" }));
 });
@@ -62,7 +62,7 @@ test("returned technical report cannot mutate cached state of another report", (
   const model = createReportModel(null, current);
   const expected = model.createTechnicalReport("fixture-project", { moduleId: "root" });
   const editable = model.createTechnicalReport("fixture-project", { moduleId: "root" });
-  editable.current!.technical.contract!.responsibilities.R1 = "Чужое изменение результата.";
+  editable.current!.technical.contract!.purpose = "Чужое изменение результата.";
   editable.current!.self.children.length = 0;
   editable.current!.technical.own_files[0].digest = "changed";
   editable.structure.diagnostics.push("Только в полученном отчёте.");

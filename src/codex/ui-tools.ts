@@ -22,7 +22,7 @@ const operations: Operation[] = [
   ["get_file_diff", "getFileDiff", "Read a file's diff or unchanged text in the selected module comparison.", { ...selectedModule, file: string }, ["view", "path", "file"], true],
   ["change_prototype", "changePrototype", "Create, edit or delete a module prototype in the selected working tree.", {
     ...selectedModule, action: string, moduleId: string, title: string,
-    responsibility: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, text: { type: "string", maxLength: MAX_DOCUMENT_BYTES },
+    purpose: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, text: { type: "string", maxLength: MAX_DOCUMENT_BYTES },
   }, ["view", "path", "action"], false],
   ["change_clause", "changeClause", "Edit, add, delete or restore a clause in the selected working contract.", {
     ...selectedModule, section: string, clauseId: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, action: string,

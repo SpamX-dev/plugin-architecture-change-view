@@ -46,7 +46,7 @@ async function browserProject(defer: DeferCleanup) {
   defer(() => rm(root, { recursive: true, force: true, maxRetries: 5 }));
   await mkdir(path.join(root, "src"));
   const contract = (id: string, title: string) => stringify({ schema_version: 1, id, title, kind: "module",
-    responsibilities: { R1: "Предоставлять функцию" }, boundaries: {}, invariants: {} });
+    purpose: "Предоставлять функцию", boundaries: {}, invariants: {} });
   await writeModuleTree(root, { "browser-project": ".", "browser-feature": "src" });
   await writeFile(path.join(root, ".archiview/modules/browser-project.yaml"), contract("browser-project", "Браузерный проект"));
   await writeFile(path.join(root, ".archiview/modules/browser-feature.yaml"), contract("browser-feature", "Функция браузера"));
@@ -289,7 +289,7 @@ test("a user can create, edit, reopen and delete a module prototype", browserOpt
   for (const rootPath of ["", "/"]) {
     await button("Новый прототип").click();
     await dialog.getByLabel("Путь от корня репозитория").fill(rootPath);
-    for (const label of ["ID модуля", "Название", "Первая обязанность"])
+    for (const label of ["ID модуля", "Название", "Назначение"])
       await dialog.getByLabel(label, { exact: true }).fill("aaa");
     await button("Создать").click();
     await page.locator('.tree-row[data-directory="aaa"][aria-selected="true"]').waitFor();
@@ -302,13 +302,14 @@ test("a user can create, edit, reopen and delete a module prototype", browserOpt
   await dialog.getByLabel("Путь от корня репозитория").fill("future/catalog");
   await dialog.getByLabel("ID модуля").fill("catalog");
   await dialog.getByLabel("Название", { exact: true }).fill("Каталог");
-  assert.equal(await dialog.getByLabel("Назначение", { exact: true }).count(), 0);
-  await dialog.getByLabel("Первая обязанность").fill("Выдавать карточку товара");
+  assert.equal(await dialog.getByLabel("Первая обязанность", { exact: true }).count(), 0);
+  await dialog.getByLabel("Назначение").fill("Выдавать карточку товара");
   await button("Создать").click();
   await page.getByRole("heading", { name: "Каталог", exact: true }).waitFor();
   await button("Редактировать контракт").click();
   const yaml = dialog.getByLabel("Контракт YAML");
-  assert.doesNotMatch(await yaml.inputValue(), /^purpose:/m);
+  assert.match(await yaml.inputValue(), /^purpose:/m);
+  assert.doesNotMatch(await yaml.inputValue(), /^responsibilities:/m);
   await yaml.fill((await yaml.inputValue()).replace("title: Каталог", "title: Каталог магазина"));
   await button("Сохранить").click();
   await page.getByRole("heading", { name: "Каталог магазина", exact: true }).waitFor();
@@ -362,7 +363,7 @@ test("the prototype parent picker builds the saved path from the chosen module a
   await trigger.click();
   await page.keyboard.press("Escape");
   assert.equal(await trigger.getAttribute("aria-expanded"), "false");
-  for (const label of ["Название", "Первая обязанность"])
+  for (const label of ["Название", "Назначение"])
     await dialog.getByLabel(label, { exact: true }).fill("Товары");
   await dialog.getByRole("button", { name: "Создать", exact: true }).click();
   await page.locator('.tree-row[data-directory="src/tools/items"][aria-selected="true"]').waitFor();
@@ -379,12 +380,12 @@ test("contract clauses can be edited, added, deleted and restored from the worki
   await page.goto(origin + "/#src");
   const button = (name: string) => page.getByRole("button", { name, exact: true });
   const dialog = page.getByRole("dialog");
-  await button("Редактировать R1").click();
-  assert.equal(await button("Удалить").isDisabled(), true);
+  await button("Редактировать назначение").click();
+  assert.equal(await button("Удалить").count(), 0);
   await dialog.getByLabel("Текст пункта").fill("Новая формулировка обязанности");
   await button("Сохранить").click();
   await dialog.waitFor({ state: "detached" });
-  assert.equal(parse(await readFile(file, "utf8")).responsibilities.R1, "Новая формулировка обязанности");
+  assert.equal(parse(await readFile(file, "utf8")).purpose, "Новая формулировка обязанности");
   for (const [section, id] of [["Границы", "B1"], ["Инварианты", "I1"]]) {
     await button("Добавить пункт · " + section).click();
     await dialog.getByLabel("ID нового пункта").fill(id);
@@ -663,7 +664,7 @@ test("a reused directory retains its exact module under search and status filter
   await rm(path.join(root, ".archiview/modules/browser-feature.yaml"));
   await writeModuleTree(root, { "browser-project": ".", replacement: "src" });
   await writeFile(path.join(root, ".archiview/modules/replacement.yaml"), stringify({ schema_version: 1, id: "replacement", title: "Новая функция",
-    kind: "module", responsibilities: { R1: "Показать замену" }, boundaries: {}, invariants: {},
+    kind: "module", purpose: "Показать замену", boundaries: {}, invariants: {},
     extensions: { "archiview.roles": ["http-client"], "example.owner": "team" } }));
   const origin = await listen(defer, (await createArchiView({ root })).server);
   const page = await (await browserContext(defer)).newPage();
@@ -715,7 +716,7 @@ test("a workspace keeps identical modules, history and deep links scoped to each
     for (const id of ["project", "feature"]) {
       await writeFile(path.join(repo, ".archiview/modules", id + ".yaml"), stringify({
         schema_version: 1, id, kind: "module", title: name + " " + id,
-        responsibilities: { R1: name + " implementation" }, boundaries: {}, invariants: {},
+        purpose: name + " implementation", boundaries: {}, invariants: {},
       }));
     }
     await writeFile(path.join(repo, "src/feature.ts"), "export const feature = 1;\n");
@@ -737,7 +738,7 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   await page.locator('[data-repository-root="beta"]').click();
   await beta.click();
   await page.getByRole("heading", { name: "beta feature", exact: true }).waitFor();
-  await page.locator(".contract-paper").getByText("beta implementation", { exact: true }).waitFor();
+  await page.locator(".contract-purpose").getByText("beta implementation", { exact: true }).waitFor();
   assert.ok(await page.getByRole("searchbox", { name: "Найти модуль", exact: true }).isVisible());
   assert.equal(await page.locator("#module-total").getAttribute("title"), "");
   assert.ok(await alpha.isVisible(), "the other open repository stays accessible");
@@ -769,12 +770,12 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   const late = await pendingAlpha;
   const oldDetail = await late.fetch();
   await beta.click();
-  await page.locator(".contract-paper").getByText("beta implementation", { exact: true }).waitFor();
+  await page.locator(".contract-purpose").getByText("beta implementation", { exact: true }).waitFor();
   const received = page.waitForResponse((response) => response.url() === late.request().url());
   await late.fulfill({ response: oldDetail });
   await received;
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  assert.ok(await page.locator(".contract-paper").getByText("beta implementation", { exact: true }).isVisible());
+  assert.ok(await page.locator(".contract-purpose").getByText("beta implementation", { exact: true }).isVisible());
   assert.equal(await beta.getAttribute("aria-selected"), "true");
 
   const repositoriesRequested: (string | null)[] = [];
@@ -1044,7 +1045,7 @@ test("retrying a finding link reveals the original clause only after its documen
   const app = await createArchiView({ root });
   const origin = await listen(defer, app.server);
   const review = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root), "browser-project");
-  const reference = review.report.checks.find((check) => check.contract.id === "R1")!.contract;
+  const reference = review.report.checks.find((check) => check.contract.id === "purpose")!.contract;
   review.report.analysis.model = review.manifest.model = { provider: "test", id: "browser-fixture" };
   review.report.analysis.prompt_digest = review.manifest.prompt_digest = digest("Finding navigation fixture");
   review.report.analysis.input_digest = digest(review.manifest);

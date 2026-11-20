@@ -5,7 +5,7 @@ import { isDeepStrictEqual } from "node:util";
 import { isMap, isScalar, parseDocument } from "yaml";
 import { assertModuleDirectory, MAX_DOCUMENT_BYTES, MODULE_DIRECTORY, moduleDocumentPath, readContractStorageFile, readModuleTree } from "../contracts/module-tree.js";
 import { contractDocument, currentContractYaml } from "../contracts/document.js";
-import type { Contract, Section } from "../contracts/types.js";
+import type { StoredContract, Section } from "../contracts/types.js";
 import { isPrototype } from "../contracts/types.js";
 import { assertStateLocation, STATE_DIRECTORY } from "../project/paths.js";
 import { repositoryDirectoryOwnership } from "../project/workspace.js";
@@ -21,30 +21,39 @@ const normalize = (text: string) => text.replace(/\r\n?/g, "\n");
 function sectionRange(doc: ReturnType<typeof parseDocument>, section: Section) {
   if (!isMap(doc.contents) || doc.contents.flow) return;
   const pair = doc.contents.items.find(item => isScalar(item.key) && item.key.value === section);
-  if (pair && isScalar(pair.key) && pair.key.range && isMap(pair.value) && pair.value.range)
+  if (pair && isScalar(pair.key) && pair.key.range && (isMap(pair.value) || isScalar(pair.value)) && pair.value.range)
     return { start: pair.key.range[0], end: pair.value.range[2] };
 }
 
-function changedText(source: string, contract: Contract, change: Exclude<ClauseChange, { action: "restore" }>) {
+function changedText(source: string, stored: StoredContract, change: Exclude<ClauseChange, { action: "restore" }>) {
   const { section, clauseId, action } = change;
-  const present = Object.hasOwn(contract[section], clauseId);
-  if (action === "add" && present) throw new ApplicationError("INVALID_ARGUMENT", "Такой ID уже есть в разделе");
-  if (action !== "add" && !present) throw stale();
-  if (action === "delete" && section === "responsibilities" && Object.keys(contract[section]).length === 1)
-    throw new ApplicationError("INVALID_ARGUMENT", "В разделе ответственности нужен хотя бы один пункт");
-  if (action === "edit" && contract[section][clauseId] === change.text) return source;
+  const { responsibilities, ...expected } = stored;
   const doc = parseDocument(source, { intAsBigInt: true });
   const original = sectionRange(doc, section);
-  const keys = [section, clauseId];
-  if (action === "delete") doc.deleteIn(keys);
-  else doc.setIn(keys, change.text);
-  const map = doc.get(section, true);
-  if (action === "add" && isMap(map) && map.items.length === 1 && isMap(doc.contents) && !doc.contents.flow) map.flow = false;
+  if (section === "purpose") {
+    if (action !== "edit" || clauseId !== "purpose" || !change.text.trim())
+      throw new ApplicationError("INVALID_ARGUMENT", "Назначение модуля должно содержать текст");
+    if (expected.purpose === change.text) return source;
+    doc.set(section, change.text);
+    expected.purpose = change.text;
+  } else {
+    if (!expected.purpose) throw new ApplicationError("INVALID_ARGUMENT", "Сначала укажите назначение модуля");
+    const clauses = new Map(Object.entries(expected[section]));
+    if (action === "add" && clauses.has(clauseId)) throw new ApplicationError("INVALID_ARGUMENT", "Такой ID уже есть в разделе");
+    if (action !== "add" && !clauses.has(clauseId)) throw stale();
+    if (action === "edit" && clauses.get(clauseId) === change.text) return source;
+    if (action === "delete") {
+      doc.deleteIn([section, clauseId]);
+      clauses.delete(clauseId);
+    } else {
+      doc.setIn([section, clauseId], change.text);
+      clauses.set(clauseId, change.text);
+      const map = doc.get(section, true);
+      if (action === "add" && isMap(map) && map.items.length === 1 && isMap(doc.contents) && !doc.contents.flow) map.flow = false;
+    }
+    expected[section] = Object.fromEntries(clauses);
+  }
   const formatted = doc.toString({ lineWidth: 0, flowCollectionPadding: false });
-  const clauses = new Map(Object.entries(contract[section]));
-  if (action === "delete") clauses.delete(clauseId);
-  else clauses.set(clauseId, change.text);
-  const expected = { ...contract, [section]: Object.fromEntries(clauses) };
   const range = sectionRange(parseDocument(formatted), section);
   const eol = (s: string) => source.includes("\r\n") ? s.replaceAll("\n", "\r\n") : s;
   if (range && original) {

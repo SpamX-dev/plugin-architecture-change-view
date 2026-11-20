@@ -95,7 +95,7 @@ test("autonomous MCP panel serves project operations with no listening sockets a
   uiData(await call("change_clause", { view: latest.id, path: "child", action: "add", section: "invariants", clauseId: "I1", text: "Проверено из панели" }));
   assert.equal(parse(await readFile(path.join(root, ".archiview/modules/child.yaml"), "utf8")).invariants.I1, "Проверено из панели");
   uiData(await call("change_prototype", { view: latest.id, path: "planned", action: "create", moduleId: "planned",
-    title: "Запланированный модуль", responsibility: "Суммировать стоимость" }));
+    title: "Запланированный модуль", purpose: "Суммировать стоимость" }));
   const planned = uiData<ComparisonView>(await call("get_comparison"));
   assert.equal(planned.modules.find(item => item.directory === "planned")?.prototypeModule, true);
   uiData(await call("change_prototype", { view: planned.id, path: "planned", action: "delete" }));
@@ -148,7 +148,7 @@ export async function panelFixture(t: TestContext) {
   for (const [directory, id] of [[".", "root"], ["child", "child"]]) {
     await writeFile(path.join(root, ".archiview/modules", id + ".yaml"), stringify({ schema_version: 1,
       id, title: directory === "." ? "Тестовый проект панели" : "Тестовый модуль", kind: "module",
-      responsibilities: { R1: "Возвращать значение." },
+      purpose: "Возвращать значение.",
       boundaries: { B1: "Не изменять исходники при просмотре." }, invariants: {} }));
   }
   await writeFile(path.join(root, "child/code.js"), "export const value = 1;\n");
@@ -215,7 +215,7 @@ test("Git tree and separate reviews preserve module order across a revert, a lat
   const contractPath = path.join(root, ".archiview/modules/child.yaml");
   const original = await readFile(contractPath, "utf8");
   const declaration = parse(original);
-  declaration.responsibilities.R1 += " Изменённое обещание.";
+  declaration.purpose += " Изменённое обещание.";
   await writeFile(contractPath, stringify(declaration));
   assert.deepEqual(await statuses(await tree()), { ".": "stale", child: "stale" });
   await writeFile(contractPath, original);

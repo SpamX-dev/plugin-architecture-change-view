@@ -7,7 +7,7 @@ import type { ReviewReport } from "./types.js";
 const hash: Validator = (v, at) => /^sha256:[a-f0-9]{64}$/.test(String(v)) ? undefined : fail(at, "ожидается sha256:<64 hex>");
 const version = enumeration(1);
 const side = enumeration("baseline", "current");
-const section = enumeration("responsibilities", "boundaries", "invariants");
+const section = enumeration("purpose", "responsibilities", "boundaries", "invariants");
 const relativePath: Validator = (value, at) => {
   string(value, at);
   const v = value as string;

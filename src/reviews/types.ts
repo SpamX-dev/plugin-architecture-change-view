@@ -1,4 +1,4 @@
-import type { Section } from "../contracts/types.js";
+import type { ReviewSection } from "../contracts/types.js";
 import type { Snapshot, SnapshotReference } from "../snapshots/types.js";
 
 export type Side = "baseline" | "current";
@@ -8,7 +8,7 @@ export type AssessmentSide = "current" | "change";
 export interface ClauseReference {
   snapshot: Side;
   module_id: string;
-  section: Section;
+  section: ReviewSection;
   id: string;
 }
 
@@ -58,6 +58,7 @@ export interface ReviewManifest {
   analyzer: Analyzer;
   scope: string;
   contract_scope?: string;
+  clause_format?: "purpose";
   contracts: Record<Side, ClauseInput[]>;
   instructions: string;
   context: Record<string, unknown>;

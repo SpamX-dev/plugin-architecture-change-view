@@ -192,7 +192,7 @@ test("tools: путь файла из рабочей папки чата dsh в�
     execute(args: { repository: string; plan: string }, exec: typeof execution): Promise<{ modules: {id: string}[] }>;
   };
   const plan = JSON.stringify([{ directory: "future", id: "future", title: "Future",
-    responsibilities: { R1: "Design" } }]);
+    purpose: "Design" }]);
   const result = await scaffold.execute({ repository: "server", plan }, execution);
   assert.equal(result.modules[0].id, "future");
   assert.match(await readFile(path.join(workspace, "server/.archiview/modules/future.yaml"), "utf8"), /archiview.prototype: true/);

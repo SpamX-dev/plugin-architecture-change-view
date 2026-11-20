@@ -18,7 +18,7 @@ export type ClauseChange = { section: Section; clauseId: string } & (
 );
 export type ChangeClauseArgs = ModuleArgs & ClauseChange;
 export type PrototypeChange = RepositoryArgs & { view: string; path: string } & (
-  | { action: "create"; moduleId: string; title: string; responsibility: string }
+  | { action: "create"; moduleId: string; title: string; purpose: string }
   | { action: "edit"; text: string }
   | { action: "delete" }
 );

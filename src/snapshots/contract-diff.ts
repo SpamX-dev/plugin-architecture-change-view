@@ -32,9 +32,9 @@ export function compareContracts(before: Partial<Contract> | null | undefined, a
     fields.push({ key, before: oldValue, after: newValue, status });
   }
   const headingKeys = ["title", "kind", "id"] as const;
-  for (const key of [...headingKeys, "rationale", "owners", "tags", "references", "extensions"] as const)
+  for (const key of [...headingKeys, "purpose", "rationale", "owners", "tags", "references", "extensions"] as const)
     if (before?.[key] !== undefined || after?.[key] !== undefined) add(key, before?.[key], after?.[key]);
-  for (const section of ["responsibilities", "boundaries", "invariants"] as const) {
+  for (const section of ["boundaries", "invariants"] as const) {
     const previous = new Map(Object.entries(before?.[section] ?? {}));
     const current = new Map(Object.entries(after?.[section] ?? {}));
     for (const id of new Set([...current.keys(), ...previous.keys()]))

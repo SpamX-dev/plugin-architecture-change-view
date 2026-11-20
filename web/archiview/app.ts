@@ -266,7 +266,9 @@ export async function startApp({ client, bridge, host, chooseProject }: {
     heading.hidden = !selected.document.contract;
     byId("module-subtitle").hidden = Boolean(selected.document.contract);
     if (selected.document.contract) renderContractHeading(heading, selected.document, {
-      contractDiff: state.detail.contractDiff, titleElement: byId("module-title"), groupElement: byId("module-heading-content"),
+      clauseControls: state.tab === "document" ? clauseControls(currentView(), state.detail) : undefined,
+      review: state.detail.reviews.find(bundle => bundle.report.id === state.detail?.review?.id) ?? state.detail.reviews[0],
+      openFinding: openReviewFinding, contractDiff: state.detail.contractDiff, titleElement: byId("module-title"), groupElement: byId("module-heading-content"),
     });
     const needsReview = viewNeedsReview();
     if (needsReview && state.detail !== reviewDetail && state.tab !== "files") {

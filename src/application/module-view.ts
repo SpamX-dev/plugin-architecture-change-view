@@ -37,7 +37,7 @@ function referencedContracts(bundle: ReviewEntry) {
   const references = new Set(bundle.report.findings.flatMap(finding => finding.clauses).map(canonical));
   function clauses(side: "baseline" | "current") {
     const declared = new Set(bundle.manifest.contracts[side].map(item => canonical(item.reference)));
-    return effectiveClauses(bundle[side], bundle.report.module[`${side}_path`], side)
+    return effectiveClauses(bundle[side], bundle.report.module[`${side}_path`], side, "effective", bundle.manifest.clause_format ?? "legacy")
       .filter(item => references.has(canonical(item.reference)) && !declared.has(canonical(item.reference)));
   }
   return { baseline: clauses("baseline"), current: clauses("current") };

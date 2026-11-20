@@ -1,4 +1,5 @@
-import type { ReviewBundle, Finding, ClauseReference, Contract, Section, ModuleSummary, ReviewRenderOptions } from "./types.js";
+import { clauseEntries } from "../../src/contracts/types.js";
+import type { ReviewBundle, Finding, ClauseReference, Contract, ModuleSummary, ReviewRenderOptions } from "./types.js";
 import { errorMessage } from "./types.js";
 import { el } from "./dom.js";
 import { treeParents } from "./module-path.js";
@@ -25,7 +26,7 @@ export function reviewFindingItems(bundle: ReviewBundle): Finding[] {
  * Каждый результат ведёт в конкретную попытку анализа и конкретное замечание;
  * исходные статусы, текст и доказательства отчёта остаются неизменными.
  */
-export function clauseFindingTargets(bundle: ReviewBundle | null | undefined, contract: Pick<Contract, "id"> & Partial<Contract>, section: Section, id: string) {
+export function clauseFindingTargets(bundle: ReviewBundle | null | undefined, contract: Pick<Contract, "id"> & Partial<Contract>, section: ClauseReference["section"], id: string) {
   if (!bundle || bundle.report.module.id !== contract.id) return [];
   const side = bundle.report.module.current_path === null ? "baseline" : "current";
   const matches = (ref: ClauseReference) => ref.snapshot === side && ref.module_id === contract.id && ref.section === section && ref.id === id;
@@ -37,7 +38,7 @@ export function clauseFindingTargets(bundle: ReviewBundle | null | undefined, co
   return findings.map((finding) => ({ reviewId: bundle.report.id, findingId: finding.id,
     severity: finding.severity, summary: finding.summary,
     label: finding.summary + " · анализ от " + reviewDate(bundle) +
-      (saved.text !== contract[section]?.[id] ? " · текст пункта изменён после анализа" : "") +
+      (saved.text !== clauseEntries(contract, section)[id] ? " · текст пункта изменён после анализа" : "") +
       (bundle.freshness?.current?.status !== "fresh" ? " · нужна перепроверка" : "") }));
 }
 

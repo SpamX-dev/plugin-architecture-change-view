@@ -1,6 +1,7 @@
 import type { ReviewBundle, ClauseReference, EvidenceReference } from "../reviews/types.js";
 import type { ReviewEntry } from "./types.js";
 import { canonical, digest } from "../serialization/digest.js";
+import { clauseEntries } from "../contracts/types.js";
 import { contractDocument } from "../contracts/document.js";
 import { validateReview } from "../reviews/schema.js";
 import {
@@ -37,7 +38,7 @@ function validateScopedProof(entry: ReviewEntry) {
     if (new Set(snapshot.facts.map((fact) => fact.id)).size !== snapshot.facts.length) throw new Error("Duplicate scoped evidence identity");
     for (const module of snapshot.modules) if (module.document?.state === "documented") {
       const parsed = contractDocument(module.document.text, module.document.format,
-        Object.hasOwn(module.document.contract ?? {}, "purpose"));
+        module.document.contract?.responsibilities ? (module.document.contract.purpose ? "legacy" : "legacy-r") : "current");
       if (parsed.state !== "documented" || canonical(parsed.contract) !== canonical(module.document.contract)) throw new Error("Saved contract text disagrees with parsed contract");
       const contractFact = snapshot.facts.find((fact) => fact.kind === "file" && fact.path === module.documentPath);
       if (contractFact && normalizeText(contractFact.text) !== normalizeText(module.document.text ?? "")) throw new Error("Saved contract evidence disagrees with document");
@@ -53,7 +54,7 @@ function validateScopedProof(entry: ReviewEntry) {
   };
   const clause = (reference: ClauseReference) => {
     const modules = entry[reference.snapshot]?.modules.filter((module) => module.document?.contract?.id === reference.module_id) ?? [];
-    if (modules.length !== 1 || !Object.hasOwn(modules[0].document.contract![reference.section] ?? {}, reference.id)) throw new Error("Unresolved contract clause: " + reference.module_id);
+    if (modules.length !== 1 || !Object.hasOwn(clauseEntries(modules[0].document.contract!, reference.section), reference.id)) throw new Error("Unresolved contract clause: " + reference.module_id);
   };
   for (const check of entry.report.checks) { clause(check.contract); check.evidence.forEach(evidence); }
   for (const finding of entry.report.findings) { finding.clauses.forEach(clause); finding.evidence.forEach(evidence); }
@@ -118,7 +119,7 @@ export function validateReviewEntry(input: unknown): ReviewEntry {
       const technicalReference = side === "baseline" ? entry.check_manifest.baseline?.state : entry.check_manifest.current;
       if (technicalReference?.exists !== Boolean(state) || (state && (technicalReference.directory !== state.directory ||
         technicalReference.self_digest !== state.technical_digest))) throw new Error("Native technical own-state mismatch: " + side);
-      const actualClauses = effectiveClausesForSnapshot(snapshot, directory, side, contractScope);
+      const actualClauses = effectiveClausesForSnapshot(snapshot, directory, side, contractScope, entry.manifest.clause_format ?? "legacy");
       if (canonical(actualClauses) !== canonical(entry.manifest.contracts?.[side])) throw new Error("Native effective contracts mismatch: " + side);
     }
     if (canonical(entry.inputs.baseline_identity) !== canonical(baselineIdentity(entry.baseline, context))) throw new Error("Native baseline identity mismatch");

@@ -35,7 +35,7 @@ function definition(): Definition[] {
   ];
   return modules.map((module) => ({ ...module, contract: { schema_version: 1, id: module.id,
     title: "Контракт " + module.id, kind: "module",
-    responsibilities: { R1: "Предоставлять чтение данных." },
+    purpose: "Предоставлять чтение данных.",
     boundaries: { B1: "Не обращаться к сети." }, invariants: { I1: "Не изменять входные данные." } } }));
 }
 
@@ -144,9 +144,9 @@ test("only an immediate child's declared contract invalidates the parent's compo
   const subtree = reviewed(null, before, "parent", { scope: "subtree" });
   const preserved = digest(parent);
   assert.ok(parent.inputs.current.state!.children.length, "the saved context remains verifiable");
-  definitions[3].contract.responsibilities.R2 = "Публиковать состояние.";
+  definitions[3].contract.purpose = "Публиковать состояние.";
   assert.equal(reviewFreshness(parent, null, snapshot(definitions)).current.status, "fresh");
-  definitions[2].contract.responsibilities.R2 = "Объединять данные подмодулей.";
+  definitions[2].contract.purpose = "Объединять данные подмодулей.";
   const after = snapshot(definitions);
   assert.equal(reviewFreshness(parent, null, after).current.status, "stale");
   assert.equal(reviewFreshness(child, null, after).current.status, "stale");
@@ -194,7 +194,7 @@ test("parent context invalidates the parent's own review without invalidating ch
   const before = snapshot(definitions);
   const child = reviewed(null, before, "child");
   const root = reviewed(null, before, "root");
-  definitions[0].contract.responsibilities.R2 = "Объединять независимые модули.";
+  definitions[0].contract.purpose = "Объединять независимые модули.";
   assert.equal(reviewFreshness(child, null, snapshot(definitions)).current.status, "fresh");
   definitions[0].contract.invariants.I2 = "Всегда проверять идентичность.";
   const after = snapshot(definitions);
@@ -237,13 +237,30 @@ test("legacy effective reviews retain their original scope and validate alongsid
 test("changed own baseline clauses still require an explicit check of current code", () => {
   const definitions = definition();
   const baseline = snapshot(definitions);
-  definitions[2].contract.responsibilities.R1 = "Возвращать только локальные данные.";
+  definitions[2].contract.purpose = "Возвращать только локальные данные.";
   const draft = reviewed(baseline, snapshot(definitions), "child", { draft: true });
   const oldRequirements = draft.report.checks.filter((check) => check.subject === "current" && check.contract.snapshot === "baseline");
   assert.equal(oldRequirements.length, 1);
-  assert.equal(oldRequirements[0].contract.id, "R1");
+  assert.equal(oldRequirements[0].contract.id, "purpose");
   draft.report.checks = draft.report.checks.filter((check) => check.id !== oldRequirements[0].id);
   assert.throws(() => createReviewEntry(draft), /Missing explicit clause check/);
+});
+
+test("an implementation change keeps the purpose reference and records observed responsibilities with evidence", () => {
+  const definitions = definition();
+  const baseline = snapshot(definitions);
+  definitions[2].sources["extra.js"] = "export const anotherReader = () => 2;";
+  const draft = reviewed(baseline, snapshot(definitions), "child", { draft: true });
+  const purpose = draft.manifest.contracts.current.find(item => item.reference.section === "purpose")!;
+  assert.deepEqual(purpose.reference, { snapshot: "current", module_id: "child", section: "purpose", id: "purpose" });
+  assert.equal(purpose.text, definitions[2].contract.purpose);
+  assert.ok(draft.report.checks.every(check => check.contract.section !== "responsibilities" &&
+    check.contract.snapshot === check.subject));
+  const code = draft.current.facts.find(fact => fact.path.endsWith("/extra.js"))!;
+  draft.report.observed.current!.responsibilities = [
+    { text: "Предоставляет дополнительный способ чтения.", evidence: [{ snapshot: "current", fact_id: code.id }] },
+  ];
+  assert.deepEqual(createReviewEntry(draft).report.observed.current, draft.report.observed.current);
 });
 
 test("own review cannot add a parent clause or change its scope under preserved inputs", () => {
@@ -275,7 +292,7 @@ test("own review can report a violation of an ancestor boundary without adding t
   assert.throws(() => createReviewEntry(foreign), /Own review finding/);
   const responsibility = structuredClone(draft);
   responsibility.report.findings[0].clauses[0] = {
-    snapshot: "current", module_id: "root", section: "responsibilities", id: "R1" };
+    snapshot: "current", module_id: "root", section: "purpose", id: "purpose" };
   assert.throws(() => createReviewEntry(responsibility), /Own review finding/);
 });
 
@@ -533,12 +550,12 @@ test("compatible partial and full current reviews do not conflict over prose or 
   const current = snapshot();
   const full = reviewed(null, current, "child", { dependencies: [{ kind: "contract", module_id: "provider" }] });
   const draft = reviewed(null, current, "child", { draft: true });
-  draft.report.analysis.coverage = { status: "partial", limitations: ["Проверен только R1."] };
-  draft.report.assessment.current.summary = "Целевая проверка подтверждает R1.";
+  draft.report.analysis.coverage = { status: "partial", limitations: ["Проверен только назначение."] };
+  draft.report.assessment.current.summary = "Целевая проверка подтверждает назначение.";
   draft.report.observed.current = { summary: "Иное описание тех же наблюдений.", responsibilities: [] };
   for (const check of draft.report.checks) {
     check.explanation = "Иное пояснение к пункту.";
-    if (check.contract.id !== "R1") { check.verdict = "not_checked"; check.evidence = []; }
+    if (check.contract.id !== "purpose") { check.verdict = "not_checked"; check.evidence = []; }
   }
   const partial = createReviewEntry(draft);
   const preserved = digest([full, partial]);
@@ -557,7 +574,7 @@ test("opposite clause conclusions conflict even when both overall verdicts agree
     const draft = reviewed(null, current, "child", { draft: true });
     draft.report.assessment.current = { verdict: "violation", summary: "Обнаружено нарушение." };
     for (const check of draft.report.checks) {
-      if (check.subject === "current" && (check.contract.id === "B1" || extraViolation && check.contract.id === "R1"))
+      if (check.subject === "current" && (check.contract.id === "B1" || extraViolation && check.contract.id === "purpose"))
         check.verdict = "violation";
     }
     return createReviewEntry(draft);

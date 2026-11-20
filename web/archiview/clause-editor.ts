@@ -1,3 +1,4 @@
+import { clauseEntries } from "../../src/contracts/types.js";
 import type { ClauseChange } from "../../src/application/api.js";
 import type { ArchiViewClient, ComparisonView, ModuleDetail, Section } from "./types.js";
 import { errorMessage } from "./types.js";
@@ -11,7 +12,7 @@ export interface ClauseControls {
 function clauseDialog(title: string, section: Section, clauses: Record<string, string>, id: string | undefined,
   save: (change: ClauseChange) => Promise<void>) {
   const dialog = el("dialog", "clause-dialog");
-  const heading = el("h2", "", id === undefined ? "Новый пункт" : "Редактировать " + id);
+  const heading = el("h2", "", id === undefined ? "Новый пункт" : "Редактировать " + (section === "purpose" ? "назначение" : id));
   heading.id = "clause-dialog-title";
   dialog.setAttribute("aria-labelledby", heading.id);
   const form = el("form");
@@ -20,7 +21,7 @@ function clauseDialog(title: string, section: Section, clauses: Record<string, s
   const key = el("input");
   if (id === undefined) {
     const label = el("label", "", "ID нового пункта");
-    key.placeholder = { responsibilities: "R…", boundaries: "B…", invariants: "I…" }[section];
+    key.placeholder = { purpose: "", boundaries: "B…", invariants: "I…" }[section];
     key.required = true;
     key.autocomplete = "off";
     label.append(key);
@@ -28,7 +29,7 @@ function clauseDialog(title: string, section: Section, clauses: Record<string, s
   }
   const label = el("label", "", "Текст пункта");
   const input = el("textarea");
-  input.value = id === undefined ? "" : clauses[id];
+  input.value = id === undefined ? "" : clauses[id] ?? "";
   input.required = true;
   input.rows = 5;
   label.append(input);
@@ -41,15 +42,10 @@ function clauseDialog(title: string, section: Section, clauses: Record<string, s
   cancel.onclick = () => dialog.close();
   const submit = el("button", "button button-primary", id === undefined ? "Добавить" : "Сохранить");
   submit.type = "submit";
-  if (id !== undefined) {
+  if (id !== undefined && section !== "purpose") {
     const remove = el("button", "button clause-delete", "Удалить");
     remove.type = "button";
     remove.onclick = () => commit({ action: "delete", section, clauseId: id });
-    if (section === "responsibilities" && Object.keys(clauses).length === 1) {
-      remove.disabled = true;
-      const note = el("small", "", "Перед удалением добавьте другую обязанность.");
-      fields.append(note);
-    }
     actions.append(remove);
   }
   actions.append(cancel, submit);
@@ -92,7 +88,7 @@ export function createClauseEditor(client: ArchiViewClient, saved: (view: Compar
       await saved(view, detail.key, change);
     }
     return {
-      open: (section, title, id) => clauseDialog(title, section, contract[section], id, save),
+      open: (section, title, id) => clauseDialog(title, section, clauseEntries(contract, section), id, save),
       undo: deleted
         ? { section: deleted.section, id: deleted.clauseId, async restore() {
           try { await save({ action: "restore", section: deleted.section, clauseId: deleted.clauseId, undoToken: deleted.undoToken }); }

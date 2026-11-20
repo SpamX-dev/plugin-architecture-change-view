@@ -22,7 +22,7 @@ async function fixture(t: TestContext) {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-loading-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const contract = { schema_version: 1, id: "root", title: "Пример", kind: "module",
-    responsibilities: { R1: "Возвращать значение." }, boundaries: {}, invariants: {} };
+    purpose: "Возвращать значение.", boundaries: {}, invariants: {} };
   initTestRepository(root);
   await writeModuleTree(root, { root: "." });
   await writeFile(path.join(root, ".archiview/modules/root.yaml"), stringify(contract));

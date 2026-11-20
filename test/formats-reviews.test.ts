@@ -26,16 +26,21 @@ import { createArchiView } from "../src/archiview/http.js";
 
 /** Фикстура задаёт проверяемые обязанности явно, не выводя их из имени каталога. */
 const contract = (id: string) => ({ schema_version: 1, id, title: "Контракт " + id, kind: "module",
-  responsibilities: { R1: "Читать записи." },
+  purpose: "Читать записи.",
   boundaries: { B1: "Не выполнять сетевые запросы." }, invariants: { I1: "Не изменять входные данные." } });
 
-test("legacy purpose is readable as saved evidence and omitted from current contracts", () => {
+test("legacy R clauses are retained in sealed proofs and omitted from a current contract with purpose", () => {
   const current = contract("root");
-  const text = stringify(current).replaceAll("\n", "\r\n") + "purpose: |-\r\n  Старое\r\n  назначение\r\n";
+  const original = { ...current, responsibilities: { R1: "Первая обязанность" } };
+  const text = stringify(original).replaceAll("\n", "\r\n");
   assert.deepEqual(contractDocument(text).contract, current);
   assert.equal(contractDocument(text).text, text);
-  assert.throws(() => parseYaml(text, validateArch), /purpose/);
-  assert.deepEqual(contractDocument(text, "yaml", true).contract, { ...current, purpose: "Старое\nназначение" });
+  assert.throws(() => parseYaml(text, validateArch), /responsibilities/);
+  assert.deepEqual(contractDocument(text, "yaml", "legacy").contract, original);
+  const { purpose, ...withoutPurpose } = original;
+  assert.deepEqual(contractDocument(text, "yaml", "legacy-r").contract, withoutPurpose);
+  const draft = currentContractYaml(stringify(withoutPurpose));
+  assert.throws(() => parseYaml(draft, validateArch), /purpose/);
   const yaml = currentContractYaml(text);
   assert.deepEqual(parseYaml(yaml, validateArch), current);
   assert.ok(yaml.includes("\r\n"));

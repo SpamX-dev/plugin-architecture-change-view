@@ -126,16 +126,16 @@ test("matching observations merge across versions while changed text or proof re
 });
 
 test("contract fields distinguish new, removed and changed clauses while preserving both versions", () => {
-  const before = { title: "Модуль", responsibilities: { R1: "Было.", R2: "Удалено." }, boundaries: {}, invariants: {} };
-  const after = { ...before, purpose: "Новое назначение.", responsibilities: { R1: "Стало.", R3: "Добавлено." } };
+  const before = { title: "Модуль", boundaries: { B1: "Было.", B2: "Удалено." }, invariants: {} };
+  const after = { ...before, purpose: "Новое назначение.", boundaries: { B1: "Стало.", B3: "Добавлено." } };
   const original = structuredClone({ before, after });
   const changes = new Map(compareContracts(before, after).fields.map((item) => [item.key, item]));
   assert.equal(changes.get("title")!.status, "unchanged");
-  assert.equal(changes.has("purpose"), false);
-  assert.deepEqual(changes.get("responsibilities.R1"), {
-    key: "responsibilities.R1", before: "Было.", after: "Стало.", status: "modified" });
-  assert.equal(changes.get("responsibilities.R2")!.status, "removed");
-  assert.equal(changes.get("responsibilities.R3")!.status, "added");
+  assert.equal(changes.get("purpose")!.status, "added");
+  assert.deepEqual(changes.get("boundaries.B1"), {
+    key: "boundaries.B1", before: "Было.", after: "Стало.", status: "modified" });
+  assert.equal(changes.get("boundaries.B2")!.status, "removed");
+  assert.equal(changes.get("boundaries.B3")!.status, "added");
   assert.deepEqual({ before, after }, original);
 });
 
@@ -150,8 +150,8 @@ test("role comparison ignores order and treats a first snapshot as neutral", () 
 });
 
 test("heading uses the strictest field change and retains both versions in one diff", () => {
-  const before = { title: "Прежнее название", id: "one", responsibilities: { R1: "Прежний пункт" } };
-  const after = { ...before, title: "Новое название", kind: "module" as const, responsibilities: {} };
+  const before = { title: "Прежнее название", id: "one", boundaries: { B1: "Прежний пункт" } };
+  const after = { ...before, title: "Новое название", kind: "module" as const, boundaries: {} };
   const original = structuredClone({ before, after });
   const change = compareContracts(before, after).heading;
   assert.equal(change.status, "modified", "a removed clause outside the heading does not affect its status");
@@ -161,15 +161,15 @@ test("heading uses the strictest field change and retains both versions in one d
   assert.equal(compareContracts(null, after).heading.status, "added");
   assert.equal(compareContracts(after, null).heading.status, "removed");
   assert.equal(compareContracts(null, after, false).heading.status, "unchanged", "initial comparison has no invented additions");
-  assert.equal(compareContracts(before, { ...before, responsibilities: {} }).heading.status, "unchanged");
+  assert.equal(compareContracts(before, { ...before, boundaries: {} }).heading.status, "unchanged");
   assert.deepEqual({ before, after }, original);
 });
 
 test("initial contracts and key reordering do not invent changes; whole module removal stays visible", () => {
-  const contract = { title: "Модуль", responsibilities: { R1: "Один.", R2: "Два." },
-    boundaries: {}, invariants: {}, extensions: { "test.one": { a: 1, b: 2 } } };
+  const contract = { title: "Модуль", boundaries: { B1: "Один.", B2: "Два." },
+    invariants: {}, extensions: { "test.one": { a: 1, b: 2 } } };
   assert.ok(compareContracts(null, contract, false).fields.every((item) => item.status === "unchanged"));
-  const reordered = { ...contract, responsibilities: { R2: "Два.", R1: "Один." },
+  const reordered = { ...contract, boundaries: { B2: "Два.", B1: "Один." },
     extensions: { "test.one": { b: 2, a: 1 } } };
   assert.ok(compareContracts(contract, reordered).fields.every((item) => item.status === "unchanged"));
   assert.ok(compareContracts(contract, null).fields.every((item) => item.status === "removed"));
@@ -282,17 +282,17 @@ test("legacy contract changes stay in contract diffs without remarks, clause bug
   bundle.report.findings = [legacy];
   const original = structuredClone(bundle);
   assert.deepEqual(reviewFindingItems(bundle), []);
-  assert.deepEqual(clauseFindingTargets(bundle, contract, "responsibilities", "R1"), []);
+  assert.deepEqual(clauseFindingTargets(bundle, contract, "purpose", "purpose"), []);
   assert.equal(findingFixPrompt("/project", bundle, legacy), null);
   assert.equal(findingFixPrompt("/project", bundle, { id: legacy.id }), null);
-  const changed = { ...contract, responsibilities: { R1: "Изменённый текст." } };
-  assert.equal(compareContracts(contract, changed).fields.find((item) => item.key === "responsibilities.R1")!.status, "modified");
+  const changed = { ...contract, purpose: "Изменённый текст." };
+  assert.equal(compareContracts(contract, changed).fields.find((item) => item.key === "purpose")!.status, "modified");
   assert.deepEqual(bundle, original);
 
   const real = { ...legacy, id: "real-gap", kind: "responsibility_gap", severity: "warning" };
   bundle.report.findings.push(real);
   assert.deepEqual(reviewFindingItems(bundle), [real]);
-  assert.deepEqual(clauseFindingTargets(bundle, contract, "responsibilities", "R1").map((item) => item.findingId), [real.id]);
+  assert.deepEqual(clauseFindingTargets(bundle, contract, "purpose", "purpose").map((item) => item.findingId), [real.id]);
   assert.ok(findingFixPrompt("/project", bundle, real));
 
   bundle.report.findings = [legacy];
@@ -308,28 +308,29 @@ function clauseReviewFixture() {
   bundle.report.assessment = { current: { verdict: "consistent", summary: "Проверено." }, change: { verdict: "consistent", summary: "" } };
   bundle.report.findings = [];
   bundle.contracts = { baseline: [], current: [{ reference: { snapshot: "current", module_id: "child",
-    section: "responsibilities", id: "R1" }, text: "Возвращать данные." }] };
+    section: "purpose", id: "purpose" }, text: "Возвращать данные." }] };
+  bundle.report.checks = [{ ...bundle.report.checks[0], contract: bundle.contracts.current[0].reference, subject: "current" }];
   bundle.freshness = { current: { status: "stale" } };
-  return { bundle, contract: { id: "child", responsibilities: { R1: "Возвращать данные." } } };
+  return { bundle, contract: { id: "child", purpose: "Возвращать данные." } };
 }
 
 test("each finding has its own navigation target independently of the clause change status", () => {
   const { bundle, contract } = clauseReviewFixture();
-  const reference: ClauseReference = { snapshot: "current", module_id: "child", section: "responsibilities", id: "R1" };
+  const reference: ClauseReference = { snapshot: "current", module_id: "child", section: "purpose", id: "purpose" };
   bundle.report.findings = [
     { id: "first-error", summary: "Первая ошибка.", severity: "error", lifecycle: "persisting",
       clauses: [reference, { ...reference, snapshot: "baseline" }], evidence: [] },
     { id: "second-error", summary: "Вторая ошибка.", severity: "warning", lifecycle: "introduced", clauses: [reference], evidence: [] },
   ];
   const original = structuredClone(bundle);
-  const targets = clauseFindingTargets(bundle, contract, "responsibilities", "R1");
+  const targets = clauseFindingTargets(bundle, contract, "purpose", "purpose");
   assert.deepEqual(targets.map((target) => [target.reviewId, target.findingId]),
     [["review-first", "first-error"], ["review-first", "second-error"]]);
   assert.match(targets[0].label, /Первая ошибка.*нужна перепроверка/);
-  assert.equal(compareContracts(contract, contract).fields.find((item) => item.key === "responsibilities.R1")!.status, "unchanged");
-  const changed = { ...contract, responsibilities: { R1: "Изменённый текст." } };
-  assert.equal(compareContracts(contract, changed).fields.find((item) => item.key === "responsibilities.R1")!.status, "modified");
-  const afterChange = clauseFindingTargets(bundle, changed, "responsibilities", "R1");
+  assert.equal(compareContracts(contract, contract).fields.find((item) => item.key === "purpose")!.status, "unchanged");
+  const changed = { ...contract, purpose: "Изменённый текст." };
+  assert.equal(compareContracts(contract, changed).fields.find((item) => item.key === "purpose")!.status, "modified");
+  const afterChange = clauseFindingTargets(bundle, changed, "purpose", "purpose");
   assert.equal(afterChange.length, 2);
   assert.match(afterChange[0].label, /текст пункта изменён после анализа/);
   assert.deepEqual(bundle, original);
@@ -339,27 +340,27 @@ test("foreign and resolved findings do not create bugs for a local clause", () =
   const { bundle, contract } = clauseReviewFixture();
   bundle.report.findings = [
     { id: "foreign", summary: "Foreign finding", evidence: [], kind: "invariant_violation", severity: "error", certainty: "confirmed", lifecycle: "persisting",
-      clauses: [{ snapshot: "current", module_id: "parent", section: "responsibilities", id: "R1" }] },
+      clauses: [{ snapshot: "current", module_id: "parent", section: "purpose", id: "purpose" }] },
     { id: "resolved", summary: "Resolved finding", evidence: [], kind: "boundary_violation", severity: "error", certainty: "confirmed", lifecycle: "resolved",
-      clauses: [{ snapshot: "current", module_id: "child", section: "responsibilities", id: "R1" }] },
+      clauses: [{ snapshot: "current", module_id: "child", section: "purpose", id: "purpose" }] },
   ];
-  assert.deepEqual(clauseFindingTargets(bundle, contract, "responsibilities", "R1"), []);
-  assert.deepEqual(clauseFindingTargets(bundle, { ...contract, id: "other" }, "responsibilities", "R1"), []);
+  assert.deepEqual(clauseFindingTargets(bundle, contract, "purpose", "purpose"), []);
+  assert.deepEqual(clauseFindingTargets(bundle, { ...contract, id: "other" }, "purpose", "purpose"), []);
 });
 
 test("a legacy violation without findings links to its explicit assessment remark", () => {
   const { bundle, contract } = clauseReviewFixture();
-  assert.deepEqual(clauseFindingTargets(bundle, contract, "responsibilities", "R1"), []);
+  assert.deepEqual(clauseFindingTargets(bundle, contract, "purpose", "purpose"), []);
   bundle.report.assessment.current = { verdict: "violation", summary: "Нарушена граница." };
   for (const check of bundle.report.checks) check.verdict = "violation";
-  const targets = clauseFindingTargets(bundle, contract, "responsibilities", "R1");
+  const targets = clauseFindingTargets(bundle, contract, "purpose", "purpose");
   assert.equal(targets.length, 1);
   assert.equal(targets[0].reviewId, "review-first");
   assert.equal(targets[0].findingId, "assessment-summary");
   assert.equal(targets[0].summary, "Нарушена граница.");
   for (const check of bundle.report.checks) check.verdict = "not_checked";
-  assert.deepEqual(clauseFindingTargets(bundle, contract, "responsibilities", "R1"), []);
-  assert.deepEqual(clauseFindingTargets(null, contract, "responsibilities", "R1"), []);
+  assert.deepEqual(clauseFindingTargets(bundle, contract, "purpose", "purpose"), []);
+  assert.deepEqual(clauseFindingTargets(null, contract, "purpose", "purpose"), []);
   assert.deepEqual(bundle.report.findings, []);
 });
 
@@ -478,10 +479,10 @@ test("historical clause navigation distinguishes a changed text from a reused st
   const { bundle } = clauseReviewFixture();
   const reference = bundle.contracts.current[0].reference;
   const contract: Contract = { schema_version: 1, id: "child", title: "Child", kind: "module",
-    responsibilities: { R1: "Возвращать данные." }, boundaries: {}, invariants: {} };
+    purpose: "Возвращать данные.", boundaries: {}, invariants: {} };
   assert.equal(savedClauseMatchesContract(bundle, reference, contract), true);
   assert.equal(savedClauseMatchesContract(bundle, reference, { ...contract,
-    responsibilities: { R1: "Новая обязанность под прежним ID." } }), false);
+    purpose: "Новая обязанность под прежним ID." }), false);
   assert.equal(savedClauseMatchesContract(bundle, reference, { ...contract, id: "replacement" }), false);
   assert.equal(savedClauseMatchesContract(bundle, reference, null), false);
   assert.equal(savedClauseMatchesContract(bundle, { ...reference, snapshot: "baseline" }, contract), false);

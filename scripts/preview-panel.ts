@@ -23,7 +23,7 @@ await writeFile(path.join(root, ".archiview/modules.tree"), stringify({ preview:
 for (const [id, title] of [["preview", "Тестовый проект"], ["domain", "Игровой модуль"]]) {
   await writeFile(path.join(root, ".archiview/modules", id + ".yaml"), stringify({ schema_version: 1, id, title,
     kind: "module",
-    responsibilities: { R1: "Вычислять значение без изменения состояния." },
+    purpose: "Вычислять значение без изменения состояния.",
     boundaries: { B1: "Не обращаться к сети." }, invariants: { I1: "Результат детерминирован." } }));
 }
 await writeFile(path.join(root, "domain/value.js"), "export const value = () => 42;\n");

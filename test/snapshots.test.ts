@@ -135,7 +135,7 @@ test("a nested checkout takes ownership of formerly tracked sources without chan
   assert.equal(historical?.modules.find(m => m.directory === "child/src")?.document.contract?.id, "library");
   assert.equal(historical?.facts.find(f => f.path === "child/src/index.ts")?.text, "old source");
   const current = await captureWorkingTree(child);
-  assert.equal(current.modules.find(m => m.directory === "src")?.document.contract?.responsibilities.R1, "Child's contract");
+  assert.equal(current.modules.find(m => m.directory === "src")?.document.contract?.purpose, "Child's contract");
   assert.equal(current.facts.find(f => f.path === "src/index.ts")?.text, "new child source");
 });
 
@@ -143,7 +143,7 @@ test("moving a child counts it once for each old, new and shared ancestor", asyn
   const { root } = await fixture(t, {
     "left/code.ts": "", "right/code.ts": "",
     ".archiview/modules.tree": "child: left/child\n",
-    ".archiview/modules/child.yaml": "schema_version: 1\nid: child\ntitle: Child\nkind: module\npurpose: Read\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\n",
+    ".archiview/modules/child.yaml": "schema_version: 1\nid: child\ntitle: Child\nkind: module\npurpose: Read\nboundaries: {}\ninvariants: {}\n",
     "left/child/code.ts": "",
   });
   const before = await captureWorkingTree(root);
@@ -157,7 +157,7 @@ test("moving a child counts it once for each old, new and shared ancestor", asyn
 });
 
 test("HEAD, staged tree and working tree each resolve contracts from their own layout", async (t) => {
-  const document = "schema_version: 1\nid: child\ntitle: Child\nkind: module\npurpose: Read\nresponsibilities: { R1: Read }\nboundaries: {}\ninvariants: {}\n";
+  const document = "schema_version: 1\nid: child\ntitle: Child\nkind: module\npurpose: Read\nboundaries: {}\ninvariants: {}\n";
   const { root } = await fixture(t, {
     "original/arch.yaml": document,
     "original/value.ts": "export const value = 1;",

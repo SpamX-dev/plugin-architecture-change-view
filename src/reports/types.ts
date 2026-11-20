@@ -1,5 +1,5 @@
 import type { AssessmentSide, Analyzer, FreshnessReason, Coverage, ReviewBundle } from "../reviews/types.js";
-import type { Contract } from "../contracts/types.js";
+import type { StoredContract as Contract } from "../contracts/types.js";
 import type { Fact, SnapshotModule, Snapshot, SnapshotData } from "../snapshots/types.js";
 
 export const REPORT_SCHEMA_VERSION = 2;
