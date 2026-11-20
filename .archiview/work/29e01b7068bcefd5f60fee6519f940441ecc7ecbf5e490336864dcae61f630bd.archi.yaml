@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-snapshots
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: dc7f3423d3c548204ce5c9cd0ab879fdd50bbf7e915541306b2411af59b951f9
+check_hash: de96f0dab03b397929d77fd9d29b750b58ee2be8091239e0e4825e3f8fe34869
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,243 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: f98d6eeecba7f39125f3932c0f75fd9aca582b24
+      id: 245c72c741a6065b5ab66edae2c4976b6bf34925
     state:
       exists: true
       directory: src/snapshots
-      self_digest: sha256:f0e3eef09302437b31e9869aa1f2632b5789a50febe25d9ccb8cafdd1ef465ea
-      subtree_digest: sha256:097c57c6f24abb2a82ae084f20979c5948052deb73bcdd222b09be6aa6512392
+      self_digest: sha256:9e4fbdeadd31f8c9c650fb1ba888e9458bfaef3d18f7571bee88bc453b813fc5
+      subtree_digest: sha256:c0b7ed258b49e539fe4d311ea6cf347091e4e3fcf7e3580f58aedf2616d860fe
   current:
     exists: true
     directory: src/snapshots
-    self_digest: sha256:9e4fbdeadd31f8c9c650fb1ba888e9458bfaef3d18f7571bee88bc453b813fc5
-    subtree_digest: sha256:c0b7ed258b49e539fe4d311ea6cf347091e4e3fcf7e3580f58aedf2616d860fe
+    self_digest: sha256:0488a4a458a563491c0b9f452b95b708d53284bd55726185169420451e36352f
+    subtree_digest: sha256:4d7b9121c410e9bd50fb02056f4c8a290287fb5d7ea9460b04b8ea750b4098d4
   analyzer:
     name: archiview-structure
     version: 1.1.0
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
-  module_id: archiview-snapshots
-  directory: src/snapshots
-  parent_id: architecture-core
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: archiview-snapshots
-    directory: src/snapshots
-    own_files:
-      - path: src/snapshots/capture.ts
-        digest: sha256:1091a3174ac30d0757b2fcd2c927b4bce0ab522c344204824ade9b807411b6de
-        normalization: text-lf/v1
-      - path: src/snapshots/comparison.ts
-        digest: sha256:ac6a00dbe8c5cdf026577e19c2b4ad6b87ff1fea2654a569ceaaaa436702dc25
-        normalization: text-lf/v1
-      - path: src/snapshots/contract-diff.ts
-        digest: sha256:80366f2700991c76f047004f3f66c44319baefabd411817c15e9140552ff9014
-        normalization: text-lf/v1
-      - path: src/snapshots/git-tree.ts
-        digest: sha256:26a3740a8544842b26f3460b654c62eda43a8fa31683d37d5ccfaba7c083535b
-        normalization: text-lf/v1
-      - path: src/snapshots/identity.ts
-        digest: sha256:1bd05abe3b3a429bf18063a901fbafc8beb2114b2581318f37c863ccd425b46f
-        normalization: text-lf/v1
-      - path: src/snapshots/module-layout.ts
-        digest: sha256:12f8abf604966941ee316589f243835172c610914cbe2ccbe0ddbc7e68a8d161
-        normalization: text-lf/v1
-      - path: src/snapshots/types.ts
-        digest: sha256:d68b433338f958414d1ccd577dcd10eff51ca3a4a6f657668fcd2033b906c0b8
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: archiview-snapshots
-      title: Снимки и сравнение
-      kind: module
-      extensions:
-        archiview.roles:
-          - domain
-      purpose: Фиксировать состояния исходников и показывать, как между ними
-        изменились модули проекта.
-      boundaries:
-        B2: Для рабочего дерева учитывать также новые файлы исходников, ещё не
-          добавленные в Git.
-        B3: Определять идентичность содержимого снимка с учётом фактов и неполноты,
-          независимо от времени захвата и пользовательской метки.
-      invariants:
-        I3: Рабочее дерево входит в поддерживаемые источники снимков.
-        I4: Индекс Git доступен как самостоятельный источник снимка подготовленного
-          состояния.
-        I5: Сохранённый коммит Git доступен как источник исторического снимка.
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I10
-        text: Приложение поддерживает встроенную панель Codex.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
-          приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:f0e3eef09302437b31e9869aa1f2632b5789a50febe25d9ccb8cafdd1ef465ea
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: archiview-snapshots
-    directory: src/snapshots
-    own_files:
-      - path: src/snapshots/capture.ts
-        digest: sha256:1091a3174ac30d0757b2fcd2c927b4bce0ab522c344204824ade9b807411b6de
-        normalization: text-lf/v1
-      - path: src/snapshots/comparison.ts
-        digest: sha256:ac6a00dbe8c5cdf026577e19c2b4ad6b87ff1fea2654a569ceaaaa436702dc25
-        normalization: text-lf/v1
-      - path: src/snapshots/contract-diff.ts
-        digest: sha256:80366f2700991c76f047004f3f66c44319baefabd411817c15e9140552ff9014
-        normalization: text-lf/v1
-      - path: src/snapshots/git-tree.ts
-        digest: sha256:26a3740a8544842b26f3460b654c62eda43a8fa31683d37d5ccfaba7c083535b
-        normalization: text-lf/v1
-      - path: src/snapshots/identity.ts
-        digest: sha256:1bd05abe3b3a429bf18063a901fbafc8beb2114b2581318f37c863ccd425b46f
-        normalization: text-lf/v1
-      - path: src/snapshots/module-layout.ts
-        digest: sha256:12f8abf604966941ee316589f243835172c610914cbe2ccbe0ddbc7e68a8d161
-        normalization: text-lf/v1
-      - path: src/snapshots/types.ts
-        digest: sha256:d68b433338f958414d1ccd577dcd10eff51ca3a4a6f657668fcd2033b906c0b8
-        normalization: text-lf/v1
-    contract:
-      id: archiview-snapshots
-      kind: module
-      purpose: Фиксировать состояния исходников и показывать, как между ними
-        изменились модули проекта.
-      boundaries:
-        B2: Для рабочего дерева учитывать также новые файлы исходников, ещё не
-          добавленные в Git.
-        B3: Определять идентичность содержимого снимка с учётом фактов и неполноты,
-          независимо от времени захвата и пользовательской метки.
-      invariants:
-        I3: Рабочее дерево входит в поддерживаемые источники снимков.
-        I4: Индекс Git доступен как самостоятельный источник снимка подготовленного
-          состояния.
-        I5: Сохранённый коммит Git доступен как источник исторического снимка.
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I10
-        text: Приложение поддерживает встроенную панель Codex.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
-          приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-    children: []
-  self_digest: sha256:37376a078cd4c2eb60f75a4531808031a7512a5cb8f548b439fbddacd632d7b6
-  subtree:
-    self: sha256:f0e3eef09302437b31e9869aa1f2632b5789a50febe25d9ccb8cafdd1ef465ea
-    children: []
-  subtree_digest: sha256:097c57c6f24abb2a82ae084f20979c5948052deb73bcdd222b09be6aa6512392
-  semantic_subtree:
-    self: sha256:37376a078cd4c2eb60f75a4531808031a7512a5cb8f548b439fbddacd632d7b6
-    children: []
-  semantic_subtree_digest: sha256:6e362ba289ed039b141ae49a3fc38154e6c51288ab4e89db2d5a01b92d039afb
-current:
   module_id: archiview-snapshots
   directory: src/snapshots
   parent_id: architecture-core
@@ -467,12 +246,191 @@ current:
     self: sha256:7229fc2e9fba2c1a42ed023b09d7280c4fcdb853b512ececa249a5a8e5f79d8a
     children: []
   semantic_subtree_digest: sha256:b3962e570acd9d5a8b5c2799258222aa315b0f96dbc2f2d0baccf36deef6c267
+current:
+  module_id: archiview-snapshots
+  directory: src/snapshots
+  parent_id: architecture-core
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-snapshots
+    directory: src/snapshots
+    own_files:
+      - path: src/snapshots/capture.ts
+        digest: sha256:1091a3174ac30d0757b2fcd2c927b4bce0ab522c344204824ade9b807411b6de
+        normalization: text-lf/v1
+      - path: src/snapshots/comparison.ts
+        digest: sha256:ac6a00dbe8c5cdf026577e19c2b4ad6b87ff1fea2654a569ceaaaa436702dc25
+        normalization: text-lf/v1
+      - path: src/snapshots/contract-diff.ts
+        digest: sha256:80366f2700991c76f047004f3f66c44319baefabd411817c15e9140552ff9014
+        normalization: text-lf/v1
+      - path: src/snapshots/git-tree.ts
+        digest: sha256:373dbf32f2957165ec3a4843ee4980ec461d7fa2d01dee5db5674d43fcf05f9e
+        normalization: text-lf/v1
+      - path: src/snapshots/identity.ts
+        digest: sha256:1bd05abe3b3a429bf18063a901fbafc8beb2114b2581318f37c863ccd425b46f
+        normalization: text-lf/v1
+      - path: src/snapshots/module-layout.ts
+        digest: sha256:12f8abf604966941ee316589f243835172c610914cbe2ccbe0ddbc7e68a8d161
+        normalization: text-lf/v1
+      - path: src/snapshots/types.ts
+        digest: sha256:d68b433338f958414d1ccd577dcd10eff51ca3a4a6f657668fcd2033b906c0b8
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-snapshots
+      title: Снимки и сравнение
+      kind: module
+      extensions:
+        archiview.roles:
+          - domain
+      purpose: Фиксировать состояния исходников и показывать, как между ними
+        изменились модули проекта.
+      boundaries:
+        B2: Для рабочего дерева учитывать также новые файлы исходников, ещё не
+          добавленные в Git.
+        B3: Определять идентичность содержимого снимка с учётом фактов и неполноты,
+          независимо от времени захвата и пользовательской метки.
+      invariants:
+        I3: Рабочее дерево входит в поддерживаемые источники снимков.
+        I4: Индекс Git доступен как самостоятельный источник снимка подготовленного
+          состояния.
+        I5: Сохранённый коммит Git доступен как источник исторического снимка.
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+  technical_digest: sha256:0488a4a458a563491c0b9f452b95b708d53284bd55726185169420451e36352f
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-snapshots
+    directory: src/snapshots
+    own_files:
+      - path: src/snapshots/capture.ts
+        digest: sha256:1091a3174ac30d0757b2fcd2c927b4bce0ab522c344204824ade9b807411b6de
+        normalization: text-lf/v1
+      - path: src/snapshots/comparison.ts
+        digest: sha256:ac6a00dbe8c5cdf026577e19c2b4ad6b87ff1fea2654a569ceaaaa436702dc25
+        normalization: text-lf/v1
+      - path: src/snapshots/contract-diff.ts
+        digest: sha256:80366f2700991c76f047004f3f66c44319baefabd411817c15e9140552ff9014
+        normalization: text-lf/v1
+      - path: src/snapshots/git-tree.ts
+        digest: sha256:373dbf32f2957165ec3a4843ee4980ec461d7fa2d01dee5db5674d43fcf05f9e
+        normalization: text-lf/v1
+      - path: src/snapshots/identity.ts
+        digest: sha256:1bd05abe3b3a429bf18063a901fbafc8beb2114b2581318f37c863ccd425b46f
+        normalization: text-lf/v1
+      - path: src/snapshots/module-layout.ts
+        digest: sha256:12f8abf604966941ee316589f243835172c610914cbe2ccbe0ddbc7e68a8d161
+        normalization: text-lf/v1
+      - path: src/snapshots/types.ts
+        digest: sha256:d68b433338f958414d1ccd577dcd10eff51ca3a4a6f657668fcd2033b906c0b8
+        normalization: text-lf/v1
+    contract:
+      id: archiview-snapshots
+      kind: module
+      purpose: Фиксировать состояния исходников и показывать, как между ними
+        изменились модули проекта.
+      boundaries:
+        B2: Для рабочего дерева учитывать также новые файлы исходников, ещё не
+          добавленные в Git.
+        B3: Определять идентичность содержимого снимка с учётом фактов и неполноты,
+          независимо от времени захвата и пользовательской метки.
+      invariants:
+        I3: Рабочее дерево входит в поддерживаемые источники снимков.
+        I4: Индекс Git доступен как самостоятельный источник снимка подготовленного
+          состояния.
+        I5: Сохранённый коммит Git доступен как источник исторического снимка.
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+    children: []
+  self_digest: sha256:fea0042e5230e71157183238566fb04bc0ff44a4d7e8a0202fc437c748a8fcd6
+  subtree:
+    self: sha256:0488a4a458a563491c0b9f452b95b708d53284bd55726185169420451e36352f
+    children: []
+  subtree_digest: sha256:4d7b9121c410e9bd50fb02056f4c8a290287fb5d7ea9460b04b8ea750b4098d4
+  semantic_subtree:
+    self: sha256:fea0042e5230e71157183238566fb04bc0ff44a4d7e8a0202fc437c748a8fcd6
+    children: []
+  semantic_subtree_digest: sha256:c4c0e8960e6f2be91f33148db056daef428467f90cee70b7bb8d8b3a7600a6bd
 change:
   existence: retained
-  own: true
-  own_code: true
+  own: false
+  own_code: false
   own_contract: false
-  inherited_constraints: false
+  inherited_constraints: true
   descendants: false
   child_composition: false
   moved: false
@@ -481,19 +439,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 241
-  comparison_key: sha256:526104390a072875cad4a3fdc3e9ba90a851587a5bcac1570aab50c5a72cbdc8
+  generation: 242
+  comparison_key: sha256:bc97fdbb3a784d394e84563ac0a6b6c37f48af5c99302ad7b09c90ddb244ab7c
   baseline:
     metadata:
-      id: git-f98d6eeecba7f39125f3932c0f75fd9aca582b24
-      digest: sha256:b999e71245f309a9d52679bf7aacaff8d3ad0f6ca1b4ccd3fbb2549b79809725
+      id: git-245c72c741a6065b5ab66edae2c4976b6bf34925
+      digest: sha256:0eb361492f672239098c928778c1e8f2c9f41a4760ffa933ac88e0a8bb6b14c5
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:28:25.068Z
+      capturedAt: 2026-11-20T10:38:06.356Z
       kind: git
-      revision: f98d6eeecba7f39125f3932c0f75fd9aca582b24
+      revision: 245c72c741a6065b5ab66edae2c4976b6bf34925
       label: HEAD
-      fingerprint: 28fafb6c7c302db850689cbac16a6582b113d98717ce92aa34cdfd6f56ed62a1
+      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -556,7 +514,7 @@ publication:
         - path: src/snapshots/contract-diff.ts
           hash: 661cedc0befcc75b36790e802dc154c0881d937d
         - path: src/snapshots/git-tree.ts
-          hash: 8571f2e95acb5ecaada2c4b4e67d4fb68bf16d23
+          hash: ede9ad6060676aca1aff8492a79c9b721b34db72
         - path: src/snapshots/identity.ts
           hash: 82586f5c84d3b982b640b98ca4df78736961b4ba
         - path: src/snapshots/module-layout.ts
@@ -564,7 +522,7 @@ publication:
         - path: src/snapshots/types.ts
           hash: aba7bfc3545c7cea0643ecd1d1bc26494a9e7442
       sourceFiles: 7
-      fingerprint: 416bd43d750f94a05be6d6934b11070c973419e0a4ba4bab0f8594b2dd92bb93
+      fingerprint: 9d2272b6a757b9c81f481eb47b40cefc78852b90df3e23404e9e9141d1ea2a3f
     facts:
       - index: 19
         fact:
@@ -1164,11 +1122,11 @@ publication:
             }
       - index: 121
         fact:
-          id: sha256:4b8bbf714cc156f02f779e379b32feb0cfb4d74ad754963165fcc5a2df7700c4
+          id: sha256:b09505e949668a6d62c6fc5a907157a8cdf3f3da5db124beaa1a68ab87c8e1a9
           kind: file
           path: src/snapshots/git-tree.ts
           start_line: 1
-          end_line: 161
+          end_line: 183
           text: >
             import path from "node:path";
 
@@ -1182,7 +1140,7 @@ publication:
             import { excludedProjectPath, regularProjectFile } from
             "../contracts/source-files.js";
 
-            import { MODULE_TREE_FILE, isModuleContractPath,
+            import { MODULE_TREE_FILE, isModuleContractPath, moduleDocumentPath,
             readContractStorageFile, decodeContractText, MAX_DOCUMENT_BYTES,
             MAX_TREE_BYTES } from "../contracts/module-tree.js";
 
@@ -1226,6 +1184,13 @@ publication:
                 records.set(file, record);
                 if (contract(file)) contracts.push(record);
               }
+              await readContractBlobs(root, contracts, diagnostics);
+              return { records, diagnostics };
+            }
+
+
+            async function readContractBlobs(root: string, contracts:
+            FileRecord[], diagnostics: string[]) {
               for (let start = 0; start < contracts.length; start += 64) {
                 const group = contracts.slice(start, start + 64);
                 const sizes = (await git(root, ["cat-file", "--batch-check=%(objectsize)"],
@@ -1250,7 +1215,28 @@ publication:
                   offset = end + 1;
                 }
               }
-              return { records, diagnostics };
+            }
+
+
+            /** Read distinct versions of this module's contract from reachable
+            Git history and the index. */
+
+            export async function gitContractTexts(root: string, moduleId:
+            string) {
+              const file = moduleDocumentPath(moduleId);
+              const selector = ":(literal)" + file;
+              const [committed, staged] = await Promise.all([
+                git(root, ["rev-list", "--objects", "--all", "--full-history", "--filter=object:type=blob", "--filter-provided-objects", "--no-object-names", "--", selector]),
+                git(root, ["ls-files", "--stage", "-z", "--", selector]),
+              ]);
+              const hashes = new Set(committed.toString().split(/\s+/).filter(Boolean));
+              for (const row of fields(staged)) {
+                const [mode, hash] = row.split(" ", 2);
+                if (regular(mode)) hashes.add(hash);
+              }
+              const records: FileRecord[] = Array.from(hashes, hash => ({ path: file, hash }));
+              await readContractBlobs(root, records, []);
+              return records.flatMap(record => record.text === undefined ? [] : [record.text]);
             }
 
 
@@ -1680,7 +1666,7 @@ publication:
               subject: string;
               label: string;
             }
-      - index: 211
+      - index: 212
         fact:
           id: sha256:6d92986eda96a4d4477784677386722d4f301c81869d0fa1d707c486b00624cc
           kind: module
@@ -1688,83 +1674,83 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/snapshots/capture.ts","src/snapshots/comparison.ts","src/snapshots/contract-diff.ts","src/snapshots/git-tree.ts","src/snapshots/identity.ts","src/snapshots/module-layout.ts","src/snapshots/types.ts"]}'
   current:
     metadata:
-      id: launch-e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
-      digest: sha256:ecbff9b9ae572aef36e1fde0ad132be0fd4972203b26e2fc880e60d8866a16c6
+      id: launch-a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
+      digest: sha256:6363190cb16d9f6be0f1249150f84f14fec640bc9afec1ec159f22af462b729e
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:28:28.310Z
+      capturedAt: 2026-11-20T10:38:08.764Z
       kind: launch
       label: Начальное состояние
-      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
+      fingerprint: a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
       complete: true
       diagnostics: []
       evidenceLimitations: []
       observations:
         architecture-change-view:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-distribution:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-skills:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-module-boundaries-skill:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         architecture-core:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-application:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-http:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-codex:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-contracts:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         dsh-adapter:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         dsh-client-panel:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-mcp:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-project-location:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-reports:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-reviews:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-node-runtime:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-serialization:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-snapshots:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-storage:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         architecture-tests:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         architecture-web:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-client:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
     module_index: 17
     module:

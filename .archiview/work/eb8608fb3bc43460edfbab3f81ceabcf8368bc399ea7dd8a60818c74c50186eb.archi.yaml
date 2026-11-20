@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-storage
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 99cc8d44912b5008a9a74b8d0b2a3c4666322c00180e13b2978d95b2c011294d
+check_hash: aa11cd4cc9ad7625aff463e9b23b12133ce1c861166c4953eeddb1b3c75b8651
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,255 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: f98d6eeecba7f39125f3932c0f75fd9aca582b24
+      id: 245c72c741a6065b5ab66edae2c4976b6bf34925
     state:
       exists: true
       directory: src/storage
-      self_digest: sha256:fc5242979f2a548434bf7a3a20b7e971f36f2ec6ce8295f6e05181cb8a36cac5
-      subtree_digest: sha256:f4d9c94d7de45a60d77b73117360389473ccda69e62f21848e790346a2a5e239
+      self_digest: sha256:57da0629010c050eb5d9dbdf7db3627321c92656f4de2fae946810717281d231
+      subtree_digest: sha256:d03413724f046b80452fad54730313035e497ee1b369e08b90dd0a6760786534
   current:
     exists: true
     directory: src/storage
-    self_digest: sha256:57da0629010c050eb5d9dbdf7db3627321c92656f4de2fae946810717281d231
-    subtree_digest: sha256:d03413724f046b80452fad54730313035e497ee1b369e08b90dd0a6760786534
+    self_digest: sha256:c776cf7165275bc407a9eaaa2446b849a8cc645592f4f79f5bc74761ebc33eed
+    subtree_digest: sha256:42be9a4a406d8640d6a99b699c5a32fc012f398577202440e8bbe4018f6a1875
   analyzer:
     name: archiview-structure
     version: 1.1.0
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
-  module_id: archiview-storage
-  directory: src/storage
-  parent_id: architecture-core
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: archiview-storage
-    directory: src/storage
-    own_files:
-      - path: src/storage/archive-cache.ts
-        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
-        normalization: text-lf/v1
-      - path: src/storage/change-history.ts
-        digest: sha256:204091cd08272608b421a0d2d14abd1172a7a6e256e629b843f8b6fec829f766
-        normalization: text-lf/v1
-      - path: src/storage/file-lock.ts
-        digest: sha256:5326b3dcf7873d6cedf969c1fc7160cabea70c353ffa1bb5437ac96412c3c3bd
-        normalization: text-lf/v1
-      - path: src/storage/module-observations.ts
-        digest: sha256:07e43f07a68f3d1b9d471df8ff7931daeb7a6cb32eb804e09bf3eb9f95c55f3f
-        normalization: text-lf/v1
-      - path: src/storage/publication.ts
-        digest: sha256:7cf820c542d6d9c0535bae5b3049090252928878300b5d883f23dfb169516e38
-        normalization: text-lf/v1
-      - path: src/storage/published-reader.ts
-        digest: sha256:496bf204eaba25e722786044568f2f96571cd11f05837581dff25de9d03262e0
-        normalization: text-lf/v1
-      - path: src/storage/report-index.ts
-        digest: sha256:3c6f797876a3bda8886fc2fc67c03131512daa00f3c7509271194df52c1c9603
-        normalization: text-lf/v1
-      - path: src/storage/report-store.ts
-        digest: sha256:a2fe88ca7cbb427b1c05e4e8356ec6dde6369cadeec995fb4764e5ec37916688
-        normalization: text-lf/v1
-      - path: src/storage/review-store.ts
-        digest: sha256:c6ba5d0337bb07708e14df1fd87dfc6afc0b6a0448f650e6bf1e742d5941ce6f
-        normalization: text-lf/v1
-      - path: src/storage/snapshot-store.ts
-        digest: sha256:d876c775588d783a318dc10ad159d2c9abfae8d096aaaa906f1a212f3052b6aa
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: archiview-storage
-      title: Хранение истории проекта
-      kind: module
-      extensions:
-        archiview.roles:
-          - storage
-      purpose: Сохранять историю проекта для последующего просмотра и переноса.
-      boundaries:
-        B4: Хранилище публикует сравнение только при полноте каждого входящего в него
-          снимка.
-        B5: Хранилище принимает повторную запись той же проверки с тем же ID без
-          создания второй попытки. Другое содержимое под занятым ID отклоняется.
-        B6: При уплотнении хранилище сохраняет все принятые содержательные проверки и их
-          доказательства.
-      invariants: {}
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I10
-        text: Приложение поддерживает встроенную панель Codex.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
-          приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:fc5242979f2a548434bf7a3a20b7e971f36f2ec6ce8295f6e05181cb8a36cac5
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: archiview-storage
-    directory: src/storage
-    own_files:
-      - path: src/storage/archive-cache.ts
-        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
-        normalization: text-lf/v1
-      - path: src/storage/change-history.ts
-        digest: sha256:204091cd08272608b421a0d2d14abd1172a7a6e256e629b843f8b6fec829f766
-        normalization: text-lf/v1
-      - path: src/storage/file-lock.ts
-        digest: sha256:5326b3dcf7873d6cedf969c1fc7160cabea70c353ffa1bb5437ac96412c3c3bd
-        normalization: text-lf/v1
-      - path: src/storage/module-observations.ts
-        digest: sha256:07e43f07a68f3d1b9d471df8ff7931daeb7a6cb32eb804e09bf3eb9f95c55f3f
-        normalization: text-lf/v1
-      - path: src/storage/publication.ts
-        digest: sha256:7cf820c542d6d9c0535bae5b3049090252928878300b5d883f23dfb169516e38
-        normalization: text-lf/v1
-      - path: src/storage/published-reader.ts
-        digest: sha256:496bf204eaba25e722786044568f2f96571cd11f05837581dff25de9d03262e0
-        normalization: text-lf/v1
-      - path: src/storage/report-index.ts
-        digest: sha256:3c6f797876a3bda8886fc2fc67c03131512daa00f3c7509271194df52c1c9603
-        normalization: text-lf/v1
-      - path: src/storage/report-store.ts
-        digest: sha256:a2fe88ca7cbb427b1c05e4e8356ec6dde6369cadeec995fb4764e5ec37916688
-        normalization: text-lf/v1
-      - path: src/storage/review-store.ts
-        digest: sha256:c6ba5d0337bb07708e14df1fd87dfc6afc0b6a0448f650e6bf1e742d5941ce6f
-        normalization: text-lf/v1
-      - path: src/storage/snapshot-store.ts
-        digest: sha256:d876c775588d783a318dc10ad159d2c9abfae8d096aaaa906f1a212f3052b6aa
-        normalization: text-lf/v1
-    contract:
-      id: archiview-storage
-      kind: module
-      purpose: Сохранять историю проекта для последующего просмотра и переноса.
-      boundaries:
-        B4: Хранилище публикует сравнение только при полноте каждого входящего в него
-          снимка.
-        B5: Хранилище принимает повторную запись той же проверки с тем же ID без
-          создания второй попытки. Другое содержимое под занятым ID отклоняется.
-        B6: При уплотнении хранилище сохраняет все принятые содержательные проверки и их
-          доказательства.
-      invariants: {}
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I10
-        text: Приложение поддерживает встроенную панель Codex.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
-          приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-    children: []
-  self_digest: sha256:f83b380ece805d093901cd72f1174badebdef54bbd984750d8549f238efc4c07
-  subtree:
-    self: sha256:fc5242979f2a548434bf7a3a20b7e971f36f2ec6ce8295f6e05181cb8a36cac5
-    children: []
-  subtree_digest: sha256:f4d9c94d7de45a60d77b73117360389473ccda69e62f21848e790346a2a5e239
-  semantic_subtree:
-    self: sha256:f83b380ece805d093901cd72f1174badebdef54bbd984750d8549f238efc4c07
-    children: []
-  semantic_subtree_digest: sha256:15b244682738b187ab95e64b1492bc34d64bc94253ec18857c8a9ecaabb7105d
-current:
   module_id: archiview-storage
   directory: src/storage
   parent_id: architecture-core
@@ -497,12 +264,209 @@ current:
     self: sha256:0e7765d23d04cf783cd390cd34b483c704d8c158c7a251626cf2bf32fdcf6b56
     children: []
   semantic_subtree_digest: sha256:08ec3ee12f69bd0ce02ce346299fa33077d4182fc09ac8b715953b45a24e3034
+current:
+  module_id: archiview-storage
+  directory: src/storage
+  parent_id: architecture-core
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-storage
+    directory: src/storage
+    own_files:
+      - path: src/storage/archive-cache.ts
+        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
+        normalization: text-lf/v1
+      - path: src/storage/change-history.ts
+        digest: sha256:204091cd08272608b421a0d2d14abd1172a7a6e256e629b843f8b6fec829f766
+        normalization: text-lf/v1
+      - path: src/storage/clause-ids.ts
+        digest: sha256:74f65a986c2ee929c33a033cb10dfed4dbf3cfa0dce7381d8cd13ce10e4a7762
+        normalization: text-lf/v1
+      - path: src/storage/file-lock.ts
+        digest: sha256:5326b3dcf7873d6cedf969c1fc7160cabea70c353ffa1bb5437ac96412c3c3bd
+        normalization: text-lf/v1
+      - path: src/storage/module-observations.ts
+        digest: sha256:07e43f07a68f3d1b9d471df8ff7931daeb7a6cb32eb804e09bf3eb9f95c55f3f
+        normalization: text-lf/v1
+      - path: src/storage/publication.ts
+        digest: sha256:7cf820c542d6d9c0535bae5b3049090252928878300b5d883f23dfb169516e38
+        normalization: text-lf/v1
+      - path: src/storage/published-reader.ts
+        digest: sha256:496bf204eaba25e722786044568f2f96571cd11f05837581dff25de9d03262e0
+        normalization: text-lf/v1
+      - path: src/storage/report-index.ts
+        digest: sha256:3c6f797876a3bda8886fc2fc67c03131512daa00f3c7509271194df52c1c9603
+        normalization: text-lf/v1
+      - path: src/storage/report-store.ts
+        digest: sha256:a2fe88ca7cbb427b1c05e4e8356ec6dde6369cadeec995fb4764e5ec37916688
+        normalization: text-lf/v1
+      - path: src/storage/review-store.ts
+        digest: sha256:c6ba5d0337bb07708e14df1fd87dfc6afc0b6a0448f650e6bf1e742d5941ce6f
+        normalization: text-lf/v1
+      - path: src/storage/snapshot-store.ts
+        digest: sha256:d876c775588d783a318dc10ad159d2c9abfae8d096aaaa906f1a212f3052b6aa
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-storage
+      title: Хранение истории проекта
+      kind: module
+      extensions:
+        archiview.roles:
+          - storage
+      purpose: Сохранять историю проекта для последующего просмотра и переноса.
+      boundaries:
+        B4: Хранилище публикует сравнение только при полноте каждого входящего в него
+          снимка.
+        B5: Хранилище принимает повторную запись той же проверки с тем же ID без
+          создания второй попытки. Другое содержимое под занятым ID отклоняется.
+        B6: При уплотнении хранилище сохраняет все принятые содержательные проверки и их
+          доказательства.
+      invariants: {}
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+  technical_digest: sha256:c776cf7165275bc407a9eaaa2446b849a8cc645592f4f79f5bc74761ebc33eed
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-storage
+    directory: src/storage
+    own_files:
+      - path: src/storage/archive-cache.ts
+        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
+        normalization: text-lf/v1
+      - path: src/storage/change-history.ts
+        digest: sha256:204091cd08272608b421a0d2d14abd1172a7a6e256e629b843f8b6fec829f766
+        normalization: text-lf/v1
+      - path: src/storage/clause-ids.ts
+        digest: sha256:74f65a986c2ee929c33a033cb10dfed4dbf3cfa0dce7381d8cd13ce10e4a7762
+        normalization: text-lf/v1
+      - path: src/storage/file-lock.ts
+        digest: sha256:5326b3dcf7873d6cedf969c1fc7160cabea70c353ffa1bb5437ac96412c3c3bd
+        normalization: text-lf/v1
+      - path: src/storage/module-observations.ts
+        digest: sha256:07e43f07a68f3d1b9d471df8ff7931daeb7a6cb32eb804e09bf3eb9f95c55f3f
+        normalization: text-lf/v1
+      - path: src/storage/publication.ts
+        digest: sha256:7cf820c542d6d9c0535bae5b3049090252928878300b5d883f23dfb169516e38
+        normalization: text-lf/v1
+      - path: src/storage/published-reader.ts
+        digest: sha256:496bf204eaba25e722786044568f2f96571cd11f05837581dff25de9d03262e0
+        normalization: text-lf/v1
+      - path: src/storage/report-index.ts
+        digest: sha256:3c6f797876a3bda8886fc2fc67c03131512daa00f3c7509271194df52c1c9603
+        normalization: text-lf/v1
+      - path: src/storage/report-store.ts
+        digest: sha256:a2fe88ca7cbb427b1c05e4e8356ec6dde6369cadeec995fb4764e5ec37916688
+        normalization: text-lf/v1
+      - path: src/storage/review-store.ts
+        digest: sha256:c6ba5d0337bb07708e14df1fd87dfc6afc0b6a0448f650e6bf1e742d5941ce6f
+        normalization: text-lf/v1
+      - path: src/storage/snapshot-store.ts
+        digest: sha256:d876c775588d783a318dc10ad159d2c9abfae8d096aaaa906f1a212f3052b6aa
+        normalization: text-lf/v1
+    contract:
+      id: archiview-storage
+      kind: module
+      purpose: Сохранять историю проекта для последующего просмотра и переноса.
+      boundaries:
+        B4: Хранилище публикует сравнение только при полноте каждого входящего в него
+          снимка.
+        B5: Хранилище принимает повторную запись той же проверки с тем же ID без
+          создания второй попытки. Другое содержимое под занятым ID отклоняется.
+        B6: При уплотнении хранилище сохраняет все принятые содержательные проверки и их
+          доказательства.
+      invariants: {}
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+    children: []
+  self_digest: sha256:67e4c380b3b8a92516063292875830cbe003172cf9edf55fddd0bea1be0ff9be
+  subtree:
+    self: sha256:c776cf7165275bc407a9eaaa2446b849a8cc645592f4f79f5bc74761ebc33eed
+    children: []
+  subtree_digest: sha256:42be9a4a406d8640d6a99b699c5a32fc012f398577202440e8bbe4018f6a1875
+  semantic_subtree:
+    self: sha256:67e4c380b3b8a92516063292875830cbe003172cf9edf55fddd0bea1be0ff9be
+    children: []
+  semantic_subtree_digest: sha256:aaefb02741867ef890eae14c015debe246262bbb890014735f298ae4c6e97fb7
 change:
   existence: retained
-  own: true
-  own_code: true
+  own: false
+  own_code: false
   own_contract: false
-  inherited_constraints: false
+  inherited_constraints: true
   descendants: false
   child_composition: false
   moved: false
@@ -511,19 +475,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 241
-  comparison_key: sha256:526104390a072875cad4a3fdc3e9ba90a851587a5bcac1570aab50c5a72cbdc8
+  generation: 242
+  comparison_key: sha256:bc97fdbb3a784d394e84563ac0a6b6c37f48af5c99302ad7b09c90ddb244ab7c
   baseline:
     metadata:
-      id: git-f98d6eeecba7f39125f3932c0f75fd9aca582b24
-      digest: sha256:b999e71245f309a9d52679bf7aacaff8d3ad0f6ca1b4ccd3fbb2549b79809725
+      id: git-245c72c741a6065b5ab66edae2c4976b6bf34925
+      digest: sha256:0eb361492f672239098c928778c1e8f2c9f41a4760ffa933ac88e0a8bb6b14c5
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:28:25.068Z
+      capturedAt: 2026-11-20T10:38:06.356Z
       kind: git
-      revision: f98d6eeecba7f39125f3932c0f75fd9aca582b24
+      revision: 245c72c741a6065b5ab66edae2c4976b6bf34925
       label: HEAD
-      fingerprint: 28fafb6c7c302db850689cbac16a6582b113d98717ce92aa34cdfd6f56ed62a1
+      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -579,6 +543,8 @@ publication:
           hash: 96569512c8a0253811f3cabfd8f0c14467dc2e43
         - path: src/storage/change-history.ts
           hash: e59ebce1e51a389044b589cd8ca5ff1e5e14ab2d
+        - path: src/storage/clause-ids.ts
+          hash: e94f427788627666fb6e229c334be18baa7569b3
         - path: src/storage/file-lock.ts
           hash: 05ae4ec78f2a160ec200df7e9242f8dda15f9233
         - path: src/storage/module-observations.ts
@@ -595,8 +561,8 @@ publication:
           hash: f61569616aac854fba804b9946d3036a76992266
         - path: src/storage/snapshot-store.ts
           hash: 563bd54a0a6d898ae0a096cbe4ae500f2a9f6164
-      sourceFiles: 10
-      fingerprint: a6215b1408c424273cc593bf4910b91fea8cd96b8158e69395944e2d5d357bda
+      sourceFiles: 11
+      fingerprint: cab04fb3476d2a1c87ff3d0a4c2d025e1541e1ed33180c01c9401f94564eaf37
     facts:
       - index: 20
         fact:
@@ -993,6 +959,98 @@ publication:
             }
       - index: 127
         fact:
+          id: sha256:5ec24365435bffee3bb23ec399ec8835aac2017c784bac798e744da35e4ff849
+          kind: file
+          path: src/storage/clause-ids.ts
+          start_line: 1
+          end_line: 60
+          text: >
+            import { randomUUID } from "node:crypto";
+
+            import { mkdir, readFile, rename, rm, writeFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { contractDocument } from "../contracts/document.js";
+
+            import { moduleDocumentPath } from "../contracts/module-tree.js";
+
+            import type { Section, StoredContract } from
+            "../contracts/types.js";
+
+            import { assertStateLocation, STATE_DIRECTORY } from
+            "../project/paths.js";
+
+            import { errorDetails } from "../runtime/errors.js";
+
+            import { gitContractTexts } from "../snapshots/git-tree.js";
+
+
+            type NumberedSection = Exclude<Section, "purpose">;
+
+            const prefixes = { boundaries: "B", invariants: "I" } as const;
+
+
+            function clauseNumber(section: NumberedSection, id: string) {
+              return id.startsWith(prefixes[section]) && /^[0-9]+$/.test(id.slice(1)) ? BigInt(id.slice(1)) : 0n;
+            }
+
+
+            async function counter(root: string, moduleId: string, section:
+            NumberedSection) {
+              const directory = path.join(root, STATE_DIRECTORY);
+              const filename = path.basename(moduleDocumentPath(moduleId), ".yaml") + ".seq";
+              const file = path.join(directory, "snapshots", "clause-ids", section, filename);
+              await assertStateLocation(root, directory, file);
+              try {
+                const value = (await readFile(file, "utf8")).trim();
+                if (!/^[0-9]+$/.test(value)) throw new Error("Некорректный счётчик ID пунктов модуля " + moduleId);
+                return { file, last: BigInt(value) };
+              } catch (cause) {
+                if (errorDetails(cause).code !== "ENOENT") throw cause;
+                return { file, last: 0n };
+              }
+            }
+
+
+            /** The contract edit lock covers choosing the number, recording it,
+            and replacing the YAML. */
+
+            export async function nextClauseId(root: string, current:
+            StoredContract, section: NumberedSection, baseline?: StoredContract
+            | null) {
+              const [{ last }, texts] = await Promise.all([counter(root, current.id, section), gitContractTexts(root, current.id)]);
+              let highest = last;
+              for (const contract of [current, baseline, ...texts.map(text => contractDocument(text).contract)]) {
+                if (contract?.id !== current.id) continue;
+                for (const id of Object.keys(contract[section])) {
+                  const number = clauseNumber(section, id);
+                  if (number > highest) highest = number;
+                }
+              }
+              return prefixes[section] + (highest + 1n);
+            }
+
+
+            /** An uncommitted ID stays reserved even after deletion and a
+            server restart. */
+
+            export async function rememberClauseId(root: string, moduleId:
+            string, section: NumberedSection, id: string) {
+              const number = clauseNumber(section, id);
+              if (!number) return;
+              const { file, last } = await counter(root, moduleId, section);
+              if (number <= last) return;
+              await mkdir(path.dirname(file), { recursive: true });
+              const temporary = path.join(path.dirname(file), ".pending-" + randomUUID());
+              try {
+                await writeFile(temporary, number + "\n", { flag: "wx" });
+                await rename(temporary, file);
+              } finally { await rm(temporary, { force: true }); }
+            }
+      - index: 128
+        fact:
           id: sha256:c37f80c2e1ffe956b77c423b4544590cd63291e0515ae4279c1cdc26cccb0f25
           kind: file
           path: src/storage/file-lock.ts
@@ -1097,7 +1155,7 @@ publication:
                 await rm(candidate, { force: true });
               }
             }
-      - index: 128
+      - index: 129
         fact:
           id: sha256:8c3c4b6acede40187db8261a34b2daff7d40b1be4e166ce11eaeffbd8bbaa55f
           kind: file
@@ -1176,7 +1234,7 @@ publication:
                 } finally { await rm(temporary, {force:true}); }
               }
             }
-      - index: 129
+      - index: 130
         fact:
           id: sha256:382d9e76e9a5fd903d96e28d0d0e991cc1882d719b28e0020648e35c983f4ff4
           kind: file
@@ -1294,7 +1352,7 @@ publication:
               }
               return {...result, current: result.current};
             }
-      - index: 130
+      - index: 131
         fact:
           id: sha256:414b5bd97583415e7762bc68210fd31459421d1df6848a1911a65a574c4e65e4
           kind: file
@@ -1436,7 +1494,7 @@ publication:
                 hasReviews: (id: string) => versions.has(moduleReportName(id) + ".review.yaml"),
                 id: "published-" + digest([root, work, version, [...versions], generation, selected[0].publication!.comparison_key]).slice(7, 31) };
             }
-      - index: 131
+      - index: 132
         fact:
           id: sha256:87bd143a25f7a51c0f2dc5ad47465d541fef19af6ec95a413369442338d56278
           kind: file
@@ -1549,7 +1607,7 @@ publication:
                 await rm(temporary, { recursive: true, force: true });
               }
             }
-      - index: 132
+      - index: 133
         fact:
           id: sha256:266419827fbbadf3aefc047b47d4947d4fd87a78baabd8f4db4c11ade6f5c93c
           kind: file
@@ -2173,7 +2231,7 @@ publication:
               publishedEntries?: string;
               publishedDiagnostics?: string;
             }
-      - index: 133
+      - index: 134
         fact:
           id: sha256:843e48d70fc0e8cd877807beba991a9a9aba56ed506d44f57b6f9a6f7dfaf9f0
           kind: file
@@ -2293,7 +2351,7 @@ publication:
                 return { bundles, diagnostics };
               }
             }
-      - index: 134
+      - index: 135
         fact:
           id: sha256:79f302711774600198e6d5326ead5eb5b5874070338d6fafa21ec934f525d8be
           kind: file
@@ -2572,91 +2630,91 @@ publication:
                 return saved;
               }
             }
-      - index: 212
+      - index: 213
         fact:
-          id: sha256:8153cf419931ac67c1098c7a131aa2a046b027934b592df20866762c9f5be44f
+          id: sha256:3a2bb74f2155d5d6d16b14db20c5beb83dbbe303f83c794227367662325d69f5
           kind: module
           path: src/storage
-          text: '{"contract":"documented","format":"yaml","sources":["src/storage/archive-cache.ts","src/storage/change-history.ts","src/storage/file-lock.ts","src/storage/module-observations.ts","src/storage/publication.ts","src/storage/published-reader.ts","src/storage/report-index.ts","src/storage/report-store.ts","src/storage/review-store.ts","src/storage/snapshot-store.ts"]}'
+          text: '{"contract":"documented","format":"yaml","sources":["src/storage/archive-cache.ts","src/storage/change-history.ts","src/storage/clause-ids.ts","src/storage/file-lock.ts","src/storage/module-observations.ts","src/storage/publication.ts","src/storage/published-reader.ts","src/storage/report-index.ts","src/storage/report-store.ts","src/storage/review-store.ts","src/storage/snapshot-store.ts"]}'
   current:
     metadata:
-      id: launch-e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
-      digest: sha256:ecbff9b9ae572aef36e1fde0ad132be0fd4972203b26e2fc880e60d8866a16c6
+      id: launch-a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
+      digest: sha256:6363190cb16d9f6be0f1249150f84f14fec640bc9afec1ec159f22af462b729e
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:28:28.310Z
+      capturedAt: 2026-11-20T10:38:08.764Z
       kind: launch
       label: Начальное состояние
-      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
+      fingerprint: a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
       complete: true
       diagnostics: []
       evidenceLimitations: []
       observations:
         architecture-change-view:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-distribution:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-skills:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-module-boundaries-skill:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         architecture-core:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-application:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-http:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-codex:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-contracts:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         dsh-adapter:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         dsh-client-panel:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-mcp:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-project-location:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-reports:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-reviews:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-node-runtime:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-serialization:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-snapshots:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-storage:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         architecture-tests:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         architecture-web:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-client:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
     module_index: 18
     module:

@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-codex
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: b0aa917c9b870583e2043fde98b13927514f12d45e88b306bd13a7664ec59a1d
+check_hash: f2a4d67bb7da35a274579e74567a9a1f0f6eee2ce5f21ac474b0ca9e2bf6aaee
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,256 +10,22 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: f98d6eeecba7f39125f3932c0f75fd9aca582b24
+      id: 245c72c741a6065b5ab66edae2c4976b6bf34925
     state:
       exists: true
       directory: src/codex
-      self_digest: sha256:82534a86af14014a912e8ad0eb043d4647422c40a9d74a384568d39ade66353d
-      subtree_digest: sha256:8386a3cc732eeb8de6cac9034d10c536da9d9cc329f5732e036bf992f51e24c4
+      self_digest: sha256:039c0a8a61ef2c45687e42c468bfc0190969e2570576d5566aab5fc43c8be0d0
+      subtree_digest: sha256:213c810d33c4b0fab5a0968032e2681e1527da250fd1e89a2f7129a3b23008c2
   current:
     exists: true
     directory: src/codex
-    self_digest: sha256:039c0a8a61ef2c45687e42c468bfc0190969e2570576d5566aab5fc43c8be0d0
-    subtree_digest: sha256:213c810d33c4b0fab5a0968032e2681e1527da250fd1e89a2f7129a3b23008c2
+    self_digest: sha256:4e9ced9aae65993f52c62114ce858b700f17ccf9dd01693d37f58f0316a4ccf1
+    subtree_digest: sha256:bf93a9201fd24ef3e77a1def034ca83a9ce77856780d5996bbb567a4ffd9405b
   analyzer:
     name: archiview-structure
     version: 1.1.0
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
-  module_id: archiview-codex
-  directory: src/codex
-  parent_id: architecture-core
-  children: []
-  technical:
-    normalization: archiview/module-state/v1
-    module_id: archiview-codex
-    directory: src/codex
-    own_files:
-      - path: src/codex/directory-picker.ts
-        digest: sha256:e3b84331c5410e8cb0d1140619c111a901ec01d4d24d7e5e5b107e160576d470
-        normalization: text-lf/v1
-      - path: src/codex/host-context.ts
-        digest: sha256:2b7361f9850252f0967bed51ed504b519c88a2044d5c7977d4927ce95d79a221
-        normalization: text-lf/v1
-      - path: src/codex/panel-bridge.ts
-        digest: sha256:b47480c35a86b4ab4e0e6dd56fe9545c1ed4473d2d63159d2247995adb4c8449
-        normalization: text-lf/v1
-      - path: src/codex/panel-client.ts
-        digest: sha256:ea803e58d24e131c9fd08a5e7717e12b577e356c974e5af86182116b1d24322b
-        normalization: text-lf/v1
-      - path: src/codex/panel-entry.ts
-        digest: sha256:d94b543ce657e4a0c9df249541a01a279efc6a1b3a1fbbd180a47661729e680e
-        normalization: text-lf/v1
-      - path: src/codex/panel.ts
-        digest: sha256:4cbb6fbb8c37c09268327175402f10ea6cb007b6e8fb6d68218ab76b7f0e95af
-        normalization: text-lf/v1
-      - path: src/codex/project-context.ts
-        digest: sha256:e7a82531a4d5caa95442cb39695271f5c57f80cda4293e89b0207f0048184bc7
-        normalization: text-lf/v1
-      - path: src/codex/ui-tools.ts
-        digest: sha256:d9d4e317a1bf4488fdcaf9fa7e22a1b4f050c7c31c0b7b9703ef868565b2b6f6
-        normalization: text-lf/v1
-    contract:
-      schema_version: 1
-      id: archiview-codex
-      title: Адаптер панели Codex
-      kind: module
-      extensions:
-        archiview.roles:
-          - host-adapter
-          - mcp-client
-      purpose: Открывать ArchiView в боковой панели Codex для рабочей папки текущего
-        чата.
-      boundaries:
-        B2: Для автоматического выбора папки использовать только доступные через хост
-          сведения о чате и его рабочих папках.
-        B3: Привязывать экземпляр панели к существующей папке один раз.
-        B4: Открывать интерфейс и при недоступном контексте чата, сохраняя возможность
-          явного выбора проекта.
-        B5: Открывать системный диалог выбора папки Windows только по явному действию
-          пользователя.
-        B6: При навигации не вызывать модель и не передавать ей результаты просмотра.
-        B7: Для работы встроенной панели не открывать локальный HTTP-сервер.
-        B8: После отключения MCP-клиента завершать сессию и отклонять новые операции
-          панели.
-      invariants: {}
-    document_state: documented
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I10
-        text: Приложение поддерживает встроенную панель Codex.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
-          приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:82534a86af14014a912e8ad0eb043d4647422c40a9d74a384568d39ade66353d
-  complete: true
-  self:
-    normalization: archiview/module-state/v1
-    module_id: archiview-codex
-    directory: src/codex
-    own_files:
-      - path: src/codex/directory-picker.ts
-        digest: sha256:e3b84331c5410e8cb0d1140619c111a901ec01d4d24d7e5e5b107e160576d470
-        normalization: text-lf/v1
-      - path: src/codex/host-context.ts
-        digest: sha256:2b7361f9850252f0967bed51ed504b519c88a2044d5c7977d4927ce95d79a221
-        normalization: text-lf/v1
-      - path: src/codex/panel-bridge.ts
-        digest: sha256:b47480c35a86b4ab4e0e6dd56fe9545c1ed4473d2d63159d2247995adb4c8449
-        normalization: text-lf/v1
-      - path: src/codex/panel-client.ts
-        digest: sha256:ea803e58d24e131c9fd08a5e7717e12b577e356c974e5af86182116b1d24322b
-        normalization: text-lf/v1
-      - path: src/codex/panel-entry.ts
-        digest: sha256:d94b543ce657e4a0c9df249541a01a279efc6a1b3a1fbbd180a47661729e680e
-        normalization: text-lf/v1
-      - path: src/codex/panel.ts
-        digest: sha256:4cbb6fbb8c37c09268327175402f10ea6cb007b6e8fb6d68218ab76b7f0e95af
-        normalization: text-lf/v1
-      - path: src/codex/project-context.ts
-        digest: sha256:e7a82531a4d5caa95442cb39695271f5c57f80cda4293e89b0207f0048184bc7
-        normalization: text-lf/v1
-      - path: src/codex/ui-tools.ts
-        digest: sha256:d9d4e317a1bf4488fdcaf9fa7e22a1b4f050c7c31c0b7b9703ef868565b2b6f6
-        normalization: text-lf/v1
-    contract:
-      id: archiview-codex
-      kind: module
-      purpose: Открывать ArchiView в боковой панели Codex для рабочей папки текущего
-        чата.
-      boundaries:
-        B2: Для автоматического выбора папки использовать только доступные через хост
-          сведения о чате и его рабочих папках.
-        B3: Привязывать экземпляр панели к существующей папке один раз.
-        B4: Открывать интерфейс и при недоступном контексте чата, сохраняя возможность
-          явного выбора проекта.
-        B5: Открывать системный диалог выбора папки Windows только по явному действию
-          пользователя.
-        B6: При навигации не вызывать модель и не передавать ей результаты просмотра.
-        B7: Для работы встроенной панели не открывать локальный HTTP-сервер.
-        B8: После отключения MCP-клиента завершать сессию и отклонять новые операции
-          панели.
-      invariants: {}
-    inherited:
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I10
-        text: Приложение поддерживает встроенную панель Codex.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
-      - module_id: architecture-change-view
-        section: invariants
-        id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
-          приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-    children: []
-  self_digest: sha256:a22d06cd191f75050f37728571a739f8f1872b9f771c2af8476c7e7971133314
-  subtree:
-    self: sha256:82534a86af14014a912e8ad0eb043d4647422c40a9d74a384568d39ade66353d
-    children: []
-  subtree_digest: sha256:8386a3cc732eeb8de6cac9034d10c536da9d9cc329f5732e036bf992f51e24c4
-  semantic_subtree:
-    self: sha256:a22d06cd191f75050f37728571a739f8f1872b9f771c2af8476c7e7971133314
-    children: []
-  semantic_subtree_digest: sha256:eeb0faed2a734fc9472ecff4d872fd80e87d424bc5ceadac49a84ccddc5a3fd1
-current:
   module_id: archiview-codex
   directory: src/codex
   parent_id: architecture-core
@@ -493,12 +259,204 @@ current:
     self: sha256:b30a25d440a4057025425e14cc2eed33621323cbb18d9f44c09befe3aa3d1649
     children: []
   semantic_subtree_digest: sha256:0932423fa5034bc4ebe06b7e5594e10f6ced14d7fe7c1ac58fc176beaeab658c
+current:
+  module_id: archiview-codex
+  directory: src/codex
+  parent_id: architecture-core
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-codex
+    directory: src/codex
+    own_files:
+      - path: src/codex/directory-picker.ts
+        digest: sha256:e3b84331c5410e8cb0d1140619c111a901ec01d4d24d7e5e5b107e160576d470
+        normalization: text-lf/v1
+      - path: src/codex/host-context.ts
+        digest: sha256:2b7361f9850252f0967bed51ed504b519c88a2044d5c7977d4927ce95d79a221
+        normalization: text-lf/v1
+      - path: src/codex/panel-bridge.ts
+        digest: sha256:b47480c35a86b4ab4e0e6dd56fe9545c1ed4473d2d63159d2247995adb4c8449
+        normalization: text-lf/v1
+      - path: src/codex/panel-client.ts
+        digest: sha256:ea803e58d24e131c9fd08a5e7717e12b577e356c974e5af86182116b1d24322b
+        normalization: text-lf/v1
+      - path: src/codex/panel-entry.ts
+        digest: sha256:d94b543ce657e4a0c9df249541a01a279efc6a1b3a1fbbd180a47661729e680e
+        normalization: text-lf/v1
+      - path: src/codex/panel.ts
+        digest: sha256:4cbb6fbb8c37c09268327175402f10ea6cb007b6e8fb6d68218ab76b7f0e95af
+        normalization: text-lf/v1
+      - path: src/codex/project-context.ts
+        digest: sha256:e7a82531a4d5caa95442cb39695271f5c57f80cda4293e89b0207f0048184bc7
+        normalization: text-lf/v1
+      - path: src/codex/ui-tools.ts
+        digest: sha256:d8236630ce77175f29408075152eea84b96b64c3064ade277f8ef5f5db64d81d
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-codex
+      title: Адаптер панели Codex
+      kind: module
+      extensions:
+        archiview.roles:
+          - host-adapter
+          - mcp-client
+      purpose: Открывать ArchiView в боковой панели Codex для рабочей папки текущего
+        чата.
+      boundaries:
+        B2: Для автоматического выбора папки использовать только доступные через хост
+          сведения о чате и его рабочих папках.
+        B3: Привязывать экземпляр панели к существующей папке один раз.
+        B4: Открывать интерфейс и при недоступном контексте чата, сохраняя возможность
+          явного выбора проекта.
+        B5: Открывать системный диалог выбора папки Windows только по явному действию
+          пользователя.
+        B6: При навигации не вызывать модель и не передавать ей результаты просмотра.
+        B7: Для работы встроенной панели не открывать локальный HTTP-сервер.
+        B8: После отключения MCP-клиента завершать сессию и отклонять новые операции
+          панели.
+      invariants: {}
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+  technical_digest: sha256:4e9ced9aae65993f52c62114ce858b700f17ccf9dd01693d37f58f0316a4ccf1
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-codex
+    directory: src/codex
+    own_files:
+      - path: src/codex/directory-picker.ts
+        digest: sha256:e3b84331c5410e8cb0d1140619c111a901ec01d4d24d7e5e5b107e160576d470
+        normalization: text-lf/v1
+      - path: src/codex/host-context.ts
+        digest: sha256:2b7361f9850252f0967bed51ed504b519c88a2044d5c7977d4927ce95d79a221
+        normalization: text-lf/v1
+      - path: src/codex/panel-bridge.ts
+        digest: sha256:b47480c35a86b4ab4e0e6dd56fe9545c1ed4473d2d63159d2247995adb4c8449
+        normalization: text-lf/v1
+      - path: src/codex/panel-client.ts
+        digest: sha256:ea803e58d24e131c9fd08a5e7717e12b577e356c974e5af86182116b1d24322b
+        normalization: text-lf/v1
+      - path: src/codex/panel-entry.ts
+        digest: sha256:d94b543ce657e4a0c9df249541a01a279efc6a1b3a1fbbd180a47661729e680e
+        normalization: text-lf/v1
+      - path: src/codex/panel.ts
+        digest: sha256:4cbb6fbb8c37c09268327175402f10ea6cb007b6e8fb6d68218ab76b7f0e95af
+        normalization: text-lf/v1
+      - path: src/codex/project-context.ts
+        digest: sha256:e7a82531a4d5caa95442cb39695271f5c57f80cda4293e89b0207f0048184bc7
+        normalization: text-lf/v1
+      - path: src/codex/ui-tools.ts
+        digest: sha256:d8236630ce77175f29408075152eea84b96b64c3064ade277f8ef5f5db64d81d
+        normalization: text-lf/v1
+    contract:
+      id: archiview-codex
+      kind: module
+      purpose: Открывать ArchiView в боковой панели Codex для рабочей папки текущего
+        чата.
+      boundaries:
+        B2: Для автоматического выбора папки использовать только доступные через хост
+          сведения о чате и его рабочих папках.
+        B3: Привязывать экземпляр панели к существующей папке один раз.
+        B4: Открывать интерфейс и при недоступном контексте чата, сохраняя возможность
+          явного выбора проекта.
+        B5: Открывать системный диалог выбора папки Windows только по явному действию
+          пользователя.
+        B6: При навигации не вызывать модель и не передавать ей результаты просмотра.
+        B7: Для работы встроенной панели не открывать локальный HTTP-сервер.
+        B8: После отключения MCP-клиента завершать сессию и отклонять новые операции
+          панели.
+      invariants: {}
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает встроенную панель Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-core
+        section: boundaries
+        id: B2
+        text: При структурном сравнении фиксировать различия контрактов без
+          автоматического вывода о нарушении ответственности.
+      - module_id: architecture-core
+        section: boundaries
+        id: B6
+        text: При обходе учитывать исходники только внутри выбранного корня, исключая
+          зависимости, результаты сборки и служебные данные ArchiView.
+      - module_id: architecture-core
+        section: boundaries
+        id: B7
+        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
+          выбранное внешнее хранилище.
+      - module_id: architecture-core
+        section: boundaries
+        id: B8
+        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+    children: []
+  self_digest: sha256:1004bd7b30d9b3cf6a7bca6d819392f85f4f9d78626bc26bfc1fce11f340b916
+  subtree:
+    self: sha256:4e9ced9aae65993f52c62114ce858b700f17ccf9dd01693d37f58f0316a4ccf1
+    children: []
+  subtree_digest: sha256:bf93a9201fd24ef3e77a1def034ca83a9ce77856780d5996bbb567a4ffd9405b
+  semantic_subtree:
+    self: sha256:1004bd7b30d9b3cf6a7bca6d819392f85f4f9d78626bc26bfc1fce11f340b916
+    children: []
+  semantic_subtree_digest: sha256:47df5843925e83832ecb070ea34897ae05d9265aa8741753f4981f65af4182a5
 change:
   existence: retained
-  own: true
-  own_code: true
+  own: false
+  own_code: false
   own_contract: false
-  inherited_constraints: false
+  inherited_constraints: true
   descendants: false
   child_composition: false
   moved: false
@@ -507,19 +465,19 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 241
-  comparison_key: sha256:526104390a072875cad4a3fdc3e9ba90a851587a5bcac1570aab50c5a72cbdc8
+  generation: 242
+  comparison_key: sha256:bc97fdbb3a784d394e84563ac0a6b6c37f48af5c99302ad7b09c90ddb244ab7c
   baseline:
     metadata:
-      id: git-f98d6eeecba7f39125f3932c0f75fd9aca582b24
-      digest: sha256:b999e71245f309a9d52679bf7aacaff8d3ad0f6ca1b4ccd3fbb2549b79809725
+      id: git-245c72c741a6065b5ab66edae2c4976b6bf34925
+      digest: sha256:0eb361492f672239098c928778c1e8f2c9f41a4760ffa933ac88e0a8bb6b14c5
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:28:25.068Z
+      capturedAt: 2026-11-20T10:38:06.356Z
       kind: git
-      revision: f98d6eeecba7f39125f3932c0f75fd9aca582b24
+      revision: 245c72c741a6065b5ab66edae2c4976b6bf34925
       label: HEAD
-      fingerprint: 28fafb6c7c302db850689cbac16a6582b113d98717ce92aa34cdfd6f56ed62a1
+      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
       complete: true
       diagnostics: []
       evidenceLimitations: []
@@ -596,9 +554,9 @@ publication:
         - path: src/codex/project-context.ts
           hash: 782923b4ea3b5482f3ef5e42b7594e5b0d5ff3dd
         - path: src/codex/ui-tools.ts
-          hash: 258409dfeecde6463d025f685d93184c49f6d26b
+          hash: 6088482802ce106913f3d6dfc300d2b1208043f7
       sourceFiles: 8
-      fingerprint: 2f3b3413c79733d2f6a00bbdfc3872dd8de56506deb28a9d04bf4473dfff6d1d
+      fingerprint: a68f4ceb30784035267f4937ee42d438d59bdebe801f2bfcffb43e1293b0c6c6
     facts:
       - index: 7
         fact:
@@ -1219,7 +1177,7 @@ publication:
             }
       - index: 75
         fact:
-          id: sha256:e228643e29b7f2cbcbcd96526d6c02848b3b88a596a293d0f69fb3ebd7014fae
+          id: sha256:80f078bc8f60b6e0c9db67510105447af6c79bba6b642c20c99d142383da9656
           kind: file
           path: src/codex/ui-tools.ts
           start_line: 1
@@ -1268,10 +1226,10 @@ publication:
                 ...selectedModule, action: string, moduleId: string, title: string,
                 purpose: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, text: { type: "string", maxLength: MAX_DOCUMENT_BYTES },
               }, ["view", "path", "action"], false],
-              ["change_clause", "changeClause", "Edit, add, delete or restore a clause in the selected working contract.", {
+              ["change_clause", "changeClause", "Edit, add, delete, restore or revert a clause to its comparison baseline in the selected working contract.", {
                 ...selectedModule, section: string, clauseId: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, action: string,
                 text: { type: "string", maxLength: MAX_DOCUMENT_BYTES }, undoToken: string,
-              }, ["view", "path", "section", "clauseId", "action"], false],
+              }, ["view", "path", "section", "action"], false],
               ["prepare_analysis", "prepareAnalysis", "Prepare immutable inputs for an explicit module analysis.", selectedModule, ["view", "path"], false],
               ["get_analysis", "getAnalysis", "Read the saved status of a prepared analysis.", { id: string, repository: string }, ["id"], true],
               ["build_review", "buildReview", "Refresh a structural report for a selected module.", selectedModule, ["view", "path"], false],
@@ -1308,7 +1266,7 @@ publication:
                 if (rule.type === "boolean" && typeof value !== "boolean") invalid();
               }
             }
-      - index: 201
+      - index: 202
         fact:
           id: sha256:5e9da8357483fde4e306653eb92646b28ce5ba9a7872024319e081129b8c1d2f
           kind: module
@@ -1316,83 +1274,83 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["src/codex/directory-picker.ts","src/codex/host-context.ts","src/codex/panel-bridge.ts","src/codex/panel-client.ts","src/codex/panel-entry.ts","src/codex/panel.ts","src/codex/project-context.ts","src/codex/ui-tools.ts"]}'
   current:
     metadata:
-      id: launch-e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
-      digest: sha256:ecbff9b9ae572aef36e1fde0ad132be0fd4972203b26e2fc880e60d8866a16c6
+      id: launch-a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
+      digest: sha256:6363190cb16d9f6be0f1249150f84f14fec640bc9afec1ec159f22af462b729e
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:28:28.310Z
+      capturedAt: 2026-11-20T10:38:08.764Z
       kind: launch
       label: Начальное состояние
-      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
+      fingerprint: a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
       complete: true
       diagnostics: []
       evidenceLimitations: []
       observations:
         architecture-change-view:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-distribution:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-skills:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-module-boundaries-skill:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         architecture-core:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-application:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-http:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-codex:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-contracts:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         dsh-adapter:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         dsh-client-panel:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-mcp:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-project-location:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-reports:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-reviews:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-node-runtime:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-serialization:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-snapshots:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-storage:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         architecture-tests:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         architecture-web:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
         archiview-client:
-          lineage: 7dcd6939-ab97-4f90-b00d-47488ae7c48f
+          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
           revision: 1
     module_index: 7
     module:
