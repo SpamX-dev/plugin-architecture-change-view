@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-project-location
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 981af026090268552bb313b5213eca330131fce79ad055ff1e903db854cbc34f
+check_hash: 73914994fb2b5235826499fd2efede8c4b86963b143fb7422e11050eaa84e194
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,85 +10,81 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 245c72c741a6065b5ab66edae2c4976b6bf34925
+      id: cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
     state:
       exists: true
-      directory: src/project
-      self_digest: sha256:2e71a119623e286e5d72e81b1662e52b260a28f4ca48ca09356dd38b1bd9b81e
-      subtree_digest: sha256:e6c7b9b2ab973202423abd22cb2e4e753c10ae4d6dd3c974ea3ac19bd466ab17
+      directory: analyse/project
+      self_digest: sha256:3421cf1e2ba0e93eb11e82660bb27cfe9bff135537a9d9b04dd7a1da56dac56b
+      subtree_digest: sha256:f228f29bd8daab64abf0516a80ae51ea7bdb56ca6ae65d44ef16ab949aef4d87
   current:
     exists: true
-    directory: src/project
-    self_digest: sha256:5ab8b7ef4e1599626747367b65ea512e8a5093ecaf6c7f73c39b870286a7a880
-    subtree_digest: sha256:945f9434e385b6d4f307e3640ff25a52e68fcd376dae5cf6a3ba934e5b7854eb
+    directory: analyse/project
+    self_digest: sha256:3421cf1e2ba0e93eb11e82660bb27cfe9bff135537a9d9b04dd7a1da56dac56b
+    subtree_digest: sha256:f228f29bd8daab64abf0516a80ae51ea7bdb56ca6ae65d44ef16ab949aef4d87
   analyzer:
     name: archiview-structure
     version: 1.1.0
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
   module_id: archiview-project-location
-  directory: src/project
-  parent_id: architecture-core
+  directory: analyse/project
+  parent_id: archiview-analyse
   children: []
   technical:
     normalization: archiview/module-state/v1
     module_id: archiview-project-location
-    directory: src/project
+    directory: analyse/project
     own_files:
-      - path: src/project/identity.ts
-        digest: sha256:a260ec0af221a119bbd139fd6c453a3845135fc4b495d56a7de037cfe915c28a
+      - path: analyse/project/archive-cache.ts
+        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
         normalization: text-lf/v1
-      - path: src/project/paths.ts
-        digest: sha256:8451cb848dcc87566659047291feb42b88c694c7114fffedb45cfae452ebc5d9
+      - path: analyse/project/clause-ids.ts
+        digest: sha256:7e3e3e20f1d563f47d63b3a8dba38b1f279c00ae929a4bdef85e5cc5b261524e
         normalization: text-lf/v1
-      - path: src/project/workspace.ts
-        digest: sha256:b2c2536b0381ce0d2e567ac21519177272e08ff72f56890a197bb78f12b39be0
+      - path: analyse/project/file-lock.ts
+        digest: sha256:54ab21600c48327201e01b81b85f741e903556b4634d128ab18b363e826a0950
+        normalization: text-lf/v1
+      - path: analyse/project/identity.ts
+        digest: sha256:71a6aff9680b01f9cc0cadbf209c0d3d9c61aa6c21862630d12d82fefaf25832
+        normalization: text-lf/v1
+      - path: analyse/project/inventory.ts
+        digest: sha256:c4b7efe9cdf9a16f0785be0c88c203682ffb9a682d2894e97e4f87b6b7ea8a1d
+        normalization: text-lf/v1
+      - path: analyse/project/module-tree.ts
+        digest: sha256:70f7a13a75c03ea9108ec2f3ccd934947d73f23cd6b46ba548d79469eee29b35
+        normalization: text-lf/v1
+      - path: analyse/project/paths.ts
+        digest: sha256:965f7604d31f9fd594f3a2304098cc27a3bf2afc7ad757d02541f8c875ba4647
+        normalization: text-lf/v1
+      - path: analyse/project/project-files/.gitkeep
+        digest: sha256:63be7e41e020bc00ee1c7926929730c6f0a0b9c0c3d83427c76eb5acfba8dc67
+        normalization: text-lf/v1
+      - path: analyse/project/source-files.ts
+        digest: sha256:c7843dd1eb9948051233f4d0de7e1867b8a4d40b6e1ac0fb57bf69679b1263d4
+        normalization: text-lf/v1
+      - path: analyse/project/workspace.ts
+        digest: sha256:22057764ab2a0ac52cd7151783d53990a47217fd42de871a2edc55f9828e4182
         normalization: text-lf/v1
     contract:
       schema_version: 1
       id: archiview-project-location
-      title: Расположение данных и происхождение проекта
+      title: Project discovery
       kind: module
       extensions:
         archiview.roles:
-          - domain
-      purpose: Определять принадлежность исходников и допустимое место хранения
-        истории проекта.
+          - service
+      purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+        модулей ArchiView в каждом из них.
       boundaries:
-        B2: Отклонять путь данных, если его фактическое расположение выходит за пределы
-          выбранного хранилища.
-        B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева
-          исходников проекта.
-        B4: При регистрации истории отклонять попытку заменить уже сохранённое
-          происхождение другим.
+        B5: Включать в результат каждый найденный репозиторий, в том числе при
+          отсутствии в нём .archiview/modules.tree.
       invariants: {}
     document_state: documented
     inherited:
       - module_id: architecture-change-view
         section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
       - module_id: architecture-change-view
         section: invariants
         id: I10
@@ -100,82 +96,63 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:2e71a119623e286e5d72e81b1662e52b260a28f4ca48ca09356dd38b1bd9b81e
+      - module_id: archiview-analyse
+        section: invariants
+        id: I1
+        text: Каждый вид анализа реализуется в отдельном модуле.
+  technical_digest: sha256:3421cf1e2ba0e93eb11e82660bb27cfe9bff135537a9d9b04dd7a1da56dac56b
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-project-location
-    directory: src/project
+    directory: analyse/project
     own_files:
-      - path: src/project/identity.ts
-        digest: sha256:a260ec0af221a119bbd139fd6c453a3845135fc4b495d56a7de037cfe915c28a
+      - path: analyse/project/archive-cache.ts
+        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
         normalization: text-lf/v1
-      - path: src/project/paths.ts
-        digest: sha256:8451cb848dcc87566659047291feb42b88c694c7114fffedb45cfae452ebc5d9
+      - path: analyse/project/clause-ids.ts
+        digest: sha256:7e3e3e20f1d563f47d63b3a8dba38b1f279c00ae929a4bdef85e5cc5b261524e
         normalization: text-lf/v1
-      - path: src/project/workspace.ts
-        digest: sha256:b2c2536b0381ce0d2e567ac21519177272e08ff72f56890a197bb78f12b39be0
+      - path: analyse/project/file-lock.ts
+        digest: sha256:54ab21600c48327201e01b81b85f741e903556b4634d128ab18b363e826a0950
+        normalization: text-lf/v1
+      - path: analyse/project/identity.ts
+        digest: sha256:71a6aff9680b01f9cc0cadbf209c0d3d9c61aa6c21862630d12d82fefaf25832
+        normalization: text-lf/v1
+      - path: analyse/project/inventory.ts
+        digest: sha256:c4b7efe9cdf9a16f0785be0c88c203682ffb9a682d2894e97e4f87b6b7ea8a1d
+        normalization: text-lf/v1
+      - path: analyse/project/module-tree.ts
+        digest: sha256:70f7a13a75c03ea9108ec2f3ccd934947d73f23cd6b46ba548d79469eee29b35
+        normalization: text-lf/v1
+      - path: analyse/project/paths.ts
+        digest: sha256:965f7604d31f9fd594f3a2304098cc27a3bf2afc7ad757d02541f8c875ba4647
+        normalization: text-lf/v1
+      - path: analyse/project/project-files/.gitkeep
+        digest: sha256:63be7e41e020bc00ee1c7926929730c6f0a0b9c0c3d83427c76eb5acfba8dc67
+        normalization: text-lf/v1
+      - path: analyse/project/source-files.ts
+        digest: sha256:c7843dd1eb9948051233f4d0de7e1867b8a4d40b6e1ac0fb57bf69679b1263d4
+        normalization: text-lf/v1
+      - path: analyse/project/workspace.ts
+        digest: sha256:22057764ab2a0ac52cd7151783d53990a47217fd42de871a2edc55f9828e4182
         normalization: text-lf/v1
     contract:
       id: archiview-project-location
       kind: module
-      purpose: Определять принадлежность исходников и допустимое место хранения
-        истории проекта.
+      purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+        модулей ArchiView в каждом из них.
       boundaries:
-        B2: Отклонять путь данных, если его фактическое расположение выходит за пределы
-          выбранного хранилища.
-        B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева
-          исходников проекта.
-        B4: При регистрации истории отклонять попытку заменить уже сохранённое
-          происхождение другим.
+        B5: Включать в результат каждый найденный репозиторий, в том числе при
+          отсутствии в нём .archiview/modules.tree.
       invariants: {}
     inherited:
       - module_id: architecture-change-view
         section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
       - module_id: architecture-change-view
         section: invariants
         id: I10
@@ -187,73 +164,75 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+      - module_id: archiview-analyse
+        section: invariants
+        id: I1
+        text: Каждый вид анализа реализуется в отдельном модуле.
     children: []
-  self_digest: sha256:4fad037d3f625b34b6a7ec07c85d5cc31223fa9469517e74d5ddf6c57af63efe
+  self_digest: sha256:42d25ee19b1b038cd7711fddbba1e0e97b64c6d42a0e8520dd0c7f07d29cd61d
   subtree:
-    self: sha256:2e71a119623e286e5d72e81b1662e52b260a28f4ca48ca09356dd38b1bd9b81e
+    self: sha256:3421cf1e2ba0e93eb11e82660bb27cfe9bff135537a9d9b04dd7a1da56dac56b
     children: []
-  subtree_digest: sha256:e6c7b9b2ab973202423abd22cb2e4e753c10ae4d6dd3c974ea3ac19bd466ab17
+  subtree_digest: sha256:f228f29bd8daab64abf0516a80ae51ea7bdb56ca6ae65d44ef16ab949aef4d87
   semantic_subtree:
-    self: sha256:4fad037d3f625b34b6a7ec07c85d5cc31223fa9469517e74d5ddf6c57af63efe
+    self: sha256:42d25ee19b1b038cd7711fddbba1e0e97b64c6d42a0e8520dd0c7f07d29cd61d
     children: []
-  semantic_subtree_digest: sha256:41fb0f573594249512113e6d8a7dbbca86fae77d7978be4ae869c79289648bb9
+  semantic_subtree_digest: sha256:e112aa3bc07b391ee861bb05932c29ddacdb93b551649df22e9a21e828f68a00
 current:
   module_id: archiview-project-location
-  directory: src/project
-  parent_id: architecture-core
+  directory: analyse/project
+  parent_id: archiview-analyse
   children: []
   technical:
     normalization: archiview/module-state/v1
     module_id: archiview-project-location
-    directory: src/project
+    directory: analyse/project
     own_files:
-      - path: src/project/identity.ts
-        digest: sha256:a260ec0af221a119bbd139fd6c453a3845135fc4b495d56a7de037cfe915c28a
+      - path: analyse/project/archive-cache.ts
+        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
         normalization: text-lf/v1
-      - path: src/project/paths.ts
-        digest: sha256:8451cb848dcc87566659047291feb42b88c694c7114fffedb45cfae452ebc5d9
+      - path: analyse/project/clause-ids.ts
+        digest: sha256:7e3e3e20f1d563f47d63b3a8dba38b1f279c00ae929a4bdef85e5cc5b261524e
         normalization: text-lf/v1
-      - path: src/project/workspace.ts
-        digest: sha256:b2c2536b0381ce0d2e567ac21519177272e08ff72f56890a197bb78f12b39be0
+      - path: analyse/project/file-lock.ts
+        digest: sha256:54ab21600c48327201e01b81b85f741e903556b4634d128ab18b363e826a0950
+        normalization: text-lf/v1
+      - path: analyse/project/identity.ts
+        digest: sha256:71a6aff9680b01f9cc0cadbf209c0d3d9c61aa6c21862630d12d82fefaf25832
+        normalization: text-lf/v1
+      - path: analyse/project/inventory.ts
+        digest: sha256:c4b7efe9cdf9a16f0785be0c88c203682ffb9a682d2894e97e4f87b6b7ea8a1d
+        normalization: text-lf/v1
+      - path: analyse/project/module-tree.ts
+        digest: sha256:70f7a13a75c03ea9108ec2f3ccd934947d73f23cd6b46ba548d79469eee29b35
+        normalization: text-lf/v1
+      - path: analyse/project/paths.ts
+        digest: sha256:965f7604d31f9fd594f3a2304098cc27a3bf2afc7ad757d02541f8c875ba4647
+        normalization: text-lf/v1
+      - path: analyse/project/project-files/.gitkeep
+        digest: sha256:63be7e41e020bc00ee1c7926929730c6f0a0b9c0c3d83427c76eb5acfba8dc67
+        normalization: text-lf/v1
+      - path: analyse/project/source-files.ts
+        digest: sha256:c7843dd1eb9948051233f4d0de7e1867b8a4d40b6e1ac0fb57bf69679b1263d4
+        normalization: text-lf/v1
+      - path: analyse/project/workspace.ts
+        digest: sha256:22057764ab2a0ac52cd7151783d53990a47217fd42de871a2edc55f9828e4182
         normalization: text-lf/v1
     contract:
       schema_version: 1
       id: archiview-project-location
-      title: Расположение данных и происхождение проекта
+      title: Project discovery
       kind: module
       extensions:
         archiview.roles:
-          - domain
-      purpose: Определять принадлежность исходников и допустимое место хранения
-        истории проекта.
+          - service
+      purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+        модулей ArchiView в каждом из них.
       boundaries:
-        B2: Отклонять путь данных, если его фактическое расположение выходит за пределы
-          выбранного хранилища.
-        B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева
-          исходников проекта.
-        B4: При регистрации истории отклонять попытку заменить уже сохранённое
-          происхождение другим.
+        B5: Включать в результат каждый найденный репозиторий, в том числе при
+          отсутствии в нём .archiview/modules.tree.
       invariants: {}
     document_state: documented
     inherited:
@@ -274,53 +253,55 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:5ab8b7ef4e1599626747367b65ea512e8a5093ecaf6c7f73c39b870286a7a880
+      - module_id: archiview-analyse
+        section: invariants
+        id: I1
+        text: Каждый вид анализа реализуется в отдельном модуле.
+  technical_digest: sha256:3421cf1e2ba0e93eb11e82660bb27cfe9bff135537a9d9b04dd7a1da56dac56b
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-project-location
-    directory: src/project
+    directory: analyse/project
     own_files:
-      - path: src/project/identity.ts
-        digest: sha256:a260ec0af221a119bbd139fd6c453a3845135fc4b495d56a7de037cfe915c28a
+      - path: analyse/project/archive-cache.ts
+        digest: sha256:a20815eb6c30d03bc10e686aaae7f7f5e0d01a29d5ff79f6fc29945e23228e4e
         normalization: text-lf/v1
-      - path: src/project/paths.ts
-        digest: sha256:8451cb848dcc87566659047291feb42b88c694c7114fffedb45cfae452ebc5d9
+      - path: analyse/project/clause-ids.ts
+        digest: sha256:7e3e3e20f1d563f47d63b3a8dba38b1f279c00ae929a4bdef85e5cc5b261524e
         normalization: text-lf/v1
-      - path: src/project/workspace.ts
-        digest: sha256:b2c2536b0381ce0d2e567ac21519177272e08ff72f56890a197bb78f12b39be0
+      - path: analyse/project/file-lock.ts
+        digest: sha256:54ab21600c48327201e01b81b85f741e903556b4634d128ab18b363e826a0950
+        normalization: text-lf/v1
+      - path: analyse/project/identity.ts
+        digest: sha256:71a6aff9680b01f9cc0cadbf209c0d3d9c61aa6c21862630d12d82fefaf25832
+        normalization: text-lf/v1
+      - path: analyse/project/inventory.ts
+        digest: sha256:c4b7efe9cdf9a16f0785be0c88c203682ffb9a682d2894e97e4f87b6b7ea8a1d
+        normalization: text-lf/v1
+      - path: analyse/project/module-tree.ts
+        digest: sha256:70f7a13a75c03ea9108ec2f3ccd934947d73f23cd6b46ba548d79469eee29b35
+        normalization: text-lf/v1
+      - path: analyse/project/paths.ts
+        digest: sha256:965f7604d31f9fd594f3a2304098cc27a3bf2afc7ad757d02541f8c875ba4647
+        normalization: text-lf/v1
+      - path: analyse/project/project-files/.gitkeep
+        digest: sha256:63be7e41e020bc00ee1c7926929730c6f0a0b9c0c3d83427c76eb5acfba8dc67
+        normalization: text-lf/v1
+      - path: analyse/project/source-files.ts
+        digest: sha256:c7843dd1eb9948051233f4d0de7e1867b8a4d40b6e1ac0fb57bf69679b1263d4
+        normalization: text-lf/v1
+      - path: analyse/project/workspace.ts
+        digest: sha256:22057764ab2a0ac52cd7151783d53990a47217fd42de871a2edc55f9828e4182
         normalization: text-lf/v1
     contract:
       id: archiview-project-location
       kind: module
-      purpose: Определять принадлежность исходников и допустимое место хранения
-        истории проекта.
+      purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+        модулей ArchiView в каждом из них.
       boundaries:
-        B2: Отклонять путь данных, если его фактическое расположение выходит за пределы
-          выбранного хранилища.
-        B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева
-          исходников проекта.
-        B4: При регистрации истории отклонять попытку заменить уже сохранённое
-          происхождение другим.
+        B5: Включать в результат каждый найденный репозиторий, в том числе при
+          отсутствии в нём .archiview/modules.tree.
       invariants: {}
     inherited:
       - module_id: architecture-change-view
@@ -340,41 +321,26 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
-        section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+      - module_id: archiview-analyse
+        section: invariants
+        id: I1
+        text: Каждый вид анализа реализуется в отдельном модуле.
     children: []
-  self_digest: sha256:8494b5f59fa83d6e78059d598b4844d5e9a769946d778ad82581e9755c3249d2
+  self_digest: sha256:42d25ee19b1b038cd7711fddbba1e0e97b64c6d42a0e8520dd0c7f07d29cd61d
   subtree:
-    self: sha256:5ab8b7ef4e1599626747367b65ea512e8a5093ecaf6c7f73c39b870286a7a880
+    self: sha256:3421cf1e2ba0e93eb11e82660bb27cfe9bff135537a9d9b04dd7a1da56dac56b
     children: []
-  subtree_digest: sha256:945f9434e385b6d4f307e3640ff25a52e68fcd376dae5cf6a3ba934e5b7854eb
+  subtree_digest: sha256:f228f29bd8daab64abf0516a80ae51ea7bdb56ca6ae65d44ef16ab949aef4d87
   semantic_subtree:
-    self: sha256:8494b5f59fa83d6e78059d598b4844d5e9a769946d778ad82581e9755c3249d2
+    self: sha256:42d25ee19b1b038cd7711fddbba1e0e97b64c6d42a0e8520dd0c7f07d29cd61d
     children: []
-  semantic_subtree_digest: sha256:8ac2a480b5415f63f20d773b5fcfcbbc0e42d15da2f2e60bf0cf0917a100eb5c
+  semantic_subtree_digest: sha256:e112aa3bc07b391ee861bb05932c29ddacdb93b551649df22e9a21e828f68a00
 change:
   existence: retained
   own: false
   own_code: false
   own_contract: false
-  inherited_constraints: true
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -383,26 +349,26 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 242
-  comparison_key: sha256:bc97fdbb3a784d394e84563ac0a6b6c37f48af5c99302ad7b09c90ddb244ab7c
+  generation: 243
+  comparison_key: sha256:c0fb4d12362ef6c08626caa9da21de0d73c0fea72a52e1c29535ca9729a4013a
   baseline:
     metadata:
-      id: git-245c72c741a6065b5ab66edae2c4976b6bf34925
-      digest: sha256:0eb361492f672239098c928778c1e8f2c9f41a4760ffa933ac88e0a8bb6b14c5
+      id: git-cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
+      digest: sha256:ae8d8d4995bb5e92aa8da603db2d7df77388b5cd610747130a1059863bf9a5b3
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:38:06.356Z
+      capturedAt: 2026-11-24T09:57:45.255Z
       kind: git
-      revision: 245c72c741a6065b5ab66edae2c4976b6bf34925
+      revision: cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
       label: HEAD
-      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
+      fingerprint: 6d1d2d47e306b7d6a6af463796030c7dcf2994aa4ee348db8ea519f419fe648e
       complete: true
       diagnostics: []
       evidenceLimitations: []
       isHead: true
-    module_index: 12
+    module_index: 4
     module:
-      directory: src/project
+      directory: analyse/project
       document:
         state: documented
         text: >
@@ -410,83 +376,325 @@ publication:
 
           id: archiview-project-location
 
-          title: Расположение данных и происхождение проекта
+          title: Project discovery
 
           kind: module
 
           extensions:
-            archiview.roles: [domain]
-          purpose: Определять принадлежность исходников и допустимое место
-          хранения истории проекта.
+            archiview.roles: [service]
+          purpose: Находить Git-репозитории в рабочей папке и определять наличие
+          карты модулей ArchiView в каждом из них.
 
           boundaries:
-            B2: Отклонять путь данных, если его фактическое расположение выходит за пределы выбранного хранилища.
-            B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева исходников проекта.
-            B4: При регистрации истории отклонять попытку заменить уже сохранённое происхождение другим.
+            B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
           invariants: {}
         format: yaml
         contract:
           schema_version: 1
           id: archiview-project-location
-          title: Расположение данных и происхождение проекта
+          title: Project discovery
           kind: module
           extensions:
             archiview.roles:
-              - domain
-          purpose: Определять принадлежность исходников и допустимое место хранения
-            истории проекта.
+              - service
+          purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+            модулей ArchiView в каждом из них.
           boundaries:
-            B2: Отклонять путь данных, если его фактическое расположение выходит за пределы
-              выбранного хранилища.
-            B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева
-              исходников проекта.
-            B4: При регистрации истории отклонять попытку заменить уже сохранённое
-              происхождение другим.
+            B5: Включать в результат каждый найденный репозиторий, в том числе при
+              отсутствии в нём .archiview/modules.tree.
           invariants: {}
       documentPath: .archiview/modules/archiview-project-location.yaml
       files:
         - path: .archiview/modules/archiview-project-location.yaml
-          hash: 383fa1f230ccfea46922e4ea06535f06a53be6c8
-        - path: src/project/identity.ts
-          hash: 7cdab7a0e02c89c2d893529d6f5576b3d08b5ee9
-        - path: src/project/paths.ts
-          hash: 55c971928816082ae22f2607d47dae5a7a4f99c4
-        - path: src/project/workspace.ts
-          hash: 1f3973a3dca7a3a9c0d1fbfeafd170101dccc56e
-      sourceFiles: 3
-      fingerprint: fa1cc7411ad4325d4602487796d8dfe13c381adde65360c6b8bd85236eb6a61a
+          hash: 30e840dd8e46ba7af8073000a4ec9cdce20533c7
+        - path: analyse/project/archive-cache.ts
+          hash: 96569512c8a0253811f3cabfd8f0c14467dc2e43
+        - path: analyse/project/clause-ids.ts
+          hash: 7ff5bc99b17f5e7a43beb7a43d22627861cd4784
+        - path: analyse/project/file-lock.ts
+          hash: e38f693588a61bf09939b96778ed6a5af277f5af
+        - path: analyse/project/identity.ts
+          hash: 043813170d1bb769f6ce2d017f12b3d9f5769281
+        - path: analyse/project/inventory.ts
+          hash: 0ef54a4f31348d9bb9f0dceaeae7b9ae26c47f16
+        - path: analyse/project/module-tree.ts
+          hash: d1efc8480d0be4885170242351d866353c1a70ed
+        - path: analyse/project/paths.ts
+          hash: b3aa3084be78bc25decd3859b905200c896558ae
+        - path: analyse/project/project-files/.gitkeep
+          hash: e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+        - path: analyse/project/source-files.ts
+          hash: 726225213e5cdd7416de83f83b03a3176de2430d
+        - path: analyse/project/workspace.ts
+          hash: 4fc4fe99b8f233aefaaa978f6e2a62569c4d88ee
+      sourceFiles: 9
+      fingerprint: fb78e348802bea3f8ccd8738d7695cd7bb008c723b72f597b7750ddb47d26b04
     facts:
-      - index: 14
+      - index: 23
         fact:
-          id: sha256:0eb8e4c49dd854db3672c11bce05c7e7808f49235b2326c6302e8df59200badb
+          id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
           kind: file
           path: .archiview/modules/archiview-project-location.yaml
           start_line: 1
-          end_line: 13
+          end_line: 11
           text: >
             schema_version: 1
 
             id: archiview-project-location
 
-            title: Расположение данных и происхождение проекта
+            title: Project discovery
 
             kind: module
 
             extensions:
-              archiview.roles: [domain]
-            purpose: Определять принадлежность исходников и допустимое место
-            хранения истории проекта.
+              archiview.roles: [service]
+            purpose: Находить Git-репозитории в рабочей папке и определять
+            наличие карты модулей ArchiView в каждом из них.
 
             boundaries:
-              B2: Отклонять путь данных, если его фактическое расположение выходит за пределы выбранного хранилища.
-              B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева исходников проекта.
-              B4: При регистрации истории отклонять попытку заменить уже сохранённое происхождение другим.
+              B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
             invariants: {}
-      - index: 96
+      - index: 63
         fact:
-          id: sha256:040e66020ee2c175de50985e527ff0cd6147abbdaf30025ec1c8baff26e3533e
+          id: sha256:0ae8670c932e5079a7db677aaa4c33f8042762a4a10d20cd79744e207f2b55ca
           kind: file
-          path: src/project/identity.ts
+          path: analyse/project/archive-cache.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            import { lstat } from "node:fs/promises";
+
+
+            /** A store owns its cache. Directory listings decide membership on
+            every scan. */
+
+            export class ArchiveCache<T> {
+              readonly #files = new Map<string, { version: string; value: T }>();
+
+              async read(file: string, load: () => Promise<T>, key = file): Promise<T> {
+                const version = await fileVersion(file);
+                const cached = this.#files.get(key);
+                if (cached?.version === version) return cached.value;
+                const value = await load();
+                if (await fileVersion(file) !== version) throw new Error("Archive file changed while being read: " + file);
+                this.#files.set(key, { version, value });
+                return value;
+              }
+
+              retain(keys: Set<string>) {
+                for (const key of this.#files.keys()) if (!keys.has(key)) this.#files.delete(key);
+              }
+            }
+
+
+            async function fileVersion(file: string) {
+              const info = await lstat(file, { bigint: true });
+              if (!info.isFile()) throw new Error("Archive file must be an ordinary file: " + file);
+              return [info.dev, info.ino, info.size, info.ctimeNs, info.mtimeNs].join("/");
+            }
+      - index: 64
+        fact:
+          id: sha256:3ba57de0805276efaac3c02ee47c60009f7a36270b64cb18e10cd8a6eb845f47
+          kind: file
+          path: analyse/project/clause-ids.ts
+          start_line: 1
+          end_line: 60
+          text: >
+            import { randomUUID } from "node:crypto";
+
+            import { mkdir, readFile, rename, rm, writeFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { contractDocument } from
+            "../../framework/contracts/document.js";
+
+            import { moduleDocumentPath } from "./module-tree.js";
+
+            import type { Section, StoredContract } from
+            "../../framework/contracts/types.js";
+
+            import { assertStateLocation, STATE_DIRECTORY } from "./paths.js";
+
+            import { errorDetails } from "../../node-errors.js";
+
+            import { gitContractTexts } from "../git-changes/git-tree.js";
+
+
+            type NumberedSection = Exclude<Section, "purpose">;
+
+            const prefixes = { boundaries: "B", invariants: "I" } as const;
+
+
+            function clauseNumber(section: NumberedSection, id: string) {
+              return id.startsWith(prefixes[section]) && /^[0-9]+$/.test(id.slice(1)) ? BigInt(id.slice(1)) : 0n;
+            }
+
+
+            async function counter(root: string, moduleId: string, section:
+            NumberedSection) {
+              const directory = path.join(root, STATE_DIRECTORY);
+              const filename = path.basename(moduleDocumentPath(moduleId), ".yaml") + ".seq";
+              const file = path.join(directory, "snapshots", "clause-ids", section, filename);
+              await assertStateLocation(root, directory, file);
+              try {
+                const value = (await readFile(file, "utf8")).trim();
+                if (!/^[0-9]+$/.test(value)) throw new Error("Некорректный счётчик ID пунктов модуля " + moduleId);
+                return { file, last: BigInt(value) };
+              } catch (cause) {
+                if (errorDetails(cause).code !== "ENOENT") throw cause;
+                return { file, last: 0n };
+              }
+            }
+
+
+            /** The contract edit lock covers choosing the number, recording it,
+            and replacing the YAML. */
+
+            export async function nextClauseId(root: string, current:
+            StoredContract, section: NumberedSection, baseline?: StoredContract
+            | null) {
+              const [{ last }, texts] = await Promise.all([counter(root, current.id, section), gitContractTexts(root, current.id)]);
+              let highest = last;
+              for (const contract of [current, baseline, ...texts.map(text => contractDocument(text).contract)]) {
+                if (contract?.id !== current.id) continue;
+                for (const id of Object.keys(contract[section])) {
+                  const number = clauseNumber(section, id);
+                  if (number > highest) highest = number;
+                }
+              }
+              return prefixes[section] + (highest + 1n);
+            }
+
+
+            /** An uncommitted ID stays reserved even after deletion and a
+            server restart. */
+
+            export async function rememberClauseId(root: string, moduleId:
+            string, section: NumberedSection, id: string) {
+              const number = clauseNumber(section, id);
+              if (!number) return;
+              const { file, last } = await counter(root, moduleId, section);
+              if (number <= last) return;
+              await mkdir(path.dirname(file), { recursive: true });
+              const temporary = path.join(path.dirname(file), ".pending-" + randomUUID());
+              try {
+                await writeFile(temporary, number + "\n", { flag: "wx" });
+                await rename(temporary, file);
+              } finally { await rm(temporary, { force: true }); }
+            }
+      - index: 65
+        fact:
+          id: sha256:23afe57289717ea27d955499795d184a073cf279db98df82d206cbb6ef0d5fa2
+          kind: file
+          path: analyse/project/file-lock.ts
+          start_line: 1
+          end_line: 83
+          text: >
+            import { createHash, randomUUID } from "node:crypto";
+
+            import { link, lstat, readFile, rm, writeFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { setTimeout as wait } from "node:timers/promises";
+
+            import { errorDetails } from "../../node-errors.js";
+
+
+            interface Owner {
+              pid: number;
+              token: string;
+            }
+
+
+            async function readOwner(file: string): Promise<Owner | undefined> {
+              try {
+                const info = await lstat(file);
+                if (!info.isFile() || info.isSymbolicLink()) throw new Error("Invalid storage lock");
+                const owner = JSON.parse(await readFile(file, "utf8"));
+                if (!owner || !Number.isSafeInteger(owner.pid) || owner.pid < 1 || typeof owner.token !== "string")
+                  throw new Error("Invalid storage lock owner");
+                return { pid: owner.pid, token: owner.token };
+              } catch (error) {
+                if (errorDetails(error).code !== "ENOENT") throw error;
+              }
+            }
+
+
+            function processExited(pid: number): boolean {
+              try {
+                process.kill(pid, 0);
+                return false;
+              } catch (error) {
+                return errorDetails(error).code === "ESRCH";
+              }
+            }
+
+
+            /** Only one contender may remove a particular abandoned ownership
+            record. */
+
+            async function acquire(file: string, candidate: string, deadline:
+            number): Promise<void> {
+              for (;;) {
+                try {
+                  await link(candidate, file);
+                  return;
+                } catch (error) {
+                  if (errorDetails(error).code !== "EEXIST") throw error;
+                }
+                if (Date.now() >= deadline) throw new Error("Storage is locked by another writer");
+                const observed = await readOwner(file);
+                if (!observed) continue;
+                if (!processExited(observed.pid)) {
+                  await wait(25);
+                  continue;
+                }
+
+                // A second observer can reach this point after a new writer acquired the original name.
+                // Serialize recovery for the unique dead token, then re-read under that recovery lock.
+                // Recovery locks follow the same protocol if the recovering process itself exits.
+                const key = createHash("sha256").update(JSON.stringify([path.basename(file), observed.token])).digest("hex");
+                const recovery = path.join(path.dirname(file), ".recover-" + key);
+                await acquire(recovery, candidate, deadline);
+                try {
+                  if ((await readOwner(file))?.token === observed.token) await rm(file);
+                } finally {
+                  await rm(recovery);
+                }
+              }
+            }
+
+
+            /** The caller supplies a verified storage directory. The on-disk
+            pid/token format is portable across versions. */
+
+            export async function withFileLock<T>(directory: string, name:
+            string, action: () => Promise<T>): Promise<T> {
+              const file = path.join(directory, name);
+              const token = randomUUID();
+              const candidate = path.join(directory, ".owner-" + token);
+              await writeFile(candidate, JSON.stringify({ pid: process.pid, token }), { flag: "wx" });
+              try {
+                await acquire(file, candidate, Date.now() + 30_000);
+                try {
+                  await rm(candidate);
+                  return await action();
+                } finally {
+                  await rm(file);
+                }
+              } finally {
+                await rm(candidate, { force: true });
+              }
+            }
+      - index: 66
+        fact:
+          id: sha256:9c944256af1bb1c9bc351313ed291dbe1efcb01a039e0ba4024726d051473d7f
+          kind: file
+          path: analyse/project/identity.ts
           start_line: 1
           end_line: 43
           text: >
@@ -497,10 +705,16 @@ publication:
 
             import path from "node:path";
 
-            import { errorDetails } from "../runtime/errors.js";
+            import { errorDetails } from "../../node-errors.js";
 
             import { assertStateLocation, projectStateDirectory } from
             "./paths.js";
+
+            import { isProjectIdentity } from
+            "../../framework/project/identity.js";
+
+            import type { ProjectIdentity } from
+            "../../framework/project-types/types.js";
 
 
             /** Читает происхождение истории; отсутствующий манифест не
@@ -513,11 +727,8 @@ publication:
               try {
                 const info = await lstat(file);
                 if (!info.isFile() || info.isSymbolicLink() || info.size > 16 * 1024) throw new Error("Invalid ArchiView project identity file");
-                const value: {schema_version?: unknown; snapshot_root?: unknown} = JSON.parse(await readFile(file, "utf8"));
-                if (value.schema_version !== 1 || typeof value.snapshot_root !== "string" || !value.snapshot_root ||
-                    value.snapshot_root.includes("\0") || Object.keys(value).some((key) => !["schema_version", "snapshot_root"].includes(key))) {
-                  throw new Error("Invalid ArchiView project identity");
-                }
+                const value: unknown = JSON.parse(await readFile(file, "utf8"));
+                if (!isProjectIdentity(value)) throw new Error("Invalid ArchiView project identity");
                 return value.snapshot_root;
               } catch (errorCause) { const error = errorDetails(errorCause);
                 if (error.code === "ENOENT") return null;
@@ -535,7 +746,8 @@ publication:
               await mkdir(directory, { recursive: true });
               const temporary = path.join(directory, ".identity-" + randomUUID());
               try {
-                await writeFile(temporary, JSON.stringify({ schema_version: 1, snapshot_root: snapshotRoot }, null, 2) + "\n", { flag: "wx" });
+                const identity: ProjectIdentity = { schema_version: 1, snapshot_root: snapshotRoot };
+                await writeFile(temporary, JSON.stringify(identity, null, 2) + "\n", { flag: "wx" });
                 // Hard link публикует готовый файл атомарно и не заменяет уже принятую идентичность.
                 try { await link(temporary, path.join(directory, "project.json")); }
                 catch (errorCause) { const error = errorDetails(errorCause);
@@ -546,61 +758,358 @@ publication:
               try { await writeFile(path.join(directory, ".gitignore"), ".snapshot-*\n.pending-*\n.identity-*\n", { flag: "wx" }); }
               catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "EEXIST") throw error; }
             }
-      - index: 97
+      - index: 67
         fact:
-          id: sha256:f4e21acdaa702fafd407b3a1bef9ec0db8817ec278e8b6e7f8bef66f36f402f5
+          id: sha256:c1e9e7949422026cc8abb63c561bd1b29034ae646437c710d70263d3556153b0
           kind: file
-          path: src/project/paths.ts
+          path: analyse/project/inventory.ts
           start_line: 1
-          end_line: 70
+          end_line: 188
+          text: >
+            import { realpath } from "node:fs/promises";
+
+            import path from "node:path";
+
+            import { discoverWorkspaceProjects, locateSourceRepository,
+            resolveWorkspaceRepository } from "./workspace.js";
+
+            import { errorDetails } from "../../node-errors.js";
+
+            import type { ModuleDocument } from "./module-tree.js";
+
+            import { isPrototype } from "../../framework/contracts/types.js";
+
+            import {
+              assertModuleDirectory, ADD_MAPPING, listModuleContractPaths,
+              MODULE_TREE_FILE, moduleDocumentPath, readContractStorageFile, readModuleTree, resolveModuleDocument,
+            } from "./module-tree.js";
+
+            import { excludedProjectPath, portable, projectFiles,
+            regularProjectFile, SOURCE_EXTENSIONS } from "./source-files.js";
+
+
+            export { excludedProjectPath, projectFiles, regularProjectFile,
+            SOURCE_EXTENSIONS } from "./source-files.js";
+
+
+            interface InventoryModule extends ModuleDocument {
+              repository?: string;
+              sourceFiles?: number;
+              required?: boolean;
+              files?: string[];
+              preparation?: string;
+            }
+
+
+            async function documentAt(root: string, directory: string, id?:
+            string): Promise<InventoryModule> {
+              const text = id ? await readContractStorageFile(root, moduleDocumentPath(id)) : null;
+              const document = resolveModuleDocument(directory, id, text);
+              await assertModuleDirectory(root, directory, !id || isPrototype(document.contract));
+              return document;
+            }
+
+
+            function includeDirectory(directories: Map<string, number>,
+            directory: string, source: boolean) {
+              while (true) {
+                directories.set(directory, (directories.get(directory) ?? 0) + Number(source));
+                if (directory === ".") return;
+                directory = path.posix.dirname(directory);
+              }
+            }
+
+
+            /** Inventories source paths and mapped resources, and reports
+            broken central storage explicitly. */
+
+            interface InventoryOptions { extensions?: Set<string>; maxFiles?:
+            number; repository?: string }
+
+
+            async function repositoryInventory(root: string, options:
+            InventoryOptions, nested: string[]) {
+              const extensions = options.extensions ?? SOURCE_EXTENSIONS;
+              const owned = (relative: string) => !nested.some((child) => relative === child || relative.startsWith(child + "/"));
+              const listed = await projectFiles(root, options.maxFiles ?? 50000, owned);
+              const directories = new Map<string, number>();
+              const sourcePaths: string[] = [];
+              let tree = new Map<string, string>();
+              let treeError: string | undefined;
+              try {
+                tree = await readModuleTree(root);
+              } catch (cause) {
+                treeError = MODULE_TREE_FILE + ": " + errorDetails(cause).message;
+                listed.diagnostics.push(treeError);
+                listed.complete = false;
+              }
+              for (const directory of tree.keys()) {
+                if (owned(directory)) includeDirectory(directories, directory, false);
+                else {
+                  listed.complete = false;
+                  listed.diagnostics.push(MODULE_TREE_FILE + ": " + directory + " belongs to a nested repository");
+                }
+              }
+              if (!treeError) {
+                try {
+                  const registered = new Set([...tree.values()].map(moduleDocumentPath));
+                  for (const file of await listModuleContractPaths(root)) {
+                    if (!registered.has(file)) {
+                      listed.diagnostics.push(file + " is not registered in " + MODULE_TREE_FILE);
+                      listed.complete = false;
+                    }
+                  }
+                } catch (cause) {
+                  listed.diagnostics.push(errorDetails(cause).message);
+                  listed.complete = false;
+                }
+              }
+              for (const file of listed.files) {
+                if (!extensions.has(path.extname(file).toLowerCase())) continue;
+                try {
+                  if (!await regularProjectFile(root, file)) continue;
+                } catch (cause) {
+                  listed.complete = false;
+                  listed.diagnostics.push(file + ": " + errorDetails(cause).message);
+                  continue;
+                }
+                const relative = portable(file);
+                sourcePaths.push(relative);
+                includeDirectory(directories, path.posix.dirname(relative), true);
+              }
+              const modules: InventoryModule[] = [];
+              for (const [directory, sourceFiles] of [...directories].sort(([a], [b]) => a.localeCompare(b))) {
+                const id = tree.get(directory);
+                let entry: InventoryModule;
+                try {
+                  if (treeError) {
+                    entry = { directory, document: MODULE_TREE_FILE, status: "invalid", errors: [treeError] };
+                  } else {
+                    const { text, ...document } = await documentAt(root, directory, id);
+                    entry = document;
+                    if (id && entry.status === "missing") {
+                      listed.diagnostics.push(directory + ": missing " + entry.document);
+                      listed.complete = false;
+                    }
+                  }
+                } catch (cause) {
+                  const message = directory + ": " + errorDetails(cause).message;
+                  listed.diagnostics.push(message);
+                  listed.complete = false;
+                  entry = { directory, document: id ? moduleDocumentPath(id) : MODULE_TREE_FILE,
+                    status: "unreadable", errors: [message] };
+                }
+                entry.sourceFiles = sourceFiles;
+                entry.required = sourceFiles > 0;
+                entry.files = sourcePaths.filter((file) => path.posix.dirname(file) === directory);
+                entry.preparation = entry.status === "documented" ? "ready" :
+                  entry.status === "missing" && !id ? "analyze_and_write" : "repair";
+                modules.push(entry);
+              }
+              const inventory = { schema_version: 1, root, complete: listed.complete, discovery: listed.discovery,
+                sourceFiles: sourcePaths.length, modules, diagnostics: listed.diagnostics,
+                preparation: "Исправьте ошибки карты и контрактов. Для нового модуля изучите исходники и контракты предков. " + ADD_MAPPING };
+              return { inventory, scannedFiles: listed.files.length };
+            }
+
+
+            /** A workspace lists modules by repository; contract ids stay local
+            to that repository. */
+
+            export async function moduleInventory(projectRoot: string, options:
+            InventoryOptions = {}) {
+              const root = await realpath(projectRoot);
+              const projects = await discoverWorkspaceProjects(root);
+              const repositories = projects.map(project => project.repository);
+              if (!repositories.length) throw new Error("Для ArchiView требуется рабочее дерево Git");
+              const nestedUnder = (repository: string) => repositories.filter(child => child !== repository &&
+                (repository === "." || child.startsWith(repository + "/"))).map(child => path.posix.relative(repository, child));
+              if (options.repository !== undefined || repositories.length === 1 && repositories[0] === ".") {
+                const repository = options.repository ?? ".";
+                const project = projects.find(candidate => candidate.repository === repository);
+                if (!project) throw new Error("Репозиторий не входит в выбранную рабочую папку: " + repository);
+                const selected = await resolveWorkspaceRepository(root, repository);
+                const { inventory } = await repositoryInventory(selected, options, nestedUnder(repository));
+                return { ...inventory, repositories: [repository], projects: [project] };
+              }
+              const modules: InventoryModule[] = [];
+              const diagnostics: string[] = [];
+              let sourceFiles = 0;
+              let complete = true;
+              let remaining = options.maxFiles ?? 50000;
+              for (const repository of repositories) {
+                if (remaining <= 0) {
+                  complete = false;
+                  diagnostics.push("File limit reached before repository " + repository);
+                  break;
+                }
+                const { inventory: result, scannedFiles } = await repositoryInventory(
+                  await resolveWorkspaceRepository(root, repository), { ...options, maxFiles: remaining }, nestedUnder(repository));
+                remaining -= scannedFiles;
+                const prefix = (item: string) => path.posix.join(repository, item);
+                modules.push(...result.modules.map((item) => ({ ...item, repository, directory: prefix(item.directory),
+                  document: prefix(item.document), files: item.files?.map(prefix) })));
+                diagnostics.push(...result.diagnostics.map((message) => repository + ": " + message));
+                complete &&= result.complete;
+                sourceFiles += result.sourceFiles;
+              }
+              return { schema_version: 1, root, discovery: "workspace", repositories, projects, complete, sourceFiles, modules, diagnostics,
+                preparation: "Изменяйте карту и контракты в репозитории, указанном в поле repository модуля." };
+            }
+
+
+            /** Resolve either a file or a directory, then read the chain inside
+            its owning repository. */
+
+            export async function moduleContext(projectRoot: string, sourcePath
+            = ".") {
+              const { root, directory: sourceDirectory, workspaceRoot, repository, existingDirectory, plannedPath } = await locateSourceRepository(projectRoot, sourcePath);
+              const tree = await readModuleTree(root);
+              const plannedDirectory = plannedPath && (tree.has(plannedPath) || [...tree.keys()].some(dir => dir.startsWith(plannedPath + "/")));
+              const directory = plannedDirectory ? plannedPath : sourceDirectory;
+              const chain = [];
+              let current = directory;
+              while (true) {
+                const id = tree.get(current);
+                const exists = current === "." || existingDirectory === current || existingDirectory.startsWith(current + "/");
+                if (exists) chain.push(await documentAt(root, current, id));
+                else {
+                  const planned = id && resolveModuleDocument(current, id, await readContractStorageFile(root, moduleDocumentPath(id)));
+                  chain.push(planned && isPrototype(planned.contract) ? planned : { ...resolveModuleDocument(current, id, null),
+                    action: "Каталог ещё не создан. " + ADD_MAPPING });
+                }
+                if (current === ".") break;
+                current = path.posix.dirname(current);
+              }
+              return { schema_version: 1, root, directory, workspaceRoot, repository, contracts: chain.reverse() };
+            }
+      - index: 68
+        fact:
+          id: sha256:e176e45a4f30cffc8f81dc110764b74a0bc749e2c65312dedfbfa84a8eacd4fd
+          kind: file
+          path: analyse/project/module-tree.ts
+          start_line: 1
+          end_line: 73
+          text: >
+            import { isUtf8 } from "node:buffer";
+
+            import { lstat, readdir, readFile, realpath } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { assertStateLocation, STATE_DIRECTORY, within } from
+            "./paths.js";
+
+            import { errorDetails } from "../../node-errors.js";
+
+            import {
+              isModuleContractPath, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY, MODULE_TREE_FILE, parseModuleTree,
+            } from "../../framework/contracts/module-tree.js";
+
+            import { excludedProjectPath, portable } from "./source-files.js";
+
+
+            export * from "../../framework/contracts/module-tree.js";
+
+
+            async function existingEntry(file: string) {
+              try { return await lstat(file); }
+              catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
+            }
+
+
+            /** Resolves the caller's source path, retaining the filesystem's
+            spelling. */
+
+            export async function resolveSourceDirectory(root: string,
+            directory: string) {
+              const requested = path.resolve(root, directory);
+              if (!within(root, requested)) throw new Error("directory is outside project");
+              const target = await realpath(requested);
+              if (!within(root, target)) throw new Error("directory resolves outside project");
+              if (excludedProjectPath(path.relative(root, target))) throw new Error("directory is excluded from project sources");
+              if (path.relative(requested, target) !== "") throw new Error("source directory uses a directory link: " + directory);
+              if (!(await lstat(target)).isDirectory()) throw new Error("directory is not a directory: " + directory);
+              return portable(path.relative(root, target));
+            }
+
+
+            /** Git tree paths are case-sensitive even when the local filesystem
+            accepts aliases. */
+
+            export async function assertModuleDirectory(root: string, directory:
+            string, planned = false): Promise<void> {
+              if (planned && directory !== "." && !await existingEntry(path.join(root, directory))) {
+                return assertModuleDirectory(root, path.posix.dirname(directory), true);
+              }
+              const actual = await resolveSourceDirectory(root, directory);
+              if (actual !== directory) throw new Error("Mapped directory " + directory + " does not match " + actual);
+            }
+
+
+            export function decodeContractText(bytes: Buffer, document: string)
+            {
+              if (!isUtf8(bytes)) throw new Error(document + " contains invalid UTF-8");
+              return bytes.toString("utf8");
+            }
+
+
+            export async function readContractStorageFile(root: string,
+            relative: string): Promise<string | null> {
+              if (relative !== MODULE_TREE_FILE && !isModuleContractPath(relative)) {
+                throw new Error("Invalid contract storage path: " + relative);
+              }
+              const file = path.join(root, relative);
+              await assertStateLocation(root, path.join(root, STATE_DIRECTORY), file);
+              const info = await existingEntry(file);
+              if (!info) return null;
+              if (portable(path.relative(root, await realpath(file))) !== relative) return null;
+              if (!info.isFile()) throw new Error("Contract storage entry must be a regular file: " + relative);
+              const limit = relative === MODULE_TREE_FILE ? MAX_TREE_BYTES : MAX_DOCUMENT_BYTES;
+              if (info.size > limit) throw new Error(relative + " exceeds " + limit / 1024 + " KiB");
+              return decodeContractText(await readFile(file), relative);
+            }
+
+
+            export async function readModuleTree(root: string) {
+              const text = await readContractStorageFile(root, MODULE_TREE_FILE);
+              return text === null ? new Map<string, string>() : parseModuleTree(text);
+            }
+
+
+            /** Lists only direct YAML entries, including unregistered contracts
+            that need repair. */
+
+            export async function listModuleContractPaths(root: string) {
+              const directory = path.join(root, MODULE_DIRECTORY);
+              await assertStateLocation(root, path.join(root, STATE_DIRECTORY), directory);
+              if (!await existingEntry(directory)) return [];
+              if (portable(path.relative(root, await realpath(directory))) !== MODULE_DIRECTORY) return [];
+              const names = await readdir(directory);
+              return names.filter((name) => name.endsWith(".yaml")).sort().map((name) => MODULE_DIRECTORY + "/" + name);
+            }
+      - index: 69
+        fact:
+          id: sha256:4ded3df1227bb76443140e356bb2d22962e37aceb302eff3f109be5686dcc66e
+          kind: file
+          path: analyse/project/paths.ts
+          start_line: 1
+          end_line: 46
           text: >
             import { lstat, realpath } from "node:fs/promises";
 
             import path from "node:path";
 
-            import { errorDetails } from "../runtime/errors.js";
+            import { errorDetails } from "../../node-errors.js";
 
 
-            /** Зарезервированное хранилище данных, исключаемое из анализа
-            исходников. */
-
-            export const STATE_DIRECTORY = ".archiview";
+            import { STATE_DIRECTORY, within } from
+            "../../framework/project/paths.js";
 
 
-            /** Source enumeration and repository discovery skip dependencies,
-            metadata and generated files. */
-
-            const EXCLUDED = new Set([
-              STATE_DIRECTORY,
-              ".git", ".hg", ".svn", "node_modules", "target", "dist", "build", "coverage",
-              ".venv", "venv", "__pycache__", ".next", ".nuxt", ".cache", "obj",
-            ]);
-
-            export function excludedProjectPath(relative: string) {
-              return relative.split(/[\\/]/).some((part) => EXCLUDED.has(process.platform === "win32" ? part.toLowerCase() : part));
-            }
-
-
-            /** Выбирает папку данных относительно проекта; абсолютный внешний
-            путь сохраняется. */
-
-            export function projectStateDirectory(root: string, directory =
-            STATE_DIRECTORY) {
-              const target = path.resolve(root, directory);
-              if (within(root, target) && !within(path.join(root, STATE_DIRECTORY), target)) {
-                throw new Error("State storage must be under .archiview or outside source project");
-              }
-              return target;
-            }
-
-
-            /** Проверяет вложенность разрешённых абсолютных путей, включая сам
-            каталог. */
-
-            export function within(root: string, target: string) {
-              const relative = path.relative(root, target);
-              return relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(".." + path.sep));
-            }
+            export { excludedProjectPath, projectStateDirectory,
+            STATE_DIRECTORY, within } from "../../framework/project/paths.js";
 
 
             /** Resolves existing components before checking the location of a
@@ -644,13 +1153,107 @@ publication:
               if (within(project, boundary) || within(project, destination)) throw new Error("External state storage resolves inside source project");
               if (!within(boundary, destination)) throw new Error("Path resolves outside external state storage");
             }
-      - index: 98
+      - index: 70
         fact:
-          id: sha256:ec85ee160343973df66ae3d190f3904fec137331e6ee70d0ff04993c25f6f97a
+          id: sha256:c00d0b3b2a5a2ad30c3452b82596de95dff20d86ecbf3f4e92862a01c2806643
           kind: file
-          path: src/project/workspace.ts
+          path: analyse/project/project-files/.gitkeep
           start_line: 1
-          end_line: 142
+          end_line: 1
+          text: ""
+      - index: 71
+        fact:
+          id: sha256:24447d3a45c2f4b23b23c16b59d99fc9f6e3eb1fac9baba2df3dfea96c6b376d
+          kind: file
+          path: analyse/project/source-files.ts
+          start_line: 1
+          end_line: 61
+          text: >
+            import { execFile } from "node:child_process";
+
+            import { lstat, realpath } from "node:fs/promises";
+
+            import path from "node:path";
+
+            import { promisify } from "node:util";
+
+            import { excludedProjectPath, within } from "./paths.js";
+
+            export { excludedProjectPath } from "./paths.js";
+
+            import { errorDetails } from "../../node-errors.js";
+
+
+            /** Расширения исходного кода; список можно дополнить при запуске
+            сервера. */
+
+            export const SOURCE_EXTENSIONS = new Set((
+              ".c .h .cc .cpp .cxx .hpp .hxx .cs .fs .fsx .vb .java .kt .kts .scala " +
+              ".swift .m .mm .js .jsx .mjs .cjs .ts .tsx .mts .cts .py .pyi .go .rs " +
+              ".rb .php .lua .gd .sh .bash .zsh .ps1 .psm1 .pl .pm .r .sql .proto " +
+              ".dart .zig .ex .exs .erl .hrl .clj .cljs .cljc .vue .svelte .css .scss " +
+              ".less .html .htm .bsl .os .wsdl .xsd"
+            ).split(" "));
+
+            /** Асинхронный запуск Git без оболочки и интерполяции
+            пользовательских строк. */
+
+            const runFile = promisify(execFile);
+
+
+            /** Приводит путь к переносимой записи с прямыми слешами. */
+
+            export function portable(value: string) {
+              return value.split(path.sep).join("/") || ".";
+            }
+
+
+            /**
+             * Отсекает внешние пути, исключённые каталоги и символические ссылки.
+             * Отсутствующий после Git-фильтра файл считается удалённым, а не исходником.
+             */
+            export async function regularProjectFile(root: string, relative:
+            string) {
+              if (excludedProjectPath(relative)) return false;
+              const candidate = path.resolve(root, relative);
+              if (!within(root, candidate)) return false;
+              try {
+                const resolved = await realpath(candidate);
+                if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) return false;
+                const info = await lstat(candidate);
+                return info.isFile() && !info.isSymbolicLink();
+              } catch (errorCause) { const error = errorDetails(errorCause);
+                if (error.code === "ENOENT") return false;
+                throw error;
+              }
+            }
+
+
+            /**
+             * Получает учитываемые файлы и признак полноты. Ошибка Git внутри репозитория
+             * не маскируется полным результатом обхода: причина возвращается диагностикой.
+             */
+            export async function projectFiles(root: string, maxFiles: number,
+            ownsDirectory: (relative: string) => boolean | Promise<boolean>) {
+              const output = await runFile("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "."],
+                { cwd: root, timeout: 15000, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
+              const files: string[] = [];
+              for (const file of new Set(output.stdout.split("\0"))) {
+                if (!file || excludedProjectPath(file) || !await ownsDirectory(path.posix.dirname(file))) continue;
+                files.push(file);
+                if (files.length > maxFiles) break;
+              }
+              const limited = files.length > maxFiles;
+              return { files: files.slice(0, maxFiles), discovery: "git", complete: !limited,
+                diagnostics: limited ? ["File limit reached: " + maxFiles] : [] };
+            }
+      - index: 72
+        fact:
+          id: sha256:9563706618e35ec2a4904c4fd067a7bf1647b8b3f64882e66356fc302810705f
+          kind: file
+          path: analyse/project/workspace.ts
+          start_line: 1
+          end_line: 155
           text: >
             import { execFile } from "node:child_process";
 
@@ -660,9 +1263,16 @@ publication:
 
             import { promisify } from "node:util";
 
-            import { errorDetails } from "../runtime/errors.js";
+            import { errorDetails } from "../../node-errors.js";
 
-            import { excludedProjectPath, within } from "./paths.js";
+            import { excludedProjectPath, STATE_DIRECTORY, within } from
+            "./paths.js";
+
+            import { MODULE_TREE_FILE } from
+            "../../framework/contracts/module-tree.js";
+
+            import type { ProjectSourceLocation, WorkspaceProject } from
+            "../../framework/project-types/types.js";
 
 
             const git = promisify(execFile);
@@ -736,6 +1346,21 @@ publication:
             }
 
 
+            /** A Git checkout is a project candidate even before its first
+            ArchiView map exists. */
+
+            export async function discoverWorkspaceProjects(workspace: string):
+            Promise<WorkspaceProject[]> {
+              const repositories = await discoverWorkspaceRepositories(workspace);
+              return Promise.all(repositories.map(async repository => {
+                const root = path.join(workspace, repository);
+                const state = await entry(path.join(root, STATE_DIRECTORY));
+                const map = state?.isDirectory() ? await entry(path.join(root, MODULE_TREE_FILE)) : undefined;
+                return { repository, hasModuleMap: map?.isFile() ?? false };
+              }));
+            }
+
+
             function checkedTarget(root: string, relative: string) {
               if (path.isAbsolute(relative) || path.win32.isAbsolute(relative) || /^[a-z]:/i.test(relative))
                 throw new Error("source path must be relative");
@@ -791,7 +1416,7 @@ publication:
             selected root is the upper bound. */
 
             export async function locateSourceRepository(workspace: string,
-            relative: string) {
+            relative: string): Promise<ProjectSourceLocation> {
               const workspaceRoot = await realpath(workspace);
               const target = checkedTarget(workspaceRoot, relative);
               let existing = target;
@@ -825,95 +1450,140 @@ publication:
                 directory: relativePath(root, targetDirectory), existingDirectory: relativePath(root, existingDirectory),
                 plannedPath: existing === target ? undefined : relativePath(root, requested) };
             }
-      - index: 207
+      - index: 187
         fact:
-          id: sha256:9f5d3de18b28479113d2b2ecbb1551dfa54c42e562194fb7cdd851ed3e51bcdd
+          id: sha256:42129eba43327194b2de4e8dd99aa54278d19ec94e7600a7a781f1a902a0cecc
           kind: module
-          path: src/project
-          text: '{"contract":"documented","format":"yaml","sources":["src/project/identity.ts","src/project/paths.ts","src/project/workspace.ts"]}'
+          path: analyse/project
+          text: '{"contract":"documented","format":"yaml","sources":["analyse/project/archive-cache.ts","analyse/project/clause-ids.ts","analyse/project/file-lock.ts","analyse/project/identity.ts","analyse/project/inventory.ts","analyse/project/module-tree.ts","analyse/project/paths.ts","analyse/project/source-files.ts","analyse/project/workspace.ts"]}'
   current:
     metadata:
-      id: launch-a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
-      digest: sha256:6363190cb16d9f6be0f1249150f84f14fec640bc9afec1ec159f22af462b729e
+      id: launch-2c90cec18764e07c30dc83abf511f71af950652ad121e4623b453b3dcf4ce543
+      digest: sha256:07b75d86d2e99b64735843a667046a1ab58017047eb09d29d1f6e6373191ae83
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:38:08.764Z
+      capturedAt: 2026-11-24T09:57:48.329Z
       kind: launch
       label: Начальное состояние
-      fingerprint: a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
+      fingerprint: 2c90cec18764e07c30dc83abf511f71af950652ad121e4623b453b3dcf4ce543
       complete: true
       diagnostics: []
       evidenceLimitations: []
       observations:
         architecture-change-view:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-distribution:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-analyse:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-skills:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-git-changes:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-module-boundaries-skill:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-module-relations:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        architecture-core:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-application:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-http:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-codex:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-contracts:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        dsh-adapter:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        dsh-client-panel:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-mcp:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-module-review:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-project-location:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-reports:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-bridges:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-codex:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        dsh-adapter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-distribution:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-cli:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-framework:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-reviews:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-node-runtime:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-contracts:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-relation-model:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-project-context:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-project-types:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-serialization:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-snapshots:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-storage:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-reports:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-operations:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-skills:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-boundaries-skill:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         architecture-tests:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-tools:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         architecture-web:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-application:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-analysis-service:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-file-watcher:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-host-bridge:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-node-runtime:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-http:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-client:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-    module_index: 12
+        archiview-web-api-client:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-presenter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-views:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-workspace-presenter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+    module_index: 5
     module:
-      directory: src/project
+      directory: analyse/project
       document:
         state: documented
         text: >
@@ -921,83 +1591,325 @@ publication:
 
           id: archiview-project-location
 
-          title: Расположение данных и происхождение проекта
+          title: Project discovery
 
           kind: module
 
           extensions:
-            archiview.roles: [domain]
-          purpose: Определять принадлежность исходников и допустимое место
-          хранения истории проекта.
+            archiview.roles: [service]
+          purpose: Находить Git-репозитории в рабочей папке и определять наличие
+          карты модулей ArchiView в каждом из них.
 
           boundaries:
-            B2: Отклонять путь данных, если его фактическое расположение выходит за пределы выбранного хранилища.
-            B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева исходников проекта.
-            B4: При регистрации истории отклонять попытку заменить уже сохранённое происхождение другим.
+            B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
           invariants: {}
         format: yaml
         contract:
           schema_version: 1
           id: archiview-project-location
-          title: Расположение данных и происхождение проекта
+          title: Project discovery
           kind: module
           extensions:
             archiview.roles:
-              - domain
-          purpose: Определять принадлежность исходников и допустимое место хранения
-            истории проекта.
+              - service
+          purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+            модулей ArchiView в каждом из них.
           boundaries:
-            B2: Отклонять путь данных, если его фактическое расположение выходит за пределы
-              выбранного хранилища.
-            B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева
-              исходников проекта.
-            B4: При регистрации истории отклонять попытку заменить уже сохранённое
-              происхождение другим.
+            B5: Включать в результат каждый найденный репозиторий, в том числе при
+              отсутствии в нём .archiview/modules.tree.
           invariants: {}
       documentPath: .archiview/modules/archiview-project-location.yaml
       files:
         - path: .archiview/modules/archiview-project-location.yaml
-          hash: 383fa1f230ccfea46922e4ea06535f06a53be6c8
-        - path: src/project/identity.ts
-          hash: 7cdab7a0e02c89c2d893529d6f5576b3d08b5ee9
-        - path: src/project/paths.ts
-          hash: 55c971928816082ae22f2607d47dae5a7a4f99c4
-        - path: src/project/workspace.ts
-          hash: 1f3973a3dca7a3a9c0d1fbfeafd170101dccc56e
-      sourceFiles: 3
-      fingerprint: fa1cc7411ad4325d4602487796d8dfe13c381adde65360c6b8bd85236eb6a61a
+          hash: 30e840dd8e46ba7af8073000a4ec9cdce20533c7
+        - path: analyse/project/archive-cache.ts
+          hash: 96569512c8a0253811f3cabfd8f0c14467dc2e43
+        - path: analyse/project/clause-ids.ts
+          hash: 7ff5bc99b17f5e7a43beb7a43d22627861cd4784
+        - path: analyse/project/file-lock.ts
+          hash: e38f693588a61bf09939b96778ed6a5af277f5af
+        - path: analyse/project/identity.ts
+          hash: 043813170d1bb769f6ce2d017f12b3d9f5769281
+        - path: analyse/project/inventory.ts
+          hash: 0ef54a4f31348d9bb9f0dceaeae7b9ae26c47f16
+        - path: analyse/project/module-tree.ts
+          hash: d1efc8480d0be4885170242351d866353c1a70ed
+        - path: analyse/project/paths.ts
+          hash: b3aa3084be78bc25decd3859b905200c896558ae
+        - path: analyse/project/project-files/.gitkeep
+          hash: e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+        - path: analyse/project/source-files.ts
+          hash: 726225213e5cdd7416de83f83b03a3176de2430d
+        - path: analyse/project/workspace.ts
+          hash: 4fc4fe99b8f233aefaaa978f6e2a62569c4d88ee
+      sourceFiles: 9
+      fingerprint: fb78e348802bea3f8ccd8738d7695cd7bb008c723b72f597b7750ddb47d26b04
     facts:
-      - index: 14
+      - index: 24
         fact:
-          id: sha256:0eb8e4c49dd854db3672c11bce05c7e7808f49235b2326c6302e8df59200badb
+          id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
           kind: file
           path: .archiview/modules/archiview-project-location.yaml
           start_line: 1
-          end_line: 13
+          end_line: 11
           text: >
             schema_version: 1
 
             id: archiview-project-location
 
-            title: Расположение данных и происхождение проекта
+            title: Project discovery
 
             kind: module
 
             extensions:
-              archiview.roles: [domain]
-            purpose: Определять принадлежность исходников и допустимое место
-            хранения истории проекта.
+              archiview.roles: [service]
+            purpose: Находить Git-репозитории в рабочей папке и определять
+            наличие карты модулей ArchiView в каждом из них.
 
             boundaries:
-              B2: Отклонять путь данных, если его фактическое расположение выходит за пределы выбранного хранилища.
-              B3: Отклонять внешнее хранилище, фактически расположенное внутри дерева исходников проекта.
-              B4: При регистрации истории отклонять попытку заменить уже сохранённое происхождение другим.
+              B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
             invariants: {}
-      - index: 96
+      - index: 70
         fact:
-          id: sha256:040e66020ee2c175de50985e527ff0cd6147abbdaf30025ec1c8baff26e3533e
+          id: sha256:0ae8670c932e5079a7db677aaa4c33f8042762a4a10d20cd79744e207f2b55ca
           kind: file
-          path: src/project/identity.ts
+          path: analyse/project/archive-cache.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            import { lstat } from "node:fs/promises";
+
+
+            /** A store owns its cache. Directory listings decide membership on
+            every scan. */
+
+            export class ArchiveCache<T> {
+              readonly #files = new Map<string, { version: string; value: T }>();
+
+              async read(file: string, load: () => Promise<T>, key = file): Promise<T> {
+                const version = await fileVersion(file);
+                const cached = this.#files.get(key);
+                if (cached?.version === version) return cached.value;
+                const value = await load();
+                if (await fileVersion(file) !== version) throw new Error("Archive file changed while being read: " + file);
+                this.#files.set(key, { version, value });
+                return value;
+              }
+
+              retain(keys: Set<string>) {
+                for (const key of this.#files.keys()) if (!keys.has(key)) this.#files.delete(key);
+              }
+            }
+
+
+            async function fileVersion(file: string) {
+              const info = await lstat(file, { bigint: true });
+              if (!info.isFile()) throw new Error("Archive file must be an ordinary file: " + file);
+              return [info.dev, info.ino, info.size, info.ctimeNs, info.mtimeNs].join("/");
+            }
+      - index: 71
+        fact:
+          id: sha256:3ba57de0805276efaac3c02ee47c60009f7a36270b64cb18e10cd8a6eb845f47
+          kind: file
+          path: analyse/project/clause-ids.ts
+          start_line: 1
+          end_line: 60
+          text: >
+            import { randomUUID } from "node:crypto";
+
+            import { mkdir, readFile, rename, rm, writeFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { contractDocument } from
+            "../../framework/contracts/document.js";
+
+            import { moduleDocumentPath } from "./module-tree.js";
+
+            import type { Section, StoredContract } from
+            "../../framework/contracts/types.js";
+
+            import { assertStateLocation, STATE_DIRECTORY } from "./paths.js";
+
+            import { errorDetails } from "../../node-errors.js";
+
+            import { gitContractTexts } from "../git-changes/git-tree.js";
+
+
+            type NumberedSection = Exclude<Section, "purpose">;
+
+            const prefixes = { boundaries: "B", invariants: "I" } as const;
+
+
+            function clauseNumber(section: NumberedSection, id: string) {
+              return id.startsWith(prefixes[section]) && /^[0-9]+$/.test(id.slice(1)) ? BigInt(id.slice(1)) : 0n;
+            }
+
+
+            async function counter(root: string, moduleId: string, section:
+            NumberedSection) {
+              const directory = path.join(root, STATE_DIRECTORY);
+              const filename = path.basename(moduleDocumentPath(moduleId), ".yaml") + ".seq";
+              const file = path.join(directory, "snapshots", "clause-ids", section, filename);
+              await assertStateLocation(root, directory, file);
+              try {
+                const value = (await readFile(file, "utf8")).trim();
+                if (!/^[0-9]+$/.test(value)) throw new Error("Некорректный счётчик ID пунктов модуля " + moduleId);
+                return { file, last: BigInt(value) };
+              } catch (cause) {
+                if (errorDetails(cause).code !== "ENOENT") throw cause;
+                return { file, last: 0n };
+              }
+            }
+
+
+            /** The contract edit lock covers choosing the number, recording it,
+            and replacing the YAML. */
+
+            export async function nextClauseId(root: string, current:
+            StoredContract, section: NumberedSection, baseline?: StoredContract
+            | null) {
+              const [{ last }, texts] = await Promise.all([counter(root, current.id, section), gitContractTexts(root, current.id)]);
+              let highest = last;
+              for (const contract of [current, baseline, ...texts.map(text => contractDocument(text).contract)]) {
+                if (contract?.id !== current.id) continue;
+                for (const id of Object.keys(contract[section])) {
+                  const number = clauseNumber(section, id);
+                  if (number > highest) highest = number;
+                }
+              }
+              return prefixes[section] + (highest + 1n);
+            }
+
+
+            /** An uncommitted ID stays reserved even after deletion and a
+            server restart. */
+
+            export async function rememberClauseId(root: string, moduleId:
+            string, section: NumberedSection, id: string) {
+              const number = clauseNumber(section, id);
+              if (!number) return;
+              const { file, last } = await counter(root, moduleId, section);
+              if (number <= last) return;
+              await mkdir(path.dirname(file), { recursive: true });
+              const temporary = path.join(path.dirname(file), ".pending-" + randomUUID());
+              try {
+                await writeFile(temporary, number + "\n", { flag: "wx" });
+                await rename(temporary, file);
+              } finally { await rm(temporary, { force: true }); }
+            }
+      - index: 72
+        fact:
+          id: sha256:23afe57289717ea27d955499795d184a073cf279db98df82d206cbb6ef0d5fa2
+          kind: file
+          path: analyse/project/file-lock.ts
+          start_line: 1
+          end_line: 83
+          text: >
+            import { createHash, randomUUID } from "node:crypto";
+
+            import { link, lstat, readFile, rm, writeFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { setTimeout as wait } from "node:timers/promises";
+
+            import { errorDetails } from "../../node-errors.js";
+
+
+            interface Owner {
+              pid: number;
+              token: string;
+            }
+
+
+            async function readOwner(file: string): Promise<Owner | undefined> {
+              try {
+                const info = await lstat(file);
+                if (!info.isFile() || info.isSymbolicLink()) throw new Error("Invalid storage lock");
+                const owner = JSON.parse(await readFile(file, "utf8"));
+                if (!owner || !Number.isSafeInteger(owner.pid) || owner.pid < 1 || typeof owner.token !== "string")
+                  throw new Error("Invalid storage lock owner");
+                return { pid: owner.pid, token: owner.token };
+              } catch (error) {
+                if (errorDetails(error).code !== "ENOENT") throw error;
+              }
+            }
+
+
+            function processExited(pid: number): boolean {
+              try {
+                process.kill(pid, 0);
+                return false;
+              } catch (error) {
+                return errorDetails(error).code === "ESRCH";
+              }
+            }
+
+
+            /** Only one contender may remove a particular abandoned ownership
+            record. */
+
+            async function acquire(file: string, candidate: string, deadline:
+            number): Promise<void> {
+              for (;;) {
+                try {
+                  await link(candidate, file);
+                  return;
+                } catch (error) {
+                  if (errorDetails(error).code !== "EEXIST") throw error;
+                }
+                if (Date.now() >= deadline) throw new Error("Storage is locked by another writer");
+                const observed = await readOwner(file);
+                if (!observed) continue;
+                if (!processExited(observed.pid)) {
+                  await wait(25);
+                  continue;
+                }
+
+                // A second observer can reach this point after a new writer acquired the original name.
+                // Serialize recovery for the unique dead token, then re-read under that recovery lock.
+                // Recovery locks follow the same protocol if the recovering process itself exits.
+                const key = createHash("sha256").update(JSON.stringify([path.basename(file), observed.token])).digest("hex");
+                const recovery = path.join(path.dirname(file), ".recover-" + key);
+                await acquire(recovery, candidate, deadline);
+                try {
+                  if ((await readOwner(file))?.token === observed.token) await rm(file);
+                } finally {
+                  await rm(recovery);
+                }
+              }
+            }
+
+
+            /** The caller supplies a verified storage directory. The on-disk
+            pid/token format is portable across versions. */
+
+            export async function withFileLock<T>(directory: string, name:
+            string, action: () => Promise<T>): Promise<T> {
+              const file = path.join(directory, name);
+              const token = randomUUID();
+              const candidate = path.join(directory, ".owner-" + token);
+              await writeFile(candidate, JSON.stringify({ pid: process.pid, token }), { flag: "wx" });
+              try {
+                await acquire(file, candidate, Date.now() + 30_000);
+                try {
+                  await rm(candidate);
+                  return await action();
+                } finally {
+                  await rm(file);
+                }
+              } finally {
+                await rm(candidate, { force: true });
+              }
+            }
+      - index: 73
+        fact:
+          id: sha256:9c944256af1bb1c9bc351313ed291dbe1efcb01a039e0ba4024726d051473d7f
+          kind: file
+          path: analyse/project/identity.ts
           start_line: 1
           end_line: 43
           text: >
@@ -1008,10 +1920,16 @@ publication:
 
             import path from "node:path";
 
-            import { errorDetails } from "../runtime/errors.js";
+            import { errorDetails } from "../../node-errors.js";
 
             import { assertStateLocation, projectStateDirectory } from
             "./paths.js";
+
+            import { isProjectIdentity } from
+            "../../framework/project/identity.js";
+
+            import type { ProjectIdentity } from
+            "../../framework/project-types/types.js";
 
 
             /** Читает происхождение истории; отсутствующий манифест не
@@ -1024,11 +1942,8 @@ publication:
               try {
                 const info = await lstat(file);
                 if (!info.isFile() || info.isSymbolicLink() || info.size > 16 * 1024) throw new Error("Invalid ArchiView project identity file");
-                const value: {schema_version?: unknown; snapshot_root?: unknown} = JSON.parse(await readFile(file, "utf8"));
-                if (value.schema_version !== 1 || typeof value.snapshot_root !== "string" || !value.snapshot_root ||
-                    value.snapshot_root.includes("\0") || Object.keys(value).some((key) => !["schema_version", "snapshot_root"].includes(key))) {
-                  throw new Error("Invalid ArchiView project identity");
-                }
+                const value: unknown = JSON.parse(await readFile(file, "utf8"));
+                if (!isProjectIdentity(value)) throw new Error("Invalid ArchiView project identity");
                 return value.snapshot_root;
               } catch (errorCause) { const error = errorDetails(errorCause);
                 if (error.code === "ENOENT") return null;
@@ -1046,7 +1961,8 @@ publication:
               await mkdir(directory, { recursive: true });
               const temporary = path.join(directory, ".identity-" + randomUUID());
               try {
-                await writeFile(temporary, JSON.stringify({ schema_version: 1, snapshot_root: snapshotRoot }, null, 2) + "\n", { flag: "wx" });
+                const identity: ProjectIdentity = { schema_version: 1, snapshot_root: snapshotRoot };
+                await writeFile(temporary, JSON.stringify(identity, null, 2) + "\n", { flag: "wx" });
                 // Hard link публикует готовый файл атомарно и не заменяет уже принятую идентичность.
                 try { await link(temporary, path.join(directory, "project.json")); }
                 catch (errorCause) { const error = errorDetails(errorCause);
@@ -1057,61 +1973,358 @@ publication:
               try { await writeFile(path.join(directory, ".gitignore"), ".snapshot-*\n.pending-*\n.identity-*\n", { flag: "wx" }); }
               catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "EEXIST") throw error; }
             }
-      - index: 97
+      - index: 74
         fact:
-          id: sha256:f4e21acdaa702fafd407b3a1bef9ec0db8817ec278e8b6e7f8bef66f36f402f5
+          id: sha256:c1e9e7949422026cc8abb63c561bd1b29034ae646437c710d70263d3556153b0
           kind: file
-          path: src/project/paths.ts
+          path: analyse/project/inventory.ts
           start_line: 1
-          end_line: 70
+          end_line: 188
+          text: >
+            import { realpath } from "node:fs/promises";
+
+            import path from "node:path";
+
+            import { discoverWorkspaceProjects, locateSourceRepository,
+            resolveWorkspaceRepository } from "./workspace.js";
+
+            import { errorDetails } from "../../node-errors.js";
+
+            import type { ModuleDocument } from "./module-tree.js";
+
+            import { isPrototype } from "../../framework/contracts/types.js";
+
+            import {
+              assertModuleDirectory, ADD_MAPPING, listModuleContractPaths,
+              MODULE_TREE_FILE, moduleDocumentPath, readContractStorageFile, readModuleTree, resolveModuleDocument,
+            } from "./module-tree.js";
+
+            import { excludedProjectPath, portable, projectFiles,
+            regularProjectFile, SOURCE_EXTENSIONS } from "./source-files.js";
+
+
+            export { excludedProjectPath, projectFiles, regularProjectFile,
+            SOURCE_EXTENSIONS } from "./source-files.js";
+
+
+            interface InventoryModule extends ModuleDocument {
+              repository?: string;
+              sourceFiles?: number;
+              required?: boolean;
+              files?: string[];
+              preparation?: string;
+            }
+
+
+            async function documentAt(root: string, directory: string, id?:
+            string): Promise<InventoryModule> {
+              const text = id ? await readContractStorageFile(root, moduleDocumentPath(id)) : null;
+              const document = resolveModuleDocument(directory, id, text);
+              await assertModuleDirectory(root, directory, !id || isPrototype(document.contract));
+              return document;
+            }
+
+
+            function includeDirectory(directories: Map<string, number>,
+            directory: string, source: boolean) {
+              while (true) {
+                directories.set(directory, (directories.get(directory) ?? 0) + Number(source));
+                if (directory === ".") return;
+                directory = path.posix.dirname(directory);
+              }
+            }
+
+
+            /** Inventories source paths and mapped resources, and reports
+            broken central storage explicitly. */
+
+            interface InventoryOptions { extensions?: Set<string>; maxFiles?:
+            number; repository?: string }
+
+
+            async function repositoryInventory(root: string, options:
+            InventoryOptions, nested: string[]) {
+              const extensions = options.extensions ?? SOURCE_EXTENSIONS;
+              const owned = (relative: string) => !nested.some((child) => relative === child || relative.startsWith(child + "/"));
+              const listed = await projectFiles(root, options.maxFiles ?? 50000, owned);
+              const directories = new Map<string, number>();
+              const sourcePaths: string[] = [];
+              let tree = new Map<string, string>();
+              let treeError: string | undefined;
+              try {
+                tree = await readModuleTree(root);
+              } catch (cause) {
+                treeError = MODULE_TREE_FILE + ": " + errorDetails(cause).message;
+                listed.diagnostics.push(treeError);
+                listed.complete = false;
+              }
+              for (const directory of tree.keys()) {
+                if (owned(directory)) includeDirectory(directories, directory, false);
+                else {
+                  listed.complete = false;
+                  listed.diagnostics.push(MODULE_TREE_FILE + ": " + directory + " belongs to a nested repository");
+                }
+              }
+              if (!treeError) {
+                try {
+                  const registered = new Set([...tree.values()].map(moduleDocumentPath));
+                  for (const file of await listModuleContractPaths(root)) {
+                    if (!registered.has(file)) {
+                      listed.diagnostics.push(file + " is not registered in " + MODULE_TREE_FILE);
+                      listed.complete = false;
+                    }
+                  }
+                } catch (cause) {
+                  listed.diagnostics.push(errorDetails(cause).message);
+                  listed.complete = false;
+                }
+              }
+              for (const file of listed.files) {
+                if (!extensions.has(path.extname(file).toLowerCase())) continue;
+                try {
+                  if (!await regularProjectFile(root, file)) continue;
+                } catch (cause) {
+                  listed.complete = false;
+                  listed.diagnostics.push(file + ": " + errorDetails(cause).message);
+                  continue;
+                }
+                const relative = portable(file);
+                sourcePaths.push(relative);
+                includeDirectory(directories, path.posix.dirname(relative), true);
+              }
+              const modules: InventoryModule[] = [];
+              for (const [directory, sourceFiles] of [...directories].sort(([a], [b]) => a.localeCompare(b))) {
+                const id = tree.get(directory);
+                let entry: InventoryModule;
+                try {
+                  if (treeError) {
+                    entry = { directory, document: MODULE_TREE_FILE, status: "invalid", errors: [treeError] };
+                  } else {
+                    const { text, ...document } = await documentAt(root, directory, id);
+                    entry = document;
+                    if (id && entry.status === "missing") {
+                      listed.diagnostics.push(directory + ": missing " + entry.document);
+                      listed.complete = false;
+                    }
+                  }
+                } catch (cause) {
+                  const message = directory + ": " + errorDetails(cause).message;
+                  listed.diagnostics.push(message);
+                  listed.complete = false;
+                  entry = { directory, document: id ? moduleDocumentPath(id) : MODULE_TREE_FILE,
+                    status: "unreadable", errors: [message] };
+                }
+                entry.sourceFiles = sourceFiles;
+                entry.required = sourceFiles > 0;
+                entry.files = sourcePaths.filter((file) => path.posix.dirname(file) === directory);
+                entry.preparation = entry.status === "documented" ? "ready" :
+                  entry.status === "missing" && !id ? "analyze_and_write" : "repair";
+                modules.push(entry);
+              }
+              const inventory = { schema_version: 1, root, complete: listed.complete, discovery: listed.discovery,
+                sourceFiles: sourcePaths.length, modules, diagnostics: listed.diagnostics,
+                preparation: "Исправьте ошибки карты и контрактов. Для нового модуля изучите исходники и контракты предков. " + ADD_MAPPING };
+              return { inventory, scannedFiles: listed.files.length };
+            }
+
+
+            /** A workspace lists modules by repository; contract ids stay local
+            to that repository. */
+
+            export async function moduleInventory(projectRoot: string, options:
+            InventoryOptions = {}) {
+              const root = await realpath(projectRoot);
+              const projects = await discoverWorkspaceProjects(root);
+              const repositories = projects.map(project => project.repository);
+              if (!repositories.length) throw new Error("Для ArchiView требуется рабочее дерево Git");
+              const nestedUnder = (repository: string) => repositories.filter(child => child !== repository &&
+                (repository === "." || child.startsWith(repository + "/"))).map(child => path.posix.relative(repository, child));
+              if (options.repository !== undefined || repositories.length === 1 && repositories[0] === ".") {
+                const repository = options.repository ?? ".";
+                const project = projects.find(candidate => candidate.repository === repository);
+                if (!project) throw new Error("Репозиторий не входит в выбранную рабочую папку: " + repository);
+                const selected = await resolveWorkspaceRepository(root, repository);
+                const { inventory } = await repositoryInventory(selected, options, nestedUnder(repository));
+                return { ...inventory, repositories: [repository], projects: [project] };
+              }
+              const modules: InventoryModule[] = [];
+              const diagnostics: string[] = [];
+              let sourceFiles = 0;
+              let complete = true;
+              let remaining = options.maxFiles ?? 50000;
+              for (const repository of repositories) {
+                if (remaining <= 0) {
+                  complete = false;
+                  diagnostics.push("File limit reached before repository " + repository);
+                  break;
+                }
+                const { inventory: result, scannedFiles } = await repositoryInventory(
+                  await resolveWorkspaceRepository(root, repository), { ...options, maxFiles: remaining }, nestedUnder(repository));
+                remaining -= scannedFiles;
+                const prefix = (item: string) => path.posix.join(repository, item);
+                modules.push(...result.modules.map((item) => ({ ...item, repository, directory: prefix(item.directory),
+                  document: prefix(item.document), files: item.files?.map(prefix) })));
+                diagnostics.push(...result.diagnostics.map((message) => repository + ": " + message));
+                complete &&= result.complete;
+                sourceFiles += result.sourceFiles;
+              }
+              return { schema_version: 1, root, discovery: "workspace", repositories, projects, complete, sourceFiles, modules, diagnostics,
+                preparation: "Изменяйте карту и контракты в репозитории, указанном в поле repository модуля." };
+            }
+
+
+            /** Resolve either a file or a directory, then read the chain inside
+            its owning repository. */
+
+            export async function moduleContext(projectRoot: string, sourcePath
+            = ".") {
+              const { root, directory: sourceDirectory, workspaceRoot, repository, existingDirectory, plannedPath } = await locateSourceRepository(projectRoot, sourcePath);
+              const tree = await readModuleTree(root);
+              const plannedDirectory = plannedPath && (tree.has(plannedPath) || [...tree.keys()].some(dir => dir.startsWith(plannedPath + "/")));
+              const directory = plannedDirectory ? plannedPath : sourceDirectory;
+              const chain = [];
+              let current = directory;
+              while (true) {
+                const id = tree.get(current);
+                const exists = current === "." || existingDirectory === current || existingDirectory.startsWith(current + "/");
+                if (exists) chain.push(await documentAt(root, current, id));
+                else {
+                  const planned = id && resolveModuleDocument(current, id, await readContractStorageFile(root, moduleDocumentPath(id)));
+                  chain.push(planned && isPrototype(planned.contract) ? planned : { ...resolveModuleDocument(current, id, null),
+                    action: "Каталог ещё не создан. " + ADD_MAPPING });
+                }
+                if (current === ".") break;
+                current = path.posix.dirname(current);
+              }
+              return { schema_version: 1, root, directory, workspaceRoot, repository, contracts: chain.reverse() };
+            }
+      - index: 75
+        fact:
+          id: sha256:e176e45a4f30cffc8f81dc110764b74a0bc749e2c65312dedfbfa84a8eacd4fd
+          kind: file
+          path: analyse/project/module-tree.ts
+          start_line: 1
+          end_line: 73
+          text: >
+            import { isUtf8 } from "node:buffer";
+
+            import { lstat, readdir, readFile, realpath } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { assertStateLocation, STATE_DIRECTORY, within } from
+            "./paths.js";
+
+            import { errorDetails } from "../../node-errors.js";
+
+            import {
+              isModuleContractPath, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY, MODULE_TREE_FILE, parseModuleTree,
+            } from "../../framework/contracts/module-tree.js";
+
+            import { excludedProjectPath, portable } from "./source-files.js";
+
+
+            export * from "../../framework/contracts/module-tree.js";
+
+
+            async function existingEntry(file: string) {
+              try { return await lstat(file); }
+              catch (cause) { if (errorDetails(cause).code !== "ENOENT") throw cause; }
+            }
+
+
+            /** Resolves the caller's source path, retaining the filesystem's
+            spelling. */
+
+            export async function resolveSourceDirectory(root: string,
+            directory: string) {
+              const requested = path.resolve(root, directory);
+              if (!within(root, requested)) throw new Error("directory is outside project");
+              const target = await realpath(requested);
+              if (!within(root, target)) throw new Error("directory resolves outside project");
+              if (excludedProjectPath(path.relative(root, target))) throw new Error("directory is excluded from project sources");
+              if (path.relative(requested, target) !== "") throw new Error("source directory uses a directory link: " + directory);
+              if (!(await lstat(target)).isDirectory()) throw new Error("directory is not a directory: " + directory);
+              return portable(path.relative(root, target));
+            }
+
+
+            /** Git tree paths are case-sensitive even when the local filesystem
+            accepts aliases. */
+
+            export async function assertModuleDirectory(root: string, directory:
+            string, planned = false): Promise<void> {
+              if (planned && directory !== "." && !await existingEntry(path.join(root, directory))) {
+                return assertModuleDirectory(root, path.posix.dirname(directory), true);
+              }
+              const actual = await resolveSourceDirectory(root, directory);
+              if (actual !== directory) throw new Error("Mapped directory " + directory + " does not match " + actual);
+            }
+
+
+            export function decodeContractText(bytes: Buffer, document: string)
+            {
+              if (!isUtf8(bytes)) throw new Error(document + " contains invalid UTF-8");
+              return bytes.toString("utf8");
+            }
+
+
+            export async function readContractStorageFile(root: string,
+            relative: string): Promise<string | null> {
+              if (relative !== MODULE_TREE_FILE && !isModuleContractPath(relative)) {
+                throw new Error("Invalid contract storage path: " + relative);
+              }
+              const file = path.join(root, relative);
+              await assertStateLocation(root, path.join(root, STATE_DIRECTORY), file);
+              const info = await existingEntry(file);
+              if (!info) return null;
+              if (portable(path.relative(root, await realpath(file))) !== relative) return null;
+              if (!info.isFile()) throw new Error("Contract storage entry must be a regular file: " + relative);
+              const limit = relative === MODULE_TREE_FILE ? MAX_TREE_BYTES : MAX_DOCUMENT_BYTES;
+              if (info.size > limit) throw new Error(relative + " exceeds " + limit / 1024 + " KiB");
+              return decodeContractText(await readFile(file), relative);
+            }
+
+
+            export async function readModuleTree(root: string) {
+              const text = await readContractStorageFile(root, MODULE_TREE_FILE);
+              return text === null ? new Map<string, string>() : parseModuleTree(text);
+            }
+
+
+            /** Lists only direct YAML entries, including unregistered contracts
+            that need repair. */
+
+            export async function listModuleContractPaths(root: string) {
+              const directory = path.join(root, MODULE_DIRECTORY);
+              await assertStateLocation(root, path.join(root, STATE_DIRECTORY), directory);
+              if (!await existingEntry(directory)) return [];
+              if (portable(path.relative(root, await realpath(directory))) !== MODULE_DIRECTORY) return [];
+              const names = await readdir(directory);
+              return names.filter((name) => name.endsWith(".yaml")).sort().map((name) => MODULE_DIRECTORY + "/" + name);
+            }
+      - index: 76
+        fact:
+          id: sha256:4ded3df1227bb76443140e356bb2d22962e37aceb302eff3f109be5686dcc66e
+          kind: file
+          path: analyse/project/paths.ts
+          start_line: 1
+          end_line: 46
           text: >
             import { lstat, realpath } from "node:fs/promises";
 
             import path from "node:path";
 
-            import { errorDetails } from "../runtime/errors.js";
+            import { errorDetails } from "../../node-errors.js";
 
 
-            /** Зарезервированное хранилище данных, исключаемое из анализа
-            исходников. */
-
-            export const STATE_DIRECTORY = ".archiview";
+            import { STATE_DIRECTORY, within } from
+            "../../framework/project/paths.js";
 
 
-            /** Source enumeration and repository discovery skip dependencies,
-            metadata and generated files. */
-
-            const EXCLUDED = new Set([
-              STATE_DIRECTORY,
-              ".git", ".hg", ".svn", "node_modules", "target", "dist", "build", "coverage",
-              ".venv", "venv", "__pycache__", ".next", ".nuxt", ".cache", "obj",
-            ]);
-
-            export function excludedProjectPath(relative: string) {
-              return relative.split(/[\\/]/).some((part) => EXCLUDED.has(process.platform === "win32" ? part.toLowerCase() : part));
-            }
-
-
-            /** Выбирает папку данных относительно проекта; абсолютный внешний
-            путь сохраняется. */
-
-            export function projectStateDirectory(root: string, directory =
-            STATE_DIRECTORY) {
-              const target = path.resolve(root, directory);
-              if (within(root, target) && !within(path.join(root, STATE_DIRECTORY), target)) {
-                throw new Error("State storage must be under .archiview or outside source project");
-              }
-              return target;
-            }
-
-
-            /** Проверяет вложенность разрешённых абсолютных путей, включая сам
-            каталог. */
-
-            export function within(root: string, target: string) {
-              const relative = path.relative(root, target);
-              return relative === "" || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith(".." + path.sep));
-            }
+            export { excludedProjectPath, projectStateDirectory,
+            STATE_DIRECTORY, within } from "../../framework/project/paths.js";
 
 
             /** Resolves existing components before checking the location of a
@@ -1155,13 +2368,107 @@ publication:
               if (within(project, boundary) || within(project, destination)) throw new Error("External state storage resolves inside source project");
               if (!within(boundary, destination)) throw new Error("Path resolves outside external state storage");
             }
-      - index: 98
+      - index: 77
         fact:
-          id: sha256:ec85ee160343973df66ae3d190f3904fec137331e6ee70d0ff04993c25f6f97a
+          id: sha256:c00d0b3b2a5a2ad30c3452b82596de95dff20d86ecbf3f4e92862a01c2806643
           kind: file
-          path: src/project/workspace.ts
+          path: analyse/project/project-files/.gitkeep
           start_line: 1
-          end_line: 142
+          end_line: 1
+          text: ""
+      - index: 78
+        fact:
+          id: sha256:24447d3a45c2f4b23b23c16b59d99fc9f6e3eb1fac9baba2df3dfea96c6b376d
+          kind: file
+          path: analyse/project/source-files.ts
+          start_line: 1
+          end_line: 61
+          text: >
+            import { execFile } from "node:child_process";
+
+            import { lstat, realpath } from "node:fs/promises";
+
+            import path from "node:path";
+
+            import { promisify } from "node:util";
+
+            import { excludedProjectPath, within } from "./paths.js";
+
+            export { excludedProjectPath } from "./paths.js";
+
+            import { errorDetails } from "../../node-errors.js";
+
+
+            /** Расширения исходного кода; список можно дополнить при запуске
+            сервера. */
+
+            export const SOURCE_EXTENSIONS = new Set((
+              ".c .h .cc .cpp .cxx .hpp .hxx .cs .fs .fsx .vb .java .kt .kts .scala " +
+              ".swift .m .mm .js .jsx .mjs .cjs .ts .tsx .mts .cts .py .pyi .go .rs " +
+              ".rb .php .lua .gd .sh .bash .zsh .ps1 .psm1 .pl .pm .r .sql .proto " +
+              ".dart .zig .ex .exs .erl .hrl .clj .cljs .cljc .vue .svelte .css .scss " +
+              ".less .html .htm .bsl .os .wsdl .xsd"
+            ).split(" "));
+
+            /** Асинхронный запуск Git без оболочки и интерполяции
+            пользовательских строк. */
+
+            const runFile = promisify(execFile);
+
+
+            /** Приводит путь к переносимой записи с прямыми слешами. */
+
+            export function portable(value: string) {
+              return value.split(path.sep).join("/") || ".";
+            }
+
+
+            /**
+             * Отсекает внешние пути, исключённые каталоги и символические ссылки.
+             * Отсутствующий после Git-фильтра файл считается удалённым, а не исходником.
+             */
+            export async function regularProjectFile(root: string, relative:
+            string) {
+              if (excludedProjectPath(relative)) return false;
+              const candidate = path.resolve(root, relative);
+              if (!within(root, candidate)) return false;
+              try {
+                const resolved = await realpath(candidate);
+                if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) return false;
+                const info = await lstat(candidate);
+                return info.isFile() && !info.isSymbolicLink();
+              } catch (errorCause) { const error = errorDetails(errorCause);
+                if (error.code === "ENOENT") return false;
+                throw error;
+              }
+            }
+
+
+            /**
+             * Получает учитываемые файлы и признак полноты. Ошибка Git внутри репозитория
+             * не маскируется полным результатом обхода: причина возвращается диагностикой.
+             */
+            export async function projectFiles(root: string, maxFiles: number,
+            ownsDirectory: (relative: string) => boolean | Promise<boolean>) {
+              const output = await runFile("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "."],
+                { cwd: root, timeout: 15000, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
+              const files: string[] = [];
+              for (const file of new Set(output.stdout.split("\0"))) {
+                if (!file || excludedProjectPath(file) || !await ownsDirectory(path.posix.dirname(file))) continue;
+                files.push(file);
+                if (files.length > maxFiles) break;
+              }
+              const limited = files.length > maxFiles;
+              return { files: files.slice(0, maxFiles), discovery: "git", complete: !limited,
+                diagnostics: limited ? ["File limit reached: " + maxFiles] : [] };
+            }
+      - index: 79
+        fact:
+          id: sha256:9563706618e35ec2a4904c4fd067a7bf1647b8b3f64882e66356fc302810705f
+          kind: file
+          path: analyse/project/workspace.ts
+          start_line: 1
+          end_line: 155
           text: >
             import { execFile } from "node:child_process";
 
@@ -1171,9 +2478,16 @@ publication:
 
             import { promisify } from "node:util";
 
-            import { errorDetails } from "../runtime/errors.js";
+            import { errorDetails } from "../../node-errors.js";
 
-            import { excludedProjectPath, within } from "./paths.js";
+            import { excludedProjectPath, STATE_DIRECTORY, within } from
+            "./paths.js";
+
+            import { MODULE_TREE_FILE } from
+            "../../framework/contracts/module-tree.js";
+
+            import type { ProjectSourceLocation, WorkspaceProject } from
+            "../../framework/project-types/types.js";
 
 
             const git = promisify(execFile);
@@ -1247,6 +2561,21 @@ publication:
             }
 
 
+            /** A Git checkout is a project candidate even before its first
+            ArchiView map exists. */
+
+            export async function discoverWorkspaceProjects(workspace: string):
+            Promise<WorkspaceProject[]> {
+              const repositories = await discoverWorkspaceRepositories(workspace);
+              return Promise.all(repositories.map(async repository => {
+                const root = path.join(workspace, repository);
+                const state = await entry(path.join(root, STATE_DIRECTORY));
+                const map = state?.isDirectory() ? await entry(path.join(root, MODULE_TREE_FILE)) : undefined;
+                return { repository, hasModuleMap: map?.isFile() ?? false };
+              }));
+            }
+
+
             function checkedTarget(root: string, relative: string) {
               if (path.isAbsolute(relative) || path.win32.isAbsolute(relative) || /^[a-z]:/i.test(relative))
                 throw new Error("source path must be relative");
@@ -1302,7 +2631,7 @@ publication:
             selected root is the upper bound. */
 
             export async function locateSourceRepository(workspace: string,
-            relative: string) {
+            relative: string): Promise<ProjectSourceLocation> {
               const workspaceRoot = await realpath(workspace);
               const target = checkedTarget(workspaceRoot, relative);
               let existing = target;
@@ -1336,12 +2665,12 @@ publication:
                 directory: relativePath(root, targetDirectory), existingDirectory: relativePath(root, existingDirectory),
                 plannedPath: existing === target ? undefined : relativePath(root, requested) };
             }
-      - index: 207
+      - index: 200
         fact:
-          id: sha256:9f5d3de18b28479113d2b2ecbb1551dfa54c42e562194fb7cdd851ed3e51bcdd
+          id: sha256:42129eba43327194b2de4e8dd99aa54278d19ec94e7600a7a781f1a902a0cecc
           kind: module
-          path: src/project
-          text: '{"contract":"documented","format":"yaml","sources":["src/project/identity.ts","src/project/paths.ts","src/project/workspace.ts"]}'
+          path: analyse/project
+          text: '{"contract":"documented","format":"yaml","sources":["analyse/project/archive-cache.ts","analyse/project/clause-ids.ts","analyse/project/file-lock.ts","analyse/project/identity.ts","analyse/project/inventory.ts","analyse/project/module-tree.ts","analyse/project/paths.ts","analyse/project/source-files.ts","analyse/project/workspace.ts"]}'
 review_status:
   self:
     current:
@@ -1391,18 +2720,24 @@ review_status:
       reasons:
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract

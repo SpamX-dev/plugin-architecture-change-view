@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-serialization
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: c620c73eee8f2aff76bfba10a2c35c2a925b9b222d39de4df4d9f86d43d7425d
+check_hash: e4455122049a699e95a21f1c6c6556d3ce402a6e09a2be63495b2d34299fece1
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,83 +10,62 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 245c72c741a6065b5ab66edae2c4976b6bf34925
+      id: cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
     state:
       exists: true
-      directory: src/serialization
-      self_digest: sha256:b080a37867c92fd9577285f63f9aa202ab7383474873738f35d740ed646674cd
-      subtree_digest: sha256:5bc828127c02ca57d665cb39175adcb9a77d33e2d42352f04a9c845ac3c0a713
+      directory: framework/serialization
+      self_digest: sha256:75d11db4da2ee38f40246918934d333a78555bff612c6d3af8785e8ba985e431
+      subtree_digest: sha256:5e665a25dfd9d964856d153938cf7b2425408a03e626de38de520952119fcd86
   current:
     exists: true
-    directory: src/serialization
-    self_digest: sha256:3469186e9f1a3dd86229a8f1673798d4ae18121ba73de1c0acab4a1a96032529
-    subtree_digest: sha256:c742483c5dd83949518448da90775593afe16e2cbc7ba1ee678dcadce1c92639
+    directory: framework/serialization
+    self_digest: sha256:75d11db4da2ee38f40246918934d333a78555bff612c6d3af8785e8ba985e431
+    subtree_digest: sha256:5e665a25dfd9d964856d153938cf7b2425408a03e626de38de520952119fcd86
   analyzer:
     name: archiview-structure
     version: 1.1.0
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
   module_id: archiview-serialization
-  directory: src/serialization
-  parent_id: architecture-core
+  directory: framework/serialization
+  parent_id: archiview-framework
   children: []
   technical:
     normalization: archiview/module-state/v1
     module_id: archiview-serialization
-    directory: src/serialization
+    directory: framework/serialization
     own_files:
-      - path: src/serialization/digest.ts
+      - path: framework/serialization/digest.ts
         digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
         normalization: text-lf/v1
-      - path: src/serialization/schema.ts
+      - path: framework/serialization/schema.ts
         digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
         normalization: text-lf/v1
-      - path: src/serialization/yaml.ts
+      - path: framework/serialization/yaml.ts
         digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
         normalization: text-lf/v1
     contract:
       schema_version: 1
       id: archiview-serialization
-      title: Кодирование данных
+      title: Serialization
       kind: module
       extensions:
         archiview.roles:
           - serialization
-      purpose: Читать структурированные данные ArchiView и получать воспроизводимый
-        отпечаток их содержимого.
+      purpose: Регламентировать представление доменных данных ArchiView при
+        сериализации и их каноническую запись для воспроизводимого отпечатка.
       boundaries:
-        B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
-          поддерживаемых типов.
-        B3: При канонизации считать порядок ключей словаря несущественным, сохраняя
-          последовательность элементов массива.
+        B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+          ключами словарей и без YAML-ссылок.
+        B3: В канонической записи порядок элементов массива значим, исходный порядок
+          ключей словаря произволен.
       invariants: {}
     document_state: documented
     inherited:
       - module_id: architecture-change-view
         section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
       - module_id: architecture-change-view
         section: invariants
         id: I10
@@ -98,80 +77,45 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: archiview-framework
         section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:b080a37867c92fd9577285f63f9aa202ab7383474873738f35d740ed646674cd
+        id: B1
+        text: Для фактов о репозитории и результатов анализа задавать только их
+          представление и допустимые связи.
+  technical_digest: sha256:75d11db4da2ee38f40246918934d333a78555bff612c6d3af8785e8ba985e431
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-serialization
-    directory: src/serialization
+    directory: framework/serialization
     own_files:
-      - path: src/serialization/digest.ts
+      - path: framework/serialization/digest.ts
         digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
         normalization: text-lf/v1
-      - path: src/serialization/schema.ts
+      - path: framework/serialization/schema.ts
         digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
         normalization: text-lf/v1
-      - path: src/serialization/yaml.ts
+      - path: framework/serialization/yaml.ts
         digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
         normalization: text-lf/v1
     contract:
       id: archiview-serialization
       kind: module
-      purpose: Читать структурированные данные ArchiView и получать воспроизводимый
-        отпечаток их содержимого.
+      purpose: Регламентировать представление доменных данных ArchiView при
+        сериализации и их каноническую запись для воспроизводимого отпечатка.
       boundaries:
-        B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
-          поддерживаемых типов.
-        B3: При канонизации считать порядок ключей словаря несущественным, сохраняя
-          последовательность элементов массива.
+        B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+          ключами словарей и без YAML-ссылок.
+        B3: В канонической записи порядок элементов массива значим, исходный порядок
+          ключей словаря произволен.
       invariants: {}
     inherited:
       - module_id: architecture-change-view
         section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
       - module_id: architecture-change-view
         section: invariants
         id: I10
@@ -183,71 +127,57 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: archiview-framework
         section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+        id: B1
+        text: Для фактов о репозитории и результатов анализа задавать только их
+          представление и допустимые связи.
     children: []
-  self_digest: sha256:d92cb1d29ac8552b67bfa583d0e559001eaca978c1e40c3b6060f57e4089c404
+  self_digest: sha256:c199a9e40b5fb0a6fc1240a3e1bfcee90a35620f41370310c09f9df197c780b3
   subtree:
-    self: sha256:b080a37867c92fd9577285f63f9aa202ab7383474873738f35d740ed646674cd
+    self: sha256:75d11db4da2ee38f40246918934d333a78555bff612c6d3af8785e8ba985e431
     children: []
-  subtree_digest: sha256:5bc828127c02ca57d665cb39175adcb9a77d33e2d42352f04a9c845ac3c0a713
+  subtree_digest: sha256:5e665a25dfd9d964856d153938cf7b2425408a03e626de38de520952119fcd86
   semantic_subtree:
-    self: sha256:d92cb1d29ac8552b67bfa583d0e559001eaca978c1e40c3b6060f57e4089c404
+    self: sha256:c199a9e40b5fb0a6fc1240a3e1bfcee90a35620f41370310c09f9df197c780b3
     children: []
-  semantic_subtree_digest: sha256:7bbcffc373039cfcbf008364ee3d6e650e7671d22c22c87e3e7bf8396ce16644
+  semantic_subtree_digest: sha256:5afa4d31a257ccffc5dd5568d15a5e412deeb4136640fe93e3a3bea86b4cea12
 current:
   module_id: archiview-serialization
-  directory: src/serialization
-  parent_id: architecture-core
+  directory: framework/serialization
+  parent_id: archiview-framework
   children: []
   technical:
     normalization: archiview/module-state/v1
     module_id: archiview-serialization
-    directory: src/serialization
+    directory: framework/serialization
     own_files:
-      - path: src/serialization/digest.ts
+      - path: framework/serialization/digest.ts
         digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
         normalization: text-lf/v1
-      - path: src/serialization/schema.ts
+      - path: framework/serialization/schema.ts
         digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
         normalization: text-lf/v1
-      - path: src/serialization/yaml.ts
+      - path: framework/serialization/yaml.ts
         digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
         normalization: text-lf/v1
     contract:
       schema_version: 1
       id: archiview-serialization
-      title: Кодирование данных
+      title: Serialization
       kind: module
       extensions:
         archiview.roles:
           - serialization
-      purpose: Читать структурированные данные ArchiView и получать воспроизводимый
-        отпечаток их содержимого.
+      purpose: Регламентировать представление доменных данных ArchiView при
+        сериализации и их каноническую запись для воспроизводимого отпечатка.
       boundaries:
-        B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
-          поддерживаемых типов.
-        B3: При канонизации считать порядок ключей словаря несущественным, сохраняя
-          последовательность элементов массива.
+        B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+          ключами словарей и без YAML-ссылок.
+        B3: В канонической записи порядок элементов массива значим, исходный порядок
+          ключей словаря произволен.
       invariants: {}
     document_state: documented
     inherited:
@@ -268,51 +198,37 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: archiview-framework
         section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:3469186e9f1a3dd86229a8f1673798d4ae18121ba73de1c0acab4a1a96032529
+        id: B1
+        text: Для фактов о репозитории и результатов анализа задавать только их
+          представление и допустимые связи.
+  technical_digest: sha256:75d11db4da2ee38f40246918934d333a78555bff612c6d3af8785e8ba985e431
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-serialization
-    directory: src/serialization
+    directory: framework/serialization
     own_files:
-      - path: src/serialization/digest.ts
+      - path: framework/serialization/digest.ts
         digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
         normalization: text-lf/v1
-      - path: src/serialization/schema.ts
+      - path: framework/serialization/schema.ts
         digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
         normalization: text-lf/v1
-      - path: src/serialization/yaml.ts
+      - path: framework/serialization/yaml.ts
         digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
         normalization: text-lf/v1
     contract:
       id: archiview-serialization
       kind: module
-      purpose: Читать структурированные данные ArchiView и получать воспроизводимый
-        отпечаток их содержимого.
+      purpose: Регламентировать представление доменных данных ArchiView при
+        сериализации и их каноническую запись для воспроизводимого отпечатка.
       boundaries:
-        B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
-          поддерживаемых типов.
-        B3: При канонизации считать порядок ключей словаря несущественным, сохраняя
-          последовательность элементов массива.
+        B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+          ключами словарей и без YAML-ссылок.
+        B3: В канонической записи порядок элементов массива значим, исходный порядок
+          ключей словаря произволен.
       invariants: {}
     inherited:
       - module_id: architecture-change-view
@@ -332,41 +248,27 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: archiview-framework
         section: boundaries
-        id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
-        section: boundaries
-        id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
-        section: boundaries
-        id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
-        section: boundaries
-        id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+        id: B1
+        text: Для фактов о репозитории и результатов анализа задавать только их
+          представление и допустимые связи.
     children: []
-  self_digest: sha256:e4569a0e2ef238a7bc2cfc37c270a7f2aa235a611ee6c0cf05e3d6d9c0a4c924
+  self_digest: sha256:c199a9e40b5fb0a6fc1240a3e1bfcee90a35620f41370310c09f9df197c780b3
   subtree:
-    self: sha256:3469186e9f1a3dd86229a8f1673798d4ae18121ba73de1c0acab4a1a96032529
+    self: sha256:75d11db4da2ee38f40246918934d333a78555bff612c6d3af8785e8ba985e431
     children: []
-  subtree_digest: sha256:c742483c5dd83949518448da90775593afe16e2cbc7ba1ee678dcadce1c92639
+  subtree_digest: sha256:5e665a25dfd9d964856d153938cf7b2425408a03e626de38de520952119fcd86
   semantic_subtree:
-    self: sha256:e4569a0e2ef238a7bc2cfc37c270a7f2aa235a611ee6c0cf05e3d6d9c0a4c924
+    self: sha256:c199a9e40b5fb0a6fc1240a3e1bfcee90a35620f41370310c09f9df197c780b3
     children: []
-  semantic_subtree_digest: sha256:cf8f72dbed74978d0316b8c33aaec203b41e3d1a1cd2846b32d802490c890fb1
+  semantic_subtree_digest: sha256:5afa4d31a257ccffc5dd5568d15a5e412deeb4136640fe93e3a3bea86b4cea12
 change:
   existence: retained
   own: false
   own_code: false
   own_contract: false
-  inherited_constraints: true
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -375,26 +277,26 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 242
-  comparison_key: sha256:bc97fdbb3a784d394e84563ac0a6b6c37f48af5c99302ad7b09c90ddb244ab7c
+  generation: 243
+  comparison_key: sha256:c0fb4d12362ef6c08626caa9da21de0d73c0fea72a52e1c29535ca9729a4013a
   baseline:
     metadata:
-      id: git-245c72c741a6065b5ab66edae2c4976b6bf34925
-      digest: sha256:0eb361492f672239098c928778c1e8f2c9f41a4760ffa933ac88e0a8bb6b14c5
+      id: git-cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
+      digest: sha256:ae8d8d4995bb5e92aa8da603db2d7df77388b5cd610747130a1059863bf9a5b3
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:38:06.356Z
+      capturedAt: 2026-11-24T09:57:45.255Z
       kind: git
-      revision: 245c72c741a6065b5ab66edae2c4976b6bf34925
+      revision: cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
       label: HEAD
-      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
+      fingerprint: 6d1d2d47e306b7d6a6af463796030c7dcf2994aa4ee348db8ea519f419fe648e
       complete: true
       diagnostics: []
       evidenceLimitations: []
       isHead: true
-    module_index: 16
+    module_index: 15
     module:
-      directory: src/serialization
+      directory: framework/serialization
       document:
         state: documented
         text: >
@@ -402,52 +304,53 @@ publication:
 
           id: archiview-serialization
 
-          title: Кодирование данных
+          title: Serialization
 
           kind: module
 
           extensions:
             archiview.roles: [serialization]
-          purpose: Читать структурированные данные ArchiView и получать
-          воспроизводимый отпечаток их содержимого.
+          purpose: Регламентировать представление доменных данных ArchiView при
+          сериализации и их каноническую запись для воспроизводимого отпечатка.
 
           boundaries:
-            B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне поддерживаемых типов.
-            B3: При канонизации считать порядок ключей словаря несущественным, сохраняя последовательность элементов массива.
+            B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+            B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
           invariants: {}
         format: yaml
         contract:
           schema_version: 1
           id: archiview-serialization
-          title: Кодирование данных
+          title: Serialization
           kind: module
           extensions:
             archiview.roles:
               - serialization
-          purpose: Читать структурированные данные ArchiView и получать воспроизводимый
-            отпечаток их содержимого.
+          purpose: Регламентировать представление доменных данных ArchiView при
+            сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
           boundaries:
-            B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
-              поддерживаемых типов.
-            B3: При канонизации считать порядок ключей словаря несущественным, сохраняя
-              последовательность элементов массива.
+            B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+              ключами словарей и без YAML-ссылок.
+            B3: В канонической записи порядок элементов массива значим, исходный порядок
+              ключей словаря произволен.
           invariants: {}
       documentPath: .archiview/modules/archiview-serialization.yaml
       files:
         - path: .archiview/modules/archiview-serialization.yaml
-          hash: 699efaa5f12c13a9e33228addaee512c0fb150e6
-        - path: src/serialization/digest.ts
+          hash: 43bdd3095bf57ca01b78188b59335d031f19fa0c
+        - path: framework/serialization/digest.ts
           hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
-        - path: src/serialization/schema.ts
+        - path: framework/serialization/schema.ts
           hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
-        - path: src/serialization/yaml.ts
+        - path: framework/serialization/yaml.ts
           hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
       sourceFiles: 3
-      fingerprint: 9f5abdca763e7211116bf39e9a6f8c4194c986a83be10a51c6981e7385773bec
+      fingerprint: 164dedb343ccecaa6ecefc95b6d3373267a6c2e63777ac5de59ce207a3faf7e5
     facts:
-      - index: 17
+      - index: 27
         fact:
-          id: sha256:8e54cc387f5c17452915bd7aa42965bd4b3a7f93e87b264985dea220b5223686
+          id: sha256:36e8c9099d0711ca21a60527a4fe4047c91b3c0179875bffdbd98d9aba25bdf3
           kind: file
           path: .archiview/modules/archiview-serialization.yaml
           start_line: 1
@@ -457,24 +360,25 @@ publication:
 
             id: archiview-serialization
 
-            title: Кодирование данных
+            title: Serialization
 
             kind: module
 
             extensions:
               archiview.roles: [serialization]
-            purpose: Читать структурированные данные ArchiView и получать
-            воспроизводимый отпечаток их содержимого.
+            purpose: Регламентировать представление доменных данных ArchiView
+            при сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
 
             boundaries:
-              B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне поддерживаемых типов.
-              B3: При канонизации считать порядок ключей словаря несущественным, сохраняя последовательность элементов массива.
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
             invariants: {}
-      - index: 115
+      - index: 96
         fact:
-          id: sha256:9e7834c6f33641bbe191264d9e290882fc90255a8d5195f1c020b832a42e8a56
+          id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
           kind: file
-          path: src/serialization/digest.ts
+          path: framework/serialization/digest.ts
           start_line: 1
           end_line: 15
           text: >
@@ -498,11 +402,11 @@ publication:
             export function digest(value: unknown) {
               return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
             }
-      - index: 116
+      - index: 97
         fact:
-          id: sha256:a43ef3e9a7072d2666c010e5c43cabb7e14d271805e8ddad532a1d47cbd6f5a9
+          id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
           kind: file
-          path: src/serialization/schema.ts
+          path: framework/serialization/schema.ts
           start_line: 1
           end_line: 27
           text: >
@@ -554,11 +458,11 @@ publication:
               object(v, at);
               for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
             };
-      - index: 117
+      - index: 98
         fact:
-          id: sha256:8c41810c557605410da1b4adab9609caa78cbe1491124f7f4f8fdc1f7f51dbd0
+          id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
           kind: file
-          path: src/serialization/yaml.ts
+          path: framework/serialization/yaml.ts
           start_line: 1
           end_line: 37
           text: >
@@ -606,95 +510,140 @@ publication:
             export function parseReportYaml<T = unknown>(text: string): T {
               return parseYaml(text, (value) => value as T);
             }
-      - index: 211
+      - index: 198
         fact:
-          id: sha256:82d92bb64dda60470ebf6524d6931aea0f4f976e4d3957592516420a68625b2f
+          id: sha256:62c8371a4addb9f7ecd4f9c2876fa5b54010714cc279c910c15bfa37a229db02
           kind: module
-          path: src/serialization
-          text: '{"contract":"documented","format":"yaml","sources":["src/serialization/digest.ts","src/serialization/schema.ts","src/serialization/yaml.ts"]}'
+          path: framework/serialization
+          text: '{"contract":"documented","format":"yaml","sources":["framework/serialization/digest.ts","framework/serialization/schema.ts","framework/serialization/yaml.ts"]}'
   current:
     metadata:
-      id: launch-a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
-      digest: sha256:6363190cb16d9f6be0f1249150f84f14fec640bc9afec1ec159f22af462b729e
+      id: launch-2c90cec18764e07c30dc83abf511f71af950652ad121e4623b453b3dcf4ce543
+      digest: sha256:07b75d86d2e99b64735843a667046a1ab58017047eb09d29d1f6e6373191ae83
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:38:08.764Z
+      capturedAt: 2026-11-24T09:57:48.329Z
       kind: launch
       label: Начальное состояние
-      fingerprint: a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
+      fingerprint: 2c90cec18764e07c30dc83abf511f71af950652ad121e4623b453b3dcf4ce543
       complete: true
       diagnostics: []
       evidenceLimitations: []
       observations:
         architecture-change-view:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-distribution:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-analyse:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-skills:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-git-changes:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-module-boundaries-skill:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-module-relations:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        architecture-core:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-application:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-http:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-codex:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-contracts:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        dsh-adapter:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        dsh-client-panel:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-mcp:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-module-review:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-project-location:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-reports:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-bridges:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-codex:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        dsh-adapter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-distribution:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-cli:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-framework:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-reviews:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-node-runtime:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-contracts:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-relation-model:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-project-context:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-project-types:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-serialization:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-snapshots:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-storage:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-reports:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-operations:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-skills:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-boundaries-skill:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         architecture-tests:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-tools:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         architecture-web:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-application:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-analysis-service:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-file-watcher:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-host-bridge:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-node-runtime:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-http:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-client:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-    module_index: 16
+        archiview-web-api-client:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-presenter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-views:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-workspace-presenter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+    module_index: 17
     module:
-      directory: src/serialization
+      directory: framework/serialization
       document:
         state: documented
         text: >
@@ -702,52 +651,53 @@ publication:
 
           id: archiview-serialization
 
-          title: Кодирование данных
+          title: Serialization
 
           kind: module
 
           extensions:
             archiview.roles: [serialization]
-          purpose: Читать структурированные данные ArchiView и получать
-          воспроизводимый отпечаток их содержимого.
+          purpose: Регламентировать представление доменных данных ArchiView при
+          сериализации и их каноническую запись для воспроизводимого отпечатка.
 
           boundaries:
-            B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне поддерживаемых типов.
-            B3: При канонизации считать порядок ключей словаря несущественным, сохраняя последовательность элементов массива.
+            B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+            B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
           invariants: {}
         format: yaml
         contract:
           schema_version: 1
           id: archiview-serialization
-          title: Кодирование данных
+          title: Serialization
           kind: module
           extensions:
             archiview.roles:
               - serialization
-          purpose: Читать структурированные данные ArchiView и получать воспроизводимый
-            отпечаток их содержимого.
+          purpose: Регламентировать представление доменных данных ArchiView при
+            сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
           boundaries:
-            B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне
-              поддерживаемых типов.
-            B3: При канонизации считать порядок ключей словаря несущественным, сохраняя
-              последовательность элементов массива.
+            B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+              ключами словарей и без YAML-ссылок.
+            B3: В канонической записи порядок элементов массива значим, исходный порядок
+              ключей словаря произволен.
           invariants: {}
       documentPath: .archiview/modules/archiview-serialization.yaml
       files:
         - path: .archiview/modules/archiview-serialization.yaml
-          hash: 699efaa5f12c13a9e33228addaee512c0fb150e6
-        - path: src/serialization/digest.ts
+          hash: 43bdd3095bf57ca01b78188b59335d031f19fa0c
+        - path: framework/serialization/digest.ts
           hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
-        - path: src/serialization/schema.ts
+        - path: framework/serialization/schema.ts
           hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
-        - path: src/serialization/yaml.ts
+        - path: framework/serialization/yaml.ts
           hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
       sourceFiles: 3
-      fingerprint: 9f5abdca763e7211116bf39e9a6f8c4194c986a83be10a51c6981e7385773bec
+      fingerprint: 164dedb343ccecaa6ecefc95b6d3373267a6c2e63777ac5de59ce207a3faf7e5
     facts:
-      - index: 17
+      - index: 29
         fact:
-          id: sha256:8e54cc387f5c17452915bd7aa42965bd4b3a7f93e87b264985dea220b5223686
+          id: sha256:36e8c9099d0711ca21a60527a4fe4047c91b3c0179875bffdbd98d9aba25bdf3
           kind: file
           path: .archiview/modules/archiview-serialization.yaml
           start_line: 1
@@ -757,24 +707,25 @@ publication:
 
             id: archiview-serialization
 
-            title: Кодирование данных
+            title: Serialization
 
             kind: module
 
             extensions:
               archiview.roles: [serialization]
-            purpose: Читать структурированные данные ArchiView и получать
-            воспроизводимый отпечаток их содержимого.
+            purpose: Регламентировать представление доменных данных ArchiView
+            при сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
 
             boundaries:
-              B2: При чтении отклонять неоднозначные ключи, ссылки YAML и значения вне поддерживаемых типов.
-              B3: При канонизации считать порядок ключей словаря несущественным, сохраняя последовательность элементов массива.
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
             invariants: {}
-      - index: 115
+      - index: 104
         fact:
-          id: sha256:9e7834c6f33641bbe191264d9e290882fc90255a8d5195f1c020b832a42e8a56
+          id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
           kind: file
-          path: src/serialization/digest.ts
+          path: framework/serialization/digest.ts
           start_line: 1
           end_line: 15
           text: >
@@ -798,11 +749,11 @@ publication:
             export function digest(value: unknown) {
               return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
             }
-      - index: 116
+      - index: 105
         fact:
-          id: sha256:a43ef3e9a7072d2666c010e5c43cabb7e14d271805e8ddad532a1d47cbd6f5a9
+          id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
           kind: file
-          path: src/serialization/schema.ts
+          path: framework/serialization/schema.ts
           start_line: 1
           end_line: 27
           text: >
@@ -854,11 +805,11 @@ publication:
               object(v, at);
               for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
             };
-      - index: 117
+      - index: 106
         fact:
-          id: sha256:8c41810c557605410da1b4adab9609caa78cbe1491124f7f4f8fdc1f7f51dbd0
+          id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
           kind: file
-          path: src/serialization/yaml.ts
+          path: framework/serialization/yaml.ts
           start_line: 1
           end_line: 37
           text: >
@@ -906,12 +857,12 @@ publication:
             export function parseReportYaml<T = unknown>(text: string): T {
               return parseYaml(text, (value) => value as T);
             }
-      - index: 211
+      - index: 212
         fact:
-          id: sha256:82d92bb64dda60470ebf6524d6931aea0f4f976e4d3957592516420a68625b2f
+          id: sha256:62c8371a4addb9f7ecd4f9c2876fa5b54010714cc279c910c15bfa37a229db02
           kind: module
-          path: src/serialization
-          text: '{"contract":"documented","format":"yaml","sources":["src/serialization/digest.ts","src/serialization/schema.ts","src/serialization/yaml.ts"]}'
+          path: framework/serialization
+          text: '{"contract":"documented","format":"yaml","sources":["framework/serialization/digest.ts","framework/serialization/schema.ts","framework/serialization/yaml.ts"]}'
 review_status:
   self:
     current:
@@ -963,18 +914,26 @@ review_status:
       reasons:
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
+        - code: own_code
+          side: baseline
         - code: own_contract
           side: baseline
       verdict: null

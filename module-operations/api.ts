@@ -7,6 +7,7 @@ import type { Comparison, ComparisonModule, Fact, Snapshot } from "../framework/
 import type { compareContracts, RoleChange } from "../analyse/git-changes/contract-diff.js";
 import type { StructuredPatchHunk } from "diff";
 import type { Section } from "../framework/contracts/types.js";
+import type { ModuleRelations } from "../framework/module-relations/types.js";
 
 export interface RepositoryArgs { repository?: string }
 export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number; published?: boolean; watch?: boolean };
@@ -102,6 +103,9 @@ export interface SessionOperations {
   getComparison(args?: ComparisonArgs): Promise<ComparisonView>;
   getReviewStatuses(args: RepositoryArgs & {view: string}): Promise<{modules: (ModuleReviewState & {key: string})[]; diagnostics: string[]}>;
   getModule(args: ModuleArgs): Promise<ModuleDetail>;
+  getRelations(args: ModuleArgs): Promise<ModuleRelations>;
+  buildRelations(args: ModuleArgs): Promise<ModuleRelations>;
+  getRelationSource(args: FileDiffArgs): Promise<{ text: string }>;
   changeClause(args: ChangeClauseArgs): Promise<{ clauseId: string; undoToken?: string }>;
   changePrototype(args: PrototypeChange): Promise<{ directory: string }>;
   getFileDiff(args: FileDiffArgs): Promise<FileDiff>;

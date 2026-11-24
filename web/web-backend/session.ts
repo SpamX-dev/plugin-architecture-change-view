@@ -1,5 +1,6 @@
 import type { ComparisonView, ModuleDetail, SessionOperations, ComparisonArgs, FileDiffArgs, ModuleArgs, SnapshotArgs } from "../../module-operations/api.js";
 import { fileDiff } from "../../module-operations/file-diff.js";
+import * as relations from "../../module-operations/relations.js";
 import type { Snapshot, GitRevision } from "../../framework/snapshots/types.js";
 import type { PublishedComparison } from "../../framework/static-report/types.js";
 import type { SessionView } from "../../module-operations/session-view.js";
@@ -449,6 +450,21 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     if (!module.after) throw new ApplicationError("STALE_VIEW", "Прототип отсутствует в текущем состоянии");
     return changeExistingPrototype(root, module.after, args.action === "edit" ? args.text : undefined);
   };
-  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
+  const getRelations: SessionOperations["getRelations"] = async args => {
+    const { view, module } = selectedModule(args);
+    return relations.getRelations(root, store.directory, view.currentSnapshot, module.currentPath);
+  };
+  const buildRelations: SessionOperations["buildRelations"] = async args => {
+    const { view, module } = selectedModule(args);
+    if (view.target?.id !== "current") throw new ApplicationError("INVALID_ARGUMENT", "Построение связей доступно для рабочего дерева.");
+    return relations.buildRelations(root, store.directory, view.currentSnapshot, module.currentPath);
+  };
+  const getRelationSource: SessionOperations["getRelationSource"] = async args => {
+    const { view, module } = selectedModule(args);
+    if (!module.after?.files.some(f => f.path === args.file)) throw new ApplicationError("NOT_FOUND", "Файл отсутствует в модуле.");
+    return relations.getRelationSource(root, store.directory, view.currentSnapshot, args.file);
+  };
+  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, getRelations, buildRelations, getRelationSource,
+    changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
   return { root, store, reviews, reports, changes, analysis, ...operations, close: () => watcher.close() };
 }

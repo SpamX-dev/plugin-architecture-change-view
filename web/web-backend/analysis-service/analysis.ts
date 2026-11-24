@@ -109,7 +109,7 @@ export class AnalysisRequests {
   /** Дополняет область из исходных полных снимков, сохраняя прежние экспорты и идентичность запроса. */
   async prepare(id: string, dependencies: DependencySelector[], complete = false) {
     if (!Array.isArray(dependencies)) throw new Error("Dependencies must be a YAML sequence");
-    if (dependencies.length || complete) throw new Error("Сбор зависимостей через LLM отключён; определение через AST не подключено.");
+    if (dependencies.length || complete) throw new Error("Сбор зависимостей через LLM отключён. Связи TS/JS строятся отдельно через SCIP.");
     const directory = requestDirectory(this.store, id);
     const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json", MAX_METADATA_BYTES)));
     if ((await this.status(id)).status === "completed") throw new Error("Анализ уже импортирован; создайте новый запрос из панели");

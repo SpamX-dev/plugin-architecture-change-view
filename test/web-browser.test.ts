@@ -97,6 +97,34 @@ async function cliOrigin(defer: DeferCleanup, project: string) {
   throw new Error("Built CLI exited before listening. " + diagnostics);
 }
 
+test("module relations build the project, reveal source lines and navigate to the consumer", browserOptions, async t => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  await writeFile(path.join(root,"main.ts"), 'import { feature } from "./src/feature.js";\nexport const result = feature;\n');
+  const origin = await cliOrigin(defer,root);
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(origin);
+  await page.getByRole("treeitem").filter({hasText:"Функция браузера"}).click();
+  await page.getByRole("tab",{name:"Связи"}).click();
+  await page.getByText("Связи ещё не построены для этого снимка.").waitFor();
+  await page.getByRole("button",{name:"Построить связи проекта"}).click();
+  await page.getByRole("heading", {name: "Использует напрямую · 0"}).waitFor();
+  await page.getByRole("heading", {name: "Напрямую используется в · 1"}).waitFor();
+  const peer = page.locator(".relation-peer").filter({hasText:"Новый заголовок проекта"});
+  await peer.locator(":scope > summary").click({position:{x:5,y:8}});
+  const symbol = peer.locator(".relation-symbol").filter({has:page.locator("summary code", {hasText:/^feature$/})});
+  await symbol.locator("summary").click();
+  await symbol.getByRole("button",{name:/main\.ts:2:/}).click();
+  assert.equal(await page.locator("dialog mark").textContent(),"export const result = feature;");
+  await page.getByRole("button",{name:"Закрыть",exact:true}).click();
+  await symbol.getByRole("button",{name:/Объявление/}).click();
+  assert.equal(await page.locator("dialog mark").textContent(),"export const feature = 2;");
+  await page.getByRole("button",{name:"Закрыть",exact:true}).click();
+  await peer.getByRole("button",{name:"Новый заголовок проекта"}).click();
+  await page.locator("#module-title").getByText("Новый заголовок проекта",{exact:true}).waitFor();
+  await page.getByRole("button",{name:"Функция браузера",exact:true}).waitFor();
+});
+
 test("standalone browser loads modules, navigates history, copies analysis and fits mobile", browserOptions, async (t) => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);

@@ -135,10 +135,13 @@ export function createArchiViewHttpServer(session: SessionOperations & { root: s
       }
       if (request.method === "GET" && url.pathname === "/api/review-statuses") return json(response, 200, await callSessionOperation(session, "getReviewStatuses", args));
       if (request.method === "GET" && url.pathname === "/api/module") return json(response, 200, await callSessionOperation(session, "getModule", args));
+      if (request.method === "GET" && url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "getRelations", args));
+      if (request.method === "GET" && url.pathname === "/api/relations/source") return json(response, 200, await callSessionOperation(session, "getRelationSource", args));
       if (request.method === "GET" && url.pathname === "/api/file-diff") return json(response, 200, await callSessionOperation(session, "getFileDiff", args));
       if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))
         return json(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: url.pathname.split("/").at(-1) })));
       if (request.method === "POST") {
+        if (url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "buildRelations", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/contract-clause") return json(response, 200, await callSessionOperation(session, "changeClause", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
         if (url.pathname === "/api/prototype") return json(response, 200, await callSessionOperation(session, "changePrototype", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
         if (url.pathname === "/api/analysis") return json(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await bodyOf(request))));

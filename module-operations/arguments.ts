@@ -43,10 +43,11 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
         throw new ApplicationError("INVALID_ARGUMENT", "Некорректный параметр analysis");
       if (typeof args.view !== "string" || typeof args.path !== "string") throw new ApplicationError("INVALID_ARGUMENT", "Нужны view и path");
       return session.getModule({view:args.view, path:args.path, analysis: args.analysis !== false && args.analysis !== "false", ...selector});
+    case "getRelationSource":
     case "getFileDiff":
       if (typeof args.view !== "string" || typeof args.path !== "string" || typeof args.file !== "string" || !args.file)
         throw new ApplicationError("INVALID_ARGUMENT", "Нужны view, path и file");
-      return session.getFileDiff({ view: args.view, path: args.path, file: args.file, ...selector });
+      return session[method]({ view: args.view, path: args.path, file: args.file, ...selector });
     case "changePrototype": {
       const { action, path, view, moduleId, title, purpose, text } = args;
       if (typeof view !== "string" || typeof path !== "string") throw new ApplicationError("INVALID_ARGUMENT", "Нужны view и path");
@@ -77,6 +78,8 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
       throw new ApplicationError("INVALID_ARGUMENT", "Некорректные параметры изменения пункта");
     }
     case "prepareAnalysis":
+    case "getRelations":
+    case "buildRelations":
     case "buildReview":
       if (typeof args.view !== "string" || typeof args.path !== "string")
         throw new ApplicationError("INVALID_ARGUMENT", "Нужны view и path");

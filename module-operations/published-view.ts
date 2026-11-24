@@ -5,6 +5,7 @@ import { readPublishedTree, PublicationChanged } from "../analyse/module-review/
 import { errorDetails } from "../node-errors.js";
 import type { ComparisonView, FileDiffArgs, ModuleArgs, ModuleDetail } from "./api.js";
 import { fileDiff } from "./file-diff.js";
+import * as relations from "./relations.js";
 import { ApplicationError } from "./errors.js";
 import { metadata, moduleDetail, moduleSummary, reviewSummary } from "./module-view.js";
 import type { SessionView } from "./session-view.js";
@@ -50,5 +51,10 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
     }
   }
   const getFileDiff = (args: FileDiffArgs) => fileDiff(selectedModule(args), baseline, current, args.file);
-  return { comparison, getModule, getFileDiff };
+  const getRelations = (args: ModuleArgs) => relations.getRelations(root, stateDirectory, current, selectedModule(args).currentPath);
+  const getRelationSource = (args: FileDiffArgs) => {
+    if (!selectedModule(args).after?.files.some(f => f.path === args.file)) throw new ApplicationError("NOT_FOUND", "Файл отсутствует в модуле.");
+    return relations.getRelationSource(root, stateDirectory, current, args.file);
+  };
+  return { comparison, getModule, getFileDiff, getRelations, getRelationSource };
 }

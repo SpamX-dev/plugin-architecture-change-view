@@ -56,22 +56,23 @@ async function execute(prepareWeb?: () => Promise<void>) {
     "dependencies-complete": { type: "boolean" },
     repository: { type: "string" }, target: { type: "string" }, directory: { type: "string" }, input: { type: "string" },
     "list-modules": { type: "boolean" }, "module-files": { type: "string" }, "get-contract": { type: "string" },
+    "build-relations": { type: "boolean" }, "module-relations": { type: "string" },
     "write-contract": { type: "string" }, inventory: { type: "boolean" },
     "module-context": { type: "string" }, scaffold: { type: "string" },
   } });
   const root = values.root ?? process.cwd();
   const selection = { repository: values.repository, target: values.target };
-  const moduleCommands = (["list-modules", "module-files", "get-contract", "write-contract", "inventory", "module-context", "scaffold"] as const)
+  const moduleCommands = (["list-modules", "module-files", "module-relations", "build-relations", "get-contract", "write-contract", "inventory", "module-context", "scaffold"] as const)
     .filter(name => values[name] !== undefined);
   if (!values.help && moduleCommands.length && (moduleCommands.length > 1 || values["check-index"] || values["import-review"] ||
     values["build-report"] || values["export-review-input"] || values["complete-analysis"] || values["prepare-analysis"]))
     throw new Error("Выберите одну операцию с модулем");
   if (!values.help && (values.input !== undefined || values.directory !== undefined) && !values["write-contract"])
     throw new Error("--input и --directory используются с --write-contract");
-  if (!values.help && values.target !== undefined && !["list-modules", "module-files", "get-contract", "write-contract"].some(name => name === moduleCommands[0]))
+  if (!values.help && values.target !== undefined && !["list-modules", "module-files", "module-relations", "get-contract", "write-contract"].some(name => name === moduleCommands[0]))
     throw new Error("--target используется с операциями снимка модуля");
   if (!values.help && (values.dependencies !== undefined || values["dependencies-complete"]))
-    throw new Error("Сбор зависимостей через LLM отключён; определение через AST не подключено.");
+    throw new Error("Сбор зависимостей через LLM отключён. Для связей TS/JS используйте --build-relations.");
   if (values.help) {
     process.stdout.write("ArchiView — archiview [--root DIR] [--port 4317] [--state-dir DIR]\n" +
       "  --build-report                       Построить и уплотнить отчёты без сервера\n" +
@@ -81,6 +82,8 @@ async function execute(prepareWeb?: () => Promise<void>) {
       "  --export-review-input MODULE_ID --output FILE\n" +
       "  --list-modules                       Проекты и модули выбранной рабочей папки (JSON)\n" +
       "  --module-files ID                    Список файлов модуля (JSON)\n" +
+      "  --build-relations                    Построить связи TS/JS всего репозитория\n" +
+      "  --module-relations ID                Связи рабочего дерева, git-<hash> или сохранённого снимка\n" +
       "  --get-contract ID                    Прочитать YAML контракта\n" +
       "  --write-contract ID --input FILE [--directory DIR]   Зарегистрировать или обновить контракт\n" +
       "  --inventory                          Инвентаризация исходников и состояния контрактов (JSON)\n" +
@@ -92,6 +95,27 @@ async function execute(prepareWeb?: () => Promise<void>) {
   } else if (moduleCommands.length) {
     const json = (value: unknown) => process.stdout.write(JSON.stringify(value, null, 2) + "\n");
     switch (moduleCommands[0]) {
+      case "build-relations":
+      case "module-relations": {
+        const workspace = await createWorkspaceSession({ root, stateDirectory: values["state-dir"], initialRepository: values.repository });
+        try {
+          const session = await workspace.session(values.repository ?? ".", true);
+          if (values.target === "index") throw new Error("Для чтения связей укажите current, git-<хеш> или идентификатор сохранённого снимка.");
+          const comparison = await session.getComparison({ target: values.target });
+          if (values["build-relations"]) {
+            const module = comparison.modules.find(m => m.currentPath === ".") ?? comparison.modules.find(m => m.currentPath !== null);
+            if (!module) throw new Error("В рабочем дереве нет модулей.");
+            const result = await session.buildRelations({view: comparison.id, path: module.key});
+            if (result.ready) json({ indexed: result.indexed, eligible: result.eligible, indexer: result.indexer });
+          } else {
+            const selector = values["module-relations"];
+            const module = comparison.modules.find(m => m.moduleId === selector) ?? comparison.modules.find(m => m.key === selector);
+            if (!module) throw new Error("Модуль не найден: " + selector);
+            json(await session.getRelations({view: comparison.id, path: module.key}));
+          }
+        } finally { await workspace.close(); }
+        break;
+      }
       case "list-modules": json(await listModules(root, selection)); break;
       case "module-files": json(await listModuleFiles(root, values["module-files"]!, selection)); break;
       case "get-contract": process.stdout.write(await getModuleContract(root, values["get-contract"]!, selection)); break;

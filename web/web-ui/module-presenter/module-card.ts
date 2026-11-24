@@ -8,6 +8,7 @@ import { renderReview } from "../views/review.js";
 import { renderDocument, renderHistoricalClause, renderFiles } from "../views/module-document.js";
 import { openFileDiff } from "../views/diff.js";
 import { createAnalysisControls } from "./analysis-controls.js";
+import { createRelationsPanel } from "./relations.js";
 import { createClauseEditor } from "./clause-editor.js";
 import { prototypeDialog } from "./prototype-editor.js";
 import { isPrototype } from "../../../framework/contracts/types.js";
@@ -27,6 +28,7 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
     findingFixes: Map<string, FixRecord>;
   } = { detail: null, selected: null, selection: 0, tab: "document", findingFixes: new Map() };
   const collapsedFileDirectories = new Set<string>();
+  const showRelations = createRelationsPanel(client);
   const fixesByRepository = new Map<string, Map<string, FixRecord>>();
   let reviewDetail: ModuleDetail | undefined;
   let detailRequest: ModuleDetail | undefined;
@@ -231,6 +233,9 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
             renderPanel({ reviewId });
         },
         ...navigation });
+    }
+    else if (state.tab === "relations") {
+      void showRelations(panel, currentView(), state.detail, selectModule);
     }
     else {
       const view = currentView(), detail = state.detail;

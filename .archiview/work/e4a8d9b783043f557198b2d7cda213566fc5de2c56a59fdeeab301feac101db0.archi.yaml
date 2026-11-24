@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-node-runtime
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: ebfe05a081ba62a916a053220248c3db86dffbacb91ec74244b7899c77c03c26
+check_hash: dfc8fc5c5bcca604b4e1f21b36608357505f322b6ad58b24c58fe2f4d6198d74
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,41 +10,38 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 245c72c741a6065b5ab66edae2c4976b6bf34925
+      id: cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
     state:
       exists: true
-      directory: src/runtime
-      self_digest: sha256:fbb2edbb04519b91115909d15b978ee2037afe847ef470de5f06bcba70f202cf
-      subtree_digest: sha256:80ded5815ab764ea4ba5e9de105c997a8cdba0a4bd40cec0299a7671defc3802
+      directory: web/web-backend/runtime
+      self_digest: sha256:9b55d0f81eec635c7bf10daeacd2fc6d96db5526e3a0edea4be287c88d137a7e
+      subtree_digest: sha256:67351205d4b59b3c9dc4bc47236742b47434e7fa1ba3c884c2572061131bbfd0
   current:
     exists: true
-    directory: src/runtime
-    self_digest: sha256:140ba2276c6d4bbb0e0d62cc58106e35c33a3a71fac272e208e6a0415f357e5d
-    subtree_digest: sha256:87d59ec91b0028f61528ce3e808c8fce98fcb1c64c32421b7a2aacbc96037638
+    directory: web/web-backend/runtime
+    self_digest: sha256:9b55d0f81eec635c7bf10daeacd2fc6d96db5526e3a0edea4be287c88d137a7e
+    subtree_digest: sha256:67351205d4b59b3c9dc4bc47236742b47434e7fa1ba3c884c2572061131bbfd0
   analyzer:
     name: archiview-structure
     version: 1.1.0
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
   module_id: archiview-node-runtime
-  directory: src/runtime
-  parent_id: architecture-core
+  directory: web/web-backend/runtime
+  parent_id: archiview-application
   children: []
   technical:
     normalization: archiview/module-state/v1
     module_id: archiview-node-runtime
-    directory: src/runtime
+    directory: web/web-backend/runtime
     own_files:
-      - path: src/runtime/errors.ts
-        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
-        normalization: text-lf/v1
-      - path: src/runtime/package-paths.ts
-        digest: sha256:af6a0065988b958d651e4e519c288ff18651856e779afd7f7bdffe4e6ea56a56
+      - path: web/web-backend/runtime/package-paths.ts
+        digest: sha256:a760d6ddc53e446c522adf6c2707b528bbdcc47d41e5aafcbb63cb3488949230
         normalization: text-lf/v1
     contract:
       schema_version: 1
       id: archiview-node-runtime
-      title: Среда выполнения Node
+      title: Runtime
       kind: module
       extensions:
         archiview.roles:
@@ -59,29 +56,8 @@ baseline:
     inherited:
       - module_id: architecture-change-view
         section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
       - module_id: architecture-change-view
         section: invariants
         id: I10
@@ -93,39 +69,54 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: architecture-web
         section: boundaries
         id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-application
+        section: boundaries
+        id: B3
+        text: Сессия работает с выбранным корнем проекта на протяжении своей жизни.
+      - module_id: archiview-application
+        section: boundaries
+        id: B4
+        text: История, снимки и запросы анализа доступны только в контексте
+          соответствующего репозитория.
+      - module_id: archiview-application
+        section: boundaries
+        id: B5
+        text: Историческое представление использует выбранный снимок и сохраняет текущую
+          публикацию.
+      - module_id: archiview-application
         section: boundaries
         id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
+        text: Открытие сохранённого представления читает опубликованную пару и её
+          доказательства без нового наблюдения рабочего дерева.
+      - module_id: archiview-application
         section: boundaries
         id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
+        text: Сессия подтверждает завершение содержательной проверки только после
+          импорта результата.
+      - module_id: archiview-application
         section: boundaries
         id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:fbb2edbb04519b91115909d15b978ee2037afe847ef470de5f06bcba70f202cf
+        text: В поручение агенту не входит определение зависимостей модулей.
+  technical_digest: sha256:9b55d0f81eec635c7bf10daeacd2fc6d96db5526e3a0edea4be287c88d137a7e
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-node-runtime
-    directory: src/runtime
+    directory: web/web-backend/runtime
     own_files:
-      - path: src/runtime/errors.ts
-        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
-        normalization: text-lf/v1
-      - path: src/runtime/package-paths.ts
-        digest: sha256:af6a0065988b958d651e4e519c288ff18651856e779afd7f7bdffe4e6ea56a56
+      - path: web/web-backend/runtime/package-paths.ts
+        digest: sha256:a760d6ddc53e446c522adf6c2707b528bbdcc47d41e5aafcbb63cb3488949230
         normalization: text-lf/v1
     contract:
       id: archiview-node-runtime
@@ -139,29 +130,8 @@ baseline:
     inherited:
       - module_id: architecture-change-view
         section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
       - module_id: architecture-change-view
         section: invariants
         id: I10
@@ -173,57 +143,72 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: architecture-web
         section: boundaries
         id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-application
+        section: boundaries
+        id: B3
+        text: Сессия работает с выбранным корнем проекта на протяжении своей жизни.
+      - module_id: archiview-application
+        section: boundaries
+        id: B4
+        text: История, снимки и запросы анализа доступны только в контексте
+          соответствующего репозитория.
+      - module_id: archiview-application
+        section: boundaries
+        id: B5
+        text: Историческое представление использует выбранный снимок и сохраняет текущую
+          публикацию.
+      - module_id: archiview-application
         section: boundaries
         id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
+        text: Открытие сохранённого представления читает опубликованную пару и её
+          доказательства без нового наблюдения рабочего дерева.
+      - module_id: archiview-application
         section: boundaries
         id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
+        text: Сессия подтверждает завершение содержательной проверки только после
+          импорта результата.
+      - module_id: archiview-application
         section: boundaries
         id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+        text: В поручение агенту не входит определение зависимостей модулей.
     children: []
-  self_digest: sha256:dd8ceea2cfb5aef12a33b7463bdd882cdc8e5495319d49b8e9f6a676b919417c
+  self_digest: sha256:9c33068e03ed97ce5fc1ef2faea1776bdffdd1a93360054dc58618321b332712
   subtree:
-    self: sha256:fbb2edbb04519b91115909d15b978ee2037afe847ef470de5f06bcba70f202cf
+    self: sha256:9b55d0f81eec635c7bf10daeacd2fc6d96db5526e3a0edea4be287c88d137a7e
     children: []
-  subtree_digest: sha256:80ded5815ab764ea4ba5e9de105c997a8cdba0a4bd40cec0299a7671defc3802
+  subtree_digest: sha256:67351205d4b59b3c9dc4bc47236742b47434e7fa1ba3c884c2572061131bbfd0
   semantic_subtree:
-    self: sha256:dd8ceea2cfb5aef12a33b7463bdd882cdc8e5495319d49b8e9f6a676b919417c
+    self: sha256:9c33068e03ed97ce5fc1ef2faea1776bdffdd1a93360054dc58618321b332712
     children: []
-  semantic_subtree_digest: sha256:b9ca771d4a3e2bb650a3e251f0f901af7c148e4511c4e5916f03aa84b9cc2d0c
+  semantic_subtree_digest: sha256:2f5c01f5a9bbdf7539fa62fb0461e6be90f5addee5e85b8281636dd9ce853f15
 current:
   module_id: archiview-node-runtime
-  directory: src/runtime
-  parent_id: architecture-core
+  directory: web/web-backend/runtime
+  parent_id: archiview-application
   children: []
   technical:
     normalization: archiview/module-state/v1
     module_id: archiview-node-runtime
-    directory: src/runtime
+    directory: web/web-backend/runtime
     own_files:
-      - path: src/runtime/errors.ts
-        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
-        normalization: text-lf/v1
-      - path: src/runtime/package-paths.ts
-        digest: sha256:af6a0065988b958d651e4e519c288ff18651856e779afd7f7bdffe4e6ea56a56
+      - path: web/web-backend/runtime/package-paths.ts
+        digest: sha256:a760d6ddc53e446c522adf6c2707b528bbdcc47d41e5aafcbb63cb3488949230
         normalization: text-lf/v1
     contract:
       schema_version: 1
       id: archiview-node-runtime
-      title: Среда выполнения Node
+      title: Runtime
       kind: module
       extensions:
         archiview.roles:
@@ -253,37 +238,52 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: architecture-web
         section: boundaries
         id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-application
+        section: boundaries
+        id: B3
+        text: Сессия работает с выбранным корнем проекта на протяжении своей жизни.
+      - module_id: archiview-application
+        section: boundaries
+        id: B4
+        text: История, снимки и запросы анализа доступны только в контексте
+          соответствующего репозитория.
+      - module_id: archiview-application
+        section: boundaries
+        id: B5
+        text: Историческое представление использует выбранный снимок и сохраняет текущую
+          публикацию.
+      - module_id: archiview-application
         section: boundaries
         id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
+        text: Открытие сохранённого представления читает опубликованную пару и её
+          доказательства без нового наблюдения рабочего дерева.
+      - module_id: archiview-application
         section: boundaries
         id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
+        text: Сессия подтверждает завершение содержательной проверки только после
+          импорта результата.
+      - module_id: archiview-application
         section: boundaries
         id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:140ba2276c6d4bbb0e0d62cc58106e35c33a3a71fac272e208e6a0415f357e5d
+        text: В поручение агенту не входит определение зависимостей модулей.
+  technical_digest: sha256:9b55d0f81eec635c7bf10daeacd2fc6d96db5526e3a0edea4be287c88d137a7e
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-node-runtime
-    directory: src/runtime
+    directory: web/web-backend/runtime
     own_files:
-      - path: src/runtime/errors.ts
-        digest: sha256:ad3ef0f903f288e00b3277a2d0ff0cd7510be5dea51211147238a2ca3841fa0b
-        normalization: text-lf/v1
-      - path: src/runtime/package-paths.ts
-        digest: sha256:af6a0065988b958d651e4e519c288ff18651856e779afd7f7bdffe4e6ea56a56
+      - path: web/web-backend/runtime/package-paths.ts
+        digest: sha256:a760d6ddc53e446c522adf6c2707b528bbdcc47d41e5aafcbb63cb3488949230
         normalization: text-lf/v1
     contract:
       id: archiview-node-runtime
@@ -312,41 +312,59 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: architecture-web
         section: boundaries
         id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-application
+        section: boundaries
+        id: B3
+        text: Сессия работает с выбранным корнем проекта на протяжении своей жизни.
+      - module_id: archiview-application
+        section: boundaries
+        id: B4
+        text: История, снимки и запросы анализа доступны только в контексте
+          соответствующего репозитория.
+      - module_id: archiview-application
+        section: boundaries
+        id: B5
+        text: Историческое представление использует выбранный снимок и сохраняет текущую
+          публикацию.
+      - module_id: archiview-application
         section: boundaries
         id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
+        text: Открытие сохранённого представления читает опубликованную пару и её
+          доказательства без нового наблюдения рабочего дерева.
+      - module_id: archiview-application
         section: boundaries
         id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
+        text: Сессия подтверждает завершение содержательной проверки только после
+          импорта результата.
+      - module_id: archiview-application
         section: boundaries
         id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+        text: В поручение агенту не входит определение зависимостей модулей.
     children: []
-  self_digest: sha256:edde0b4ec91a7678d6f976d5d9acdc53a3a77820589e59ea327855cb33a6e101
+  self_digest: sha256:9c33068e03ed97ce5fc1ef2faea1776bdffdd1a93360054dc58618321b332712
   subtree:
-    self: sha256:140ba2276c6d4bbb0e0d62cc58106e35c33a3a71fac272e208e6a0415f357e5d
+    self: sha256:9b55d0f81eec635c7bf10daeacd2fc6d96db5526e3a0edea4be287c88d137a7e
     children: []
-  subtree_digest: sha256:87d59ec91b0028f61528ce3e808c8fce98fcb1c64c32421b7a2aacbc96037638
+  subtree_digest: sha256:67351205d4b59b3c9dc4bc47236742b47434e7fa1ba3c884c2572061131bbfd0
   semantic_subtree:
-    self: sha256:edde0b4ec91a7678d6f976d5d9acdc53a3a77820589e59ea327855cb33a6e101
+    self: sha256:9c33068e03ed97ce5fc1ef2faea1776bdffdd1a93360054dc58618321b332712
     children: []
-  semantic_subtree_digest: sha256:adedb3bda63a90f77d53a99d348a8956958c712a09fac254b1a2d8cbaecccbd8
+  semantic_subtree_digest: sha256:2f5c01f5a9bbdf7539fa62fb0461e6be90f5addee5e85b8281636dd9ce853f15
 change:
   existence: retained
   own: false
   own_code: false
   own_contract: false
-  inherited_constraints: true
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -355,26 +373,26 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 242
-  comparison_key: sha256:bc97fdbb3a784d394e84563ac0a6b6c37f48af5c99302ad7b09c90ddb244ab7c
+  generation: 243
+  comparison_key: sha256:c0fb4d12362ef6c08626caa9da21de0d73c0fea72a52e1c29535ca9729a4013a
   baseline:
     metadata:
-      id: git-245c72c741a6065b5ab66edae2c4976b6bf34925
-      digest: sha256:0eb361492f672239098c928778c1e8f2c9f41a4760ffa933ac88e0a8bb6b14c5
+      id: git-cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
+      digest: sha256:ae8d8d4995bb5e92aa8da603db2d7df77388b5cd610747130a1059863bf9a5b3
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:38:06.356Z
+      capturedAt: 2026-11-24T09:57:45.255Z
       kind: git
-      revision: 245c72c741a6065b5ab66edae2c4976b6bf34925
+      revision: cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
       label: HEAD
-      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
+      fingerprint: 6d1d2d47e306b7d6a6af463796030c7dcf2994aa4ee348db8ea519f419fe648e
       complete: true
       diagnostics: []
       evidenceLimitations: []
       isHead: true
-    module_index: 15
+    module_index: 28
     module:
-      directory: src/runtime
+      directory: web/web-backend/runtime
       document:
         state: documented
         text: >
@@ -382,7 +400,7 @@ publication:
 
           id: archiview-node-runtime
 
-          title: Среда выполнения Node
+          title: Runtime
 
           kind: module
 
@@ -398,7 +416,7 @@ publication:
         contract:
           schema_version: 1
           id: archiview-node-runtime
-          title: Среда выполнения Node
+          title: Runtime
           kind: module
           extensions:
             archiview.roles:
@@ -412,17 +430,15 @@ publication:
       documentPath: .archiview/modules/archiview-node-runtime.yaml
       files:
         - path: .archiview/modules/archiview-node-runtime.yaml
-          hash: 23549b0f63be5f35458266274d03a133e928ae42
-        - path: src/runtime/errors.ts
-          hash: aa925db7c51cef391247aa59d1890d45a210a7c3
-        - path: src/runtime/package-paths.ts
-          hash: 1f6d499f97c16bd5e61e7e7794f09d8c6187a1d3
-      sourceFiles: 2
-      fingerprint: dd52e81ab3ab2785513798d5957cee280507d9dc3af73fd4ba122813bafba24f
+          hash: 71c539ce3db8dba967f84d42844e5fd987d09cab
+        - path: web/web-backend/runtime/package-paths.ts
+          hash: 762c3a52b4b89d3729ce9f4f39ba85be7581eda3
+      sourceFiles: 1
+      fingerprint: 301a03997f2695c354aedb62d1d6b884af83d9167fe9ae0708f2432f0048d96c
     facts:
-      - index: 13
+      - index: 21
         fact:
-          id: sha256:956154c313a4c5e9cd9d89e28711c58c32514fe66bdc423c685022ac1d307ad5
+          id: sha256:9b6d3f74727e83a16c4e7e0ee433ac213cbc72e8b219e0ed54fbe3db00af629f
           kind: file
           path: .archiview/modules/archiview-node-runtime.yaml
           start_line: 1
@@ -432,7 +448,7 @@ publication:
 
             id: archiview-node-runtime
 
-            title: Среда выполнения Node
+            title: Runtime
 
             kind: module
 
@@ -444,40 +460,19 @@ publication:
             boundaries:
               B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от рабочей папки пользователя.
             invariants: {}
-      - index: 113
+      - index: 151
         fact:
-          id: sha256:7dced7100af4616e7b2739aaeed2f9144590c569513ddc8b4b27730a3cf0fe91
+          id: sha256:91f666b0f0df54d708a7420a06b6e486361bdab80bfaa16d2ca3e9a107ffb60f
           kind: file
-          path: src/runtime/errors.ts
+          path: web/web-backend/runtime/package-paths.ts
           start_line: 1
-          end_line: 12
-          text: >
-            /** Normalize unknown exceptions while retaining filesystem/process
-            diagnostics. */
-
-            export interface ErrorDetails extends Error { code?: string |
-            number; stderr?: string; exitCode?: number | null; }
-
-            export function errorDetails(error: unknown): ErrorDetails {
-              if (error instanceof Error) return error;
-              const value = error && typeof error === "object" ? error as Record<string, unknown> : {};
-              const result: ErrorDetails = new Error(typeof value.message === "string" ? value.message : String(error));
-              if (typeof value.code === "string" || typeof value.code === "number") result.code = value.code;
-              if (typeof value.stderr === "string") result.stderr = value.stderr;
-              if (typeof value.exitCode === "number" || value.exitCode === null) result.exitCode = value.exitCode;
-              return result;
-            }
-      - index: 114
-        fact:
-          id: sha256:8c11efb3622237b9af345e0527c031c736eb89a3abe2100f506834700eb3f05c
-          kind: file
-          path: src/runtime/package-paths.ts
-          start_line: 1
-          end_line: 23
+          end_line: 34
           text: >
             import { fileURLToPath } from "node:url";
 
-            import { existsSync } from "node:fs";
+            import { existsSync, readFileSync } from "node:fs";
+
+            import { errorDetails } from "../../../node-errors.js";
 
             /** Use the nearest package manifest both in a source checkout and
             inside each distribution. */
@@ -495,109 +490,165 @@ publication:
 
             export const packageUrl = packageDirectory(import.meta.url);
 
-            const sourceCli = new URL("src/archiview/cli.ts", packageUrl);
+            const sourceCli = new URL("cli/cli.ts", packageUrl);
 
             const sourceCheckout = existsSync(sourceCli);
 
-            export const webAssetUrl = new URL(sourceCheckout ?
-            "dist/web/archiview/" : "web/archiview/", packageUrl);
+            const webAssetUrl = new URL(sourceCheckout ? "dist/web/archiview/" :
+            "web/archiview/", packageUrl);
+
+
+            export function readWebAsset(name: string): Buffer {
+              const asset = new URL(name, webAssetUrl);
+              try {
+                return readFileSync(asset);
+              } catch (cause) {
+                const error = errorDetails(cause);
+                throw new Error(`Не удалось прочитать ресурс ArchiView ${fileURLToPath(asset)} (${error.code ?? error.message})`, { cause });
+              }
+            }
 
 
             /** Runtime argv for source execution and autonomous installed CLI
             bundles. */
 
             export function cliArguments(): string[] {
-              return sourceCheckout ? ["--import", import.meta.resolve("tsx"), fileURLToPath(sourceCli)] : [fileURLToPath(new URL("src/cli.mjs", packageUrl))];
+              return sourceCheckout ? ["--import", import.meta.resolve("tsx"), fileURLToPath(sourceCli)] : [fileURLToPath(new URL("cli.mjs", packageUrl))];
             }
-      - index: 210
+      - index: 211
         fact:
-          id: sha256:946698f0fe228c5f036b75b25276b3a6edfcfc50d35713f1d78c7b56ebc48066
+          id: sha256:afe56e49dde348fb76f684821cebcfa262db4b330aee0d36ac054d426e7381e6
           kind: module
-          path: src/runtime
-          text: '{"contract":"documented","format":"yaml","sources":["src/runtime/errors.ts","src/runtime/package-paths.ts"]}'
+          path: web/web-backend/runtime
+          text: '{"contract":"documented","format":"yaml","sources":["web/web-backend/runtime/package-paths.ts"]}'
   current:
     metadata:
-      id: launch-a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
-      digest: sha256:6363190cb16d9f6be0f1249150f84f14fec640bc9afec1ec159f22af462b729e
+      id: launch-2c90cec18764e07c30dc83abf511f71af950652ad121e4623b453b3dcf4ce543
+      digest: sha256:07b75d86d2e99b64735843a667046a1ab58017047eb09d29d1f6e6373191ae83
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:38:08.764Z
+      capturedAt: 2026-11-24T09:57:48.329Z
       kind: launch
       label: Начальное состояние
-      fingerprint: a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
+      fingerprint: 2c90cec18764e07c30dc83abf511f71af950652ad121e4623b453b3dcf4ce543
       complete: true
       diagnostics: []
       evidenceLimitations: []
       observations:
         architecture-change-view:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-distribution:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-analyse:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-skills:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-git-changes:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-module-boundaries-skill:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-module-relations:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        architecture-core:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-application:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-http:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-codex:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-contracts:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        dsh-adapter:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        dsh-client-panel:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-mcp:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-module-review:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-project-location:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-reports:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-bridges:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-codex:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        dsh-adapter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-distribution:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-cli:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-framework:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-reviews:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-node-runtime:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-contracts:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-relation-model:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-project-context:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-project-types:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-serialization:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-snapshots:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-storage:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-reports:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-operations:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-skills:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-boundaries-skill:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         architecture-tests:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-tools:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         architecture-web:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-application:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-analysis-service:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-file-watcher:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-host-bridge:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-node-runtime:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-http:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-client:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-    module_index: 15
+        archiview-web-api-client:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-presenter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-views:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-workspace-presenter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+    module_index: 30
     module:
-      directory: src/runtime
+      directory: web/web-backend/runtime
       document:
         state: documented
         text: >
@@ -605,7 +656,7 @@ publication:
 
           id: archiview-node-runtime
 
-          title: Среда выполнения Node
+          title: Runtime
 
           kind: module
 
@@ -621,7 +672,7 @@ publication:
         contract:
           schema_version: 1
           id: archiview-node-runtime
-          title: Среда выполнения Node
+          title: Runtime
           kind: module
           extensions:
             archiview.roles:
@@ -635,17 +686,15 @@ publication:
       documentPath: .archiview/modules/archiview-node-runtime.yaml
       files:
         - path: .archiview/modules/archiview-node-runtime.yaml
-          hash: 23549b0f63be5f35458266274d03a133e928ae42
-        - path: src/runtime/errors.ts
-          hash: aa925db7c51cef391247aa59d1890d45a210a7c3
-        - path: src/runtime/package-paths.ts
-          hash: 1f6d499f97c16bd5e61e7e7794f09d8c6187a1d3
-      sourceFiles: 2
-      fingerprint: dd52e81ab3ab2785513798d5957cee280507d9dc3af73fd4ba122813bafba24f
+          hash: 71c539ce3db8dba967f84d42844e5fd987d09cab
+        - path: web/web-backend/runtime/package-paths.ts
+          hash: 762c3a52b4b89d3729ce9f4f39ba85be7581eda3
+      sourceFiles: 1
+      fingerprint: 301a03997f2695c354aedb62d1d6b884af83d9167fe9ae0708f2432f0048d96c
     facts:
-      - index: 13
+      - index: 22
         fact:
-          id: sha256:956154c313a4c5e9cd9d89e28711c58c32514fe66bdc423c685022ac1d307ad5
+          id: sha256:9b6d3f74727e83a16c4e7e0ee433ac213cbc72e8b219e0ed54fbe3db00af629f
           kind: file
           path: .archiview/modules/archiview-node-runtime.yaml
           start_line: 1
@@ -655,7 +704,7 @@ publication:
 
             id: archiview-node-runtime
 
-            title: Среда выполнения Node
+            title: Runtime
 
             kind: module
 
@@ -667,40 +716,19 @@ publication:
             boundaries:
               B2: При поиске ресурсов использовать пакет запущенного ArchiView независимо от рабочей папки пользователя.
             invariants: {}
-      - index: 113
+      - index: 161
         fact:
-          id: sha256:7dced7100af4616e7b2739aaeed2f9144590c569513ddc8b4b27730a3cf0fe91
+          id: sha256:91f666b0f0df54d708a7420a06b6e486361bdab80bfaa16d2ca3e9a107ffb60f
           kind: file
-          path: src/runtime/errors.ts
+          path: web/web-backend/runtime/package-paths.ts
           start_line: 1
-          end_line: 12
-          text: >
-            /** Normalize unknown exceptions while retaining filesystem/process
-            diagnostics. */
-
-            export interface ErrorDetails extends Error { code?: string |
-            number; stderr?: string; exitCode?: number | null; }
-
-            export function errorDetails(error: unknown): ErrorDetails {
-              if (error instanceof Error) return error;
-              const value = error && typeof error === "object" ? error as Record<string, unknown> : {};
-              const result: ErrorDetails = new Error(typeof value.message === "string" ? value.message : String(error));
-              if (typeof value.code === "string" || typeof value.code === "number") result.code = value.code;
-              if (typeof value.stderr === "string") result.stderr = value.stderr;
-              if (typeof value.exitCode === "number" || value.exitCode === null) result.exitCode = value.exitCode;
-              return result;
-            }
-      - index: 114
-        fact:
-          id: sha256:8c11efb3622237b9af345e0527c031c736eb89a3abe2100f506834700eb3f05c
-          kind: file
-          path: src/runtime/package-paths.ts
-          start_line: 1
-          end_line: 23
+          end_line: 34
           text: >
             import { fileURLToPath } from "node:url";
 
-            import { existsSync } from "node:fs";
+            import { existsSync, readFileSync } from "node:fs";
+
+            import { errorDetails } from "../../../node-errors.js";
 
             /** Use the nearest package manifest both in a source checkout and
             inside each distribution. */
@@ -718,26 +746,37 @@ publication:
 
             export const packageUrl = packageDirectory(import.meta.url);
 
-            const sourceCli = new URL("src/archiview/cli.ts", packageUrl);
+            const sourceCli = new URL("cli/cli.ts", packageUrl);
 
             const sourceCheckout = existsSync(sourceCli);
 
-            export const webAssetUrl = new URL(sourceCheckout ?
-            "dist/web/archiview/" : "web/archiview/", packageUrl);
+            const webAssetUrl = new URL(sourceCheckout ? "dist/web/archiview/" :
+            "web/archiview/", packageUrl);
+
+
+            export function readWebAsset(name: string): Buffer {
+              const asset = new URL(name, webAssetUrl);
+              try {
+                return readFileSync(asset);
+              } catch (cause) {
+                const error = errorDetails(cause);
+                throw new Error(`Не удалось прочитать ресурс ArchiView ${fileURLToPath(asset)} (${error.code ?? error.message})`, { cause });
+              }
+            }
 
 
             /** Runtime argv for source execution and autonomous installed CLI
             bundles. */
 
             export function cliArguments(): string[] {
-              return sourceCheckout ? ["--import", import.meta.resolve("tsx"), fileURLToPath(sourceCli)] : [fileURLToPath(new URL("src/cli.mjs", packageUrl))];
+              return sourceCheckout ? ["--import", import.meta.resolve("tsx"), fileURLToPath(sourceCli)] : [fileURLToPath(new URL("cli.mjs", packageUrl))];
             }
-      - index: 210
+      - index: 225
         fact:
-          id: sha256:946698f0fe228c5f036b75b25276b3a6edfcfc50d35713f1d78c7b56ebc48066
+          id: sha256:afe56e49dde348fb76f684821cebcfa262db4b330aee0d36ac054d426e7381e6
           kind: module
-          path: src/runtime
-          text: '{"contract":"documented","format":"yaml","sources":["src/runtime/errors.ts","src/runtime/package-paths.ts"]}'
+          path: web/web-backend/runtime
+          text: '{"contract":"documented","format":"yaml","sources":["web/web-backend/runtime/package-paths.ts"]}'
 review_status:
   self:
     current:
@@ -786,18 +825,26 @@ review_status:
       reasons:
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
+        - code: own_code
+          side: baseline
         - code: own_contract
           side: baseline
       verdict: null

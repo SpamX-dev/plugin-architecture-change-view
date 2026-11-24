@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-http
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: de1a22f4619ef019955af496e670c7b641286004e7eeb7cde3af599c281ca53c
+check_hash: 76b260e577b33bff7117c048888ade91b37c4943d1557d80a7504158f75b6c2f
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,93 +10,56 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 245c72c741a6065b5ab66edae2c4976b6bf34925
+      id: cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
     state:
       exists: true
-      directory: src/archiview
-      self_digest: sha256:5d1060aeea7507b095b38ab75e0295f75cf806bcac2e14d68646d5243e55c5e6
-      subtree_digest: sha256:ddbcf4304597a657da27c7a633fb46c1e5d67ec678ef3b85e444f3a4f41bf329
+      directory: web/web-backend/web-service
+      self_digest: sha256:34eea50ac19ae67f1f4897c1b5375293e419a0e116bf0f27f833f763acd8d69f
+      subtree_digest: sha256:c086f9e967963334569b25acb2c39eda6397c6d34c8803b31cc5791d3b20161a
   current:
     exists: true
-    directory: src/archiview
-    self_digest: sha256:e7ddd991ae15d969f7a4cab4f34f688e103d06962998231339ac52b17e8089d6
-    subtree_digest: sha256:cc49ef545752972101916b04b7f36e8445e16c36d86de1264af9b7c83f8bdb79
+    directory: web/web-backend/web-service
+    self_digest: sha256:25b7befd5361d6f51e42940d81f56f90a8439df22748be6af2d0d1e5589513ec
+    subtree_digest: sha256:87b4cde57172e3b8d582675573c2ccb6d881cb8f367961f6dcb4fcd9cb9b17a9
   analyzer:
     name: archiview-structure
     version: 1.1.0
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
 baseline:
   module_id: archiview-http
-  directory: src/archiview
-  parent_id: architecture-core
+  directory: web/web-backend/web-service
+  parent_id: archiview-application
   children: []
   technical:
     normalization: archiview/module-state/v1
     module_id: archiview-http
-    directory: src/archiview
+    directory: web/web-backend/web-service
     own_files:
-      - path: src/archiview/cli.ts
-        digest: sha256:7841bc9ce1801fa182a24496c396f0cfbf76ed3ec1f3b9bd16c04a7bd0b9b71f
-        normalization: text-lf/v1
-      - path: src/archiview/command.ts
-        digest: sha256:e70d4ce97f0c9ab11d5e7f2b4d2da211bec3f710bcb33b495d1bd30d879ac5be
-        normalization: text-lf/v1
-      - path: src/archiview/http.ts
-        digest: sha256:66303fe415283cf5937d128df15d63954260815b31b41fede1d2a8323890ca0e
-        normalization: text-lf/v1
-      - path: src/archiview/packaged-cli.ts
-        digest: sha256:d06897da22c64497abf677e4cdf4c14d6b091b908961f2d6041bf2749d05d9d5
+      - path: web/web-backend/web-service/http.ts
+        digest: sha256:3be7a5e1de16b54d780fbcd002fb8dce5184ed17fb88206a5ba67ed1e3445022
         normalization: text-lf/v1
     contract:
       schema_version: 1
       id: archiview-http
-      title: Локальный сервер ArchiView
+      title: web-service
       kind: module
       extensions:
         archiview.roles:
           - web-endpoints
-          - cli
-      purpose: Давать самостоятельный локальный доступ к просмотру проекта и операциям
-        с переносимыми отчётами.
+      purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных проекта,
+        запуска анализа и получения его результатов.
       boundaries:
         B3: При самостоятельном запуске принимать соединения только на локальном
           интерфейсе.
-        B4: По файловым маршрутам выдавать только ресурсы приложения.
         B5: Допускать междоменный вызов API панели только с её токеном.
-        B6: При запуске пакетной команды построения, экспорта или проверки индекса
-          завершать операцию до выхода из CLI.
-        B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при
-          импорте с построением отчёта завершать пакетную операцию.
       invariants:
         I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-        I8: Операции с переносимыми результатами доступны из командной строки.
     document_state: documented
     inherited:
       - module_id: architecture-change-view
         section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
       - module_id: architecture-change-view
         section: invariants
         id: I10
@@ -108,89 +71,71 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: architecture-web
         section: boundaries
         id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-application
+        section: boundaries
+        id: B3
+        text: Сессия работает с выбранным корнем проекта на протяжении своей жизни.
+      - module_id: archiview-application
+        section: boundaries
+        id: B4
+        text: История, снимки и запросы анализа доступны только в контексте
+          соответствующего репозитория.
+      - module_id: archiview-application
+        section: boundaries
+        id: B5
+        text: Историческое представление использует выбранный снимок и сохраняет текущую
+          публикацию.
+      - module_id: archiview-application
         section: boundaries
         id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
+        text: Открытие сохранённого представления читает опубликованную пару и её
+          доказательства без нового наблюдения рабочего дерева.
+      - module_id: archiview-application
         section: boundaries
         id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
+        text: Сессия подтверждает завершение содержательной проверки только после
+          импорта результата.
+      - module_id: archiview-application
         section: boundaries
         id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:5d1060aeea7507b095b38ab75e0295f75cf806bcac2e14d68646d5243e55c5e6
+        text: В поручение агенту не входит определение зависимостей модулей.
+  technical_digest: sha256:34eea50ac19ae67f1f4897c1b5375293e419a0e116bf0f27f833f763acd8d69f
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-http
-    directory: src/archiview
+    directory: web/web-backend/web-service
     own_files:
-      - path: src/archiview/cli.ts
-        digest: sha256:7841bc9ce1801fa182a24496c396f0cfbf76ed3ec1f3b9bd16c04a7bd0b9b71f
-        normalization: text-lf/v1
-      - path: src/archiview/command.ts
-        digest: sha256:e70d4ce97f0c9ab11d5e7f2b4d2da211bec3f710bcb33b495d1bd30d879ac5be
-        normalization: text-lf/v1
-      - path: src/archiview/http.ts
-        digest: sha256:66303fe415283cf5937d128df15d63954260815b31b41fede1d2a8323890ca0e
-        normalization: text-lf/v1
-      - path: src/archiview/packaged-cli.ts
-        digest: sha256:d06897da22c64497abf677e4cdf4c14d6b091b908961f2d6041bf2749d05d9d5
+      - path: web/web-backend/web-service/http.ts
+        digest: sha256:3be7a5e1de16b54d780fbcd002fb8dce5184ed17fb88206a5ba67ed1e3445022
         normalization: text-lf/v1
     contract:
       id: archiview-http
       kind: module
-      purpose: Давать самостоятельный локальный доступ к просмотру проекта и операциям
-        с переносимыми отчётами.
+      purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных проекта,
+        запуска анализа и получения его результатов.
       boundaries:
         B3: При самостоятельном запуске принимать соединения только на локальном
           интерфейсе.
-        B4: По файловым маршрутам выдавать только ресурсы приложения.
         B5: Допускать междоменный вызов API панели только с её токеном.
-        B6: При запуске пакетной команды построения, экспорта или проверки индекса
-          завершать операцию до выхода из CLI.
-        B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при
-          импорте с построением отчёта завершать пакетную операцию.
       invariants:
         I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-        I8: Операции с переносимыми результатами доступны из командной строки.
     inherited:
       - module_id: architecture-change-view
         section: boundaries
-        id: B1
-        text: Просмотр и подготовка анализа сохраняют исходники и согласованные
-          контракты проекта без изменений.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B2
-        text: При подготовке контекста ArchiView не строит граф зависимостей по символам
-          исходного кода.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B3
-        text: В общей рабочей папке ArchiView читает контракты и историю модуля в
-          пределах репозитория, которому он принадлежит.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B4
-        text: Панель обращается к агенту только по явному поручению пользователя
-          провести анализ или исправить замечание.
-      - module_id: architecture-change-view
-        section: boundaries
-        id: B5
-        text: Автоматическая проверка структуры может подтвердить наличие контракта и
-          корректность формата, но не выполнение обязанностей.
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
       - module_id: architecture-change-view
         section: invariants
         id: I10
@@ -202,82 +147,84 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I9
-        text: Самостоятельный локальный запуск входит в обязательные варианты поставки
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: architecture-web
         section: boundaries
         id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-application
+        section: boundaries
+        id: B3
+        text: Сессия работает с выбранным корнем проекта на протяжении своей жизни.
+      - module_id: archiview-application
+        section: boundaries
+        id: B4
+        text: История, снимки и запросы анализа доступны только в контексте
+          соответствующего репозитория.
+      - module_id: archiview-application
+        section: boundaries
+        id: B5
+        text: Историческое представление использует выбранный снимок и сохраняет текущую
+          публикацию.
+      - module_id: archiview-application
         section: boundaries
         id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
+        text: Открытие сохранённого представления читает опубликованную пару и её
+          доказательства без нового наблюдения рабочего дерева.
+      - module_id: archiview-application
         section: boundaries
         id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
+        text: Сессия подтверждает завершение содержательной проверки только после
+          импорта результата.
+      - module_id: archiview-application
         section: boundaries
         id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+        text: В поручение агенту не входит определение зависимостей модулей.
     children: []
-  self_digest: sha256:55097c012495af79bfb29f893396c9f58e1450ea1d6f8e06ba8dfcfffa041e8b
+  self_digest: sha256:8f2fe8321db9265ed884be0fc29619443445d4121e03f34b443c789369124c14
   subtree:
-    self: sha256:5d1060aeea7507b095b38ab75e0295f75cf806bcac2e14d68646d5243e55c5e6
+    self: sha256:34eea50ac19ae67f1f4897c1b5375293e419a0e116bf0f27f833f763acd8d69f
     children: []
-  subtree_digest: sha256:ddbcf4304597a657da27c7a633fb46c1e5d67ec678ef3b85e444f3a4f41bf329
+  subtree_digest: sha256:c086f9e967963334569b25acb2c39eda6397c6d34c8803b31cc5791d3b20161a
   semantic_subtree:
-    self: sha256:55097c012495af79bfb29f893396c9f58e1450ea1d6f8e06ba8dfcfffa041e8b
+    self: sha256:8f2fe8321db9265ed884be0fc29619443445d4121e03f34b443c789369124c14
     children: []
-  semantic_subtree_digest: sha256:f5145e1051a91319ddf72c06358a0bd71ae73e600146a3bc4f0c38905579e974
+  semantic_subtree_digest: sha256:c8a9b9308b90c32e94562cbc1338c82eae53ddb250462600f3807253e30fb4ad
 current:
   module_id: archiview-http
-  directory: src/archiview
-  parent_id: architecture-core
+  directory: web/web-backend/web-service
+  parent_id: archiview-application
   children: []
   technical:
     normalization: archiview/module-state/v1
     module_id: archiview-http
-    directory: src/archiview
+    directory: web/web-backend/web-service
     own_files:
-      - path: src/archiview/cli.ts
-        digest: sha256:7841bc9ce1801fa182a24496c396f0cfbf76ed3ec1f3b9bd16c04a7bd0b9b71f
-        normalization: text-lf/v1
-      - path: src/archiview/command.ts
-        digest: sha256:e70d4ce97f0c9ab11d5e7f2b4d2da211bec3f710bcb33b495d1bd30d879ac5be
-        normalization: text-lf/v1
-      - path: src/archiview/http.ts
-        digest: sha256:66303fe415283cf5937d128df15d63954260815b31b41fede1d2a8323890ca0e
-        normalization: text-lf/v1
-      - path: src/archiview/packaged-cli.ts
-        digest: sha256:d06897da22c64497abf677e4cdf4c14d6b091b908961f2d6041bf2749d05d9d5
+      - path: web/web-backend/web-service/http.ts
+        digest: sha256:ff31b3206ad1196bffb342e5fb525dacd424392d1dd55537d968007834380552
         normalization: text-lf/v1
     contract:
       schema_version: 1
       id: archiview-http
-      title: Локальный сервер ArchiView
+      title: web-service
       kind: module
       extensions:
         archiview.roles:
           - web-endpoints
-          - cli
-      purpose: Давать самостоятельный локальный доступ к просмотру проекта и операциям
-        с переносимыми отчётами.
+      purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных проекта,
+        запуска анализа и получения его результатов.
       boundaries:
         B3: При самостоятельном запуске принимать соединения только на локальном
           интерфейсе.
-        B4: По файловым маршрутам выдавать только ресурсы приложения.
         B5: Допускать междоменный вызов API панели только с её токеном.
-        B6: При запуске пакетной команды построения, экспорта или проверки индекса
-          завершать операцию до выхода из CLI.
-        B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при
-          импорте с построением отчёта завершать пакетную операцию.
       invariants:
         I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-        I8: Операции с переносимыми результатами доступны из командной строки.
     document_state: documented
     inherited:
       - module_id: architecture-change-view
@@ -297,61 +244,64 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: architecture-web
         section: boundaries
         id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-application
+        section: boundaries
+        id: B3
+        text: Сессия работает с выбранным корнем проекта на протяжении своей жизни.
+      - module_id: archiview-application
+        section: boundaries
+        id: B4
+        text: История, снимки и запросы анализа доступны только в контексте
+          соответствующего репозитория.
+      - module_id: archiview-application
+        section: boundaries
+        id: B5
+        text: Историческое представление использует выбранный снимок и сохраняет текущую
+          публикацию.
+      - module_id: archiview-application
         section: boundaries
         id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
+        text: Открытие сохранённого представления читает опубликованную пару и её
+          доказательства без нового наблюдения рабочего дерева.
+      - module_id: archiview-application
         section: boundaries
         id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
+        text: Сессия подтверждает завершение содержательной проверки только после
+          импорта результата.
+      - module_id: archiview-application
         section: boundaries
         id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
-  technical_digest: sha256:e7ddd991ae15d969f7a4cab4f34f688e103d06962998231339ac52b17e8089d6
+        text: В поручение агенту не входит определение зависимостей модулей.
+  technical_digest: sha256:25b7befd5361d6f51e42940d81f56f90a8439df22748be6af2d0d1e5589513ec
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-http
-    directory: src/archiview
+    directory: web/web-backend/web-service
     own_files:
-      - path: src/archiview/cli.ts
-        digest: sha256:7841bc9ce1801fa182a24496c396f0cfbf76ed3ec1f3b9bd16c04a7bd0b9b71f
-        normalization: text-lf/v1
-      - path: src/archiview/command.ts
-        digest: sha256:e70d4ce97f0c9ab11d5e7f2b4d2da211bec3f710bcb33b495d1bd30d879ac5be
-        normalization: text-lf/v1
-      - path: src/archiview/http.ts
-        digest: sha256:66303fe415283cf5937d128df15d63954260815b31b41fede1d2a8323890ca0e
-        normalization: text-lf/v1
-      - path: src/archiview/packaged-cli.ts
-        digest: sha256:d06897da22c64497abf677e4cdf4c14d6b091b908961f2d6041bf2749d05d9d5
+      - path: web/web-backend/web-service/http.ts
+        digest: sha256:ff31b3206ad1196bffb342e5fb525dacd424392d1dd55537d968007834380552
         normalization: text-lf/v1
     contract:
       id: archiview-http
       kind: module
-      purpose: Давать самостоятельный локальный доступ к просмотру проекта и операциям
-        с переносимыми отчётами.
+      purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных проекта,
+        запуска анализа и получения его результатов.
       boundaries:
         B3: При самостоятельном запуске принимать соединения только на локальном
           интерфейсе.
-        B4: По файловым маршрутам выдавать только ресурсы приложения.
         B5: Допускать междоменный вызов API панели только с её токеном.
-        B6: При запуске пакетной команды построения, экспорта или проверки индекса
-          завершать операцию до выхода из CLI.
-        B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при
-          импорте с построением отчёта завершать пакетную операцию.
       invariants:
         I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-        I8: Операции с переносимыми результатами доступны из командной строки.
     inherited:
       - module_id: architecture-change-view
         section: boundaries
@@ -370,41 +320,59 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-      - module_id: architecture-core
+      - module_id: architecture-web
         section: boundaries
         id: B2
-        text: При структурном сравнении фиксировать различия контрактов без
-          автоматического вывода о нарушении ответственности.
-      - module_id: architecture-core
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-application
+        section: boundaries
+        id: B3
+        text: Сессия работает с выбранным корнем проекта на протяжении своей жизни.
+      - module_id: archiview-application
+        section: boundaries
+        id: B4
+        text: История, снимки и запросы анализа доступны только в контексте
+          соответствующего репозитория.
+      - module_id: archiview-application
+        section: boundaries
+        id: B5
+        text: Историческое представление использует выбранный снимок и сохраняет текущую
+          публикацию.
+      - module_id: archiview-application
         section: boundaries
         id: B6
-        text: При обходе учитывать исходники только внутри выбранного корня, исключая
-          зависимости, результаты сборки и служебные данные ArchiView.
-      - module_id: architecture-core
+        text: Открытие сохранённого представления читает опубликованную пару и её
+          доказательства без нового наблюдения рабочего дерева.
+      - module_id: archiview-application
         section: boundaries
         id: B7
-        text: Записывать данные истории только в каталог ArchiView проекта либо в явно
-          выбранное внешнее хранилище.
-      - module_id: architecture-core
+        text: Сессия подтверждает завершение содержательной проверки только после
+          импорта результата.
+      - module_id: archiview-application
         section: boundaries
         id: B8
-        text: Разрешать исторические доказательства по содержимому выбранных снимков.
+        text: В поручение агенту не входит определение зависимостей модулей.
     children: []
-  self_digest: sha256:5e86ebf9d596653c24746b40a81c12c59440a1a0f1a6cc0ddbfb5e0dc3c49d1b
+  self_digest: sha256:8cba27396a59864c9d0d901acc4d07beb8920a822257ed2a40b8dd099aabc63e
   subtree:
-    self: sha256:e7ddd991ae15d969f7a4cab4f34f688e103d06962998231339ac52b17e8089d6
+    self: sha256:25b7befd5361d6f51e42940d81f56f90a8439df22748be6af2d0d1e5589513ec
     children: []
-  subtree_digest: sha256:cc49ef545752972101916b04b7f36e8445e16c36d86de1264af9b7c83f8bdb79
+  subtree_digest: sha256:87b4cde57172e3b8d582675573c2ccb6d881cb8f367961f6dcb4fcd9cb9b17a9
   semantic_subtree:
-    self: sha256:5e86ebf9d596653c24746b40a81c12c59440a1a0f1a6cc0ddbfb5e0dc3c49d1b
+    self: sha256:8cba27396a59864c9d0d901acc4d07beb8920a822257ed2a40b8dd099aabc63e
     children: []
-  semantic_subtree_digest: sha256:ad0c5947a230ea66f49134694458fc8b0f37f991aa61df92e7df12cde32b8c28
+  semantic_subtree_digest: sha256:c2f5a45e77e1744b68fbaaf707f9a6303bc3cfba9becbebe1a06aaa7684d1c95
 change:
   existence: retained
-  own: false
-  own_code: false
+  own: true
+  own_code: true
   own_contract: false
-  inherited_constraints: true
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -413,26 +381,26 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 242
-  comparison_key: sha256:bc97fdbb3a784d394e84563ac0a6b6c37f48af5c99302ad7b09c90ddb244ab7c
+  generation: 243
+  comparison_key: sha256:c0fb4d12362ef6c08626caa9da21de0d73c0fea72a52e1c29535ca9729a4013a
   baseline:
     metadata:
-      id: git-245c72c741a6065b5ab66edae2c4976b6bf34925
-      digest: sha256:0eb361492f672239098c928778c1e8f2c9f41a4760ffa933ac88e0a8bb6b14c5
+      id: git-cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
+      digest: sha256:ae8d8d4995bb5e92aa8da603db2d7df77388b5cd610747130a1059863bf9a5b3
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:38:06.356Z
+      capturedAt: 2026-11-24T09:57:45.255Z
       kind: git
-      revision: 245c72c741a6065b5ab66edae2c4976b6bf34925
+      revision: cc1e3cd4884536eeeb2b292361b99c7a8f2025aa
       label: HEAD
-      fingerprint: e17f46f824d94da12a5beaaa9cd379f840153c306b37739e2171765241d185ac
+      fingerprint: 6d1d2d47e306b7d6a6af463796030c7dcf2994aa4ee348db8ea519f419fe648e
       complete: true
       diagnostics: []
       evidenceLimitations: []
       isHead: true
-    module_index: 6
+    module_index: 29
     module:
-      directory: src/archiview
+      directory: web/web-backend/web-service
       document:
         state: documented
         text: >
@@ -440,253 +408,86 @@ publication:
 
           id: archiview-http
 
-          title: Локальный сервер ArchiView
+          title: web-service
 
           kind: module
 
           extensions:
-            archiview.roles: [web-endpoints, cli]
-          purpose: Давать самостоятельный локальный доступ к просмотру проекта и
-          операциям с переносимыми отчётами.
+            archiview.roles: [web-endpoints]
+          purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных
+          проекта, запуска анализа и получения его результатов.
 
           boundaries:
             B3: При самостоятельном запуске принимать соединения только на локальном интерфейсе.
-            B4: По файловым маршрутам выдавать только ресурсы приложения.
             B5: Допускать междоменный вызов API панели только с её токеном.
-            B6: При запуске пакетной команды построения, экспорта или проверки индекса завершать операцию до выхода из CLI.
-            B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при импорте с построением отчёта завершать пакетную операцию.
           invariants:
             I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-            I8: Операции с переносимыми результатами доступны из командной строки.
         format: yaml
         contract:
           schema_version: 1
           id: archiview-http
-          title: Локальный сервер ArchiView
+          title: web-service
           kind: module
           extensions:
             archiview.roles:
               - web-endpoints
-              - cli
-          purpose: Давать самостоятельный локальный доступ к просмотру проекта и операциям
-            с переносимыми отчётами.
+          purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных проекта,
+            запуска анализа и получения его результатов.
           boundaries:
             B3: При самостоятельном запуске принимать соединения только на локальном
               интерфейсе.
-            B4: По файловым маршрутам выдавать только ресурсы приложения.
             B5: Допускать междоменный вызов API панели только с её токеном.
-            B6: При запуске пакетной команды построения, экспорта или проверки индекса
-              завершать операцию до выхода из CLI.
-            B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при
-              импорте с построением отчёта завершать пакетную операцию.
           invariants:
             I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-            I8: Операции с переносимыми результатами доступны из командной строки.
       documentPath: .archiview/modules/archiview-http.yaml
       files:
         - path: .archiview/modules/archiview-http.yaml
-          hash: 17f2ed50b36e31a8634ac1309ea51e7514c761d7
-        - path: src/archiview/cli.ts
-          hash: 9d8f9a408caf87ee88592d1c6c74d62595932675
-        - path: src/archiview/command.ts
-          hash: e3eaf6f4bd772c6a2b4784aa799233c315d8b14c
-        - path: src/archiview/http.ts
-          hash: 6e1aa8ba33bf7d4a92a2f136407cac451861de20
-        - path: src/archiview/packaged-cli.ts
-          hash: b87d196725028b693086a8fd9c9bb7a0a4c5846d
-      sourceFiles: 4
-      fingerprint: ef6fdae56e13e6146d12bbaa6b8e0a8ae109b8a99b6acde3f806a9c7df95e24d
+          hash: 0f285d48ccfe3224a307cd9d045e7a38cb93c295
+        - path: web/web-backend/web-service/http.ts
+          hash: 3b56addca4c1584f5eb10062e9efe16863806296
+      sourceFiles: 1
+      fingerprint: 8624b12edb2379040258ffecf5cb1a928c74edf06468bcc709b5cdb2291520f4
     facts:
-      - index: 10
+      - index: 16
         fact:
-          id: sha256:b3f597afe69667f150b2b6c1d9a8e172dac716ce64797eb5e5eb3c9dee8052f4
+          id: sha256:fa3020f05153d53290e3089fb6ccaa979c1eb551fadd77b53521e4ed28de2092
           kind: file
           path: .archiview/modules/archiview-http.yaml
           start_line: 1
-          end_line: 17
+          end_line: 13
           text: >
             schema_version: 1
 
             id: archiview-http
 
-            title: Локальный сервер ArchiView
+            title: web-service
 
             kind: module
 
             extensions:
-              archiview.roles: [web-endpoints, cli]
-            purpose: Давать самостоятельный локальный доступ к просмотру проекта
-            и операциям с переносимыми отчётами.
+              archiview.roles: [web-endpoints]
+            purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных
+            проекта, запуска анализа и получения его результатов.
 
             boundaries:
               B3: При самостоятельном запуске принимать соединения только на локальном интерфейсе.
-              B4: По файловым маршрутам выдавать только ресурсы приложения.
               B5: Допускать междоменный вызов API панели только с её токеном.
-              B6: При запуске пакетной команды построения, экспорта или проверки индекса завершать операцию до выхода из CLI.
-              B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при импорте с построением отчёта завершать пакетную операцию.
             invariants:
               I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-              I8: Операции с переносимыми результатами доступны из командной строки.
-      - index: 64
+      - index: 153
         fact:
-          id: sha256:4685abca4fc2fe3d5ba3f4d832ce16af1cfc44c60211b664d99a51bf0ed78f9f
+          id: sha256:55d3280ee6432820e8ebfa3e520c99b641f9e43e0b654ad01798c1b9ad510681
           kind: file
-          path: src/archiview/cli.ts
+          path: web/web-backend/web-service/http.ts
           start_line: 1
-          end_line: 9
-          text: >
-            #!/usr/bin/env node
-
-            import { runCli } from "./command.js";
-
-
-            // Source launch compiles the UI only when the selected operation
-            starts HTTP.
-
-            await runCli(async () => {
-              const { buildWeb } = await import("../../scripts/build-web.js");
-              await buildWeb();
-            });
-      - index: 65
-        fact:
-          id: sha256:ec0c8732820501793f5e61c0ddd8506227ff3e6c1c1920e90d1aaaabf8171334
-          kind: file
-          path: src/archiview/command.ts
-          start_line: 1
-          end_line: 105
-          text: >
-            import type { ReviewInput } from "../reports/types.js";
-
-            /**
-             * CLI локального просмотра, построения переносимых отчётов и обмена входами
-             * с агентом. Проверка индекса читает staged-набор, остальные операции сохраняют
-             * данные только в выбранном хранилище ArchiView.
-             */
-            import { parseArgs } from "node:util";
-
-            import { readFile, writeFile, lstat } from "node:fs/promises";
-
-            import { stringify } from "yaml";
-
-            import { createWorkspaceSession } from
-            "../application/workspace-session.js";
-
-            import type { SessionOperations } from "../application/api.js";
-
-            import type { SnapshotStore } from "../storage/snapshot-store.js";
-
-            import { readReviewBundle } from "../storage/review-store.js";
-
-            import { parseYaml } from "../serialization/yaml.js";
-
-            import { digest } from "../serialization/digest.js";
-
-            import { createReviewInput } from "../reports/review-input.js";
-
-            import { checkPreparedIndex } from "../storage/report-index.js";
-
-
-            async function serve(workspace: SessionOperations & { root: string
-            }, port: number, prepareWeb?: () => Promise<void>, store?:
-            SnapshotStore) {
-              await prepareWeb?.();
-              const { createArchiViewHttpServer } = await import("./http.js");
-              const server = createArchiViewHttpServer(workspace);
-              server.on("error", (error) => { process.stderr.write("ArchiView: " + error.message + "\n"); process.exitCode = 1; });
-              server.listen(port, "127.0.0.1", () => {
-                process.stdout.write("ArchiView Local: http://127.0.0.1:" + (server.address() as import("node:net").AddressInfo).port +
-                  "\nProject: " + workspace.root + "\n");
-                if (store) process.stdout.write("State: " + store.directory + "\n");
-                if (store?.migration) process.stdout.write("History copied: " + store.migration.snapshots +
-                  " snapshots, " + store.migration.reviews + " reviews\n");
-              });
-              for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, server.shutdown);
-            }
-
-
-            export async function runCli(prepareWeb?: () => Promise<void>) {
-              const { values } = parseArgs({ options: {
-                root: { type: "string" }, port: { type: "string", default: "4317" },
-                "state-dir": { type: "string" }, help: { type: "boolean", short: "h" },
-                "import-review": { type: "string" }, "build-report": { type: "boolean" },
-                "complete-analysis": { type: "string" },
-                "prepare-analysis": { type: "string" },
-                "check-index": { type: "boolean" }, "export-review-input": { type: "string" },
-                output: { type: "string" }, dependencies: { type: "string" },
-                "dependencies-complete": { type: "boolean" },
-              } });
-              if (!values.help && (values.dependencies !== undefined || values["dependencies-complete"]))
-                throw new Error("Сбор зависимостей через LLM отключён; определение через AST не подключено.");
-              if (values.help) {
-                process.stdout.write("ArchiView — archiview [--root DIR] [--port 4317] [--state-dir DIR]\n" +
-                  "  --build-report                       Построить и уплотнить отчёты без сервера\n" +
-                  "  --import-review FILE_OR_BUNDLE       Импортировать YAML review или прежний пакет\n" +
-                  "  --complete-analysis REQUEST_ID       Проверить и импортировать result.yaml запроса панели\n" +
-                  "  --prepare-analysis REQUEST_ID        Повторить экспорт исходного снимка без зависимостей\n" +
-                  "  --export-review-input MODULE_ID --output FILE [--dependencies FILE] [--dependencies-complete]\n" +
-                  "  --check-index                        Проверить код и отчёты в подготовленном индексе Git\n");
-              } else if (values["check-index"]) {
-                const result = await checkPreparedIndex(values.root ?? process.cwd());
-                process.stdout.write("Index verified: " + result.modules + " modules, " + result.reviews + " reviews\n");
-              } else {
-                const batch = values["build-report"] || values["export-review-input"] || values["complete-analysis"] || values["prepare-analysis"];
-                const port = Number(values.port);
-                if (!batch && (!Number.isInteger(port) || port < 0 || port > 65535)) throw new Error("--port must be between 0 and 65535");
-                const workspace = await createWorkspaceSession({
-                  root: values.root ?? process.cwd(), stateDirectory: values["state-dir"],
-                });
-                if (!batch && !values["import-review"]) return serve(workspace, port, prepareWeb);
-                // Batch commands operate on their explicit --root. A workspace container has no shared history.
-                const { store, reports, analysis } = await workspace.session(".", !(values["build-report"] || values["export-review-input"]));
-                if (values["complete-analysis"]) {
-                  const result = await analysis.complete(values["complete-analysis"]);
-                  process.stdout.write("Analysis imported: " + result.reviewId + "\n");
-                }
-                if (values["prepare-analysis"]) {
-                  const file = await analysis.prepare(values["prepare-analysis"], []);
-                  process.stdout.write("Analysis input exported: " + file + "\n");
-                }
-                if (values["import-review"]) {
-                  const source = values["import-review"];
-                  const value = (await lstat(source)).isDirectory() ? await readReviewBundle(source) :
-                    parseYaml(await readFile(source, "utf8"), (data) => data);
-                  // Входной шаблон редактируется агентом; хеш manifest вычисляет инструмент.
-                  // Все связи, доказательства и результаты проверяются при сохранении.
-                  if (value && typeof value === "object" && "kind" in value && value.kind === "review-input") {
-                    const input = value as ReviewInput;
-                    input.report.analysis.input_digest = digest(input.manifest);
-                  }
-                  const id = await reports.saveReview(value);
-                  process.stdout.write("Review imported: " + JSON.stringify(id) + "\n");
-                }
-                if (values["export-review-input"]) {
-                  if (!values.output) throw new Error("--export-review-input requires --output");
-                  const comparison = await reports.publishedComparison();
-                  if (!comparison) throw new Error("No complete published comparison");
-                  const input = createReviewInput(digest(store.snapshotRoot), comparison.baseline, comparison.current,
-                    values["export-review-input"]);
-                  await writeFile(values.output, stringify(input, { aliasDuplicateObjects: false }), { flag: "wx" });
-                  process.stdout.write("Review input exported: " + values.output + "\n");
-                }
-                if (batch) {
-                  process.stdout.write("Reports prepared: " + store.directory + "\n");
-                } else {
-                  await serve(workspace, port, prepareWeb, store);
-                }
-              }
-            }
-      - index: 66
-        fact:
-          id: sha256:0ffaa9626124be8a92b81090e678480ce4dd62e347ccc930f32dbd9540d2f852
-          kind: file
-          path: src/archiview/http.ts
-          start_line: 1
-          end_line: 161
+          end_line: 166
           text: >
             import { callSessionOperation, comparisonQueryArguments,
-            repositoryArguments } from "../application/arguments.js";
+            repositoryArguments } from
+            "../../../module-operations/arguments.js";
 
-            import type { SessionOperations } from "../application/api.js";
+            import type { SessionOperations } from
+            "../../../module-operations/api.js";
 
             import type { IncomingMessage, ServerResponse } from "node:http";
 
@@ -695,16 +496,16 @@ publication:
 
             import { createServer } from "node:http";
 
-            import { existsSync, readFileSync } from "node:fs";
-
-            import { createWorkspaceSession } from
-            "../application/workspace-session.js";
+            import { createWorkspaceSession } from "../workspace-session.js";
 
             import { applicationError, ApplicationError } from
-            "../application/errors.js";
+            "../../../module-operations/errors.js";
 
-            import { packageUrl, webAssetUrl } from
-            "../runtime/package-paths.js";
+            import { readWebAsset } from "../runtime/package-paths.js";
+
+            import { getModuleContract, listModuleFiles, listModules,
+            saveModuleContract } from
+            "../../../module-operations/module-access.js";
 
 
             /** Сопоставляет прикладную ошибку HTTP-статусу, не добавляя HTTP в
@@ -760,29 +561,23 @@ publication:
             standalone CLI only needs the HTTP adapter. */
 
             export async function createArchiView({ root, stateDirectory,
-            panelToken, publishOnOpen = false }: { root: string;
-            stateDirectory?: string; panelToken?: string; publishOnOpen?:
-            boolean }) {
+            publishOnOpen = false }: { root: string; stateDirectory?: string;
+            publishOnOpen?: boolean }) {
               const workspace = await createWorkspaceSession({ root, stateDirectory });
               const session = await workspace.session(undefined, !publishOnOpen);
-              return { ...session, ...workspace, server: createArchiViewHttpServer(workspace, panelToken) };
+              return { ...session, ...workspace, server: createArchiViewHttpServer(workspace) };
             }
 
 
             export function createArchiViewHttpServer(session: SessionOperations
-            & { close?(): void | Promise<void> }, panelToken?: string) {
+            & { root: string; close?(): void | Promise<void> }) {
               // Keep this process's UI and API together if another checkout build replaces dist/web.
               const assets = new Map<string, [Buffer, string]>(([
                 ["/", ["index.html", "text/html"]], ["/app.mjs", ["app.mjs", "text/javascript"]],
                 ["/client.mjs", ["client.mjs", "text/javascript"]],
                 ["/favicon.svg", ["favicon.svg", "image/svg+xml"]],
-                ["/panel-bridge.mjs", ["panel-bridge.mjs", "text/javascript"]],
                 ["/review.mjs", ["review.mjs", "text/javascript"]], ["/styles.css", ["styles.css", "text/css"]],
-              ] satisfies [string, [string, string]][]).map(([route, [file, type]]) => [route, [readFileSync(new URL(file, webAssetUrl)), type]]));
-              let sdkUrl;
-              try { sdkUrl = new URL(import.meta.resolve("@modelcontextprotocol/ext-apps/app-with-deps")); }
-              catch { sdkUrl = new URL("web/archiview/mcp-app-sdk.mjs", packageUrl); }
-              if (existsSync(sdkUrl)) assets.set("/mcp-app-sdk.mjs", [readFileSync(sdkUrl), "text/javascript"]);
+              ] satisfies [string, [string, string]][]).map(([route, [file, type]]) => [route, [readWebAsset(file), type]]));
               const json = (response: ServerResponse, status: number, value: unknown) => {
                 response.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
                 response.end(JSON.stringify(value));
@@ -809,20 +604,8 @@ publication:
                   const serverOrigin = "http://" + host;
                   const url = requestUrl(request, serverOrigin);
                   const origin = request.headers.origin;
-                  const crossOrigin = origin !== undefined && origin !== serverOrigin;
-                  if (panelToken && crossOrigin) {
-                    response.setHeader("Access-Control-Allow-Origin", origin);
-                    response.setHeader("Vary", "Origin");
-                    if (request.method === "OPTIONS") {
-                      response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-                      response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
-                      response.setHeader("Access-Control-Allow-Private-Network", "true");
-                      response.writeHead(204); return response.end();
-                    }
-                  }
-                  if (crossOrigin && !(panelToken && request.method === "GET" && assets.has(url.pathname) && url.pathname !== "/") &&
-                      !(panelToken && request.headers.authorization === "Bearer " + panelToken)) {
-                    return json(response, 403, { error: "Запрос должен исходить из ArchiView или авторизованной панели" });
+                  if (origin !== undefined && origin !== serverOrigin) {
+                    return json(response, 403, { error: "Запрос должен исходить из локального ArchiView" });
                   }
                   if (request.method === "GET" && url.pathname === "/favicon.ico") {
                     response.writeHead(302, { Location: "/favicon.svg" });
@@ -835,6 +618,28 @@ publication:
                   }
                   const args: Record<string, unknown> = Object.fromEntries(url.searchParams);
                   const repository = url.searchParams.get("repository");
+                  const selection = { repository: repository ?? undefined, target: url.searchParams.get("target") ?? undefined };
+                  if (request.method === "GET" && url.pathname === "/api/modules")
+                    return json(response, 200, await listModules(session.root, selection));
+                  if (request.method === "GET" && (url.pathname === "/api/module-files" || url.pathname === "/api/contract")) {
+                    const id = url.searchParams.get("id");
+                    if (!id) throw new ApplicationError("INVALID_ARGUMENT", "Укажите ID модуля");
+                    const result = url.pathname === "/api/module-files" ? await listModuleFiles(session.root, id, selection)
+                      : { id, text: await getModuleContract(session.root, id, selection) };
+                    return json(response, 200, result);
+                  }
+                  if (request.method === "POST" && url.pathname === "/api/contract") {
+                    const body = repositoryArguments(repository, await bodyOf(request, 1024 * 1024));
+                    const { id, text, directory, expectedText } = body;
+                    if (typeof id !== "string" || !id || typeof text !== "string" ||
+                      directory !== undefined && typeof directory !== "string" || expectedText !== undefined && typeof expectedText !== "string" ||
+                      body.repository !== undefined && typeof body.repository !== "string" ||
+                      body.target !== undefined && (typeof body.target !== "string" || selection.target !== undefined && body.target !== selection.target))
+                      throw new ApplicationError("INVALID_ARGUMENT", "Некорректные поля записи контракта");
+                    return json(response, 200, await saveModuleContract(session.root, id, text, {
+                      target: selection.target ?? body.target, repository: body.repository, directory, expectedText,
+                    }));
+                  }
                   if (request.method === "GET" && url.pathname === "/api/comparison") {
                     return json(response, 200, await callSessionOperation(session, "getComparison", comparisonQueryArguments(args)));
                   }
@@ -875,112 +680,140 @@ publication:
               }
               return Object.assign(server, { shutdown });
             }
-      - index: 67
+      - index: 212
         fact:
-          id: sha256:ac67f99c92168840b76b50ed5921d1be76e43fbc2a21b30bfd1095d9a0613397
-          kind: file
-          path: src/archiview/packaged-cli.ts
-          start_line: 1
-          end_line: 6
-          text: >
-            #!/usr/bin/env node
-
-            import { runCli } from "./command.js";
-
-
-            // Installed packages serve the browser assets produced by their
-            distribution build.
-
-            await runCli();
-      - index: 201
-        fact:
-          id: sha256:46c796a6756bfff78dd6720eebac60178d53b90c3a9abc2b43a2efae720690e4
+          id: sha256:772d7bd9ea1eed188997be7fce2f3b06af985cba6a50baa5f8d143153a1a1ff1
           kind: module
-          path: src/archiview
-          text: '{"contract":"documented","format":"yaml","sources":["src/archiview/cli.ts","src/archiview/command.ts","src/archiview/http.ts","src/archiview/packaged-cli.ts"]}'
+          path: web/web-backend/web-service
+          text: '{"contract":"documented","format":"yaml","sources":["web/web-backend/web-service/http.ts"]}'
   current:
     metadata:
-      id: launch-a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
-      digest: sha256:6363190cb16d9f6be0f1249150f84f14fec640bc9afec1ec159f22af462b729e
+      id: launch-2c90cec18764e07c30dc83abf511f71af950652ad121e4623b453b3dcf4ce543
+      digest: sha256:07b75d86d2e99b64735843a667046a1ab58017047eb09d29d1f6e6373191ae83
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-20T10:38:08.764Z
+      capturedAt: 2026-11-24T09:57:48.329Z
       kind: launch
       label: Начальное состояние
-      fingerprint: a3b8925db26b82918b00b2dba2095a1785c8b7fb425e806500bc5e0bb55b0c06
+      fingerprint: 2c90cec18764e07c30dc83abf511f71af950652ad121e4623b453b3dcf4ce543
       complete: true
       diagnostics: []
       evidenceLimitations: []
       observations:
         architecture-change-view:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-distribution:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-analyse:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-skills:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-git-changes:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-module-boundaries-skill:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-module-relations:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        architecture-core:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-application:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-http:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-codex:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-contracts:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        dsh-adapter:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        dsh-client-panel:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
-          revision: 1
-        archiview-mcp:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-module-review:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-project-location:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-reports:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-bridges:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-codex:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        dsh-adapter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-distribution:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-cli:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-framework:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-reviews:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-node-runtime:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-contracts:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-relation-model:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-project-context:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-project-types:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-serialization:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-snapshots:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-        archiview-storage:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+        archiview-reports:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-operations:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-skills:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-boundaries-skill:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         architecture-tests:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-tools:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         architecture-web:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-application:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-analysis-service:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-file-watcher:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-host-bridge:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-node-runtime:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-http:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
         archiview-client:
-          lineage: f5cd390d-5917-4786-a092-1f6748c35eb3
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
           revision: 1
-    module_index: 6
+        archiview-web-api-client:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-module-presenter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-views:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+        archiview-workspace-presenter:
+          lineage: 8a4c61fb-cf17-4b73-a8bc-915359016855
+          revision: 1
+    module_index: 31
     module:
-      directory: src/archiview
+      directory: web/web-backend/web-service
       document:
         state: documented
         text: >
@@ -988,253 +821,86 @@ publication:
 
           id: archiview-http
 
-          title: Локальный сервер ArchiView
+          title: web-service
 
           kind: module
 
           extensions:
-            archiview.roles: [web-endpoints, cli]
-          purpose: Давать самостоятельный локальный доступ к просмотру проекта и
-          операциям с переносимыми отчётами.
+            archiview.roles: [web-endpoints]
+          purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных
+          проекта, запуска анализа и получения его результатов.
 
           boundaries:
             B3: При самостоятельном запуске принимать соединения только на локальном интерфейсе.
-            B4: По файловым маршрутам выдавать только ресурсы приложения.
             B5: Допускать междоменный вызов API панели только с её токеном.
-            B6: При запуске пакетной команды построения, экспорта или проверки индекса завершать операцию до выхода из CLI.
-            B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при импорте с построением отчёта завершать пакетную операцию.
           invariants:
             I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-            I8: Операции с переносимыми результатами доступны из командной строки.
         format: yaml
         contract:
           schema_version: 1
           id: archiview-http
-          title: Локальный сервер ArchiView
+          title: web-service
           kind: module
           extensions:
             archiview.roles:
               - web-endpoints
-              - cli
-          purpose: Давать самостоятельный локальный доступ к просмотру проекта и операциям
-            с переносимыми отчётами.
+          purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных проекта,
+            запуска анализа и получения его результатов.
           boundaries:
             B3: При самостоятельном запуске принимать соединения только на локальном
               интерфейсе.
-            B4: По файловым маршрутам выдавать только ресурсы приложения.
             B5: Допускать междоменный вызов API панели только с её токеном.
-            B6: При запуске пакетной команды построения, экспорта или проверки индекса
-              завершать операцию до выхода из CLI.
-            B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при
-              импорте с построением отчёта завершать пакетную операцию.
           invariants:
             I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-            I8: Операции с переносимыми результатами доступны из командной строки.
       documentPath: .archiview/modules/archiview-http.yaml
       files:
         - path: .archiview/modules/archiview-http.yaml
-          hash: 17f2ed50b36e31a8634ac1309ea51e7514c761d7
-        - path: src/archiview/cli.ts
-          hash: 9d8f9a408caf87ee88592d1c6c74d62595932675
-        - path: src/archiview/command.ts
-          hash: e3eaf6f4bd772c6a2b4784aa799233c315d8b14c
-        - path: src/archiview/http.ts
-          hash: 6e1aa8ba33bf7d4a92a2f136407cac451861de20
-        - path: src/archiview/packaged-cli.ts
-          hash: b87d196725028b693086a8fd9c9bb7a0a4c5846d
-      sourceFiles: 4
-      fingerprint: ef6fdae56e13e6146d12bbaa6b8e0a8ae109b8a99b6acde3f806a9c7df95e24d
+          hash: 0f285d48ccfe3224a307cd9d045e7a38cb93c295
+        - path: web/web-backend/web-service/http.ts
+          hash: d1ad11bd2af350039d1d1b56c6047b21b23cef06
+      sourceFiles: 1
+      fingerprint: bba0f6ddbb6edc211881fc22a56d1bed2e57fdbc0b0f8487dd1cabd94f9ae8bd
     facts:
-      - index: 10
+      - index: 16
         fact:
-          id: sha256:b3f597afe69667f150b2b6c1d9a8e172dac716ce64797eb5e5eb3c9dee8052f4
+          id: sha256:fa3020f05153d53290e3089fb6ccaa979c1eb551fadd77b53521e4ed28de2092
           kind: file
           path: .archiview/modules/archiview-http.yaml
           start_line: 1
-          end_line: 17
+          end_line: 13
           text: >
             schema_version: 1
 
             id: archiview-http
 
-            title: Локальный сервер ArchiView
+            title: web-service
 
             kind: module
 
             extensions:
-              archiview.roles: [web-endpoints, cli]
-            purpose: Давать самостоятельный локальный доступ к просмотру проекта
-            и операциям с переносимыми отчётами.
+              archiview.roles: [web-endpoints]
+            purpose: Предоставлять HTTP-интерфейс для чтения и изменения данных
+            проекта, запуска анализа и получения его результатов.
 
             boundaries:
               B3: При самостоятельном запуске принимать соединения только на локальном интерфейсе.
-              B4: По файловым маршрутам выдавать только ресурсы приложения.
               B5: Допускать междоменный вызов API панели только с её токеном.
-              B6: При запуске пакетной команды построения, экспорта или проверки индекса завершать операцию до выхода из CLI.
-              B7: При отдельном импорте проверки продолжать работу в режиме сервера, а при импорте с построением отчёта завершать пакетную операцию.
             invariants:
               I7: Для самостоятельного просмотра доступен локальный HTTP-интерфейс.
-              I8: Операции с переносимыми результатами доступны из командной строки.
-      - index: 64
+      - index: 163
         fact:
-          id: sha256:4685abca4fc2fe3d5ba3f4d832ce16af1cfc44c60211b664d99a51bf0ed78f9f
+          id: sha256:afe5283142f4f37e58617309fa66956ec37c70f91a9d87008b2fa9b0eec2ae73
           kind: file
-          path: src/archiview/cli.ts
+          path: web/web-backend/web-service/http.ts
           start_line: 1
-          end_line: 9
-          text: >
-            #!/usr/bin/env node
-
-            import { runCli } from "./command.js";
-
-
-            // Source launch compiles the UI only when the selected operation
-            starts HTTP.
-
-            await runCli(async () => {
-              const { buildWeb } = await import("../../scripts/build-web.js");
-              await buildWeb();
-            });
-      - index: 65
-        fact:
-          id: sha256:ec0c8732820501793f5e61c0ddd8506227ff3e6c1c1920e90d1aaaabf8171334
-          kind: file
-          path: src/archiview/command.ts
-          start_line: 1
-          end_line: 105
-          text: >
-            import type { ReviewInput } from "../reports/types.js";
-
-            /**
-             * CLI локального просмотра, построения переносимых отчётов и обмена входами
-             * с агентом. Проверка индекса читает staged-набор, остальные операции сохраняют
-             * данные только в выбранном хранилище ArchiView.
-             */
-            import { parseArgs } from "node:util";
-
-            import { readFile, writeFile, lstat } from "node:fs/promises";
-
-            import { stringify } from "yaml";
-
-            import { createWorkspaceSession } from
-            "../application/workspace-session.js";
-
-            import type { SessionOperations } from "../application/api.js";
-
-            import type { SnapshotStore } from "../storage/snapshot-store.js";
-
-            import { readReviewBundle } from "../storage/review-store.js";
-
-            import { parseYaml } from "../serialization/yaml.js";
-
-            import { digest } from "../serialization/digest.js";
-
-            import { createReviewInput } from "../reports/review-input.js";
-
-            import { checkPreparedIndex } from "../storage/report-index.js";
-
-
-            async function serve(workspace: SessionOperations & { root: string
-            }, port: number, prepareWeb?: () => Promise<void>, store?:
-            SnapshotStore) {
-              await prepareWeb?.();
-              const { createArchiViewHttpServer } = await import("./http.js");
-              const server = createArchiViewHttpServer(workspace);
-              server.on("error", (error) => { process.stderr.write("ArchiView: " + error.message + "\n"); process.exitCode = 1; });
-              server.listen(port, "127.0.0.1", () => {
-                process.stdout.write("ArchiView Local: http://127.0.0.1:" + (server.address() as import("node:net").AddressInfo).port +
-                  "\nProject: " + workspace.root + "\n");
-                if (store) process.stdout.write("State: " + store.directory + "\n");
-                if (store?.migration) process.stdout.write("History copied: " + store.migration.snapshots +
-                  " snapshots, " + store.migration.reviews + " reviews\n");
-              });
-              for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, server.shutdown);
-            }
-
-
-            export async function runCli(prepareWeb?: () => Promise<void>) {
-              const { values } = parseArgs({ options: {
-                root: { type: "string" }, port: { type: "string", default: "4317" },
-                "state-dir": { type: "string" }, help: { type: "boolean", short: "h" },
-                "import-review": { type: "string" }, "build-report": { type: "boolean" },
-                "complete-analysis": { type: "string" },
-                "prepare-analysis": { type: "string" },
-                "check-index": { type: "boolean" }, "export-review-input": { type: "string" },
-                output: { type: "string" }, dependencies: { type: "string" },
-                "dependencies-complete": { type: "boolean" },
-              } });
-              if (!values.help && (values.dependencies !== undefined || values["dependencies-complete"]))
-                throw new Error("Сбор зависимостей через LLM отключён; определение через AST не подключено.");
-              if (values.help) {
-                process.stdout.write("ArchiView — archiview [--root DIR] [--port 4317] [--state-dir DIR]\n" +
-                  "  --build-report                       Построить и уплотнить отчёты без сервера\n" +
-                  "  --import-review FILE_OR_BUNDLE       Импортировать YAML review или прежний пакет\n" +
-                  "  --complete-analysis REQUEST_ID       Проверить и импортировать result.yaml запроса панели\n" +
-                  "  --prepare-analysis REQUEST_ID        Повторить экспорт исходного снимка без зависимостей\n" +
-                  "  --export-review-input MODULE_ID --output FILE [--dependencies FILE] [--dependencies-complete]\n" +
-                  "  --check-index                        Проверить код и отчёты в подготовленном индексе Git\n");
-              } else if (values["check-index"]) {
-                const result = await checkPreparedIndex(values.root ?? process.cwd());
-                process.stdout.write("Index verified: " + result.modules + " modules, " + result.reviews + " reviews\n");
-              } else {
-                const batch = values["build-report"] || values["export-review-input"] || values["complete-analysis"] || values["prepare-analysis"];
-                const port = Number(values.port);
-                if (!batch && (!Number.isInteger(port) || port < 0 || port > 65535)) throw new Error("--port must be between 0 and 65535");
-                const workspace = await createWorkspaceSession({
-                  root: values.root ?? process.cwd(), stateDirectory: values["state-dir"],
-                });
-                if (!batch && !values["import-review"]) return serve(workspace, port, prepareWeb);
-                // Batch commands operate on their explicit --root. A workspace container has no shared history.
-                const { store, reports, analysis } = await workspace.session(".", !(values["build-report"] || values["export-review-input"]));
-                if (values["complete-analysis"]) {
-                  const result = await analysis.complete(values["complete-analysis"]);
-                  process.stdout.write("Analysis imported: " + result.reviewId + "\n");
-                }
-                if (values["prepare-analysis"]) {
-                  const file = await analysis.prepare(values["prepare-analysis"], []);
-                  process.stdout.write("Analysis input exported: " + file + "\n");
-                }
-                if (values["import-review"]) {
-                  const source = values["import-review"];
-                  const value = (await lstat(source)).isDirectory() ? await readReviewBundle(source) :
-                    parseYaml(await readFile(source, "utf8"), (data) => data);
-                  // Входной шаблон редактируется агентом; хеш manifest вычисляет инструмент.
-                  // Все связи, доказательства и результаты проверяются при сохранении.
-                  if (value && typeof value === "object" && "kind" in value && value.kind === "review-input") {
-                    const input = value as ReviewInput;
-                    input.report.analysis.input_digest = digest(input.manifest);
-                  }
-                  const id = await reports.saveReview(value);
-                  process.stdout.write("Review imported: " + JSON.stringify(id) + "\n");
-                }
-                if (values["export-review-input"]) {
-                  if (!values.output) throw new Error("--export-review-input requires --output");
-                  const comparison = await reports.publishedComparison();
-                  if (!comparison) throw new Error("No complete published comparison");
-                  const input = createReviewInput(digest(store.snapshotRoot), comparison.baseline, comparison.current,
-                    values["export-review-input"]);
-                  await writeFile(values.output, stringify(input, { aliasDuplicateObjects: false }), { flag: "wx" });
-                  process.stdout.write("Review input exported: " + values.output + "\n");
-                }
-                if (batch) {
-                  process.stdout.write("Reports prepared: " + store.directory + "\n");
-                } else {
-                  await serve(workspace, port, prepareWeb, store);
-                }
-              }
-            }
-      - index: 66
-        fact:
-          id: sha256:0ffaa9626124be8a92b81090e678480ce4dd62e347ccc930f32dbd9540d2f852
-          kind: file
-          path: src/archiview/http.ts
-          start_line: 1
-          end_line: 161
+          end_line: 169
           text: >
             import { callSessionOperation, comparisonQueryArguments,
-            repositoryArguments } from "../application/arguments.js";
+            repositoryArguments } from
+            "../../../module-operations/arguments.js";
 
-            import type { SessionOperations } from "../application/api.js";
+            import type { SessionOperations } from
+            "../../../module-operations/api.js";
 
             import type { IncomingMessage, ServerResponse } from "node:http";
 
@@ -1243,16 +909,16 @@ publication:
 
             import { createServer } from "node:http";
 
-            import { existsSync, readFileSync } from "node:fs";
-
-            import { createWorkspaceSession } from
-            "../application/workspace-session.js";
+            import { createWorkspaceSession } from "../workspace-session.js";
 
             import { applicationError, ApplicationError } from
-            "../application/errors.js";
+            "../../../module-operations/errors.js";
 
-            import { packageUrl, webAssetUrl } from
-            "../runtime/package-paths.js";
+            import { readWebAsset } from "../runtime/package-paths.js";
+
+            import { getModuleContract, listModuleFiles, listModules,
+            saveModuleContract } from
+            "../../../module-operations/module-access.js";
 
 
             /** Сопоставляет прикладную ошибку HTTP-статусу, не добавляя HTTP в
@@ -1308,29 +974,23 @@ publication:
             standalone CLI only needs the HTTP adapter. */
 
             export async function createArchiView({ root, stateDirectory,
-            panelToken, publishOnOpen = false }: { root: string;
-            stateDirectory?: string; panelToken?: string; publishOnOpen?:
-            boolean }) {
+            publishOnOpen = false }: { root: string; stateDirectory?: string;
+            publishOnOpen?: boolean }) {
               const workspace = await createWorkspaceSession({ root, stateDirectory });
               const session = await workspace.session(undefined, !publishOnOpen);
-              return { ...session, ...workspace, server: createArchiViewHttpServer(workspace, panelToken) };
+              return { ...session, ...workspace, server: createArchiViewHttpServer(workspace) };
             }
 
 
             export function createArchiViewHttpServer(session: SessionOperations
-            & { close?(): void | Promise<void> }, panelToken?: string) {
+            & { root: string; close?(): void | Promise<void> }) {
               // Keep this process's UI and API together if another checkout build replaces dist/web.
               const assets = new Map<string, [Buffer, string]>(([
                 ["/", ["index.html", "text/html"]], ["/app.mjs", ["app.mjs", "text/javascript"]],
                 ["/client.mjs", ["client.mjs", "text/javascript"]],
                 ["/favicon.svg", ["favicon.svg", "image/svg+xml"]],
-                ["/panel-bridge.mjs", ["panel-bridge.mjs", "text/javascript"]],
                 ["/review.mjs", ["review.mjs", "text/javascript"]], ["/styles.css", ["styles.css", "text/css"]],
-              ] satisfies [string, [string, string]][]).map(([route, [file, type]]) => [route, [readFileSync(new URL(file, webAssetUrl)), type]]));
-              let sdkUrl;
-              try { sdkUrl = new URL(import.meta.resolve("@modelcontextprotocol/ext-apps/app-with-deps")); }
-              catch { sdkUrl = new URL("web/archiview/mcp-app-sdk.mjs", packageUrl); }
-              if (existsSync(sdkUrl)) assets.set("/mcp-app-sdk.mjs", [readFileSync(sdkUrl), "text/javascript"]);
+              ] satisfies [string, [string, string]][]).map(([route, [file, type]]) => [route, [readWebAsset(file), type]]));
               const json = (response: ServerResponse, status: number, value: unknown) => {
                 response.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
                 response.end(JSON.stringify(value));
@@ -1357,20 +1017,8 @@ publication:
                   const serverOrigin = "http://" + host;
                   const url = requestUrl(request, serverOrigin);
                   const origin = request.headers.origin;
-                  const crossOrigin = origin !== undefined && origin !== serverOrigin;
-                  if (panelToken && crossOrigin) {
-                    response.setHeader("Access-Control-Allow-Origin", origin);
-                    response.setHeader("Vary", "Origin");
-                    if (request.method === "OPTIONS") {
-                      response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-                      response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
-                      response.setHeader("Access-Control-Allow-Private-Network", "true");
-                      response.writeHead(204); return response.end();
-                    }
-                  }
-                  if (crossOrigin && !(panelToken && request.method === "GET" && assets.has(url.pathname) && url.pathname !== "/") &&
-                      !(panelToken && request.headers.authorization === "Bearer " + panelToken)) {
-                    return json(response, 403, { error: "Запрос должен исходить из ArchiView или авторизованной панели" });
+                  if (origin !== undefined && origin !== serverOrigin) {
+                    return json(response, 403, { error: "Запрос должен исходить из локального ArchiView" });
                   }
                   if (request.method === "GET" && url.pathname === "/favicon.ico") {
                     response.writeHead(302, { Location: "/favicon.svg" });
@@ -1383,6 +1031,28 @@ publication:
                   }
                   const args: Record<string, unknown> = Object.fromEntries(url.searchParams);
                   const repository = url.searchParams.get("repository");
+                  const selection = { repository: repository ?? undefined, target: url.searchParams.get("target") ?? undefined };
+                  if (request.method === "GET" && url.pathname === "/api/modules")
+                    return json(response, 200, await listModules(session.root, selection));
+                  if (request.method === "GET" && (url.pathname === "/api/module-files" || url.pathname === "/api/contract")) {
+                    const id = url.searchParams.get("id");
+                    if (!id) throw new ApplicationError("INVALID_ARGUMENT", "Укажите ID модуля");
+                    const result = url.pathname === "/api/module-files" ? await listModuleFiles(session.root, id, selection)
+                      : { id, text: await getModuleContract(session.root, id, selection) };
+                    return json(response, 200, result);
+                  }
+                  if (request.method === "POST" && url.pathname === "/api/contract") {
+                    const body = repositoryArguments(repository, await bodyOf(request, 1024 * 1024));
+                    const { id, text, directory, expectedText } = body;
+                    if (typeof id !== "string" || !id || typeof text !== "string" ||
+                      directory !== undefined && typeof directory !== "string" || expectedText !== undefined && typeof expectedText !== "string" ||
+                      body.repository !== undefined && typeof body.repository !== "string" ||
+                      body.target !== undefined && (typeof body.target !== "string" || selection.target !== undefined && body.target !== selection.target))
+                      throw new ApplicationError("INVALID_ARGUMENT", "Некорректные поля записи контракта");
+                    return json(response, 200, await saveModuleContract(session.root, id, text, {
+                      target: selection.target ?? body.target, repository: body.repository, directory, expectedText,
+                    }));
+                  }
                   if (request.method === "GET" && url.pathname === "/api/comparison") {
                     return json(response, 200, await callSessionOperation(session, "getComparison", comparisonQueryArguments(args)));
                   }
@@ -1395,10 +1065,13 @@ publication:
                   }
                   if (request.method === "GET" && url.pathname === "/api/review-statuses") return json(response, 200, await callSessionOperation(session, "getReviewStatuses", args));
                   if (request.method === "GET" && url.pathname === "/api/module") return json(response, 200, await callSessionOperation(session, "getModule", args));
+                  if (request.method === "GET" && url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "getRelations", args));
+                  if (request.method === "GET" && url.pathname === "/api/relations/source") return json(response, 200, await callSessionOperation(session, "getRelationSource", args));
                   if (request.method === "GET" && url.pathname === "/api/file-diff") return json(response, 200, await callSessionOperation(session, "getFileDiff", args));
                   if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))
                     return json(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: url.pathname.split("/").at(-1) })));
                   if (request.method === "POST") {
+                    if (url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "buildRelations", repositoryArguments(repository, await bodyOf(request))));
                     if (url.pathname === "/api/contract-clause") return json(response, 200, await callSessionOperation(session, "changeClause", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
                     if (url.pathname === "/api/prototype") return json(response, 200, await callSessionOperation(session, "changePrototype", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
                     if (url.pathname === "/api/analysis") return json(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await bodyOf(request))));
@@ -1423,29 +1096,12 @@ publication:
               }
               return Object.assign(server, { shutdown });
             }
-      - index: 67
+      - index: 226
         fact:
-          id: sha256:ac67f99c92168840b76b50ed5921d1be76e43fbc2a21b30bfd1095d9a0613397
-          kind: file
-          path: src/archiview/packaged-cli.ts
-          start_line: 1
-          end_line: 6
-          text: >
-            #!/usr/bin/env node
-
-            import { runCli } from "./command.js";
-
-
-            // Installed packages serve the browser assets produced by their
-            distribution build.
-
-            await runCli();
-      - index: 201
-        fact:
-          id: sha256:46c796a6756bfff78dd6720eebac60178d53b90c3a9abc2b43a2efae720690e4
+          id: sha256:772d7bd9ea1eed188997be7fce2f3b06af985cba6a50baa5f8d143153a1a1ff1
           kind: module
-          path: src/archiview
-          text: '{"contract":"documented","format":"yaml","sources":["src/archiview/cli.ts","src/archiview/command.ts","src/archiview/http.ts","src/archiview/packaged-cli.ts"]}'
+          path: web/web-backend/web-service
+          text: '{"contract":"documented","format":"yaml","sources":["web/web-backend/web-service/http.ts"]}'
 review_status:
   self:
     current:
@@ -1539,36 +1195,48 @@ review_status:
       reasons:
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: module_path
+          side: baseline
         - code: own_code
           side: baseline
         - code: own_contract
