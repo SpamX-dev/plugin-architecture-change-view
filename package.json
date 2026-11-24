@@ -11,98 +11,44 @@
     "url": "https://github.com/SpamX-dev/plugin-architecture-change-view/issues"
   },
   "type": "module",
-  "main": "dist/dsh/lib/index.js",
-  "exports": {
-    ".": "./dist/dsh/lib/index.js",
-    "./client": "./dist/dsh/lib/client.js",
-    "./package.json": "./package.json"
-  },
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-ui-sidebar-right",
-        "@deepseek-ai/dsh-client-ui-session"
-      ]
-    }
-  },
   "license": "MIT",
   "engines": {
     "node": ">=22"
   },
   "bin": {
-    "plugin-architecture-change-view": "dist/codex/src/server.mjs",
-    "archiview": "dist/dsh/src/cli.mjs"
+    "archiview": "dist/cli.mjs"
   },
   "files": [
-    "dist/codex",
-    "dist/dsh",
-    "src",
-    "skills",
-    "web",
-    "docs",
-    "dist/panel.html",
-    ".archiview/modules.tree",
-    ".archiview/modules",
-    "cordis.patch.yml",
-    "plugin.json",
-    "mcp.json",
-    "README.md"
+    "dist/cli.mjs",
+    "dist/package.json",
+    "dist/LICENSE",
+    "dist/docs/",
+    "dist/skills/",
+    "dist/web/",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
-    "start": "node --import tsx src/mcp/server.ts",
+    "start": "node --import tsx cli/cli.ts",
+    "archiview": "node --import tsx cli/cli.ts",
     "typecheck": "tsc --noEmit",
-    "build:web": "node --import tsx scripts/build-web.ts",
-    "build:plugin": "node --import tsx scripts/build-plugin.ts",
-    "build:dsh": "node --import tsx scripts/build-dsh.ts",
-    "build": "node --import tsx scripts/build-plugin.ts && node --import tsx scripts/build-dsh.ts",
-    "build:portable": "node --import tsx scripts/build-portable.ts",
-    "install:codex": "node --import tsx scripts/install-plugin.ts",
+    "build:web": "node --import tsx builds/build-web.ts",
+    "build": "npm run typecheck && node --import tsx builds/build.ts",
     "pretest": "npm run build",
-    "archiview": "node --import tsx src/archiview/cli.ts",
-    "test": "node --import tsx --test test/*.test.ts",
-    "test:web": "node --import tsx scripts/test-web.ts",
-    "pretest:web": "npm run build:web"
+    "test": "node --import tsx --test --test-concurrency=3 test/*.test.ts",
+    "pretest:web": "npm run build",
+    "test:web": "node --import tsx tools/browser-test.ts",
+    "prepack": "npm run build"
   },
   "dependencies": {
-    "@modelcontextprotocol/ext-apps": "^2.0.4",
-    "@modelcontextprotocol/sdk": "^1.32.2",
     "diff": "^9.0.0",
     "yaml": "^2.8.2"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "~4.0.4",
-    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
-    "@deepseek-ai/schemastery": "~3.18.4",
-    "@types/diff": "^7.0.2",
     "@types/node": "^26.6.6",
-    "@types/react": "^19.3.0",
     "esbuild": "^0.28.2",
     "playwright": "^1.65.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
-  },
-  "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
-    "@deepseek-ai/dsh-skill": "^0.2.0-rc.2",
-    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
-    "@deepseek-ai/schemastery": "^3.18.4"
-  },
-  "peerDependenciesMeta": {
-    "@deepseek-ai/cordis": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-skill": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-tools": {
-      "optional": true
-    },
-    "@deepseek-ai/schemastery": {
-      "optional": true
-    }
   }
 }

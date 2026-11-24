@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { setTimeout as wait } from "node:timers/promises";
-import { withFileLock } from "../src/storage/file-lock.js";
+import { withFileLock } from "../analyse/project/file-lock.js";
 
 test("two processes recover an abandoned lock and enter the critical section exclusively", async (t) => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "archiview-lock-"));

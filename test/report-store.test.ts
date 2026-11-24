@@ -1,7 +1,7 @@
 import { initTestRepository } from "./support.js";
 import { writeModuleTree } from "./support.js";
-import type { Snapshot, ComparisonModule } from "../src/snapshots/types.js";
-import type { TechnicalReport, ReviewHistory } from "../src/reports/types.js";
+import type { Snapshot, ComparisonModule } from "../framework/snapshots/types.js";
+import type { TechnicalReport, ReviewHistory } from "../framework/static-report/types.js";
 import type { TestContext } from "node:test";
 /** Переносимость, неизменность реальных попыток и восстановление публикаций v2. */
 import assert from "node:assert/strict";
@@ -13,21 +13,21 @@ import path from "node:path";
 import test from "node:test";
 import { randomUUID } from "node:crypto";
 import { stringify } from "yaml";
-import { digest } from "../src/serialization/digest.js";
-import { captureWorkingTree } from "../src/snapshots/capture.js";
-import { compareSnapshots } from "../src/snapshots/comparison.js";
-import { SnapshotStore } from "../src/storage/snapshot-store.js";
-import { ReviewStore } from "../src/storage/review-store.js";
-import { ANALYZER, createStructuralReview } from "../src/reviews/bundle.js";
-import { createCodexPanel } from "../src/codex/panel.js";
-import { createReviewInput } from "../src/reports/review-input.js";
-import { createReviewEntry } from "../src/reports/review-entry.js";
-import { validateReviewEntry } from "../src/reports/review-validation.js";
-import { ReportStore, moduleReportName, readPublishedSnapshots } from "../src/storage/report-store.js";
-import { validateArchiReport } from "../src/reports/technical-report.js";
-import { parseReportYaml } from "../src/serialization/yaml.js";
-import { createPublishedView } from "../src/application/published-view.js";
-import { createArchiViewSession } from "../src/application/session.js";
+import { digest } from "../framework/serialization/digest.js";
+import { captureWorkingTree } from "../analyse/git-changes/capture.js";
+import { compareSnapshots } from "../analyse/git-changes/comparison.js";
+import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
+import { ReviewStore } from "../analyse/module-review/review-store.js";
+import { ANALYZER, createStructuralReview } from "../analyse/module-review/bundle.js";
+import { createReviewInput } from "../analyse/module-review/review-input.js";
+import { createReviewEntry } from "../analyse/module-review/review-entry.js";
+import { validateReviewEntry } from "../analyse/module-review/review-validation.js";
+import { ReportStore, moduleReportName, readPublishedSnapshots } from "../analyse/module-review/report-store.js";
+import { validateArchiReport } from "../analyse/module-review/technical-report.js";
+import { parseReportYaml } from "../framework/serialization/yaml.js";
+import { createPublishedView } from "../module-operations/published-view.js";
+import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
+import { createArchiViewSession } from "../web/web-backend/session.js";
 
 const stored = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -226,21 +226,16 @@ test("supported analyzer versions retain exact snapshots and review history acro
   assert.equal(await readFile(reviewFile, "utf8"), reviewBytes);
 });
 
-test("unsupported analyzer versions reach the panel as a clear error and cannot replace history", async (t) => {
+test("unsupported analyzer versions reach the session as a clear error and cannot replace history", async (t) => {
   const { root, store, baseline, current, comparison } = await fixture(t);
   await store.rebuild(baseline, current, comparison.modules);
   const files = await publicationVersion(store, "9.0.0");
   const message = "Версия анализатора технического отчёта «9.0.0» не поддерживается. Поддерживаемые версии: 1.0.1, 1.0.2, 1.1.0.";
   await assert.rejects(store.publishedComparison(), (error: unknown) => error instanceof Error && error.message.includes(message));
-  const panel = createCodexPanel(root);
-  t.after(() => panel.close());
-  const live = await panel.callUi("archiview_ui_get_comparison", {});
-  assert.ok(!("isError" in live && live.isError));
-  const result = await panel.callUi("archiview_ui_get_comparison", { published: true });
-  assert.ok("isError" in result && result.isError);
-  assert.deepEqual(result.content, []);
-  assert.equal("structuredContent" in result ? result.structuredContent : undefined, undefined);
-  assert.ok(result._meta.error.message.includes(message));
+  const workspace = await createWorkspaceSession({ root });
+  t.after(() => workspace.close());
+  await workspace.getComparison();
+  await assert.rejects(workspace.getComparison({ published: true }), (error: unknown) => error instanceof Error && error.message.includes(message));
   await assert.rejects(store.rebuild(baseline, current, comparison.modules), /refusing to replace/);
   for (const [file, text] of files) assert.equal(await readFile(file, "utf8"), text);
 });

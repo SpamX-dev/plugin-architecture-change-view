@@ -1,6 +1,6 @@
 import { initTestRepository, commitTestFiles } from "./support.js";
 import { writeModuleTree } from "./support.js";
-import type { SnapshotStore } from "../src/storage/snapshot-store.js";
+import type { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
 import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
@@ -12,10 +12,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { stringify } from "yaml";
-import { createArchiView } from "../src/archiview/http.js";
-import { ReportStore } from "../src/storage/report-store.js";
-import { captureWorkingTree } from "../src/snapshots/capture.js";
-import { compareSnapshots } from "../src/snapshots/comparison.js";
+import { createArchiView } from "../web/web-backend/web-service/http.js";
+import { ReportStore } from "../analyse/module-review/report-store.js";
+import { captureWorkingTree } from "../analyse/git-changes/capture.js";
+import { compareSnapshots } from "../analyse/git-changes/comparison.js";
 
 /** Изолированный проект и порт принадлежат тесту; реальные данные пользователя не читаются. */
 async function fixture(t: TestContext) {

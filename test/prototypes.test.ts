@@ -4,10 +4,10 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { createScaffold } from "../src/application/prototypes.js";
-import { createWorkspaceSession } from "../src/application/workspace-session.js";
-import { moduleInventory } from "../src/contracts/inventory.js";
-import { captureGitIndex } from "../src/snapshots/capture.js";
+import { createScaffold } from "../module-operations/prototypes.js";
+import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
+import { moduleInventory } from "../analyse/project/inventory.js";
+import { captureGitIndex } from "../analyse/git-changes/capture.js";
 
 test("planned contracts survive Git, stale edits, retries and deletion of a parent", async t => {
   const workspace = await mkdtemp(path.join(os.tmpdir(), "archiview-scaffold-"));

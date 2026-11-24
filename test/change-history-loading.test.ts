@@ -10,9 +10,9 @@ import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 import { stringify } from "yaml";
-import { ChangeHistory } from "../src/storage/change-history.js";
-import { SnapshotStore } from "../src/storage/snapshot-store.js";
-import { captureGitHead, captureWorkingTree } from "../src/snapshots/capture.js";
+import { ChangeHistory } from "../analyse/git-changes/change-history.js";
+import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
+import { captureGitHead, captureWorkingTree } from "../analyse/git-changes/capture.js";
 
 const run = promisify(execFile);
 const stored = <T>(value: T): T => JSON.parse(JSON.stringify(value));

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import test from "node:test";
 import { promisify } from "node:util";
-import { errorDetails } from "../src/runtime/errors.js";
+import { errorDetails } from "../node-errors.js";
 
 test("process exit codes survive Error and record normalization", async () => {
   await assert.rejects(promisify(execFile)(process.execPath, ["-e", "process.exitCode = 3"]), (cause) => {

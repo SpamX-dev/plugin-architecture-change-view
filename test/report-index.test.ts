@@ -1,5 +1,5 @@
 import { writeModuleTree } from "./support.js";
-import type { ReviewHistory, ReviewInput } from "../src/reports/types.js";
+import type { ReviewHistory, ReviewInput } from "../framework/static-report/types.js";
 import type { TestContext } from "node:test";
 /** Проверка реального staged-набора, CLI и переносимости без локального накопления. */
 import assert from "node:assert/strict";
@@ -10,13 +10,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { stringify } from "yaml";
-import { createArchiView } from "../src/archiview/http.js";
-import { checkPreparedIndex } from "../src/storage/report-index.js";
-import { entryContentDigest } from "../src/reports/review-identity.js";
-import { moduleReportName } from "../src/storage/report-store.js";
-import { digest } from "../src/serialization/digest.js";
-import { parseYaml } from "../src/serialization/yaml.js";
-const cli = fileURLToPath(new URL("../src/archiview/cli.ts", import.meta.url));
+import { createArchiView } from "../web/web-backend/web-service/http.js";
+import { checkPreparedIndex } from "../analyse/module-review/report-index.js";
+import { entryContentDigest } from "../analyse/module-review/review-identity.js";
+import { moduleReportName } from "../analyse/module-review/report-store.js";
+import { digest } from "../framework/serialization/digest.js";
+import { parseYaml } from "../framework/serialization/yaml.js";
+const cli = fileURLToPath(new URL("../cli/cli.ts", import.meta.url));
 const git = (root: string, args: string[]) => execFileSync("git", args, { cwd: root, windowsHide: true, encoding: "utf8" }).trim();
 const run = (root: string, args: string[]) => execFileSync(process.execPath, ["--import", import.meta.resolve("tsx"), cli, "--root", root, ...args], { windowsHide: true, encoding: "utf8" });
 const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module",

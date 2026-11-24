@@ -1,10 +1,10 @@
 import { initTestRepository, commitTestFiles } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
-import type { Snapshot } from "../src/snapshots/types.js";
-import type { ReviewOptions } from "../src/reports/types.js";
-import type { Coverage } from "../src/reviews/types.js";
-import type { SnapshotStore } from "../src/storage/snapshot-store.js";
+import type { Snapshot } from "../framework/snapshots/types.js";
+import type { ReviewOptions } from "../framework/static-report/types.js";
+import type { Coverage } from "../framework/ai-report/types.js";
+import type { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
 import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
 /** Проверяет автоматическое построение отчёта через настоящий локальный HTTP-сервер. */
@@ -15,12 +15,12 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { stringify, parse } from "yaml";
-import { createArchiView } from "../src/archiview/http.js";
-import { createArchiViewSession } from "../src/application/session.js";
-import { digest } from "../src/serialization/digest.js";
-import { createReviewInput } from "../src/reports/review-input.js";
-import { captureWorkingTree } from "../src/snapshots/capture.js";
-import { savedClauseText, savedClauseMatchesContract } from "../web/archiview/contract.js";
+import { createArchiView } from "../web/web-backend/web-service/http.js";
+import { createArchiViewSession } from "../web/web-backend/session.js";
+import { digest } from "../framework/serialization/digest.js";
+import { createReviewInput } from "../analyse/module-review/review-input.js";
+import { captureWorkingTree } from "../analyse/git-changes/capture.js";
+import { savedClauseText, savedClauseMatchesContract } from "../web/web-ui/views/contract.js";
 
 /** Контракт и дерево принадлежат только этому тесту и удаляются после остановки сервера. */
 async function fixture(t: TestContext) {

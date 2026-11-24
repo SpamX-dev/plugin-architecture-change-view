@@ -1,12 +1,12 @@
-import type { Check, ClauseReference, Contract, Finding, Observation, ReviewBundle, Side } from "../web/archiview/types.js";
+import type { Check, ClauseReference, Contract, Finding, Observation, ReviewBundle, Side } from "../web/web-ui/types.js";
 /** Проверяет состав видимого локального чеклиста без изменения сохранённого отчёта. */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { compareContracts } from "../src/snapshots/contract-diff.js";
-import { moduleAnalysisStatus } from "../web/archiview/review-status.js";
+import { compareContracts } from "../analyse/git-changes/contract-diff.js";
+import { moduleAnalysisStatus } from "../web/web-ui/views/review-status.js";
 import { ownClauseGroups, reviewVersions, observedVersionGroups, evidenceLabel,
   reviewFindingItems, freshnessLabel, clauseFindingTargets, moduleFindingCount, treeFindingCounts,
-  findingFixPrompt, savedClauseText, savedClauseMatchesContract, clauseSectionLabel, reviewFreshnessStates } from "../web/archiview/review.js";
+  findingFixPrompt, savedClauseText, savedClauseMatchesContract, clauseSectionLabel, reviewFreshnessStates } from "../web/web-ui/views/review.js";
 
 /** Фикстура старого отчёта содержит локальные, родительские и исторические проверки. */
 function historicalReview(): ReviewBundle {

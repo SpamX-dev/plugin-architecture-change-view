@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import test from "node:test";
-import { RepositoryWatch } from "../src/application/repository-watch.js";
+import { RepositoryWatch } from "../web/web-backend/repository-watch.js";
 import { commitTestFiles, initTestRepository } from "./support.js";
 
 test("linked worktree subscriptions ignore local storage, wake all readers and see shared Git refs and reviews", async t => {

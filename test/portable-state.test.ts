@@ -12,15 +12,15 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { stringify } from "yaml";
-import { createArchiView } from "../src/archiview/http.js";
-import { moduleInventory } from "../src/contracts/inventory.js";
-import { readSnapshotRoot } from "../src/project/identity.js";
-import { readReviewBundle, ReviewStore } from "../src/storage/review-store.js";
-import { createStructuralReview } from "../src/reviews/bundle.js";
-import { reviewIsStale } from "../src/reports/freshness.js";
-import { defaultSnapshotDirectory, SnapshotStore } from "../src/storage/snapshot-store.js";
-import { captureGitHead, captureWorkingTree } from "../src/snapshots/capture.js";
-import { compareSnapshots } from "../src/snapshots/comparison.js";
+import { createArchiView } from "../web/web-backend/web-service/http.js";
+import { moduleInventory } from "../analyse/project/inventory.js";
+import { readSnapshotRoot } from "../analyse/project/identity.js";
+import { readReviewBundle, ReviewStore } from "../analyse/module-review/review-store.js";
+import { createStructuralReview } from "../analyse/module-review/bundle.js";
+import { reviewIsStale } from "../analyse/module-review/freshness.js";
+import { defaultSnapshotDirectory, SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
+import { captureGitHead, captureWorkingTree } from "../analyse/git-changes/capture.js";
+import { compareSnapshots } from "../analyse/git-changes/comparison.js";
 
 /** Минимальный контракт фиксирует обязанности явно, независимо от расположения тестовой папки. */
 const contract = (id: string) => ({ schema_version: 1, id, title: id, kind: "module",

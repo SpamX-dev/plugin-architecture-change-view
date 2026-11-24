@@ -10,8 +10,8 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {stringify} from "yaml";
-import {createArchiView} from "../src/archiview/http.js";
-import type { FileDiff } from "../src/application/api.js";
+import {createArchiView} from "../web/web-backend/web-service/http.js";
+import type { FileDiff } from "../module-operations/api.js";
 const git=(root: string,args: string[])=>execFileSync("git",args,{cwd:root,windowsHide:true,encoding:"utf8"}).trim();
 const contract={schema_version:1,id:"root",title:"Пример",kind:"module",purpose: "Возвращать значение.",boundaries:{},invariants:{}};
 async function workBytes(app: { reports: { work: string } }){

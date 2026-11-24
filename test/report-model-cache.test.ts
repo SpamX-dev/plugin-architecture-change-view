@@ -1,4 +1,4 @@
-import type { Fact, Snapshot } from "../src/snapshots/types.js";
+import type { Fact, Snapshot } from "../framework/snapshots/types.js";
 /**
  * Проверяет границу жизни подготовленной модели: снимки фиксируются один раз,
  * новый расчёт видит изменения, а объединение истории и изменение результатов
@@ -7,11 +7,11 @@ import type { Fact, Snapshot } from "../src/snapshots/types.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { stringify } from "yaml";
-import { contractDocument } from "../src/contracts/document.js";
-import { digest } from "../src/serialization/digest.js";
-import { snapshotDigest } from "../src/snapshots/identity.js";
-import { aggregateTreeStatuses, createReportModel, createTechnicalReport, reviewFreshness } from "../src/reports/model.js";
-import { createReviewInput } from "../src/reports/review-input.js";
+import { contractDocument } from "../framework/contracts/document.js";
+import { digest } from "../framework/serialization/digest.js";
+import { snapshotDigest } from "../framework/snapshots/identity.js";
+import { aggregateTreeStatuses, createReportModel, createTechnicalReport, reviewFreshness } from "../analyse/module-review/model.js";
+import { createReviewInput } from "../analyse/module-review/review-input.js";
 
 /** Небольшие настоящие контракты и файловые факты позволяют менять входы независимо от id. */
 function snapshot({ source = "export const value = 1;\n", child = true, contractText = "Читать данные." } = {}) {

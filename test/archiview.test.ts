@@ -9,7 +9,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { createArchiView } from "../src/archiview/http.js";
+import { createArchiView } from "../web/web-backend/web-service/http.js";
 
 test("serves tree and historical documents; snapshot creation preserves selected baseline", async (t) => {
   const temporary = await mkdtemp(path.join(os.tmpdir(), "archiview-http-"));

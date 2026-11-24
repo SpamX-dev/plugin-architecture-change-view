@@ -10,10 +10,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import { captureWorkingTree, captureGitHead, captureGitIndex } from "../src/snapshots/capture.js";
-import { compareSnapshots } from "../src/snapshots/comparison.js";
-import { createWorkspaceSession } from "../src/application/workspace-session.js";
-import { SnapshotStore } from "../src/storage/snapshot-store.js";
+import { captureWorkingTree, captureGitHead, captureGitIndex } from "../analyse/git-changes/capture.js";
+import { compareSnapshots } from "../analyse/git-changes/comparison.js";
+import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
+import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
 
 /** Git-команды выполняются только в явно созданном временном проекте. */
 const run = promisify(execFile);

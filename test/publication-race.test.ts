@@ -9,8 +9,8 @@ import test from 'node:test';
 import { setTimeout as wait } from 'node:timers/promises';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { createArchiViewSession } from '../src/application/session.js';
-import { ApplicationError } from '../src/application/errors.js';
+import { createArchiViewSession } from '../web/web-backend/session.js';
+import { ApplicationError } from '../module-operations/errors.js';
 
 /** Reproduce an actual interleaving between a cached action and a newer publication. */
 test('a newer publication cannot be rolled back by an already running cached action', async (t) => {

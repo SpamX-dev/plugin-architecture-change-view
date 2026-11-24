@@ -3,26 +3,21 @@ import { commitTestFiles, writeModuleTree } from "./support.js";
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
-import { createServer, type Server } from "node:http";
-import { cp, mkdir, mkdtemp, readFile, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import type { Server } from "node:http";
+import { mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import test, { type TestContext } from "node:test";
 import { promisify } from "node:util";
 import { chromium } from "playwright";
-import { build } from "esbuild";
 import { parse, stringify } from "yaml";
-import type { ReviewInput } from "../src/reports/types.js";
-import { createArchiView } from "../src/archiview/http.js";
-import type { ComparisonView } from "../src/application/api.js";
-import { createArchiViewSession } from "../src/application/session.js";
-import { createRouteTable } from "../src/dsh/routes.js";
-import { createReviewInput } from "../src/reports/review-input.js";
-import { digest } from "../src/serialization/digest.js";
-import { captureWorkingTree } from "../src/snapshots/capture.js";
-import { createCodexProjectBinding } from "../src/codex/project-context.js";
-import { createCodexPanel } from "../src/codex/panel.js";
+import type { ReviewInput } from "../framework/static-report/types.js";
+import { createArchiView } from "../web/web-backend/web-service/http.js";
+import type { ComparisonView } from "../module-operations/api.js";
+import { createReviewInput } from "../analyse/module-review/review-input.js";
+import { digest } from "../framework/serialization/digest.js";
+import { captureWorkingTree } from "../analyse/git-changes/capture.js";
 
 const browserOptions = { skip: process.env.ARCHIVIEW_BROWSER_TEST !== "1", timeout: 60_000 };
 
@@ -65,7 +60,12 @@ async function browserProject(defer: DeferCleanup) {
 
 async function listen(defer: DeferCleanup, server: Server) {
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  defer(() => new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve())));
+  defer(async () => {
+    const closed = once(server, "close");
+    server.close();
+    server.closeAllConnections();
+    await closed;
+  });
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   return "http://127.0.0.1:" + address.port;
@@ -75,93 +75,13 @@ async function browserContext(defer: DeferCleanup) {
   const browser = await chromium.launch({ headless: true,
     ...(process.env.ARCHIVIEW_CHROMIUM_PATH ? { executablePath: process.env.ARCHIVIEW_CHROMIUM_PATH } : {}) });
   defer(() => browser.close());
-  return browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ["clipboard-read", "clipboard-write"] });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ["clipboard-read", "clipboard-write"] });
+  context.setDefaultTimeout(15_000);
+  return context;
 }
 
-test("built Codex panel offers a project folder before and after preflight and loads manual and picker selections", browserOptions, async (t) => {
-  await promisify(execFile)(process.execPath, ["--import", "tsx", "scripts/build-plugin.ts"], { windowsHide: true });
-  const defer = fixtureCleanup(t);
-  const root = await browserProject(defer);
-  const context = await browserContext(defer);
-  let panelHtml = "";
-  const server = createServer((_request, response) => {
-    response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    response.end(`<!doctype html><html lang="ru"><meta charset="utf-8">
-      <title>ArchiView — тестовый хост MCP Apps</title>
-      <style>body{margin:0}iframe{display:block;width:100vw;height:100vh;border:0}</style>
-      <iframe sandbox="allow-scripts allow-same-origin allow-forms"></iframe><script>
-        const frame = document.querySelector('iframe');
-        window.addEventListener('message', async (event) => {
-          const message = event.data;
-          if (event.source !== frame.contentWindow || !message || message.id === undefined) return;
-          let result = {};
-          if (message.method === 'ui/initialize') result = { protocolVersion: message.params.protocolVersion,
-            hostInfo: { name: 'ArchiView protocol test host', version: '1' }, hostCapabilities: { serverTools: {} },
-            hostContext: { theme: 'light', displayMode: 'inline', availableDisplayModes: ['inline'] } };
-          if (message.method === 'tools/call') result = await window.panelTool(message.params.name, message.params.arguments);
-          frame.contentWindow.postMessage({ jsonrpc: '2.0', id: message.id, result }, '*');
-        });
-        frame.srcdoc = ${JSON.stringify(panelHtml).replace(/</g, "\\u003c")};
-      </script></html>`);
-  });
-  const origin = await listen(defer, server);
-  for (const selection of ["manual", "picker", "comparison"]) {
-    const binding = await createCodexProjectBinding(undefined, { readContext: async () => ({ status: "unavailable" }) });
-    let picks = 0;
-    const panel = createCodexPanel(binding, { chooseDirectory: async () => ({ projectRoot: ++picks === 1 ? null : root }) });
-    defer(() => panel.close());
-    panelHtml = (await panel.resource()).contents[0].text;
-    const page = await context.newPage();
-    await page.exposeFunction("panelTool", (name: string, args: Record<string, unknown>) => {
-      if (selection === "comparison" && name === "archiview_ui_get_project") return { content: [], _meta: { result: { root } } };
-      return panel.callUi(name, args, { threadId: "projectless-chat" });
-    });
-    await page.goto(origin);
-    const frame = page.frameLocator("iframe");
-    const input = frame.getByRole("textbox", { name: "Папка проекта", exact: true });
-    await input.waitFor({ timeout: 5000 });
-    if (selection === "comparison" && process.env.ARCHIVIEW_FOLDER_SCREENSHOT) await page.screenshot({ path: process.env.ARCHIVIEW_FOLDER_SCREENSHOT });
-    assert.equal(binding.root, undefined);
-    if (selection !== "picker") {
-      await input.fill("relative");
-      await frame.getByRole("button", { name: "Открыть проект", exact: true }).click();
-      await frame.getByRole("alert").filter({ hasText: "projectRoot должен быть абсолютным" }).waitFor();
-      assert.equal(binding.root, undefined);
-      await input.fill(root);
-      await frame.getByRole("button", { name: "Открыть проект", exact: true }).click();
-    } else {
-      const browse = frame.getByRole("button", { name: "Выбрать папку…", exact: true });
-      await input.fill("Сохранённый ввод");
-      await browse.click();
-      await page.waitForFunction(() => !document.querySelector("iframe")?.contentDocument?.querySelector<HTMLButtonElement>(".project-form .button-quiet")?.disabled);
-      assert.equal(await input.inputValue(), "Сохранённый ввод");
-      assert.equal(binding.root, undefined);
-      await browse.click();
-    }
-    await frame.getByRole("treeitem").filter({ hasText: "Функция браузера" }).waitFor();
-    assert.equal(binding.root, root);
-    await page.close();
-  }
-});
-
-/** Exercise a source checkout with installed dependencies and no generated assets. */
-async function sourceCliOrigin(defer: DeferCleanup, project: string) {
-  const checkout = await mkdtemp(path.join(os.tmpdir(), "archiview-source-start-"));
-  defer(() => rm(checkout, { recursive: true, force: true, maxRetries: 5 }));
-  for (const name of ["src", "web", "scripts", "tsconfig.json", "package.json"]) {
-    await cp(path.resolve(name), path.join(checkout, name), { recursive: true });
-  }
-  await symlink(path.resolve("node_modules"), path.join(checkout, "node_modules"), process.platform === "win32" ? "junction" : "dir");
-  const args = ["--import", "tsx", "src/archiview/cli.ts", "--root", project];
-  await promisify(execFile)(process.execPath, [...args, "--build-report", "--port", "unused"], { cwd: checkout, windowsHide: true });
-  await assert.rejects(stat(path.join(checkout, "dist")), { code: "ENOENT" });
-  const invalid = path.join(checkout, "web", "invalid.ts");
-  await writeFile(invalid, "export const value: number = 'invalid';\n");
-  await assert.rejects(promisify(execFile)(process.execPath, [...args, "--port", "0"], { cwd: checkout, windowsHide: true, timeout: 15000 }),
-    (error: Error & { stdout?: string }) => /TS2322/.test(error.stdout ?? ""));
-  await assert.rejects(stat(path.join(checkout, "dist", "web")), { code: "ENOENT" });
-  await rm(invalid);
-  const child = spawn(process.execPath, [...args, "--port", "0"], { cwd: checkout, windowsHide: true });
+async function cliOrigin(defer: DeferCleanup, project: string) {
+  const child = spawn(process.execPath, ["dist/cli.mjs", "--root", project, "--port", "0"], { windowsHide: true });
   defer(async () => {
     if (child.exitCode !== null || child.signalCode !== null) return;
     const stopped = once(child, "exit");
@@ -174,13 +94,13 @@ async function sourceCliOrigin(defer: DeferCleanup, project: string) {
     const match = /^ArchiView Local: (http:\/\/127\.0\.0\.1:\d+)$/.exec(line);
     if (match) return match[1];
   }
-  throw new Error("Source CLI exited before listening. " + diagnostics);
+  throw new Error("Built CLI exited before listening. " + diagnostics);
 }
 
 test("standalone browser loads modules, navigates history, copies analysis and fits mobile", browserOptions, async (t) => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);
-  const origin = await sourceCliOrigin(defer, root);
+  const origin = await cliOrigin(defer, root);
   const context = await browserContext(defer);
   const page = await context.newPage();
   const errors: string[] = [];
@@ -540,7 +460,7 @@ test("module files keep their directory and status on both sides of the comparis
   await writeFile(path.join(root, "binary.dat"), Buffer.from([0, 255]));
   await writeFile(path.join(root, "empty.txt"), "");
 
-  const origin = await sourceCliOrigin(defer, root);
+  const origin = await cliOrigin(defer, root);
   const page = await (await browserContext(defer)).newPage();
   await page.goto(origin);
   await page.getByRole("tab", { name: /^Файлы/ }).click();
@@ -628,7 +548,7 @@ test("the file tab starts at each snapshot's module directory and excludes its c
   const contractPath = path.join(root, ".archiview/modules", name);
   await writeFile(contractPath, (await readFile(contractPath, "utf8")).replace("Функция браузера", "Новый заголовок"));
 
-  const origin = await sourceCliOrigin(defer, root);
+  const origin = await cliOrigin(defer, root);
   const page = await (await browserContext(defer)).newPage();
   await page.goto(origin + "/#src");
   await page.getByRole("heading", { name: "Новый заголовок", exact: true }).waitFor();
@@ -660,7 +580,7 @@ test("the file tab starts at each snapshot's module directory and excludes its c
 test("files remain browsable while independent review statuses load, fail and retry", browserOptions, async t => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);
-  const origin = await sourceCliOrigin(defer, root);
+  const origin = await cliOrigin(defer, root);
   const page = await (await browserContext(defer)).newPage();
   let capture!: (route: import("playwright").Route) => void;
   const pending = new Promise<import("playwright").Route>(resolve => { capture = resolve; });
@@ -845,107 +765,47 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   assert.deepEqual(repositoriesRequested, ["beta"]);
 });
 
-test("dsh browser ties delivery and navigation to the active host and comparison", browserOptions, async (t) => {
+test("analysis reuses a prepared request after clipboard denial and refreshes only after import", browserOptions, async t => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);
-  const session = await createArchiViewSession({ root });
-  const routes = createRouteTable({ prefix: "/archiview", guard: () => false, getSession: () => session });
-  const route = routes.find((entry) => entry.kind === "prefix")!;
-  const hostBridge = await build({ entryPoints: ["src/dsh/client/frame-bridge.ts"], bundle: true,
-    format: "iife", globalName: "archiviewBridge", write: false });
-  const server = createServer((request, response) => {
-    if (request.url?.startsWith("/archiview/")) { void route.handler(request, response); return; }
-    response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    response.end(`<style>body { margin: 0 } iframe { width: 100vw; height: 100vh; border: 0; display: block }</style>
-    <button id="switch">Сменить чат</button><iframe src="/archiview/?session=fixture"></iframe><script>
-      ${hostBridge.outputFiles[0].text}
-      const frame = document.querySelector("iframe");
-      const sendPrompt = location.search === "?send" ? window.recordDelivery : undefined;
-      let detach = archiviewBridge.listenToFrame(frame, { sessionId: "fixture", sendPrompt });
-      document.querySelector("#switch").onclick = () => {
-        detach();
-        detach = archiviewBridge.listenToFrame(frame, { sessionId: "next", sendPrompt });
-      };
-    </script>`);
-  });
-  const origin = await listen(defer, server);
+  const app = await createArchiView({ root });
   const page = await (await browserContext(defer)).newPage();
-  let clipboardWrites = 0;
-  const recipients: string[] = [];
-  await page.exposeFunction("recordDelivery", (sessionId: string) => { recipients.push(sessionId); });
-  const requests: { view: string; path: string }[] = [];
-  page.on("request", (request) => {
-    if (request.method() === "POST" && new URL(request.url()).pathname === "/archiview/api/analysis") requests.push(request.postDataJSON());
+  let preparedCount = 0;
+  page.on("request", request => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/analysis") preparedCount++;
   });
-  await page.exposeFunction("trackClipboard", () => { clipboardWrites++; });
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, "clipboard", { value: { writeText: Reflect.get(window, "trackClipboard") } });
+  await page.goto(await listen(defer, app.server) + "/#src");
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, "writeText", {
+      configurable: true, value: Promise.reject.bind(Promise, new DOMException("Нет разрешения", "NotAllowedError")),
+    });
   });
-  await page.goto(origin);
-  const panel = page.frameLocator("iframe");
-  const analysis = panel.locator("[data-analysis]").first();
-  await panel.locator(".contract-paper").waitFor();
-  assert.ok(await analysis.isDisabled());
-  await analysis.dispatchEvent("click");
-  assert.equal(clipboardWrites, 0);
-  assert.equal(requests.length, 0);
+  const copy = page.getByRole("button", { name: "Копировать промпт", exact: true });
+  const preparation = page.waitForResponse(response => new URL(response.url()).pathname === "/api/analysis");
+  await copy.click();
+  const request = await (await preparation).json();
+  const status = page.locator("#analysis-status");
+  await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#analyze-module")?.disabled);
+  assert.match(await status.textContent() ?? "", /Не удалось скопировать промпт: Нет разрешения/);
+  await page.evaluate(() => Reflect.deleteProperty(navigator.clipboard, "writeText"));
+  await copy.click();
+  await status.filter({hasText: "Ожидаем импорт"}).waitFor();
+  assert.equal(preparedCount, 1);
+  assert.equal((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, "\n"), request.prompt);
+  assert.equal((await app.getAnalysis({ id: request.id })).status, "prepared");
 
-  await page.goto(origin + "/?send");
-  await panel.getByRole("button", { name: "Анализировать модуль", exact: true }).click();
-  await panel.getByText("Поручение передано агенту хоста.", { exact: false }).waitFor();
-  const currentRequest = requests[0];
-  assert.ok(currentRequest);
-  const timeline = panel.locator("#timeline");
-  const revision = await timeline.getByRole("option", { name: "HEAD", exact: true }).getAttribute("value");
-  assert.ok(revision);
-  await timeline.selectOption(revision);
-  await panel.locator(".raw-document").waitFor();
-  await panel.getByRole("button", { name: "Анализировать модуль", exact: true }).click();
-  await panel.getByText("Поручение передано агенту хоста.", { exact: false }).waitFor();
-  assert.equal(requests.length, 2);
-  assert.equal(requests[1].path, currentRequest.path);
-  assert.notEqual(requests[1].view, currentRequest.view);
-
-  await panel.locator(".raw-document > summary").click();
-  await panel.getByRole("button", { name: "Диф YAML" }).click();
-  assert.match(await panel.locator(".diff-labels").innerText(), /Revision [a-f0-9]+ → HEAD/);
-  await panel.getByRole("button", { name: "Закрыть", exact: true }).click();
-
-  // An imported review and a manual refresh can overlap. Deliver the old failure last.
-  let holdFirst = true;
-  let captured!: (request: import("playwright").Route) => void;
-  const held = new Promise<import("playwright").Route>((resolve) => { captured = resolve; });
-  await page.route("**/archiview/api/comparison?**", (request) => {
-    if (holdFirst) { holdFirst = false; captured(request); return; }
-    return request.continue();
-  });
-  await panel.locator("#refresh").click();
-  const old = await held;
-  const updated = page.waitForResponse((response) => new URL(response.url()).pathname === "/archiview/api/module");
-  await panel.locator("#refresh").dispatchEvent("click");
-  await updated;
-  await panel.locator(".contract-paper").waitFor();
-  await old.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "old comparison failed" }) });
-  const frame = page.frames().find((item) => new URL(item.url()).pathname === "/archiview/")!;
-  await frame.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  assert.equal(await panel.getByText("old comparison failed").count(), 0);
-  assert.ok(await panel.locator(".contract-paper").isVisible());
-  assert.equal(clipboardWrites, 0);
-
-  // postMessage queues SEND. Rebind the very same iframe before its parent receives it.
-  const delayed = await frame.evaluate(async () => {
-    const { connectPanel } = await import(new URL("panel-bridge.mjs", location.href).href);
-    const bridge = await connectPanel();
-    const pending = bridge.send("Отложенное поручение");
-    parent.document.querySelector<HTMLButtonElement>("#switch")!.click();
-    return pending.then(() => "sent", (error: Error) => error.message);
-  });
-  assert.match(delayed, /Чат поручения не совпадает/);
-  assert.deepEqual(recipients, ["fixture", "fixture"]);
-  await page.locator("iframe").evaluate((element) => element.setAttribute("src", "/archiview/?session=next"));
-  await panel.getByRole("button", { name: "Анализировать модуль", exact: true }).click();
-  await panel.getByText("Поручение передано агенту хоста.", { exact: false }).waitFor();
-  assert.deepEqual(recipients, ["fixture", "fixture", "next"]);
+  const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
+  const result: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
+  result.report.analysis.model = result.manifest.model = { provider: "test", id: "browser-import" };
+  result.report.analysis.prompt_digest = result.manifest.prompt_digest = digest("Standalone import fixture");
+  result.report.assessment.current = { verdict: "consistent", summary: "Проверка из браузерного теста" };
+  await writeFile(path.join(folder, "result.yaml"), stringify(result, { aliasDuplicateObjects: false }));
+  assert.equal((await app.getAnalysis({ id: request.id })).status, "prepared");
+  await app.analysis.complete(request.id);
+  await status.filter({hasText: "Анализ выбранного снимка сохранён"}).waitFor();
+  await page.locator("#tab-checks").click();
+  await page.getByText("Полный отчёт", { exact: true }).click();
+  await page.locator(".raw-document pre").filter({ hasText: "Проверка из браузерного теста" }).waitFor();
 });
 
 test("navigation cancels an in-flight analysis poll and resumes it only on return", browserOptions, async (t) => {
@@ -965,7 +825,7 @@ test("navigation cancels an in-flight analysis poll and resumes it only on retur
   });
   await page.goto(origin);
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
-  await page.locator("#analysis-status").getByText("Промпт скопирован.", { exact: false }).waitFor();
+  await page.locator("#analysis-status").filter({hasText: "Промпт скопирован."}).waitFor();
   await page.clock.fastForward(3100);
   const oldPoll = await firstPoll;
   const status = await (await oldPoll.fetch()).json();
@@ -1093,6 +953,11 @@ test("retrying a finding link reveals the original clause only after its documen
   const page = await (await browserContext(defer)).newPage();
   await page.goto(origin);
   await page.locator("#tab-findings").click();
+  await page.getByRole("button", { name: "Копировать промпт исправления", exact: true }).click();
+  await page.locator(".finding-fix-status").filter({hasText: "Промпт скопирован."}).waitFor();
+  const fixPrompt = await page.evaluate(() => navigator.clipboard.readText());
+  assert.ok(fixPrompt.includes("finding-link"));
+  assert.ok(fixPrompt.includes(JSON.stringify(root)));
   const link = page.locator(".finding-clauses button").first();
   await link.waitFor();
   const requested: string[] = [];

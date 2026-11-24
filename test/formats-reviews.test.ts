@@ -11,18 +11,18 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { stringify } from "yaml";
-import { digest } from "../src/serialization/digest.js";
-import { parseYaml } from "../src/serialization/yaml.js";
-import { contractDocument, currentContractYaml, validateArch } from "../src/contracts/document.js";
-import { validateReview } from "../src/reviews/schema.js";
-import { moduleContext, moduleInventory } from "../src/contracts/inventory.js";
-import { captureWorkingTree } from "../src/snapshots/capture.js";
-import { compareSnapshots } from "../src/snapshots/comparison.js";
-import { createStructuralReview, validateReviewBundle } from "../src/reviews/bundle.js";
-import { reviewIsStale } from "../src/reports/freshness.js";
-import { SnapshotStore } from "../src/storage/snapshot-store.js";
-import { ReviewStore, readReviewBundle } from "../src/storage/review-store.js";
-import { createArchiView } from "../src/archiview/http.js";
+import { digest } from "../framework/serialization/digest.js";
+import { parseYaml } from "../framework/serialization/yaml.js";
+import { contractDocument, currentContractYaml, validateArch } from "../framework/contracts/document.js";
+import { validateReview } from "../framework/ai-report/schema.js";
+import { moduleContext, moduleInventory } from "../analyse/project/inventory.js";
+import { captureWorkingTree } from "../analyse/git-changes/capture.js";
+import { compareSnapshots } from "../analyse/git-changes/comparison.js";
+import { createStructuralReview, validateReviewBundle } from "../analyse/module-review/bundle.js";
+import { reviewIsStale } from "../analyse/module-review/freshness.js";
+import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
+import { ReviewStore, readReviewBundle } from "../analyse/module-review/review-store.js";
+import { createArchiView } from "../web/web-backend/web-service/http.js";
 
 /** Фикстура задаёт проверяемые обязанности явно, не выводя их из имени каталога. */
 const contract = (id: string) => ({ schema_version: 1, id, title: "Контракт " + id, kind: "module",

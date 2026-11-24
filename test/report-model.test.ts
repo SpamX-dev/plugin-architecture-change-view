@@ -1,6 +1,6 @@
-import type { Contract } from "../src/contracts/types.js";
-import type { Fact, Snapshot } from "../src/snapshots/types.js";
-import type { ReviewOptions, ReviewEntry } from "../src/reports/types.js";
+import type { Contract } from "../framework/contracts/types.js";
+import type { Fact, Snapshot } from "../framework/snapshots/types.js";
+import type { ReviewOptions, ReviewEntry } from "../framework/static-report/types.js";
 /**
  * Проверяет независимость self/subtree/current/change, переносимые доказательства
  * и отрицательные случаи native import. Фикстуры описывают входы явно: тесты не
@@ -9,19 +9,19 @@ import type { ReviewOptions, ReviewEntry } from "../src/reports/types.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { stringify } from "yaml";
-import { contractDocument } from "../src/contracts/document.js";
-import { digest } from "../src/serialization/digest.js";
-import { parseYaml } from "../src/serialization/yaml.js";
-import { snapshotDigest } from "../src/snapshots/identity.js";
-import { compareSnapshots } from "../src/snapshots/comparison.js";
-import { createStructuralReview } from "../src/reviews/bundle.js";
-import { aggregateReviewStatus } from "../src/reports/tree-status.js";
-import { aggregateTreeStatuses, createTechnicalReport, reviewFreshness } from "../src/reports/model.js";
-import { buildModuleStates } from "../src/reports/module-state.js";
-import { createReviewEntry } from "../src/reports/review-entry.js";
-import { createReviewInput } from "../src/reports/review-input.js";
-import { validateReviewEntry } from "../src/reports/review-validation.js";
-import { validateReviewRelations } from "../src/reports/review-identity.js";
+import { contractDocument } from "../framework/contracts/document.js";
+import { digest } from "../framework/serialization/digest.js";
+import { parseYaml } from "../framework/serialization/yaml.js";
+import { snapshotDigest } from "../framework/snapshots/identity.js";
+import { compareSnapshots } from "../analyse/git-changes/comparison.js";
+import { createStructuralReview } from "../analyse/module-review/bundle.js";
+import { aggregateReviewStatus } from "../analyse/module-review/tree-status.js";
+import { aggregateTreeStatuses, createTechnicalReport, reviewFreshness } from "../analyse/module-review/model.js";
+import { buildModuleStates } from "../analyse/module-review/module-state.js";
+import { createReviewEntry } from "../analyse/module-review/review-entry.js";
+import { createReviewInput } from "../analyse/module-review/review-input.js";
+import { validateReviewEntry } from "../analyse/module-review/review-validation.js";
+import { validateReviewRelations } from "../analyse/module-review/review-identity.js";
 
 /** Малое дерево содержит глубокого потомка и независимого поставщика API. */
 interface Definition { id: string; directory: string; sources: Record<string,string>; contract: Contract; documentText?: string; documentState?: string }

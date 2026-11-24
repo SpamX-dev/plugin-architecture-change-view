@@ -8,8 +8,8 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import { moduleContext, moduleInventory } from "../src/contracts/inventory.js";
-import { discoverWorkspaceRepositories, resolveWorkspaceRepository } from "../src/project/workspace.js";
+import { moduleContext, moduleInventory } from "../analyse/project/inventory.js";
+import { discoverWorkspaceRepositories, resolveWorkspaceRepository } from "../analyse/project/workspace.js";
 
 /** Запускает Git без оболочки в изолированном тестовом репозитории. */
 const runFile = promisify(execFile);
@@ -236,6 +236,29 @@ test("an unreadable contract entry requires repair even in a planned directory",
   assert.equal(inventory.complete, false);
   assert.deepEqual(inventory.modules.map(({ directory, status, preparation }) => [directory, status, preparation]),
     [[".", "unreadable", "repair"], ["planned", "unreadable", "repair"]]);
+});
+
+test("discovers repositories with and without an ArchiView map in the same workspace", async (t) => {
+  const root = await project(t, {
+    "client/.archiview/modules.tree": "client: .\n",
+    "client/.archiview/modules/client.yaml": contractYaml("client"),
+    "client/index.ts": "",
+    "server/main.ts": "",
+  }, false);
+  for (const repository of ["client", "server"]) {
+    await runFile("git", ["init", "-q", path.join(root, repository)], { windowsHide: true });
+  }
+  const inventory = await moduleInventory(root);
+  assert.equal(inventory.complete, true, inventory.diagnostics.join("\n"));
+  assert.deepEqual(inventory.projects, [
+    { repository: "client", hasModuleMap: true },
+    { repository: "server", hasModuleMap: false },
+  ]);
+  assert.deepEqual(inventory.repositories, ["client", "server"]);
+  assert.deepEqual(inventory.modules.map(({ repository, status }) => [repository, status]), [
+    ["client", "documented"], ["server", "missing"],
+  ]);
+  assert.equal((await moduleContext(root, "server/main.ts")).repository, "server");
 });
 
 test("a workspace routes existing and new source files to their own checkout", async (t) => {

@@ -13,17 +13,17 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { parse, stringify } from "yaml";
-import { createArchiView } from "../src/archiview/http.js";
-import type { ComparisonView } from "../src/application/api.js";
+import { createArchiView } from "../web/web-backend/web-service/http.js";
+import type { ComparisonView } from "../module-operations/api.js";
 
 test("standalone CLI serves its startup UI even after a rebuild, before opening a project session", { timeout: 15000 }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-cli-start-"));
   initTestRepository(root);
   const distribution = path.join(root, "dist");
-  await cp(new URL("../dist/dsh/", import.meta.url), distribution, { recursive: true });
+  await cp(new URL("../dist/", import.meta.url), distribution, { recursive: true });
   const script = path.join(distribution, "web/archiview/app.mjs");
   const original = await readFile(script, "utf8");
-  const child = spawn(process.execPath, [path.join(distribution, "src/cli.mjs"), "--root", root, "--port", "0"], { windowsHide: true });
+  const child = spawn(process.execPath, [path.join(distribution, "cli.mjs"), "--root", root, "--port", "0"], { windowsHide: true });
   const closed = once(child, "close");
   try {
     for await (const line of createInterface({ input: child.stdout })) {
