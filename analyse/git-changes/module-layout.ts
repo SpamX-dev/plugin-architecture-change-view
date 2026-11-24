@@ -50,6 +50,7 @@ export async function snapshotModules(records: FileRecord[], diagnostics: string
     }
   }
   const mappedOwners = new Map([...tree].map(([directory, id]) => [moduleDocumentPath(id), directory]));
+  mappedOwners.set(MODULE_TREE_FILE, ".");
   const directories = new Set(["."]);
   const observedDirectories = new Set(["."]);
   for (const directory of tree.keys()) addAncestors(directories, directory);
@@ -81,10 +82,10 @@ export async function snapshotModules(records: FileRecord[], diagnostics: string
         document = { state: "unreadable", text: null, errors: [message] };
       }
     }
-    modules.set(directory, { directory, document, documentPath, files: [], sourceFiles: 0, fingerprint: "" });
+    modules.set(directory, { directory, document, documentPath, files: [], sourceFiles: 0, fingerprint: "",
+      ...(directory === "." && !treeFile ? { moduleMapAbsent: true } : {}) });
   }
   for (const record of records) {
-    if (record.path === MODULE_TREE_FILE) continue;
     let owner = mappedOwners.get(record.path);
     if (!owner && record.path.startsWith(MODULE_DIRECTORY + "/")) {
       if (!treeError) diagnostics.push(record.path + " is not registered in " + MODULE_TREE_FILE);

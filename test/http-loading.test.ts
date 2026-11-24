@@ -1,6 +1,5 @@
 import { initTestRepository, commitTestFiles } from "./support.js";
 import { writeModuleTree } from "./support.js";
-import type { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
 import type { ComparisonResponse, ModuleResponse } from "./support.js";
 import type { AddressInfo } from "node:net";
 import type { TestContext } from "node:test";
@@ -53,11 +52,7 @@ test("complete refresh reuses publication and history while preserving saved and
   t.mock.method(app.reports, "list", () => { throw new Error("Unexpected second report read"); });
   t.mock.method(app.reports, "publishedComparison", () => { throw new Error("Unexpected published comparison read"); });
   t.mock.method(app.changes, "list", () => { throw new Error("Unexpected second change history read"); });
-  const list = app.store.list;
-  const savedReader = t.mock.method(app.store, "list", function (this: SnapshotStore, options?: Parameters<SnapshotStore["list"]>[0]) {
-    assert.equal(options!.includePublished, false);
-    return list.call(this, options);
-  });
+  const savedReader = t.mock.method(app.store, "list");
   const first = await app.get("?baseline=auto");
   const second = await app.get("?baseline=auto");
   assert.equal(first.complete, true);

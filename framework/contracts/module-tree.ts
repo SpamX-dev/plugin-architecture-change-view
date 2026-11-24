@@ -1,10 +1,11 @@
 import path from "node:path";
 import { excludedProjectPath, STATE_DIRECTORY } from "../project/paths.js";
+import { MODULE_TREE_FILE } from "../project/storage-paths.js";
 import { parseYaml } from "../serialization/yaml.js";
 import { contractDocument } from "./document.js";
 import type { ContractDocument } from "./types.js";
 
-export const MODULE_TREE_FILE = STATE_DIRECTORY + "/modules.tree";
+export { MODULE_TREE_FILE };
 export const MODULE_DIRECTORY = STATE_DIRECTORY + "/modules";
 export const MAX_DOCUMENT_BYTES = 128 * 1024;
 export const MAX_TREE_BYTES = 4 * 1024 * 1024;

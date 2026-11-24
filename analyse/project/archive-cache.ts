@@ -1,4 +1,11 @@
-import { lstat } from "node:fs/promises";
+import { lstat, readFile } from "node:fs/promises";
+
+/** Reads the original bytes of a bounded, ordinary archive file. */
+export async function readArchiveFile(file: string) {
+  const info = await lstat(file);
+  if (!info.isFile() || info.size > 64 * 1024 * 1024) throw new Error("Invalid stored file");
+  return readFile(file);
+}
 
 /** A store owns its cache. Directory listings decide membership on every scan. */
 export class ArchiveCache<T> {

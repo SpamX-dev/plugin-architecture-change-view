@@ -92,7 +92,7 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
     byId("project-name").textContent = view.modules[0]?.name ?? "Проект";
     byId("project-path").textContent = view.root;
     byId("project-path").title = view.root;
-    byId("warning").hidden = view.complete && !view.reviewDiagnostics.length;
+    byId("warning").hidden = view.complete && !view.diagnostics.length && !view.reviewDiagnostics.length;
     byId("warning").textContent = [...view.diagnostics, ...view.reviewDiagnostics].join("; ");
     const captured = timelineDate(view.after.capturedAt);
     byId("updated").textContent = view.published ? "Сохранено " + captured + " · Проверяем изменения…" :

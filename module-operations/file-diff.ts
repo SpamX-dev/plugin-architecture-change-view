@@ -6,6 +6,7 @@ import { regularProjectFile } from "../analyse/project/source-files.js";
 import { repositoryDirectoryOwnership } from "../analyse/project/workspace.js";
 import { errorDetails } from "../node-errors.js";
 import { git } from "../analyse/git-changes/capture.js";
+import { MODULE_TREE_FILE, readContractStorageFile } from "../analyse/project/module-tree.js";
 import type { ComparisonModule, Snapshot, SnapshotModule } from "../framework/snapshots/types.js";
 import type { FileDiff } from "./api.js";
 import { ApplicationError } from "./errors.js";
@@ -22,6 +23,13 @@ function decode(bytes: Buffer): Content {
 }
 
 async function workingContent(root: string, file: string, hash: string): Promise<Content> {
+  if (file === MODULE_TREE_FILE) {
+    const text = await readContractStorageFile(root, file);
+    if (text === null) throw stale();
+    const bytes = Buffer.from(text);
+    if (bytes.length > maxBytes) return { message: tooLarge };
+    return verifiedWorkingText(root, file, hash, bytes);
+  }
   if (!await regularProjectFile(root, file) || !await repositoryDirectoryOwnership(root)(path.posix.dirname(file))) throw stale();
   try {
     const handle = await open(path.join(root, file), "r");
@@ -32,10 +40,7 @@ async function workingContent(root: string, file: string, hash: string): Promise
       const bytes = Buffer.alloc(info.size);
       const { bytesRead } = await handle.read(bytes);
       if (bytesRead !== info.size || (await handle.stat()).size !== info.size) throw stale();
-      // Hash exactly the bytes being displayed with the same path filters used by the tree.
-      const actual = await git(root, ["hash-object", "--stdin", "--path", file], bytes);
-      if (actual.toString().trim() !== hash) throw stale();
-      return decode(bytes);
+      return verifiedWorkingText(root, file, hash, bytes);
     } finally { await handle.close(); }
   } catch (cause) {
     if (errorDetails(cause).code === "ENOENT") throw stale();
@@ -43,39 +48,57 @@ async function workingContent(root: string, file: string, hash: string): Promise
   }
 }
 
-async function content(snapshot: Snapshot | null, module: SnapshotModule | null, file: string, gitRoot?: string): Promise<Content> {
+/** Verify the displayed bytes with the same path filters used when the view was captured. */
+async function verifiedWorkingText(root: string, file: string, hash: string, bytes: Buffer) {
+  const actual = await git(root, ["hash-object", "--stdin", "--path", file], bytes);
+  if (actual.toString().trim() !== hash) throw stale();
+  return decode(bytes);
+}
+
+async function blobContent(root: string, hash: string): Promise<Content> {
+  const size = await git(root, ["cat-file", "-s", hash]);
+  if (Number(size) > maxBytes) return { message: tooLarge };
+  return decode(await git(root, ["cat-file", "blob", hash], "", maxBytes));
+}
+
+interface DiffSources { liveRoot?: string; repository?: string }
+
+async function content(snapshot: Snapshot | null, module: SnapshotModule | null, file: string, sources: DiffSources): Promise<Content> {
   const record = module?.files.find(entry => entry.path === file);
   if (!record) return { text: "" };
   if (file === module?.documentPath && module.document.text != null) return { text: module.document.text };
-  if (!gitRoot) {
+  if (!sources.liveRoot) {
     const fact = snapshot?.facts.find(entry => entry.kind === "file" && entry.path === file);
-    if (!fact) return { message: unavailable };
-    return Buffer.byteLength(fact.text) <= maxBytes ? { text: fact.text } : { message: tooLarge };
+    if (fact) return Buffer.byteLength(fact.text) <= maxBytes ? { text: fact.text } : { message: tooLarge };
+    // A historical map recovered from its exact Git tree has a blob identity but no archived text.
+    if (file === MODULE_TREE_FILE && sources.repository && snapshot?.revision && record.hash && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(record.hash)) {
+      try { return await blobContent(sources.repository, record.hash); } catch { /* object unavailable after transfer */ }
+    }
+    return { message: unavailable };
   }
   if (!record.hash) return { message: unavailable };
-  if (!snapshot?.revision) return workingContent(gitRoot, file, record.hash);
-  const size = await git(gitRoot, ["cat-file", "-s", record.hash]);
-  if (Number(size) > maxBytes) return { message: tooLarge };
-  return decode(await git(gitRoot, ["cat-file", "blob", record.hash], "", maxBytes));
+  if (!snapshot?.revision) return workingContent(sources.liveRoot, file, record.hash);
+  return blobContent(sources.liveRoot, record.hash);
 }
 
-/** Only the fast Git view needs to resolve content. Published and saved comparisons use their own evidence. */
-export async function fileDiff(module: ComparisonModule, baseline: Snapshot | null, current: Snapshot, file: string, gitRoot?: string): Promise<FileDiff> {
+/** Published and saved comparisons read archived evidence. Only the live Git view can read working files. */
+export async function fileDiff(module: ComparisonModule, baseline: Snapshot | null, current: Snapshot, file: string, location?: string | DiffSources): Promise<FileDiff> {
+  const sources = typeof location === "string" ? { liveRoot: location } : location ?? {};
   const change = module.files.find(entry => entry.path === file);
   const before = module.before?.files.find(entry => entry.path === file);
   const after = module.after?.files.find(entry => entry.path === file);
   if (!before && !after) throw new ApplicationError("NOT_FOUND", "Файл отсутствует в выбранном модуле.");
   if (!change) {
     // An unchanged working file already has an immutable copy in the selected Git baseline.
-    const source = gitRoot && !current.revision && baseline?.revision
-      ? await content(baseline, module.before, file, gitRoot) : await content(current, module.after, file, gitRoot);
+    const source = sources.liveRoot && !current.revision && baseline?.revision
+      ? await content(baseline, module.before, file, sources) : await content(current, module.after, file, sources);
     return "message" in source ? { hunks: [], message: source.message } : { hunks: [], unchangedText: source.text };
   }
   const mode = before && after && before.mode !== after.mode
     ? "Режим файла изменился с " + (before.mode ?? "100644") + " на " + (after.mode ?? "100644") + "." : undefined;
   if (mode && before?.hash && before.hash === after?.hash) return { hunks: [], message: mode };
   const [oldContent, newContent] = await Promise.all([
-    content(baseline, module.before, file, gitRoot), content(current, module.after, file, gitRoot),
+    content(baseline, module.before, file, sources), content(current, module.after, file, sources),
   ]);
   if ("message" in oldContent) return { hunks: [], message: oldContent.message };
   if ("message" in newContent) return { hunks: [], message: newContent.message };

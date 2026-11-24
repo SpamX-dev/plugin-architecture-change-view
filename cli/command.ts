@@ -9,7 +9,7 @@ import { readFile, writeFile, lstat } from "node:fs/promises";
 import { stringify } from "yaml";
 import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
 import type { SessionOperations } from "../module-operations/api.js";
-import type { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
+import type { openProjectHistory } from "../analyse/module-review/legacy-history.js";
 import { readReviewBundle } from "../analyse/module-review/review-store.js";
 import { parseYaml } from "../framework/serialization/yaml.js";
 import { digest } from "../framework/serialization/digest.js";
@@ -18,10 +18,10 @@ import { checkPreparedIndex } from "../analyse/module-review/report-index.js";
 import { moduleContext, moduleInventory } from "../analyse/project/inventory.js";
 import { resolveWorkspaceRepository } from "../analyse/project/workspace.js";
 import { createScaffold } from "../module-operations/prototypes.js";
-import { listModules, listModuleFiles, getModuleContract, saveModuleContract } from "../module-operations/module-access.js";
+import { listModules, listModuleFiles, getModuleContract, saveModuleContract, saveGitComparison } from "../module-operations/module-access.js";
 import { errorDetails } from "../node-errors.js";
 
-async function serve(workspace: SessionOperations & { root: string }, port: number, prepareWeb?: () => Promise<void>, store?: SnapshotStore) {
+async function serve(workspace: SessionOperations & { root: string }, port: number, prepareWeb?: () => Promise<void>, history?: Awaited<ReturnType<typeof openProjectHistory>>) {
   await prepareWeb?.();
   const { createArchiViewHttpServer } = await import("../web/web-backend/web-service/http.js");
   const server = createArchiViewHttpServer(workspace);
@@ -29,9 +29,9 @@ async function serve(workspace: SessionOperations & { root: string }, port: numb
   server.listen(port, "127.0.0.1", () => {
     process.stdout.write("ArchiView Local: http://127.0.0.1:" + (server.address() as import("node:net").AddressInfo).port +
       "\nProject: " + workspace.root + "\n");
-    if (store) process.stdout.write("State: " + store.directory + "\n");
-    if (store?.migration) process.stdout.write("History copied: " + store.migration.snapshots +
-      " snapshots, " + store.migration.reviews + " reviews\n");
+    if (history) process.stdout.write("State: " + history.store.directory + "\n");
+    if (history?.migration) process.stdout.write("History copied: " + history.migration.snapshots +
+      " snapshots, " + history.migration.reviews + " reviews\n");
   });
   for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, server.shutdown);
 }
@@ -49,6 +49,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
     root: { type: "string" }, port: { type: "string", default: "4317" },
     "state-dir": { type: "string" }, help: { type: "boolean", short: "h" },
     "import-review": { type: "string" }, "build-report": { type: "boolean" },
+    "save-comparison": { type: "boolean" }, "read-comparison": { type: "string" }, baseline: { type: "string" },
     "complete-analysis": { type: "string" },
     "prepare-analysis": { type: "string" },
     "check-index": { type: "boolean" }, "export-review-input": { type: "string" },
@@ -62,20 +63,25 @@ async function execute(prepareWeb?: () => Promise<void>) {
   } });
   const root = values.root ?? process.cwd();
   const selection = { repository: values.repository, target: values.target };
-  const moduleCommands = (["list-modules", "module-files", "module-relations", "build-relations", "get-contract", "write-contract", "inventory", "module-context", "scaffold"] as const)
+  const moduleCommands = (["list-modules", "module-files", "module-relations", "build-relations", "get-contract", "write-contract", "inventory", "module-context", "scaffold", "save-comparison", "read-comparison"] as const)
     .filter(name => values[name] !== undefined);
   if (!values.help && moduleCommands.length && (moduleCommands.length > 1 || values["check-index"] || values["import-review"] ||
     values["build-report"] || values["export-review-input"] || values["complete-analysis"] || values["prepare-analysis"]))
     throw new Error("Выберите одну операцию с модулем");
   if (!values.help && (values.input !== undefined || values.directory !== undefined) && !values["write-contract"])
     throw new Error("--input и --directory используются с --write-contract");
-  if (!values.help && values.target !== undefined && !["list-modules", "module-files", "module-relations", "get-contract", "write-contract"].some(name => name === moduleCommands[0]))
+  if (!values.help && values.baseline !== undefined && !values["save-comparison"])
+    throw new Error("--baseline используется с --save-comparison");
+  if (!values.help && values.target !== undefined && !["list-modules", "module-files", "module-relations", "get-contract", "write-contract", "save-comparison"].some(name => name === moduleCommands[0]))
     throw new Error("--target используется с операциями снимка модуля");
   if (!values.help && (values.dependencies !== undefined || values["dependencies-complete"]))
     throw new Error("Сбор зависимостей через LLM отключён. Для связей TS/JS используйте --build-relations.");
   if (values.help) {
     process.stdout.write("ArchiView — archiview [--root DIR] [--port 4317] [--state-dir DIR]\n" +
       "  --build-report                       Построить и уплотнить отчёты без сервера\n" +
+      "  --save-comparison [--baseline FROM] [--target TO]    Сохранить отчёт об изменениях и вывести его ID (JSON)\n" +
+      "      Состояния Git: HEAD, index, current, git-<хеш>. Пустая база: empty. По умолчанию: HEAD и current.\n" +
+      "  --read-comparison ID                 Прочитать сохранённый отчёт об изменениях (JSON)\n" +
       "  --import-review FILE_OR_BUNDLE       Импортировать YAML review или прежний пакет\n" +
       "  --complete-analysis REQUEST_ID       Проверить и импортировать result.yaml запроса панели\n" +
       "  --prepare-analysis REQUEST_ID        Повторить экспорт исходного снимка без зависимостей\n" +
@@ -95,6 +101,22 @@ async function execute(prepareWeb?: () => Promise<void>) {
   } else if (moduleCommands.length) {
     const json = (value: unknown) => process.stdout.write(JSON.stringify(value, null, 2) + "\n");
     switch (moduleCommands[0]) {
+      case "save-comparison":
+      case "read-comparison": {
+        const workspace = await createWorkspaceSession({ root, stateDirectory: values["state-dir"], initialRepository: values.repository });
+        try {
+          const { store } = await workspace.session(values.repository ?? ".");
+          if (values["save-comparison"]) {
+            const report = await saveGitComparison(store, values.baseline, values.target);
+            json({ id: report.id });
+          } else {
+            const report = await store.readComparison(values["read-comparison"]!);
+            if (!report) throw new Error("Сохранённый отчёт сравнения не найден");
+            json(report);
+          }
+        } finally { await workspace.close(); }
+        break;
+      }
       case "build-relations":
       case "module-relations": {
         const workspace = await createWorkspaceSession({ root, stateDirectory: values["state-dir"], initialRepository: values.repository });
@@ -146,7 +168,12 @@ async function execute(prepareWeb?: () => Promise<void>) {
     });
     if (!batch && !values["import-review"]) return serve(workspace, port, prepareWeb);
     // Batch commands operate on their explicit --root. A workspace container has no shared history.
-    const { store, reports, analysis } = await workspace.session(values.repository ?? ".", !(values["build-report"] || values["export-review-input"]));
+    const session = await workspace.session(values.repository ?? ".", !(values["build-report"] || values["export-review-input"]));
+    const { store, reports, analysis } = session;
+    if (values["build-report"] && session.startupComparison) {
+      const saved = await store.saveComparison(session.startupComparison);
+      process.stdout.write("Git comparison saved: " + saved.id + "\n");
+    }
     if (values["complete-analysis"]) {
       const result = await analysis.complete(values["complete-analysis"]);
       process.stdout.write("Analysis imported: " + result.reviewId + "\n");
@@ -181,7 +208,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
       process.stdout.write("Reports prepared: " + store.directory + "\n");
       await workspace.close();
     } else {
-      await serve(workspace, port, prepareWeb, store);
+      await serve(workspace, port, prepareWeb, session);
     }
   }
 }

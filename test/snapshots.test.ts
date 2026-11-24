@@ -4,16 +4,18 @@ import type { TestContext } from "node:test";
 /** Проверяет смысл четырёх статусов, исторические документы и базы сравнения. */
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 import { captureWorkingTree, captureGitHead, captureGitIndex } from "../analyse/git-changes/capture.js";
-import { compareSnapshots } from "../analyse/git-changes/comparison.js";
+import { compareRepositorySnapshots, compareSnapshots } from "../analyse/git-changes/comparison.js";
+import { snapshotDigest, structureHash } from "../framework/snapshots/identity.js";
 import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
 import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
+import { GitTreeReader } from "../analyse/git-changes/git-tree.js";
 
 /** Git-команды выполняются только в явно созданном временном проекте. */
 const run = promisify(execFile);
@@ -252,6 +254,141 @@ test("Git HEAD restores historical modules and respects Git CRLF normalization",
     .modules.find((module) => module.directory === "src");
   assert.equal(gone!.status, "removed");
   assert.equal(gone!.before!.document.text, contractYaml("src"));
+});
+
+test("Git modes are captured uniformly so an unchanged executable keeps its identity", async (t) => {
+  const { root } = await fixture(t, {
+    ".archiview/modules.tree": "root: .\n",
+    ".archiview/modules/root.yaml": contractYaml("root"),
+    "scripts/run.sh": "#!/bin/sh\necho run\n",
+  });
+  const git = (args: string[]) => run("git", args, { cwd: root, windowsHide: true });
+  if (process.platform !== "win32") await chmod(path.join(root, "scripts/run.sh"), 0o755);
+  await git(["add", "."]);
+  // Windows cannot store the executable bit, so the index records the mode Git would keep.
+  await git(["update-index", "--chmod=+x", "scripts/run.sh"]);
+  await git(["-c", "user.name=Mode Test", "-c", "user.email=mode@example.invalid", "commit", "-qm", "Executable"]);
+  const head = await captureGitHead(root);
+  const working = await captureWorkingTree(root);
+  const record = (snapshot: NonNullable<typeof head>) => snapshot.modules
+    .flatMap((module) => module.files).find((file) => file.path === "scripts/run.sh");
+  assert.equal(record(head!)?.mode, "100755");
+  assert.equal(record(working)?.mode, "100755");
+  assert.equal(head!.digest, working.digest);
+  assert.ok(compareSnapshots(head, working).modules.every((module) => module.status === "unchanged"));
+  // The earliest writer omitted even 100755. The archived commit still identifies the real mode.
+  const legacy = structuredClone(head!);
+  for (const module of legacy.modules) for (const file of module.files) delete file.mode;
+  assert.ok(compareSnapshots(legacy, working).modules.every((module) => module.status === "unchanged"));
+  const restored = await compareRepositorySnapshots(root, legacy, working);
+  assert.ok(restored.modules.every((module) => module.status === "unchanged"));
+  assert.deepEqual(restored.diagnostics, []);
+});
+
+test("archived Git modes report executable-only changes in either direction and expose unavailable evidence", async t => {
+  const { root, store } = await fixture(t, { "tool.js": "console.log(1);\n", "marker.js": "console.log(2);\n" });
+  commitTestFiles(root);
+  await run("git", ["update-index", "--chmod=+x", "marker.js"], { cwd: root });
+  const legacy = await captureGitIndex(root);
+  assert.ok(legacy);
+  const sparse = structuredClone(legacy);
+  for (const module of sparse.modules) for (const file of module.files) if (file.mode === "100644") delete file.mode;
+  for (const module of legacy.modules) {
+    for (const file of module.files) delete file.mode;
+    module.fingerprint = structureHash(JSON.stringify(module.files));
+  }
+  legacy.digest = snapshotDigest(legacy);
+  const archives = new SnapshotStore(root, store);
+  await archives.save(legacy);
+  const [saved] = await archives.list();
+  await run("git", ["update-index", "--chmod=+x", "tool.js"], { cwd: root });
+  const executable = await captureGitIndex(root);
+  assert.ok(executable);
+  assert.deepEqual(compareSnapshots(sparse, executable).modules.flatMap(m => m.files), [{ path: "tool.js", status: "changed" }]);
+
+  for (const [left, right] of [[saved, executable], [executable, saved]]) {
+    const result = await compareRepositorySnapshots(root, left, right);
+    assert.deepEqual(result.modules.flatMap(m => m.files), [{ path: "tool.js", status: "changed" }]);
+    assert.deepEqual(result.diagnostics, []);
+  }
+  assert.equal(saved.digest, snapshotDigest(saved));
+  // The archive remains readable after transfer without the Git object.
+  const unavailable = await compareRepositorySnapshots(store, saved, executable);
+  assert.deepEqual(unavailable.modules.flatMap(m => m.files), []);
+  assert.match(unavailable.diagnostics.join("\n"), /исполняемого бита.*tool\.js/);
+  // A working-tree archive's baseRevision does not supply its file mode.
+  const working = { ...saved, kind: "change", revision: undefined, baseRevision: legacy.revision };
+  const unknown = await compareRepositorySnapshots(root, working, executable);
+  assert.deepEqual(unknown.modules.flatMap(m => m.files), []);
+  assert.match(unknown.diagnostics.join("\n"), /исполняемого бита.*tool\.js/);
+});
+
+for (const fileMode of ["true", "false", "default"]) {
+  test("unborn and untracked modes match git add with core.fileMode " + fileMode, async t => {
+    const { root } = await fixture(t, { "staged.js": "staged\n", "owner.js": "owner\n", "other.js": "other\n" });
+    const git = (args: string[]) => run("git", args, { cwd: root, windowsHide: true });
+    if (fileMode === "default") await git(["config", "--unset-all", "core.fileMode"]);
+    else await git(["config", "core.fileMode", fileMode]);
+    await chmod(path.join(root, "owner.js"), 0o744);
+    await chmod(path.join(root, "other.js"), 0o655);
+    await chmod(path.join(root, "staged.js"), 0o644);
+    await git(["add", "--", "staged.js"]);
+    await git(["update-index", "--chmod=+x", "staged.js"]);
+
+    const full = await captureWorkingTree(root);
+    const fast = await new GitTreeReader(root, root).working(null);
+    await git(["add", "-A"]);
+    const { stdout } = await git(["ls-files", "--stage", "-z"]);
+    const expected = Object.fromEntries(stdout.split("\0").filter(Boolean).map(row =>
+      [row.slice(row.indexOf("\t") + 1), row.split(" ", 1)[0]]));
+    for (const snapshot of [full, fast]) {
+      assert.deepEqual(snapshot.diagnostics, []);
+      const modes = Object.fromEntries(snapshot.modules.flatMap(module => module.files.map(file => [file.path, file.mode])));
+      assert.deepEqual(modes, expected);
+    }
+  });
+}
+
+test("saving a selected tree rejects a mode-only change before full evidence capture", async t => {
+  const { root } = await fixture(t, { "tool.js": "console.log(1);\n" });
+  commitTestFiles(root);
+  const session = await createWorkspaceSession({ root });
+  t.after(() => session.close());
+  const selected = await session.getComparison();
+  const readWorking = GitTreeReader.prototype.working;
+  t.mock.method(GitTreeReader.prototype, "working", async function(this: GitTreeReader, head: string | null) {
+    const tree = await readWorking.call(this, head);
+    if (process.platform !== "win32") await chmod(path.join(root, "tool.js"), 0o755);
+    await run("git", ["update-index", "--chmod=+x", "tool.js"], { cwd: root });
+    return tree;
+  });
+  await assert.rejects(session.saveSnapshot({ view: selected.id }), { code: "STALE_VIEW" });
+});
+
+test("a working tree executable bit change is reported between working snapshots",
+  { skip: process.platform === "win32" }, async (t) => {
+  const { root } = await fixture(t, { "tool.js": "export const tool = 1;\n" });
+  commitTestFiles(root);
+  const before = await captureWorkingTree(root);
+  await chmod(path.join(root, "tool.js"), 0o755);
+  const after = await captureWorkingTree(root);
+  assert.equal(after.modules[0].files.find((file) => file.path === "tool.js")?.mode, "100755");
+  assert.equal(compareSnapshots(before, after).modules.find((module) => module.directory === ".")?.status, "changed");
+});
+
+test("a large filtered working file keeps the commit hash without text evidence", async (t) => {
+  const { root } = await fixture(t, { ".gitattributes": "*.dat text eol=lf\n" });
+  await writeFile(path.join(root, "big.dat"), ("value = 1\n".repeat(60000)).replaceAll("\n", "\r\n"));
+  commitTestFiles(root);
+  const head = await captureGitHead(root);
+  const working = await captureWorkingTree(root);
+  const record = (snapshot: NonNullable<typeof head>) => snapshot.modules
+    .flatMap((module) => module.files).find((file) => file.path === "big.dat");
+  assert.ok((await stat(path.join(root, "big.dat"))).size > 256 * 1024);
+  assert.equal(record(head!)?.hash, record(working)?.hash);
+  assert.equal(working.facts.some((fact) => fact.path === "big.dat"), false);
+  assert.ok(working.evidenceLimitations.some((line) => line.startsWith("big.dat:")));
+  assert.ok(compareSnapshots(head, working).modules.every((module) => module.status === "unchanged"));
 });
 
 test("persists immutable documents outside source and refuses incomplete snapshots", async (t) => {

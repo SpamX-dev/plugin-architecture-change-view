@@ -1,6 +1,5 @@
 import path from "node:path";
-import { lstat } from "node:fs/promises";
-import { git, gitFileHashes, readGitHeadRevision } from "./capture.js";
+import { git, gitFileHashes, readGitHeadRevision, untrackedFileModes, workingTreeDiff } from "./capture.js";
 import { snapshotModules } from "./module-layout.js";
 import { excludedProjectPath, regularProjectFile } from "../project/source-files.js";
 import { MODULE_TREE_FILE, isModuleContractPath, moduleDocumentPath, readContractStorageFile, decodeContractText, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES } from "../project/module-tree.js";
@@ -14,10 +13,10 @@ const included = (file: string) => !excludedProjectPath(file) || contract(file);
 const regular = (mode: string) => mode === "100644" || mode === "100755";
 const fields = (bytes: Buffer) => bytes.toString().split("\0").filter(Boolean);
 
-async function commitRecords(root: string, revision: string) {
+/** Lists Git object identities and modes without opening file contents. */
+export async function readGitTreeRecords(root: string, revision: string) {
   const records = new Map<string, FileRecord>();
   const diagnostics: string[] = [];
-  const contracts: FileRecord[] = [];
   for (const row of fields(await git(root, ["ls-tree", "-rz", revision, "--", "."]))) {
     const tab = row.indexOf("\t");
     const file = row.slice(tab + 1);
@@ -27,11 +26,9 @@ async function commitRecords(root: string, revision: string) {
       if (contract(file)) diagnostics.push("Expected regular contract storage: " + file);
       continue;
     }
-    const record: FileRecord = { path: file, hash, ...(mode === "100755" ? { mode } : {}) };
+    const record: FileRecord = { path: file, hash, mode };
     records.set(file, record);
-    if (contract(file)) contracts.push(record);
   }
-  await readContractBlobs(root, contracts, diagnostics);
   return { records, diagnostics };
 }
 
@@ -93,13 +90,14 @@ async function snapshot(root: string, origin: string, records: Map<string, FileR
 
 /** Immutable Git objects supply unchanged file identities. Only contract blobs need decoding for the tree. */
 export class GitTreeReader {
-  private readonly commits = new Map<string, Awaited<ReturnType<typeof commitRecords>> & { snapshot?: Snapshot }>();
+  private readonly commits = new Map<string, Awaited<ReturnType<typeof readGitTreeRecords>> & { snapshot?: Snapshot }>();
   constructor(private readonly root: string, private readonly origin: string) {}
 
   private async commit(revision: string) {
     let value = this.commits.get(revision);
     if (!value) {
-      value = await commitRecords(this.root, revision);
+      value = await readGitTreeRecords(this.root, revision);
+      await readContractBlobs(this.root, [...value.records.values()].filter(record => contract(record.path)), value.diagnostics);
       if (this.commits.size >= 4) this.commits.delete(this.commits.keys().next().value!);
       this.commits.set(revision, value);
     }
@@ -118,7 +116,7 @@ export class GitTreeReader {
     const diagnostics: string[] = [];
     // Explicit object name pins the baseline through an index/branch switch.
     const [tracked, extra, staged] = await Promise.all([
-      head ? git(root, ["diff", "--raw", "-z", "--relative", "--no-renames", "--no-ext-diff", head, "--", "."]) : Promise.resolve(Buffer.alloc(0)),
+      workingTreeDiff(root, head),
       git(root, ["ls-files", "-z", "--others", "--exclude-standard", "--", "."]),
       git(root, ["ls-files", "-z", "--stage", ...(head ? ["--unmerged"] : []), "--", "."]),
     ]);
@@ -151,7 +149,8 @@ export class GitTreeReader {
     if (foreign.size) for (const file of records.keys()) {
       if (foreign.has(path.posix.dirname(file))) records.delete(file);
     }
-    const candidates: { file: string; executable: boolean; text?: string }[] = [];
+    const candidates: { file: string; mode: string; text?: string }[] = [];
+    const newFileMode = untrackedFileModes(root);
     for (const [file, mode] of changes) {
       records.delete(file);
       if (mode && !regular(mode)) continue;
@@ -166,14 +165,12 @@ export class GitTreeReader {
           continue;
         }
       } else if (!await owns(path.posix.dirname(file)) || !await regularProjectFile(root, file)) continue;
-      const executable = mode ? mode === "100755" :
-        process.platform !== "win32" && Boolean((await lstat(path.join(root, file))).mode & 0o111);
-      candidates.push({ file, executable, text });
+      candidates.push({ file, mode: mode || await newFileMode(file), text });
     }
     if (candidates.length) {
       const hashes = await gitFileHashes(root, candidates.map(candidate => candidate.file));
-      candidates.forEach(({file, executable, text}, i) => {
-        records.set(file, { path: file, hash: hashes[i], text, ...(executable ? { mode: "100755" } : {}) });
+      candidates.forEach(({file, mode, text}, i) => {
+        records.set(file, { path: file, hash: hashes[i], text, mode });
       });
     }
     if (await readGitHeadRevision(root) !== head) throw new Error("HEAD изменился, обновите дерево");

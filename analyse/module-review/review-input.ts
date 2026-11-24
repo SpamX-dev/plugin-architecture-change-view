@@ -1,4 +1,5 @@
 import type { SnapshotData, ScopedSnapshot, Snapshot } from "../../framework/snapshots/types.js";
+import { isModuleDocumentFile } from "../../framework/project/storage-paths.js";
 import type { ReviewReport } from "../../framework/ai-report/types.js";
 import type { ReviewOptions, ReviewEntry } from "../../framework/static-report/types.js";
 import { digest } from "../../framework/serialization/digest.js";
@@ -60,10 +61,10 @@ function scopedSnapshot(snapshot: SnapshotData | null, id: string, options: Revi
     while (parent !== null) { ids.add(parent); parent = states.get(parent)?.parent_id ?? null; }
   }
   const facts = (snapshot.facts ?? []).filter((fact) => references.has(fact.id) || filePaths.has(fact.path) ||
-    (snapshot.modules ?? []).some((module) => ids.has(moduleId(module)) && fact.path === module.documentPath) ||
+    (snapshot.modules ?? []).some((module) => ids.has(moduleId(module)) && isModuleDocumentFile(fact.path, module.documentPath)) ||
     (snapshot.modules ?? []).some((module) => fullIds.has(moduleId(module)) && (module.files ?? []).some((file) => file.path === fact.path)));
   const modules = snapshot.modules.filter((module) => ids.has(moduleId(module)) || (module.files ?? []).some((file) => filePaths.has(file.path)))
-    .map((module) => ({ ...structuredClone(module), files: structuredClone((module.files ?? []).filter((file) => fullIds.has(moduleId(module)) || file.path === module.documentPath || filePaths.has(file.path))) }));
+    .map((module) => ({ ...structuredClone(module), files: structuredClone((module.files ?? []).filter((file) => fullIds.has(moduleId(module)) || isModuleDocumentFile(file.path, module.documentPath) || filePaths.has(file.path))) }));
   const result: ScopedSnapshot = { schema_version: 2, id: snapshot.id, digest: snapshot.digest,
     kind: snapshot.kind, revision: snapshot.revision, complete: snapshot.complete,
     modules, facts: structuredClone(facts), diagnostics: structuredClone(snapshot.diagnostics ?? []),

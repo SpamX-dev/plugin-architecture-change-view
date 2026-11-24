@@ -84,9 +84,49 @@ async function gitInfo(root: string) {
 }
 
 /** Hash the same bytes used as evidence, applying this path's Git filters. */
-async function capturedText(root: string, file: string, bytes: Buffer, decoded: string): Promise<FileRecord> {
+async function capturedText(root: string, file: string, bytes: Buffer, decoded: string, mode: string): Promise<FileRecord> {
   const hash = (await git(root, ["hash-object", "--stdin", "--path", file], bytes)).toString().trim();
-  return { path: file, hash, text: decoded.replace(/\r\n?/g, "\n") };
+  return { path: file, hash, mode, text: decoded.replace(/\r\n?/g, "\n") };
+}
+
+/** Without a revision the index is the base, including before the first commit. */
+export function workingTreeDiff(root: string, revision?: string | null) {
+  return git(root, ["diff", "--raw", "-z", "--relative", "--no-renames", "--no-ext-diff",
+    ...(revision ? [revision] : []), "--", "."]);
+}
+
+/** Git uses the owner's execute bit for new regular files only when core.fileMode is enabled. */
+export function untrackedFileModes(root: string) {
+  let trustFileMode: Promise<boolean> | undefined;
+  return async (file: string) => {
+    trustFileMode ??= git(root, ["config", "--bool", "--default", "true", "--get", "core.fileMode"])
+      .then(value => value.toString().trim() === "true");
+    return await trustFileMode && ((await lstat(path.join(root, file))).mode & 0o100) !== 0 ? "100755" : "100644";
+  };
+}
+
+/**
+ * Режим файла так, как его видит Git: записанный индексом, изменённый в рабочем
+ * дереве с учётом core.fileMode и вычисленный для новых файлов. Без режима один
+ * и тот же файл в коммите и в рабочем дереве выглядел бы изменённым.
+ */
+async function workingModes(root: string) {
+  const modes = new Map<string, string>();
+  for (const row of (await git(root, ["ls-files", "-z", "--stage", "--"])).toString().split("\0")) {
+    const tab = row.indexOf("\t");
+    if (tab < 0) continue;
+    const [mode] = row.slice(0, tab).split(" ");
+    const file = row.slice(tab + 1);
+    if ((mode === "100644" || mode === "100755") && !modes.has(file)) modes.set(file, mode);
+  }
+  // The second raw mode is the worktree mode, with Git's index and core.fileMode rules applied.
+  const changes = (await workingTreeDiff(root)).toString().split("\0").filter(Boolean);
+  for (let index = 0; index + 1 < changes.length; index += 2) {
+    const [, mode] = changes[index].split(" ");
+    if (mode === "100644" || mode === "100755") modes.set(changes[index + 1], mode);
+  }
+  const newFileMode = untrackedFileModes(root);
+  return (file: string) => modes.get(file) ?? newFileMode(file);
 }
 
 /**
@@ -99,8 +139,6 @@ async function assemble(root: string, records: FileRecord[], metadata: {kind:str
   const evidenceLimitations = [];
   let remaining = 16 * 1024 * 1024;
   for (const record of records) {
-    // The map determines the directory of each module and has no module owner of its own.
-    if (record.path === MODULE_TREE_FILE) continue;
     if (record.text === undefined || Buffer.byteLength(record.text) > remaining) {
       evidenceLimitations.push(record.path + ": текст недоступен или превышен лимит доказательств");
       continue;
@@ -153,12 +191,15 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
   if (contracts.includes(MODULE_TREE_FILE)) files.push(MODULE_TREE_FILE);
   files.push(...documents.slice(0, room));
   files.sort();
+  const workingMode = await workingModes(root);
   const records: FileRecord[] = [];
   const hashOnly: FileRecord[] = [];
   let evidenceBudget = 16 * 1024 * 1024;
   for (let offset = 0; offset < files.length; offset += 16) {
     const batch = await Promise.all(files.slice(offset, offset + 16).map(async (file): Promise<FileRecord | null> => {
+      let mode: string | undefined;
       try {
+        mode = await workingMode(file);
         if (isContractStorage(file)) {
           const text = await readContractStorageFile(root, file);
           if (text === null) return null;
@@ -167,7 +208,7 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
             if (bytes.length > evidenceBudget) throw new Error("Contract evidence budget exceeded");
             evidenceBudget -= bytes.length;
           }
-          return await capturedText(root, file, bytes, text);
+          return await capturedText(root, file, bytes, text, mode);
         }
         const fullPath = path.join(root, file);
         const size = (await lstat(fullPath)).size;
@@ -177,15 +218,17 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
           if (bytes.length !== size) throw new Error("File changed while being captured");
           const decoded = bytes.toString("utf8");
           if (!bytes.includes(0) && Buffer.from(decoded).equals(bytes)) {
-            return await capturedText(root, file, bytes, decoded);
+            return await capturedText(root, file, bytes, decoded, mode);
           }
         }
-        const record = { path: file, hash: null };
+        // hash-object --stdin-paths resolves attributes per path, so Git filters apply
+        // as for --path; only evidence bytes are skipped for large and binary files.
+        const record = { path: file, hash: null, mode };
         hashOnly.push(record);
         return record;
       } catch (errorCause) { const error = errorDetails(errorCause);
         diagnostics.push(file + ": " + error.message);
-        return { path: file, hash: null, error: error.message };
+        return { path: file, hash: null, mode, error: error.message };
       }
     }));
     records.push(...batch.filter((record) => record !== null));
@@ -240,7 +283,7 @@ export async function captureGitHead(projectRoot: string, options: SnapshotOptio
         diagnostics.push("Expected regular contract storage: " + file);
       continue;
     }
-    if (!excludedProjectPath(file) || isContractStorage(file)) records.push({ path: file, hash, ...(mode === "100755" ? { mode } : {}) });
+    if (!excludedProjectPath(file) || isContractStorage(file)) records.push({ path: file, hash, mode });
   }
   const maxFiles = options.maxFiles ?? 50000;
   // The registry is required to interpret the captured files and does not consume a file slot.

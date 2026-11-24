@@ -1,7 +1,7 @@
 import type { ComparisonView, ModuleDetail, SessionOperations, ComparisonArgs, FileDiffArgs, ModuleArgs, SnapshotArgs } from "../../module-operations/api.js";
 import { fileDiff } from "../../module-operations/file-diff.js";
 import * as relations from "../../module-operations/relations.js";
-import type { Snapshot, GitRevision } from "../../framework/snapshots/types.js";
+import type { Comparison, Snapshot, GitRevision } from "../../framework/snapshots/types.js";
 import type { PublishedComparison } from "../../framework/static-report/types.js";
 import type { SessionView } from "../../module-operations/session-view.js";
 import { errorDetails } from "../../node-errors.js";
@@ -12,9 +12,9 @@ import { GitTreeReader } from "../../analyse/git-changes/git-tree.js";
 import { realpath } from "node:fs/promises";
 import { ApplicationError } from "../../module-operations/errors.js";
 import { captureGitHead, captureWorkingTree, listGitRevisions, readGitHeadRevision } from "../../analyse/git-changes/capture.js";
-import { compareSnapshots } from "../../analyse/git-changes/comparison.js";
+import { compareRepositorySnapshots } from "../../analyse/git-changes/comparison.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
-import { SnapshotStore } from "../../analyse/git-changes/snapshot-store.js";
+import { openProjectHistory } from "../../analyse/module-review/legacy-history.js";
 import { ReviewStore } from "../../analyse/module-review/review-store.js";
 import { ReportStore, StalePublicationError } from "../../analyse/module-review/report-store.js";
 import { createReportModel } from "../../analyse/module-review/model.js";
@@ -28,8 +28,7 @@ import { changeExistingPrototype, createPrototypes } from "../../module-operatio
 /** Открывает хранилища одного проекта; вызывается лениво при первом запросе данных. */
 export async function createArchiViewSession({ root: requestedRoot, stateDirectory, deferPublication = true }: { root: string; stateDirectory?: string; deferPublication?: boolean }) {
   const root = await realpath(requestedRoot);
-  const store = new SnapshotStore(root, stateDirectory);
-  await store.open();
+  const { store, migration } = await openProjectHistory(root, stateDirectory);
   const reviews = new ReviewStore(store);
   const reports = new ReportStore(store);
   const changes = new ChangeHistory(store);
@@ -45,6 +44,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   let launch: Snapshot | undefined;
   let gitHead: Snapshot | null = null;
   let initialBaseline: Snapshot | null = null;
+  let startupComparison: Comparison | undefined;
   let publishedSnapshots: Snapshot[] = [];
   if (!deferPublication) await reports.withLivePublication(async () => {
     const startup = await captureLiveState();
@@ -59,9 +59,10 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     // Уже прочитанные опубликованные снимки остаются доступными по точному id.
     // Перечень сохранённых баз не должен заново читать всю историю отчётов.
     publishedSnapshots = published ? [published.baseline, published.current].filter((snapshot): snapshot is Snapshot => snapshot !== null) : [];
-    const startupView = compareSnapshots(initialBaseline, launch, { projectRoot: root });
+    const startupView = await compareRepositorySnapshots(root, initialBaseline, launch, { emptyTree: !initialBaseline });
     if (startupView.complete) {
       const publication = await reports.rebuild(initialBaseline, launch, startupView.modules);
+      startupComparison = startupView;
       publishedSnapshots = publication.comparison ? [publication.comparison.baseline, publication.comparison.current].filter((snapshot): snapshot is Snapshot => snapshot !== null) : [];
     }
   });
@@ -144,14 +145,12 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
 
   function attachVersions(full: Snapshot, tree: Snapshot) {
     const modules = new Map(tree.modules.map(module => [module.directory, module]));
-    const signature = (m: Snapshot["modules"][number]) => digest([m.document, m.files.map(f => [f.path, f.hash])]);
+    const signature = (m: Snapshot["modules"][number]) => digest([m.document, m.files.map(f => [f.path, f.hash, f.mode])]);
     if (full.modules.length !== modules.size) throw new ApplicationError("STALE_VIEW", "Состав модулей изменился, обновите дерево");
     for (const module of full.modules) {
       const observed = modules.get(module.directory);
       if (!observed || signature(module) !== signature(observed))
         throw new ApplicationError("STALE_VIEW", "Файлы изменились, обновите дерево");
-      const modes = new Map(observed.files.filter(file => file.mode).map(file => [file.path,file.mode]));
-      for (const file of module.files) if (modes.has(file.path)) file.mode = modes.get(file.path);
     }
     full.observations = tree.observations;
     full.digest = snapshotDigest(full);
@@ -167,7 +166,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     const parent = !current.revision ? head : selected ? selected.parentRevision :
       (await listGitRevisions(root, { limit: 1, before: current.revision })).revisions.at(-1)?.revision;
     const baseline = parent ? { ...await reader.revision(parent), ...(parent === head ? { label: "HEAD", isHead: true } : {}) } : null;
-    const comparison = compareSnapshots(baseline, current, { projectRoot: root, emptyTree: !baseline });
+    const comparison = await compareRepositorySnapshots(root, baseline, current, { emptyTree: !baseline });
     const id = digest([root, targetId, comparison.id]).slice(7, 31);
     let model: ReturnType<typeof createReportModel> | undefined;
     const view: SessionView = {
@@ -261,7 +260,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     // Наблюдение уже проверяет всю локальную историю: используем тот же
     // результат, чтобы не читать исходники каждого события второй раз.
     const localHistory = await changes.list(headRevision);
-    const saved = [...await store.list({ includePublished: false }), ...publishedSnapshots];
+    const saved = [...await store.list(), ...publishedSnapshots];
     if (!launch) {
       launch = launchSnapshot(working);
       initialBaseline = gitHead ?? saved[0] ?? launch;
@@ -318,7 +317,8 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       publishedSnapshots = [initialBaseline, history.comparison.current].filter((snapshot): snapshot is Snapshot => snapshot !== null);
     }
     const model = createReportModel(baseline, current);
-    const view: SessionView = { ...compareSnapshots(baseline, current, { projectRoot: root }), currentSnapshot: current, baselineSnapshot: baseline, reviews: [], reviewDiagnostics: [], reportModel: model };
+    const comparison = await compareRepositorySnapshots(root, baseline, current);
+    const view: SessionView = { ...comparison, currentSnapshot: current, baselineSnapshot: baseline, reviews: [], reviewDiagnostics: [], reportModel: model };
     // Two checkouts can have identical portable snapshots but own different live views.
     view.id = digest({ project: root, comparison: view.id, target: targetId }).slice(7, 31);
     view.reviewDiagnostics = [...history.diagnostics, ...localHistory.diagnostics ?? []];
@@ -371,7 +371,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
 
   async function getFileDiff(args: FileDiffArgs) {
     const { view, module } = selectedModule(args);
-    return fileDiff(module, view.baselineSnapshot, view.currentSnapshot, args.file, view.gitTree ? root : undefined);
+    return fileDiff(module, view.baselineSnapshot, view.currentSnapshot, args.file, view.gitTree ? { liveRoot: root } : { repository: root });
   }
 
   /** Выбирает точный view; неизвестный id требует обновления клиентом. */
@@ -466,5 +466,5 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   };
   const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, getRelations, buildRelations, getRelationSource,
     changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
-  return { root, store, reviews, reports, changes, analysis, ...operations, close: () => watcher.close() };
+  return { root, store, migration, reviews, reports, changes, analysis, startupComparison, ...operations, close: () => watcher.close() };
 }

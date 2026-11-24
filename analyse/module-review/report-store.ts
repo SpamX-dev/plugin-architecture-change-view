@@ -20,7 +20,7 @@ import path from "node:path";
 import { stringify } from "yaml";
 import { canonical, digest } from "../../framework/serialization/digest.js";
 import { readBounded, readReviewBundle } from "./review-store.js";
-import { compareSnapshots } from "../git-changes/comparison.js";
+import { compareRepositorySnapshots } from "../git-changes/comparison.js";
 import { persistedCopy, publicationIdentity, reconstruct, snapshotFragment, technicalCore, validateStoredReport } from "./publication.js";
 import { createReportModel } from "./model.js";
 import { createReviewEntry } from "./review-entry.js";
@@ -167,7 +167,7 @@ export class ReportStore {
     comparisonModules?: ComparisonModule[], expectedComparison?: PublishedComparison) {
     this.#assertWritable(state);
     await this.#prepare();
-    const modules = comparisonModules ?? compareSnapshots(baseline, current).modules;
+    const modules = comparisonModules ?? (await compareRepositorySnapshots(this.snapshotStore.root, baseline, current)).modules;
     if (expectedComparison && publicationIdentity(state.comparison) !== publicationIdentity(expectedComparison)) throw new StalePublicationError();
     await this.#legacy(state);
     this.#assertProject(current);

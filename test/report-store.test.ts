@@ -363,6 +363,7 @@ test("clone needs only project.json and work to retain proof and selected baseli
   await rm(path.join(cloneRoot, ".archiview/snapshots"), { recursive: true });
   const clonedSnapshots = new SnapshotStore(cloneRoot);
   const clonedStore = new ReportStore(clonedSnapshots);
+  assert.deepEqual(await clonedSnapshots.list(), []);
   assert.deepEqual(await readPublishedSnapshots(clonedSnapshots), stored([baseline, current]));
   const actual = await captureWorkingTree(cloneRoot);
   assert.equal(actual.root, baseline.root);

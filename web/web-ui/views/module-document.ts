@@ -1,4 +1,5 @@
 import type { ModuleDetail, ComparisonView, ClauseReference, ReviewBundle, FindingTarget } from "../types.js";
+import { isModuleDocumentFile } from "../../../framework/project/storage-paths.js";
 import { byId, el, icon, notice } from "./dom.js";
 import { labels } from "./change-status.js";
 import { renderContract, renderContractRoles, savedClauseText, clauseSectionLabel } from "./contract.js";
@@ -101,7 +102,7 @@ export function renderFiles(panel: HTMLElement, detail: ModuleDetail, copyText: 
     if (!side) continue;
     const prefix = side.directory === "." ? "" : side.directory + "/";
     for (const { path } of side.files) {
-      if (path !== side.documentPath && path.startsWith(prefix)) relativePaths.set(path, path.slice(prefix.length));
+      if (!isModuleDocumentFile(path, side.documentPath) && path.startsWith(prefix)) relativePaths.set(path, path.slice(prefix.length));
     }
   }
   const paths = [...relativePaths].sort(([a, relativeA], [b, relativeB]) =>

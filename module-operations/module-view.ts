@@ -1,4 +1,5 @@
 import path from "node:path";
+import { isModuleDocumentFile } from "../framework/project/storage-paths.js";
 import { isPrototype } from "../framework/contracts/types.js";
 import { currentContractYaml } from "../framework/contracts/document.js";
 import { diffLines } from "diff";
@@ -62,7 +63,7 @@ function documentDiff(before?: string | null, after?: string | null) {
 }
 
 function contentFileChanges({ files, before, after }: SessionView["modules"][number]) {
-  return files.filter(file => file.path !== before?.documentPath && file.path !== after?.documentPath);
+  return files.filter(file => !isModuleDocumentFile(file.path, before?.documentPath) && !isModuleDocumentFile(file.path, after?.documentPath));
 }
 
 export function moduleSummary(entry: SessionView["modules"][number]) {

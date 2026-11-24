@@ -1,5 +1,5 @@
 import { realpath } from "node:fs/promises";
-import { compareSnapshots } from "../analyse/git-changes/comparison.js";
+import { compareRepositorySnapshots } from "../analyse/git-changes/comparison.js";
 import { createReportModel, type ReportModel } from "../analyse/module-review/model.js";
 import { readPublishedTree, PublicationChanged } from "../analyse/module-review/published-reader.js";
 import { errorDetails } from "../node-errors.js";
@@ -17,7 +17,7 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
   if (!published) return null;
   const { id, work, readReviews } = published;
   const { baseline, current } = published.pair;
-  const tree = compareSnapshots(baseline, current, { projectRoot: root });
+  const tree = await compareRepositorySnapshots(root, baseline, current);
   const byId = new Map(published.reports.map(report => [report.module_id, report]));
   const modules: SessionView["modules"] = tree.modules.map(module => {
     const id = module.moduleId ?? "directory:" + module.directory;
@@ -50,7 +50,7 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
       throw cause;
     }
   }
-  const getFileDiff = (args: FileDiffArgs) => fileDiff(selectedModule(args), baseline, current, args.file);
+  const getFileDiff = (args: FileDiffArgs) => fileDiff(selectedModule(args), baseline, current, args.file, { repository: root });
   const getRelations = (args: ModuleArgs) => relations.getRelations(root, stateDirectory, current, selectedModule(args).currentPath);
   const getRelationSource = (args: FileDiffArgs) => {
     if (!selectedModule(args).after?.files.some(f => f.path === args.file)) throw new ApplicationError("NOT_FOUND", "Файл отсутствует в модуле.");

@@ -16,6 +16,7 @@ import { createArchiView } from "../web/web-backend/web-service/http.js";
 import { moduleInventory } from "../analyse/project/inventory.js";
 import { readSnapshotRoot } from "../analyse/project/identity.js";
 import { readReviewBundle, ReviewStore } from "../analyse/module-review/review-store.js";
+import { openProjectHistory } from "../analyse/module-review/legacy-history.js";
 import { createStructuralReview } from "../analyse/module-review/bundle.js";
 import { reviewIsStale } from "../analyse/module-review/freshness.js";
 import { defaultSnapshotDirectory, SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
@@ -133,17 +134,20 @@ test("legacy migration copies complete immutable bundles and keeps the old stora
   const { root, temporary } = await fixture(t);
   const legacy = new SnapshotStore(root, path.join(temporary, "legacy"));
   const snapshot = await legacy.save(await captureWorkingTree(root), "Legacy baseline");
-  const bundle = createStructuralReview(null, snapshot, compareSnapshots(null, snapshot).modules[0]);
+  const jsonFile = snapshot.id + ".json";
+  const json = JSON.stringify(snapshot, null, 2);
+  await writeFile(path.join(legacy.directory, jsonFile), json);
+  const bundle = createStructuralReview(snapshot, snapshot, compareSnapshots(snapshot, snapshot).modules[0]);
   const oldReviews = new ReviewStore(legacy);
   await oldReviews.save(bundle);
   // Старое размещение не содержало манифеста происхождения.
   await rm(path.join(legacy.directory, "project.json"));
-  const oldFiles = ["review.yaml", "input.json", "current.json"];
+  const oldFiles = ["review.yaml", "input.json", "current.json", "baseline.json"];
   const bytes = await Promise.all(oldFiles.map((file) => readFile(path.join(oldReviews.pathFor(bundle.report.id), file))));
-  const local = new SnapshotStore(root, undefined, { legacyDirectory: legacy.directory });
-  await local.open();
-  assert.deepEqual(local.migration, { from: legacy.directory, snapshots: 1, reviews: 1 });
-  assert.equal((await local.list())[0].digest, snapshot.digest);
+  const { store: local, migration } = await openProjectHistory(root, undefined, legacy.directory);
+  assert.deepEqual(migration, { from: legacy.directory, snapshots: 2, reviews: 1 });
+  assert.deepEqual((await local.list()).map(item => item.digest), [snapshot.digest]);
+  assert.equal(await readFile(path.join(local.directory, jsonFile), "utf8"), json);
   const imported = new ReviewStore(local);
   assert.equal((await imported.list()).bundles[0].report.id, bundle.report.id);
   for (let i = 0; i < oldFiles.length; i++) {
@@ -151,8 +155,30 @@ test("legacy migration copies complete immutable bundles and keeps the old stora
     assert.deepEqual(await readFile(path.join(oldReviews.pathFor(bundle.report.id), oldFiles[i])), bytes[i]);
   }
   assert.equal(await readSnapshotRoot(root), root);
-  const again = new SnapshotStore(root, undefined, { legacyDirectory: legacy.directory });
-  await again.open(); assert.equal(again.migration, null);
+  const again = await openProjectHistory(root, undefined, legacy.directory);
+  assert.equal(again.migration, null);
+});
+
+test("review-only migration can retry after an incomplete bundle and accepts concurrent opens", async (t) => {
+  const { root, temporary } = await fixture(t);
+  const legacy = new SnapshotStore(root, path.join(temporary, "legacy"));
+  const snapshot = await captureWorkingTree(root);
+  const bundle = createStructuralReview(null, snapshot, compareSnapshots(null, snapshot).modules[0]);
+  const reviews = new ReviewStore(legacy);
+  await reviews.save(bundle);
+  const currentFile = path.join(reviews.pathFor(bundle.report.id), "current.json");
+  await rename(currentFile, currentFile + ".bak");
+  await assert.rejects(openProjectHistory(root, undefined, legacy.directory), { code: "ENOENT" });
+  assert.equal(await readSnapshotRoot(root), null);
+
+  await rename(currentFile + ".bak", currentFile);
+  const [first, second] = await Promise.all([openProjectHistory(root, undefined, legacy.directory),
+    openProjectHistory(root, undefined, legacy.directory)]);
+  assert.ok([first, second].some(history => history.migration?.reviews === 1));
+  assert.deepEqual(await first.store.list(), []);
+  const history = await new ReviewStore(second.store).list();
+  assert.deepEqual(history.diagnostics, []);
+  assert.deepEqual(history.bundles.map(item => item.report.id), [bundle.report.id]);
 });
 
 test("concurrent local reviews publish one complete project identity", async (t) => {

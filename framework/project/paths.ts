@@ -1,6 +1,7 @@
 import path from "node:path";
+import { STATE_DIRECTORY } from "./storage-paths.js";
 
-export const STATE_DIRECTORY = ".archiview";
+export { STATE_DIRECTORY };
 
 /** Metadata, dependencies and generated content are outside a source tree. */
 const EXCLUDED = new Set([

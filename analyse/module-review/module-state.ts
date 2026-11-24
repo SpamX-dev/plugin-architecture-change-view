@@ -2,6 +2,7 @@ import type { SnapshotData, SourceFile, SnapshotModule } from "../../framework/s
 import type { StoredContract as Contract } from "../../framework/contracts/types.js";
 import type { FileInput, ModuleState, SelfState } from "../../framework/static-report/types.js";
 import path from "node:path";
+import { MODULE_TREE_FILE } from "../../framework/project/storage-paths.js";
 import { canonical, digest } from "../../framework/serialization/digest.js";
 
 const NORMALIZATION = "archiview/module-state/v1";
@@ -86,7 +87,8 @@ export function buildModuleStates(snapshot: SnapshotData | null): Map<string, Mo
   for (const module of modules) {
     const id = moduleId(module);
     if (states.has(id)) throw new Error("Duplicate module identity: " + id);
-    const ownFiles = sorted((module.files ?? []).filter((file) => file.path !== module.documentPath)
+    // The Git report includes the project map. Local review inputs capture its effect through module ownership and composition.
+    const ownFiles = sorted((module.files ?? []).filter((file) => file.path !== module.documentPath && file.path !== MODULE_TREE_FILE)
       .map((file) => fileInput(snapshot, file)), (file) => file.path);
     const inherited = inheritedInputs(modules, module.directory);
     const contract = module.document?.contract ?? null;

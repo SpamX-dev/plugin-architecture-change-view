@@ -22,6 +22,8 @@ export interface Fact {
 
 export interface SnapshotModule {
   directory: string;
+  /** On the root, distinguishes an observed absence from historical captures that omitted the project map. */
+  moduleMapAbsent?: true;
   documentPath: string;
   document: ContractDocument;
   files: SourceFile[];
@@ -87,6 +89,9 @@ export interface ComparisonModule {
 }
 
 export interface Comparison {
+  /** Постоянное происхождение снимков и способ трактовать отсутствующую базу. */
+  origin: string;
+  emptyTree: boolean;
   before: {
     id: string;
     label: string;
