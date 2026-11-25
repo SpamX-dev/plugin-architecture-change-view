@@ -1,6 +1,6 @@
 /** Serializable operations exposed by a project session to all panel transports. */
 import type { AggregateAssessment, DependencySelector, ReviewFreshness, TreeReviewStatus } from "../framework/static-report/types.js";
-import type { AnalysisStatus, PreparedAnalysis } from "./analysis-record.js";
+import type { AnalysisStatus, PreparedAnalysis, HarnessOption, Delivery } from "./analysis-record.js";
 export type { AnalysisStatus, PreparedAnalysis } from "./analysis-record.js";
 import type { ClauseInput, ReviewReport, Side } from "../framework/ai-report/types.js";
 import type { Comparison, ComparisonModule, Fact, Snapshot } from "../framework/snapshots/types.js";
@@ -10,6 +10,7 @@ import type { Section } from "../framework/contracts/types.js";
 import type { ModuleRelations } from "../framework/module-relations/types.js";
 
 export interface RepositoryArgs { repository?: string }
+export type FindingFixArgs = RepositoryArgs & { id: string; harnessId: string; reviewId: string; findingId: string };
 export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number; published?: boolean; watch?: boolean };
 export type ModuleArgs = RepositoryArgs & { view: string; path: string; analysis?: boolean };
 export type ClauseChange = { action: "add"; section: Exclude<Section, "purpose">; clauseId?: string; text: string }
@@ -109,6 +110,9 @@ export interface SessionOperations {
   changeClause(args: ChangeClauseArgs): Promise<{ clauseId: string; undoToken?: string }>;
   changePrototype(args: PrototypeChange): Promise<{ directory: string }>;
   getFileDiff(args: FileDiffArgs): Promise<FileDiff>;
+  listHarnesses(args: RepositoryArgs): Promise<{ harnesses: HarnessOption[] }>;
+  deliverFindingFix(args: FindingFixArgs): Promise<Delivery>;
+  deliverAnalysis(args: RepositoryArgs & { id: string; harnessId: string }): Promise<Delivery>;
   prepareAnalysis(args: ModuleArgs): Promise<PreparedAnalysis>;
   getAnalysis(args: RepositoryArgs & { id: string }): Promise<AnalysisStatus>;
   buildReview(args: ModuleArgs): Promise<{ automatic: boolean; module_id?: string | null }>;

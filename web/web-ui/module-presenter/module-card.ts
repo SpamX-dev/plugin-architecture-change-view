@@ -225,11 +225,16 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
       if (selectedClause) revealClause(selectedClause, state.detail);
     }
     else if (["checks", "findings"].includes(state.tab)) {
-      const owner = state.detail;
+      const moduleKey = state.detail.key;
+      const view = currentView();
+      const repository = view.workspace?.repository;
       renderReview(panel, state.detail, state.tab, { openClause: openReviewClause,
-        projectRoot: currentView().root, fixStates: state.findingFixes, copyFixPrompt: copyPrompt,
+        projectRoot: view.root, fixStates: state.findingFixes, copyFixPrompt: copyPrompt,
+        listFixHarnesses: () => client.listHarnesses({ repository }),
+        deliverFix: args => client.deliverFindingFix({ ...args, repository }),
         fixChanged: (reviewId) => {
-          if (state.detail === owner && state.tab === "findings" && panel.querySelector<HTMLElement>(".review-body")?.dataset.reviewId === reviewId)
+          if (workspace.view?.root === view.root && state.detail?.key === moduleKey && state.tab === "findings" &&
+              panel.querySelector<HTMLElement>(".review-body")?.dataset.reviewId === reviewId)
             renderPanel({ reviewId });
         },
         ...navigation });

@@ -84,6 +84,20 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
       if (typeof args.view !== "string" || typeof args.path !== "string")
         throw new ApplicationError("INVALID_ARGUMENT", "Нужны view и path");
       return session[method]({ view: args.view, path: args.path, ...selector });
+    case "listHarnesses":
+      return session.listHarnesses(selector);
+    case "deliverFindingFix":
+    case "deliverAnalysis":
+      if (typeof args.id !== "string" || !/^[a-f0-9-]{36}$/.test(args.id) ||
+          typeof args.harnessId !== "string" || !/^(codex|dsh)-[a-f0-9]{24}$/.test(args.harnessId))
+        throw new ApplicationError("INVALID_ARGUMENT", "Некорректный идентификатор запроса или harness");
+      if (method === "deliverFindingFix") {
+        const { reviewId, findingId } = args;
+        if (typeof reviewId !== "string" || !reviewId ||
+            typeof findingId !== "string" || !findingId) throw new ApplicationError("INVALID_ARGUMENT", "Не указано замечание отчёта");
+        return session.deliverFindingFix({ ...selector, id: args.id, harnessId: args.harnessId, reviewId, findingId });
+      }
+      return session.deliverAnalysis({ ...selector, id: args.id, harnessId: args.harnessId });
     case "getAnalysis":
       if (typeof args.id !== "string") throw new ApplicationError("INVALID_ARGUMENT", "Некорректный идентификатор анализа");
       return session.getAnalysis({ id: args.id, ...selector });

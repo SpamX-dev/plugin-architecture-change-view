@@ -1,4 +1,4 @@
-import type { ComparisonView, ModuleDetail, SessionOperations, ComparisonArgs, FileDiffArgs, ModuleArgs, SnapshotArgs } from "../../module-operations/api.js";
+import type { ComparisonView, ModuleDetail, SessionOperations, FindingFixArgs, ComparisonArgs, FileDiffArgs, ModuleArgs, SnapshotArgs } from "../../module-operations/api.js";
 import { fileDiff } from "../../module-operations/file-diff.js";
 import * as relations from "../../module-operations/relations.js";
 import type { Comparison, Snapshot, GitRevision } from "../../framework/snapshots/types.js";
@@ -26,13 +26,13 @@ import { createContractEditor } from "../../module-operations/contract-editor.js
 import { changeExistingPrototype, createPrototypes } from "../../module-operations/prototypes.js";
 
 /** Открывает хранилища одного проекта; вызывается лениво при первом запросе данных. */
-export async function createArchiViewSession({ root: requestedRoot, stateDirectory, deferPublication = true }: { root: string; stateDirectory?: string; deferPublication?: boolean }) {
+export async function createArchiViewSession({ root: requestedRoot, stateDirectory, workspaceRoot, deferPublication = true }: { root: string; stateDirectory?: string; workspaceRoot?: string; deferPublication?: boolean }) {
   const root = await realpath(requestedRoot);
   const { store, migration } = await openProjectHistory(root, stateDirectory);
   const reviews = new ReviewStore(store);
   const reports = new ReportStore(store);
   const changes = new ChangeHistory(store);
-  const analysis = new AnalysisRequests(store, reports);
+  const analysis = new AnalysisRequests(store, reports, workspaceRoot ?? root);
   const reader = new GitTreeReader(root, store.snapshotRoot);
   const watcher = new RepositoryWatch(root, store.directory);
   const editor = createContractEditor(root);
@@ -465,6 +465,9 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     return relations.getRelationSource(root, store.directory, view.currentSnapshot, args.file);
   };
   const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, getRelations, buildRelations, getRelationSource,
-    changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
+    changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot,
+    listHarnesses: (_args: {repository?: string}) => analysis.harnesses(),
+    deliverFindingFix: (args: FindingFixArgs) => analysis.deliverFix(args),
+    deliverAnalysis: (args: {id: string; harnessId: string}) => analysis.deliver(args.id, args.harnessId) } satisfies SessionOperations;
   return { root, store, migration, reviews, reports, changes, analysis, startupComparison, ...operations, close: () => watcher.close() };
 }

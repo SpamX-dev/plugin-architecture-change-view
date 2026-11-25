@@ -1,4 +1,5 @@
-import type { ModuleDetail, ModuleReview, SessionOperations } from "../../module-operations/api.js";
+import type { Delivery } from "../../module-operations/analysis-record.js";
+import type { ModuleDetail, ModuleReview, SessionOperations, FindingFixArgs } from "../../module-operations/api.js";
 import type { ClauseReference, Finding as SavedFinding, FreshnessReason, ReviewReport, Side, Coverage } from "../../framework/ai-report/types.js";
 import type { Contract } from "../../framework/contracts/types.js";
 import type { SnapshotReference, Fact } from "../../framework/snapshots/types.js";
@@ -27,11 +28,12 @@ export type ReviewBundle = Pick<ModuleReview, "contracts"> & Partial<Pick<Module
 };
 
 export interface AnalysisRecord {
+  delivery?: Delivery;
   request?: Awaited<ReturnType<SessionOperations["prepareAnalysis"]>>;
   status: "preparing" | "ready" | "prepared" | "completed" | "error";
   message: string;
 }
-export interface FixRecord { status: string; message: string }
+export interface FixRecord { status: string; message: string; attempt?: { id: string; harnessId: string } }
 export interface FindingTarget { reviewId: string; findingId: string; severity?: string; summary?: string; label?: string }
 export interface ClientOptions { fetcher?: typeof fetch; base?: string }
 export type ArchiViewClient = SessionOperations;
@@ -42,6 +44,8 @@ export interface ContractRenderOptions {
 }
 export interface ReviewRenderOptions {
   reviewId?: string; findingId?: string; projectRoot?: string; fixStates?: Map<string, FixRecord>;
+  listFixHarnesses?: () => ReturnType<SessionOperations["listHarnesses"]>;
+  deliverFix?: (args: Omit<FindingFixArgs, "repository">) => Promise<Delivery>;
   copyFixPrompt?: (prompt: string) => Promise<void>; fixChanged?: (reviewId: string) => void;
   openClause?: (reference: ClauseReference, review: ReviewBundle) => void;
 }

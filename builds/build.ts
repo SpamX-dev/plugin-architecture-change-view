@@ -8,6 +8,15 @@ import { buildWeb } from "./build-web.js";
 const root = new URL("../", import.meta.url);
 const output = new URL("dist/", root);
 await buildWeb(root);
+for (const [host, entry] of [["codex", "server"], ["dsh", "host"]]) {
+  const folder = new URL("bridges/" + host + "/", output);
+  await mkdir(folder, { recursive: true });
+  await build({ entryPoints: [fileURLToPath(new URL("bridges/" + host + "/" + entry + ".ts", root))],
+    outfile: fileURLToPath(new URL(entry + ".mjs", folder)), platform: "node", format: "esm", target: "node22", bundle: true });
+}
+for (const file of ["package.json", "cordis.patch.yml"]) {
+  await copyFile(new URL("bridges/dsh/" + file, root), new URL("bridges/dsh/" + file, output));
+}
 await build({
   absWorkingDir: fileURLToPath(root),
   entryPoints: ["cli/packaged-cli.ts"],

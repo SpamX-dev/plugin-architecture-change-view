@@ -9,7 +9,7 @@ import { readWebAsset } from "../runtime/package-paths.js";
 import { getModuleContract, listModuleFiles, listModules, saveModuleContract } from "../../../module-operations/module-access.js";
 
 /** Сопоставляет прикладную ошибку HTTP-статусу, не добавляя HTTP в сервис. */
-const errorStatus: Record<string, number> = { INVALID_ARGUMENT: 400, REPOSITORY_UNAVAILABLE: 400, NOT_FOUND: 404, STALE_VIEW: 409, INCOMPLETE_VIEW: 422 };
+const errorStatus: Record<string, number> = { HARNESS_UNAVAILABLE: 409, DELIVERY_CONFLICT: 409, INVALID_ARGUMENT: 400, REPOSITORY_UNAVAILABLE: 400, NOT_FOUND: 404, STALE_VIEW: 409, INCOMPLETE_VIEW: 422 };
 
 /** Читает ограниченный JSON-запрос; проверка предметных аргументов остаётся в сервисе. */
 async function bodyOf(request: IncomingMessage, limit = 4096): Promise<Record<string, unknown>> {
@@ -135,6 +135,7 @@ export function createArchiViewHttpServer(session: SessionOperations & { root: s
       }
       if (request.method === "GET" && url.pathname === "/api/review-statuses") return json(response, 200, await callSessionOperation(session, "getReviewStatuses", args));
       if (request.method === "GET" && url.pathname === "/api/module") return json(response, 200, await callSessionOperation(session, "getModule", args));
+      if (request.method === "GET" && url.pathname === "/api/harnesses") return json(response, 200, await callSessionOperation(session, "listHarnesses", args));
       if (request.method === "GET" && url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "getRelations", args));
       if (request.method === "GET" && url.pathname === "/api/relations/source") return json(response, 200, await callSessionOperation(session, "getRelationSource", args));
       if (request.method === "GET" && url.pathname === "/api/file-diff") return json(response, 200, await callSessionOperation(session, "getFileDiff", args));
@@ -144,6 +145,11 @@ export function createArchiViewHttpServer(session: SessionOperations & { root: s
         if (url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "buildRelations", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/contract-clause") return json(response, 200, await callSessionOperation(session, "changeClause", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
         if (url.pathname === "/api/prototype") return json(response, 200, await callSessionOperation(session, "changePrototype", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
+        if (url.pathname === "/api/analysis/deliver" || url.pathname === "/api/findings/fix") {
+          if (!request.headers["content-type"]?.toLowerCase().startsWith("application/json"))
+            throw new ApplicationError("INVALID_ARGUMENT", "Требуется application/json");
+          return json(response, 200, await callSessionOperation(session, url.pathname === "/api/findings/fix" ? "deliverFindingFix" : "deliverAnalysis", repositoryArguments(repository, await bodyOf(request))));
+        }
         if (url.pathname === "/api/analysis") return json(response, 201, await callSessionOperation(session, "prepareAnalysis", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/reviews") return json(response, 200, await callSessionOperation(session, "buildReview", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/snapshots") return json(response, 201, await callSessionOperation(session, "saveSnapshot", repositoryArguments(repository, await bodyOf(request))));

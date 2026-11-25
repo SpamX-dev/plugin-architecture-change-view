@@ -1,19 +1,23 @@
-import type { AnalysisStatus, PreparedAnalysis } from "../../../module-operations/api.js";
+import type { AnalysisStatus, PreparedAnalysis, FindingFixArgs } from "../../../module-operations/api.js";
 import type { ReportStore } from "../../../analyse/module-review/report-store.js";
 import type { SnapshotStore } from "../../../analyse/git-changes/snapshot-store.js";
 import type { Snapshot, ComparisonModule } from "../../../framework/snapshots/types.js";
 import type { SessionView } from "../../../module-operations/session-view.js";
 import type { ReviewManifest } from "../../../framework/ai-report/types.js";
 import type { DependencySelector, ReviewEntry } from "../../../framework/static-report/types.js";
-import { readAnalysisRequest, type AnalysisRequest } from "../../../module-operations/analysis-record.js";
+import { readAnalysisRequest, readDelivery, type Delivery, type AnalysisRequest } from "../../../module-operations/analysis-record.js";
 import { errorDetails } from "../../../node-errors.js";
 /**
- * Сервис сохраняет входные данные и выдаёт поручение для копирования пользователем.
+ * Сервис фиксирует входы, подготавливает поручение и сохраняет подтверждение выбранного хоста.
  * CLI проверяет и импортирует результат по идентификатору запроса.
  * Снимки и область анализа остаются неизменяемыми даже после изменения проекта.
  */
+import { findingFixPrompt } from "../../../module-operations/finding-fix.js";
+import { reviewFilePath } from "../../../module-operations/module-view.js";
+import { connectHarness, listHarnesses, type Assignment } from "../host-bridge/channel.js";
+import { ApplicationError } from "../../../module-operations/errors.js";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile, lstat, rename, rm } from "node:fs/promises";
+import { mkdir, readFile, writeFile, lstat, link, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stringify } from "yaml";
@@ -50,7 +54,73 @@ async function readRequestFile(store: SnapshotStore, directory: string, name: st
 
 /** Хранит запросы рядом с локальными снимками, отдельно от опубликованной истории проверок. */
 export class AnalysisRequests {
-  constructor(public store: SnapshotStore, public reports: ReportStore) { this.store = store; this.reports = reports; }
+  constructor(public store: SnapshotStore, public reports: ReportStore, private workspaceRoot = store.root) {}
+
+  private target() { return { repositoryRoot: this.store.root, workspaceRoot: this.workspaceRoot }; }
+  harnesses() { return listHarnesses(this.target()); }
+
+  private async delivery(directory: string): Promise<Delivery | undefined> {
+    try { return readDelivery(JSON.parse(await readRequestFile(this.store, directory, "delivery.json", MAX_METADATA_BYTES))); }
+    catch (error) { if (errorDetails(error).code !== "ENOENT") throw error; }
+  }
+
+  async deliver(id: string, harnessId: string): Promise<Delivery> {
+    const directory = requestDirectory(this.store, id);
+    const request = await this.status(id);
+    if (!request.delivery && request.status === "completed") throw new ApplicationError("DELIVERY_CONFLICT", "Анализ уже завершён");
+    return this.deliverOnce(directory, harnessId, { ...this.target(), requestId: id, moduleId: request.moduleId,
+      prompt: this.prompt(request, directory) }, request.delivery);
+  }
+
+  async deliverFix({ id, harnessId, reviewId, findingId }: FindingFixArgs) {
+    const review = (await this.reports.readReviews()).find(entry => entry.review_id === reviewId);
+    if (!review) throw new ApplicationError("NOT_FOUND", "Отчёт модуля не найден");
+    const { report, module_id: moduleId } = review;
+    const finding = report.findings.find(item => item.id === findingId && item.kind !== "contract_change") ??
+      { id: findingId, assessmentOnly: true };
+    const reviewFile = reviewFilePath(this.store.root, this.reports.work, moduleId);
+    const prompt = findingFixPrompt(this.store.root, { reviewFile, report }, finding);
+    if (!prompt) throw new ApplicationError("INVALID_ARGUMENT", "Замечание недоступно для исправления");
+    const directory = path.join(this.store.directory, "snapshots", "finding-fixes", digest([id, moduleId, reviewId, findingId]).slice(7));
+    await assertStateLocation(this.store.root, this.store.directory, directory);
+    await mkdir(directory, { recursive: true });
+    return this.deliverOnce(directory, harnessId, { ...this.target(), moduleId, prompt, requestId: randomUUID() },
+      await this.delivery(directory));
+  }
+
+  private async deliverOnce(directory: string, harnessId: string, job: Assignment, existing?: Delivery) {
+    function previous(receipt: Delivery) {
+      if (receipt.harnessId !== harnessId) throw new ApplicationError("DELIVERY_CONFLICT", "Для этого запроса уже выбран другой harness");
+      return receipt;
+    }
+    if (existing) return previous(existing);
+    const bridge = await connectHarness(harnessId, this.target());
+    const pending: Delivery = { harnessId, name: bridge.name, state: "pending" };
+    const file = path.join(directory, "delivery.json");
+    const temporary = path.join(directory, ".delivery-" + randomUUID());
+    await assertStateLocation(this.store.root, this.store.directory, file);
+    await writeFile(temporary, JSON.stringify(pending), { flag: "wx" });
+    try {
+      // Publish a complete claim atomically, even across two backend processes.
+      try { await link(temporary, file); }
+      catch (error) {
+        if (errorDetails(error).code !== "EEXIST") throw error;
+        return previous(readDelivery(JSON.parse(await readRequestFile(this.store, directory, "delivery.json", MAX_METADATA_BYTES))));
+      }
+      let receipt: Delivery;
+      try {
+        const chatId = await bridge.start(job);
+        receipt = { ...pending, state: "sent", chatId };
+      } catch (error) {
+        receipt = { ...pending, state: "unknown", message: errorDetails(error).message };
+      }
+      // The temporary name shared an inode with the claim. Replace it before writing the final receipt.
+      await rm(temporary);
+      await writeFile(temporary, JSON.stringify(receipt), { flag: "wx" });
+      await rename(temporary, file);
+      return receipt;
+    } finally { await rm(temporary, { force: true }); }
+  }
 
   /** Экспортирует входы точно выбранного сравнения; не перечитывает текущий код вместо снимка. */
   async create(view: SessionView, module: ComparisonModule): Promise<PreparedAnalysis> {
@@ -136,7 +206,8 @@ export class AnalysisRequests {
     const directory = requestDirectory(this.store, id);
     const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json", MAX_METADATA_BYTES)));
     const entry = (await this.reports.list()).entries.find((item) => item.review_id === request.reviewId);
-    return { ...request, status: entry ? "completed" : "prepared" };
+    const delivery = await this.delivery(directory);
+    return { ...request, status: entry ? "completed" : "prepared", ...(delivery ? { delivery } : {}) };
   }
 
   /** Проверяет привязку к исходному экспорту до передачи результата общему валидатору отчётов. */

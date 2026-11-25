@@ -1,9 +1,10 @@
+import { bindHarnessMenu } from "./harness-menu.js";
 import type { AnalysisRecord, ArchiViewClient, ComparisonView, ModuleSummary } from "../types.js";
 import { errorMessage } from "../types.js";
 import { byId } from "../views/dom.js";
 
 export function createAnalysisControls({ client, selection, copyPrompt, refresh, toast }: {
-  client: Pick<ArchiViewClient, "prepareAnalysis" | "getAnalysis">;
+  client: Pick<ArchiViewClient, "prepareAnalysis" | "getAnalysis" | "listHarnesses" | "deliverAnalysis">;
   selection: () => { module?: ModuleSummary; view: ComparisonView | null };
   copyPrompt: (prompt: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -17,29 +18,38 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
     return { module, view, key, request: key ? analyses.get(key) : undefined };
   }
 
-  function configureAnalysisButton(button: HTMLButtonElement) {
-    const { module, view, request } = selectedAnalysis();
-    const busy = request?.status === "preparing";
-    button.disabled = !view?.complete || module?.documentState !== "documented" || !module.moduleId || busy;
-    button.textContent = busy ? "Подготавливаем…" : "Копировать промпт";
-    button.title = module?.documentState !== "documented" ? "Сначала подготовьте корректный контракт модуля" :
-      "Скопировать промпт для анализа выбранного снимка модуля";
-    button.onclick = runAnalysis;
+  const trigger = document.querySelector<HTMLButtonElement>("#analyze-module")!;
+  const menu = document.getElementById("analysis-menu")!;
+  const hosts = document.getElementById("analysis-harnesses")!;
+  const copy = document.querySelector<HTMLButtonElement>("#copy-analysis")!;
+  const updateMenu = bindHarnessMenu(trigger, menu, hosts, copy, () => {
+    const { key, view, request } = selectedAnalysis();
+    if (!key || !view) return;
+    return { list: () => client.listHarnesses({ repository: view.workspace?.repository }),
+      current: () => selectedAnalysis().key === key, prefix: request?.delivery ? "Новый анализ · " : "",
+      copy: () => void runAnalysis(), choose: id => void runAnalysis(id) };
+  });
+  function deliveryMessage(receipt: NonNullable<AnalysisRecord["delivery"]>) {
+    if (receipt.state === "sent") return "Отправлено в новый чат " + receipt.name + ". Ожидаем импорт результата.";
+    return receipt.state === "pending" ? "Ожидаем подтверждение доставки в " + receipt.name + "." :
+      "Доставка в " + receipt.name + " не подтверждена. " + (receipt.message ?? "");
   }
 
   function renderAnalysisControls() {
-    for (const button of document.querySelectorAll<HTMLButtonElement>("[data-analysis]")) configureAnalysisButton(button);
-    const { request, view } = selectedAnalysis();
+    const { request, view, module } = selectedAnalysis();
+    trigger.disabled = !view?.complete || module?.documentState !== "documented" || !module.moduleId || request?.status === "preparing";
+    trigger.textContent = request?.status === "preparing" ? "Подготавливаем…" : "Анализировать ▾";
+    updateMenu();
     watchPreparedRequest(request, view?.workspace?.repository);
     const status = byId("analysis-status");
     status.hidden = !request;
     status.textContent = request?.message ?? "";
   }
 
-  async function runAnalysis() {
+  async function runAnalysis(harnessId?: string) {
     const { module, view, key, request: previous } = selectedAnalysis();
     if (!module || !view || !key || previous?.status === "preparing") return;
-    const record: AnalysisRecord = previous && previous.status !== "completed" ? previous :
+    const record: AnalysisRecord = previous && previous.status !== "completed" && !(harnessId && previous.delivery) ? previous :
       { status: "ready", message: "" };
     const alreadyCopied = record.status === "prepared";
     record.status = "preparing";
@@ -56,6 +66,18 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
       if (selectedAnalysis().key !== key) {
         record.status = alreadyCopied ? "prepared" : "ready";
         record.message = alreadyCopied ? "Ожидаем импорт результата для выбранного снимка." : "Промпт подготовлен. Скопируйте его для анализа.";
+        return;
+      }
+      if (harnessId) {
+        record.message = "Отправляем поручение в новый чат…";
+        renderAnalysisControls();
+        try {
+          record.delivery = await client.deliverAnalysis({ repository: view.workspace?.repository, id: record.request.id, harnessId });
+          record.message = deliveryMessage(record.delivery);
+        } catch (error) {
+          record.message = "Не удалось подтвердить доставку: " + errorMessage(error);
+        }
+        record.status = "prepared";
         return;
       }
       await copyPrompt(record.request.prompt);
@@ -92,6 +114,10 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
         if (activePoll !== observer) return;
         if (status.id !== id || status.viewId !== viewId || status.moduleId !== moduleId)
           throw new Error("Получен статус другого запроса анализа");
+        if (status.delivery) {
+          observer.record.delivery = status.delivery;
+          observer.record.message = deliveryMessage(status.delivery);
+        }
         if (status.status === "completed") {
           observer.record.status = "completed";
           observer.record.message = "Анализ выбранного снимка сохранён. Актуальность показана в результатах проверки.";

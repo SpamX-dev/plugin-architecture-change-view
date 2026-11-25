@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-analysis-service
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 57d326f2853215615541c1dc90f326981429888add2f6ac8716bd3909a396f50
+check_hash: 335d9513f2c4fd07f09e378d5ca9c6aac7c9855765fefe8e3050b87b2499b4a6
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -19,8 +19,8 @@ input_manifest:
   current:
     exists: true
     directory: web/web-backend/analysis-service
-    self_digest: sha256:68947453bba263ecdab097ff862f23dc43e95f336215de1c8129209c6ac73732
-    subtree_digest: sha256:3f4a1e46d8c941c23601c5a60cdd7f66b1898eaef0e47a7131e1633fb607d21d
+    self_digest: sha256:1783cfe7ce0779e0fb60815bdfba3c249b5a70da5275014db43c31ceb093ba26
+    subtree_digest: sha256:f95b285f95db9fa4485fd5e1c10f39c32a4cd2715ae1932e2bdf814642998ff8
   analyzer:
     name: archiview-structure
     version: 1.1.0
@@ -211,7 +211,7 @@ current:
     directory: web/web-backend/analysis-service
     own_files:
       - path: web/web-backend/analysis-service/analysis.ts
-        digest: sha256:6b0deecc2e7b2b8eb1dbaea341c98164a1cb71d2dbd30c6c7b2caa662c904523
+        digest: sha256:2378717332db1a678abab76ec3b35728f094998547a20f280a17995a4cf46723
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -221,14 +221,15 @@ current:
       extensions:
         archiview.roles:
           - service
-      purpose: Подготавливать поручение по модулю и снимку, передавать его в сессию
-        панели и предоставлять статус и результат анализа.
+      purpose: Передавать в новый чат выбранного harness поручение на анализ снимка
+        модуля или исправление сохранённого замечания, предоставлять статус
+        доставки и результат анализа.
       boundaries:
         B1: Подтверждать завершение запроса только после появления проверенного отчёта с
           ожидаемым reviewId.
       invariants:
-        I1: До доставки поручения фиксировать входные данные анализа и использовать
-          HostBridge, привязанный к сессии панели.
+        I1: До доставки поручения фиксировать входные данные анализа и доставлять их
+          через HostBridge выбранного пользователем harness.
         I2: Запросы пользователя
         I3: События системы
     document_state: documented
@@ -240,11 +241,11 @@ current:
       - module_id: architecture-change-view
         section: invariants
         id: I10
-        text: Приложение поддерживает встроенную панель Codex.
+        text: Приложение поддерживает интеграцию с Codex.
       - module_id: architecture-change-view
         section: invariants
         id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
       - module_id: architecture-change-view
         section: invariants
         id: I9
@@ -287,7 +288,7 @@ current:
         section: boundaries
         id: B8
         text: В поручение агенту не входит определение зависимостей модулей.
-  technical_digest: sha256:68947453bba263ecdab097ff862f23dc43e95f336215de1c8129209c6ac73732
+  technical_digest: sha256:1783cfe7ce0779e0fb60815bdfba3c249b5a70da5275014db43c31ceb093ba26
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -295,19 +296,20 @@ current:
     directory: web/web-backend/analysis-service
     own_files:
       - path: web/web-backend/analysis-service/analysis.ts
-        digest: sha256:6b0deecc2e7b2b8eb1dbaea341c98164a1cb71d2dbd30c6c7b2caa662c904523
+        digest: sha256:2378717332db1a678abab76ec3b35728f094998547a20f280a17995a4cf46723
         normalization: text-lf/v1
     contract:
       id: archiview-analysis-service
       kind: module
-      purpose: Подготавливать поручение по модулю и снимку, передавать его в сессию
-        панели и предоставлять статус и результат анализа.
+      purpose: Передавать в новый чат выбранного harness поручение на анализ снимка
+        модуля или исправление сохранённого замечания, предоставлять статус
+        доставки и результат анализа.
       boundaries:
         B1: Подтверждать завершение запроса только после появления проверенного отчёта с
           ожидаемым reviewId.
       invariants:
-        I1: До доставки поручения фиксировать входные данные анализа и использовать
-          HostBridge, привязанный к сессии панели.
+        I1: До доставки поручения фиксировать входные данные анализа и доставлять их
+          через HostBridge выбранного пользователем harness.
         I2: Запросы пользователя
         I3: События системы
     inherited:
@@ -318,11 +320,11 @@ current:
       - module_id: architecture-change-view
         section: invariants
         id: I10
-        text: Приложение поддерживает встроенную панель Codex.
+        text: Приложение поддерживает интеграцию с Codex.
       - module_id: architecture-change-view
         section: invariants
         id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
       - module_id: architecture-change-view
         section: invariants
         id: I9
@@ -366,21 +368,21 @@ current:
         id: B8
         text: В поручение агенту не входит определение зависимостей модулей.
     children: []
-  self_digest: sha256:094258534292e7f35c0cdb3c9b20a6b92c82d0cba64d2703e88ede0c696cde1e
+  self_digest: sha256:5061446b146a91695d6d4405af4f7c0bfd1eece8745e37c3a937a0aadb0585aa
   subtree:
-    self: sha256:68947453bba263ecdab097ff862f23dc43e95f336215de1c8129209c6ac73732
+    self: sha256:1783cfe7ce0779e0fb60815bdfba3c249b5a70da5275014db43c31ceb093ba26
     children: []
-  subtree_digest: sha256:3f4a1e46d8c941c23601c5a60cdd7f66b1898eaef0e47a7131e1633fb607d21d
+  subtree_digest: sha256:f95b285f95db9fa4485fd5e1c10f39c32a4cd2715ae1932e2bdf814642998ff8
   semantic_subtree:
-    self: sha256:094258534292e7f35c0cdb3c9b20a6b92c82d0cba64d2703e88ede0c696cde1e
+    self: sha256:5061446b146a91695d6d4405af4f7c0bfd1eece8745e37c3a937a0aadb0585aa
     children: []
-  semantic_subtree_digest: sha256:2e34d88422e8990eb6e90dbfa66ad22975f8a11ae677abb1008fe4a7c20ff436
+  semantic_subtree_digest: sha256:e1f4d584dd7ad2bc6de6cf324d9a3157aa3ac6ee2fffef4d886812c31f128a3f
 change:
   existence: retained
-  own: false
-  own_code: false
-  own_contract: false
-  inherited_constraints: false
+  own: true
+  own_code: true
+  own_contract: true
+  inherited_constraints: true
   descendants: false
   child_composition: false
   moved: false
@@ -389,15 +391,15 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 244
-  comparison_key: sha256:3043961649f6014fa49bc705f13aa1181b9649a26cf4e1282c4247c704af9099
+  generation: 251
+  comparison_key: sha256:279dc9637de4616f30531ddeb5a9d4c92487e10157d20831403a768cf3e1eb0e
   baseline:
     metadata:
       id: git-d9ef55c491050e3727283582fcc1018d200da614
       digest: sha256:d38f9e4f50fa68a2feb9b2fad555727b5fd5eff723b87d9a15508a042bcafdff
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-24T20:29:15.750Z
+      capturedAt: 2026-11-24T18:52:06.357Z
       kind: git
       revision: d9ef55c491050e3727283582fcc1018d200da614
       label: HEAD
@@ -713,48 +715,48 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["web/web-backend/analysis-service/analysis.ts"]}'
   current:
     metadata:
-      id: launch-a1a7aab24135b74e55b35cf29028e950a323894d13c1b8e1035737c070750659
-      digest: sha256:c230fe958537e7855cedec94b08355dbd5a500541e13caed7ef1fc0e601236be
+      id: launch-0285bb58b3be6e60f81cc6d866233a1193642f6598e4c3a1cd3d672468209736
+      digest: sha256:dbf5da7c05ec42e1778e8479c1cafcaa95b2abfb25ef79df2ceabccd5bc8ecb7
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-24T20:29:20.618Z
+      capturedAt: 2026-11-24T18:52:11.909Z
       kind: launch
       label: Начальное состояние
-      fingerprint: a1a7aab24135b74e55b35cf29028e950a323894d13c1b8e1035737c070750659
+      fingerprint: 0285bb58b3be6e60f81cc6d866233a1193642f6598e4c3a1cd3d672468209736
       complete: true
       diagnostics: []
       evidenceLimitations: []
       observations:
         architecture-change-view:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 697
+          revision: 651
         archiview-distribution:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 260
+          revision: 214
         archiview-skills:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 246
+          revision: 200
         archiview-module-boundaries-skill:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 253
+          revision: 207
         architecture-core:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 17
         archiview-application:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 306
+          revision: 260
         archiview-http:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 265
+          revision: 219
         archiview-codex:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 277
+          revision: 231
         archiview-contracts:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 255
+          revision: 209
         dsh-adapter:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 270
+          revision: 224
         dsh-client-panel:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 10
@@ -763,34 +765,34 @@ publication:
           revision: 12
         archiview-project-location:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 257
+          revision: 211
         archiview-reports:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 254
+          revision: 208
         archiview-reviews:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 249
+          revision: 203
         archiview-node-runtime:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 251
+          revision: 205
         archiview-serialization:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 249
+          revision: 203
         archiview-snapshots:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 259
+          revision: 213
         archiview-storage:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 12
         architecture-tests:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 316
+          revision: 270
         architecture-web:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 256
+          revision: 210
         archiview-client:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 284
+          revision: 238
         prototype-smoke-1674b57d:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
@@ -865,7 +867,7 @@ publication:
           revision: 13
         archiview-analyse:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 247
+          revision: 201
         archiview-analyse-type:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
@@ -877,70 +879,70 @@ publication:
           revision: 2
         archiview-bridges:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 262
+          revision: 216
         archiview-cli:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 248
+          revision: 202
         archiview-cli-operation:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
         archiview-framework:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 255
+          revision: 209
         archiview-project-types:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 240
+          revision: 194
         archiview-tools:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 240
+          revision: 194
         archiview-analysis-service:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 253
+          revision: 207
         archiview-file-service:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
         archiview-host-bridge:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 246
+          revision: 200
         archiview-web-api-client:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 244
+          revision: 198
         archiview-module-presenter:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 250
+          revision: 204
         archiview-views:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 248
+          revision: 202
         archiview-workspace-presenter:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 242
+          revision: 196
         archiview-file-watcher:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 247
+          revision: 201
         archiview-git-changes:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 253
+          revision: 207
         archiview-git-changes-report:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
         archiview-module-operations:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 266
+          revision: 220
         archiview-project-context:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 245
+          revision: 199
         archiview-module-access:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
         archiview-module-review:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 241
+          revision: 195
         archiview-module-relations:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 245
+          revision: 199
         archiview-relation-model:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 239
+          revision: 193
     module_index: 27
     module:
       directory: web/web-backend/analysis-service
@@ -957,13 +959,14 @@ publication:
 
           extensions:
             archiview.roles: [service]
-          purpose: Подготавливать поручение по модулю и снимку, передавать его в
-          сессию панели и предоставлять статус и результат анализа.
+          purpose: Передавать в новый чат выбранного harness поручение на анализ
+          снимка модуля или исправление сохранённого замечания, предоставлять
+          статус доставки и результат анализа.
 
           boundaries:
             B1: Подтверждать завершение запроса только после появления проверенного отчёта с ожидаемым reviewId.
           invariants:
-            I1: До доставки поручения фиксировать входные данные анализа и использовать HostBridge, привязанный к сессии панели.
+            I1: До доставки поручения фиксировать входные данные анализа и доставлять их через HostBridge выбранного пользователем harness.
             I2: Запросы пользователя
             I3: События системы
         format: yaml
@@ -975,30 +978,31 @@ publication:
           extensions:
             archiview.roles:
               - service
-          purpose: Подготавливать поручение по модулю и снимку, передавать его в сессию
-            панели и предоставлять статус и результат анализа.
+          purpose: Передавать в новый чат выбранного harness поручение на анализ снимка
+            модуля или исправление сохранённого замечания, предоставлять статус
+            доставки и результат анализа.
           boundaries:
             B1: Подтверждать завершение запроса только после появления проверенного отчёта с
               ожидаемым reviewId.
           invariants:
-            I1: До доставки поручения фиксировать входные данные анализа и использовать
-              HostBridge, привязанный к сессии панели.
+            I1: До доставки поручения фиксировать входные данные анализа и доставлять их
+              через HostBridge выбранного пользователем harness.
             I2: Запросы пользователя
             I3: События системы
       documentPath: .archiview/modules/archiview-analysis-service.yaml
       files:
         - path: .archiview/modules/archiview-analysis-service.yaml
-          hash: 31496c7e9b0fefe68b8e79a23b7aebfaf29a4fe4
+          hash: f9f00ad5c325cbbb71cf3446edf4e72028e21608
           mode: "100644"
         - path: web/web-backend/analysis-service/analysis.ts
-          hash: 49ec97e0e8c8e88cbff79a5f515afdb6a14277bb
+          hash: 45d9b19bf5e37ccb059698f02f36571949040ffe
           mode: "100644"
       sourceFiles: 1
-      fingerprint: 3dae4d455a93c0a8120a2d7e378b14ec9cc26dca9980ffb732e3c663d9790ee3
+      fingerprint: bef25da3b600a2a0c61185c35da13ad00085c0761c620dd546c53c434bf63155
     facts:
       - index: 5
         fact:
-          id: sha256:87b21955df9221529b6eb3300b4b9e48eb8b4ebd2bf5f66cb55bc52345adf2f3
+          id: sha256:001b83dc37aea777f754ef062598943e6e9c288da01ac31c2a5a8bcefc8fa138
           kind: file
           path: .archiview/modules/archiview-analysis-service.yaml
           start_line: 1
@@ -1014,25 +1018,26 @@ publication:
 
             extensions:
               archiview.roles: [service]
-            purpose: Подготавливать поручение по модулю и снимку, передавать его
-            в сессию панели и предоставлять статус и результат анализа.
+            purpose: Передавать в новый чат выбранного harness поручение на
+            анализ снимка модуля или исправление сохранённого замечания,
+            предоставлять статус доставки и результат анализа.
 
             boundaries:
               B1: Подтверждать завершение запроса только после появления проверенного отчёта с ожидаемым reviewId.
             invariants:
-              I1: До доставки поручения фиксировать входные данные анализа и использовать HostBridge, привязанный к сессии панели.
+              I1: До доставки поручения фиксировать входные данные анализа и доставлять их через HostBridge выбранного пользователем harness.
               I2: Запросы пользователя
               I3: События системы
-      - index: 161
+      - index: 167
         fact:
-          id: sha256:a3f1a523bc45745d113aa8796ec5a02a0a7f73b884b4d38f9820f2a7ade867a1
+          id: sha256:71be5f7e0af080bc6f9f16b2836f6a26ceac1e0932310fd335a80b31dc3fecfa
           kind: file
           path: web/web-backend/analysis-service/analysis.ts
           start_line: 1
-          end_line: 165
+          end_line: 236
           text: >
-            import type { AnalysisStatus, PreparedAnalysis } from
-            "../../../module-operations/api.js";
+            import type { AnalysisStatus, PreparedAnalysis, FindingFixArgs }
+            from "../../../module-operations/api.js";
 
             import type { ReportStore } from
             "../../../analyse/module-review/report-store.js";
@@ -1052,19 +1057,32 @@ publication:
             import type { DependencySelector, ReviewEntry } from
             "../../../framework/static-report/types.js";
 
-            import { readAnalysisRequest, type AnalysisRequest } from
+            import { readAnalysisRequest, readDelivery, type Delivery, type
+            AnalysisRequest } from
             "../../../module-operations/analysis-record.js";
 
             import { errorDetails } from "../../../node-errors.js";
 
             /**
-             * Сервис сохраняет входные данные и выдаёт поручение для копирования пользователем.
+             * Сервис фиксирует входы, подготавливает поручение и сохраняет подтверждение выбранного хоста.
              * CLI проверяет и импортирует результат по идентификатору запроса.
              * Снимки и область анализа остаются неизменяемыми даже после изменения проекта.
              */
+            import { findingFixPrompt } from
+            "../../../module-operations/finding-fix.js";
+
+            import { reviewFilePath } from
+            "../../../module-operations/module-view.js";
+
+            import { connectHarness, listHarnesses, type Assignment } from
+            "../host-bridge/channel.js";
+
+            import { ApplicationError } from
+            "../../../module-operations/errors.js";
+
             import { randomUUID } from "node:crypto";
 
-            import { mkdir, readFile, writeFile, lstat, rename, rm } from
+            import { mkdir, readFile, writeFile, lstat, link, rename, rm } from
             "node:fs/promises";
 
             import path from "node:path";
@@ -1128,7 +1146,73 @@ publication:
             опубликованной истории проверок. */
 
             export class AnalysisRequests {
-              constructor(public store: SnapshotStore, public reports: ReportStore) { this.store = store; this.reports = reports; }
+              constructor(public store: SnapshotStore, public reports: ReportStore, private workspaceRoot = store.root) {}
+
+              private target() { return { repositoryRoot: this.store.root, workspaceRoot: this.workspaceRoot }; }
+              harnesses() { return listHarnesses(this.target()); }
+
+              private async delivery(directory: string): Promise<Delivery | undefined> {
+                try { return readDelivery(JSON.parse(await readRequestFile(this.store, directory, "delivery.json", MAX_METADATA_BYTES))); }
+                catch (error) { if (errorDetails(error).code !== "ENOENT") throw error; }
+              }
+
+              async deliver(id: string, harnessId: string): Promise<Delivery> {
+                const directory = requestDirectory(this.store, id);
+                const request = await this.status(id);
+                if (!request.delivery && request.status === "completed") throw new ApplicationError("DELIVERY_CONFLICT", "Анализ уже завершён");
+                return this.deliverOnce(directory, harnessId, { ...this.target(), requestId: id, moduleId: request.moduleId,
+                  prompt: this.prompt(request, directory) }, request.delivery);
+              }
+
+              async deliverFix({ id, harnessId, reviewId, findingId }: FindingFixArgs) {
+                const review = (await this.reports.readReviews()).find(entry => entry.review_id === reviewId);
+                if (!review) throw new ApplicationError("NOT_FOUND", "Отчёт модуля не найден");
+                const { report, module_id: moduleId } = review;
+                const finding = report.findings.find(item => item.id === findingId && item.kind !== "contract_change") ??
+                  { id: findingId, assessmentOnly: true };
+                const reviewFile = reviewFilePath(this.store.root, this.reports.work, moduleId);
+                const prompt = findingFixPrompt(this.store.root, { reviewFile, report }, finding);
+                if (!prompt) throw new ApplicationError("INVALID_ARGUMENT", "Замечание недоступно для исправления");
+                const directory = path.join(this.store.directory, "snapshots", "finding-fixes", digest([id, moduleId, reviewId, findingId]).slice(7));
+                await assertStateLocation(this.store.root, this.store.directory, directory);
+                await mkdir(directory, { recursive: true });
+                return this.deliverOnce(directory, harnessId, { ...this.target(), moduleId, prompt, requestId: randomUUID() },
+                  await this.delivery(directory));
+              }
+
+              private async deliverOnce(directory: string, harnessId: string, job: Assignment, existing?: Delivery) {
+                function previous(receipt: Delivery) {
+                  if (receipt.harnessId !== harnessId) throw new ApplicationError("DELIVERY_CONFLICT", "Для этого запроса уже выбран другой harness");
+                  return receipt;
+                }
+                if (existing) return previous(existing);
+                const bridge = await connectHarness(harnessId, this.target());
+                const pending: Delivery = { harnessId, name: bridge.name, state: "pending" };
+                const file = path.join(directory, "delivery.json");
+                const temporary = path.join(directory, ".delivery-" + randomUUID());
+                await assertStateLocation(this.store.root, this.store.directory, file);
+                await writeFile(temporary, JSON.stringify(pending), { flag: "wx" });
+                try {
+                  // Publish a complete claim atomically, even across two backend processes.
+                  try { await link(temporary, file); }
+                  catch (error) {
+                    if (errorDetails(error).code !== "EEXIST") throw error;
+                    return previous(readDelivery(JSON.parse(await readRequestFile(this.store, directory, "delivery.json", MAX_METADATA_BYTES))));
+                  }
+                  let receipt: Delivery;
+                  try {
+                    const chatId = await bridge.start(job);
+                    receipt = { ...pending, state: "sent", chatId };
+                  } catch (error) {
+                    receipt = { ...pending, state: "unknown", message: errorDetails(error).message };
+                  }
+                  // The temporary name shared an inode with the claim. Replace it before writing the final receipt.
+                  await rm(temporary);
+                  await writeFile(temporary, JSON.stringify(receipt), { flag: "wx" });
+                  await rename(temporary, file);
+                  return receipt;
+                } finally { await rm(temporary, { force: true }); }
+              }
 
               /** Экспортирует входы точно выбранного сравнения; не перечитывает текущий код вместо снимка. */
               async create(view: SessionView, module: ComparisonModule): Promise<PreparedAnalysis> {
@@ -1214,7 +1298,8 @@ publication:
                 const directory = requestDirectory(this.store, id);
                 const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json", MAX_METADATA_BYTES)));
                 const entry = (await this.reports.list()).entries.find((item) => item.review_id === request.reviewId);
-                return { ...request, status: entry ? "completed" : "prepared" };
+                const delivery = await this.delivery(directory);
+                return { ...request, status: entry ? "completed" : "prepared", ...(delivery ? { delivery } : {}) };
               }
 
               /** Проверяет привязку к исходному экспорту до передачи результата общему валидатору отчётов. */
@@ -1240,7 +1325,7 @@ publication:
                 return this.status(id);
               }
             }
-      - index: 227
+      - index: 234
         fact:
           id: sha256:c228e220561bf2603f5a5e88b846b7db89a8e4c23640dcd981c8e253ab7db5a4
           kind: module

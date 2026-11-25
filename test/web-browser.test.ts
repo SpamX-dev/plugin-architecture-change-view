@@ -1,3 +1,4 @@
+import { registerHarness } from "../web/web-backend/host-bridge/channel.js";
 import { commitTestFiles, writeModuleTree } from "./support.js";
 /** Real browser acceptance of the built standalone app; never opens a host client. */
 import assert from "node:assert/strict";
@@ -125,6 +126,41 @@ test("module relations build the project, reveal source lines and navigate to th
   await page.getByRole("button",{name:"Функция браузера",exact:true}).waitFor();
 });
 
+async function isolateHarnesses(defer: DeferCleanup) {
+  const registry = await mkdtemp(path.join(os.tmpdir(), "archiview-menu-"));
+  const old = process.env.ARCHIVIEW_BRIDGE_DIR;
+  process.env.ARCHIVIEW_BRIDGE_DIR = registry;
+  defer(async () => {
+    if (old === undefined) delete process.env.ARCHIVIEW_BRIDGE_DIR;
+    else process.env.ARCHIVIEW_BRIDGE_DIR = old;
+    await rm(registry, { recursive: true, force: true });
+  });
+}
+
+test("analysis menu refreshes registrations and delivers only on selecting a harness", browserOptions, async t => {
+  const defer = fixtureCleanup(t);
+  const root = await browserProject(defer);
+  await isolateHarnesses(defer);
+  const app = await createArchiView({ root });
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(await listen(defer, app.server));
+  const trigger = page.locator("#analyze-module");
+  await trigger.click();
+  await page.getByText("Нет подключённых harness", { exact: true }).waitFor();
+  await page.keyboard.press("Escape");
+  let calls = 0;
+  defer(await registerHarness({ kind: "codex", instance: "browser-test", async available() {}, async start(job) {
+    calls++; assert.equal(job.repositoryRoot, root); return "test-chat";
+  } }));
+  await trigger.click();
+  const action = page.getByRole("button", { name: "Codex", exact: true });
+  await action.waitFor();
+  assert.equal(calls, 0);
+  await action.click();
+  await page.locator("#analysis-status").filter({ hasText: "Отправлено в новый чат Codex" }).waitFor();
+  assert.equal(calls, 1);
+});
+
 test("standalone browser loads modules, navigates history, copies analysis and fits mobile", browserOptions, async (t) => {
   const defer = fixtureCleanup(t);
   const root = await browserProject(defer);
@@ -149,6 +185,7 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   await page.getByRole("tab", { name: /^Файлы/ }).click();
   await page.locator("#document-panel").getByText("feature.ts", { exact: true }).waitFor();
   await page.getByRole("tab", { name: "Контракт", exact: true }).click();
+  await page.locator("#analyze-module").click();
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
   await page.getByText("Промпт скопирован. Вставьте его в чат с агентом.", { exact: false }).waitFor();
   const prompt = await page.evaluate(() => navigator.clipboard.readText());
@@ -771,6 +808,7 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   await page.getByRole("heading", { name: "beta feature", exact: true }).waitFor();
   await page.locator("#updated").filter({ hasText: /^Обновлено/ }).waitFor();
   assert.deepEqual(repositoriesRequested, ["beta"]);
+  await page.locator("#analyze-module").click();
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
   await page.getByText("Промпт скопирован. Вставьте его в чат с агентом.", { exact: false }).waitFor();
   const prompt = await page.evaluate(() => navigator.clipboard.readText());
@@ -810,12 +848,14 @@ test("analysis reuses a prepared request after clipboard denial and refreshes on
   });
   const copy = page.getByRole("button", { name: "Копировать промпт", exact: true });
   const preparation = page.waitForResponse(response => new URL(response.url()).pathname === "/api/analysis");
+  await page.locator("#analyze-module").click();
   await copy.click();
   const request = await (await preparation).json();
   const status = page.locator("#analysis-status");
   await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#analyze-module")?.disabled);
   assert.match(await status.textContent() ?? "", /Не удалось скопировать промпт: Нет разрешения/);
   await page.evaluate(() => Reflect.deleteProperty(navigator.clipboard, "writeText"));
+  await page.locator("#analyze-module").click();
   await copy.click();
   await status.filter({hasText: "Ожидаем импорт"}).waitFor();
   assert.equal(preparedCount, 1);
@@ -852,6 +892,7 @@ test("navigation cancels an in-flight analysis poll and resumes it only on retur
     return route.continue();
   });
   await page.goto(origin);
+  await page.locator("#analyze-module").click();
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
   await page.locator("#analysis-status").filter({hasText: "Промпт скопирован."}).waitFor();
   await page.clock.fastForward(3100);
@@ -965,6 +1006,7 @@ test("retry preserves the failed navigation and reloads a comparison only for an
 
 test("retrying a finding link reveals the original clause only after its document loads", browserOptions, async (t) => {
   const defer = fixtureCleanup(t);
+  await isolateHarnesses(defer);
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
   const origin = await listen(defer, app.server);
@@ -976,17 +1018,43 @@ test("retrying a finding link reveals the original clause only after its documen
   review.report.findings = [{ id: "finding-link", kind: "responsibility_gap", severity: "warning",
     certainty: "confirmed", lifecycle: "unknown", summary: "Проверить пункт", clauses: [reference],
     evidence: [{ snapshot: "current", fact_id: review.current.facts[0].id }] }];
+  review.report.findings.unshift({ ...review.report.findings[0], id: "another-finding", summary: "Другое замечание" });
   await app.reports.saveReview(review);
 
   const page = await (await browserContext(defer)).newPage();
   await page.goto(origin);
   await page.locator("#tab-findings").click();
-  await page.getByRole("button", { name: "Копировать промпт исправления", exact: true }).click();
-  await page.locator(".finding-fix-status").filter({hasText: "Промпт скопирован."}).waitFor();
+  const card = page.locator('.finding-card[data-finding-id="finding-link"]');
+  const fix = card.getByRole("button", { name: "Исправить", exact: true });
+  await fix.click();
+  await card.locator(".finding-picker").getByText("Нет подключённых harness").waitFor();
+  await card.locator(".finding-picker").getByRole("button", { name: "Копировать промпт" }).click();
+  await card.locator(".finding-fix-status").filter({hasText: "Промпт скопирован."}).waitFor();
   const fixPrompt = await page.evaluate(() => navigator.clipboard.readText());
   assert.ok(fixPrompt.includes("finding-link"));
   assert.ok(fixPrompt.includes(JSON.stringify(root)));
-  const link = page.locator(".finding-clauses button").first();
+  const delivered: string[] = [];
+  defer(await registerHarness({kind: "dsh", instance: "test-finding", async available() {}, async start(job) {
+    assert.equal(job.repositoryRoot, root);
+    assert.equal(job.moduleId, "browser-project");
+    delivered.push(job.prompt);
+    return "fix-chat";
+  }}));
+  await fix.click();
+  const host = card.locator(".finding-picker").getByRole("button", {name: "DeepSeek Harness", exact: true});
+  await host.waitFor();
+  assert.deepEqual(delivered, []);
+  const sending = page.waitForRequest(request => new URL(request.url()).pathname === "/api/findings/fix");
+  await host.click();
+  await card.locator(".finding-fix-status").filter({hasText: "Поручение отправлено в новый чат DeepSeek Harness."}).waitFor();
+  const args = (await sending).postDataJSON();
+  assert.ok(args.id && args.reviewId === review.review_id && args.findingId === "finding-link");
+  const repeated = await page.request.post(origin + "/api/findings/fix", {data: args});
+  assert.equal((await repeated.json()).chatId, "fix-chat");
+  const invalid = await page.request.post(origin + "/api/findings/fix", {data: {...args, findingId: "absent"}});
+  assert.equal(invalid.status(), 400);
+  assert.deepEqual(delivered, [fixPrompt.replace(/\r\n/g, "\n")]);
+  const link = card.locator(".finding-clauses button").first();
   await link.waitFor();
   const requested: string[] = [];
   await page.route("**/api/module?**", (route) => {

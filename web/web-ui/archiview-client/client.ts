@@ -1,4 +1,4 @@
-import { readAnalysisStatus, readPreparedAnalysis } from "../../../module-operations/analysis-record.js";
+import { readAnalysisStatus, readPreparedAnalysis, readDelivery } from "../../../module-operations/analysis-record.js";
 import type { ArchiViewClient, ClientOptions } from "../types.js";
 import { isRecord } from "../types.js";
 
@@ -32,6 +32,9 @@ export function createArchiViewClient({ fetcher = globalThis.fetch, base = "" }:
     changeClause: args => request("POST", "/api/contract-clause", args),
     changePrototype: args => request("POST", "/api/prototype", args),
     getFileDiff: args => request("GET", "/api/file-diff", args),
+    listHarnesses: args => request("GET", "/api/harnesses", args),
+    deliverFindingFix: args => request("POST", "/api/findings/fix", args, true, readDelivery),
+    deliverAnalysis: args => request("POST", "/api/analysis/deliver", args, true, readDelivery),
     prepareAnalysis: args => request("POST", "/api/analysis", args, true, readPreparedAnalysis),
     getAnalysis: args => request("GET", "/api/analysis/" + encodeURIComponent(args.id), args, false, readAnalysisStatus),
     buildReview: args => request("POST", "/api/reviews", args),

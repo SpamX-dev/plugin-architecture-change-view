@@ -51,7 +51,7 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
   function liveSession(project: string, repository: string, deferPublication: boolean) {
     let current = sessions.get(project);
     if (!current) {
-      current = sessionOptions(project, repository).then(options => createArchiViewSession({ ...options, deferPublication }));
+      current = sessionOptions(project, repository).then(options => createArchiViewSession({ ...options, workspaceRoot: root, deferPublication }));
       sessions.set(project, current);
       current.catch(() => { if (sessions.get(project) === current) sessions.delete(project); });
     }
@@ -133,6 +133,9 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
     async changeClause(args) { return (await viewSession(args.repository, args.view)).changeClause(args); },
     async changePrototype(args) { return (await viewSession(args.repository, args.view)).changePrototype(args); },
     async getFileDiff(args) { return (await readableView(args)).getFileDiff(args); },
+    async listHarnesses(args) { return (await open(selection(args.repository))).listHarnesses(args); },
+    async deliverFindingFix(args) { return (await open(selection(args.repository))).deliverFindingFix(args); },
+    async deliverAnalysis(args) { return (await open(selection(args.repository))).deliverAnalysis(args); },
     async prepareAnalysis(args) { return (await viewSession(args.repository, args.view)).prepareAnalysis(args); },
     async getAnalysis(args) { return (await open(selection(args.repository))).getAnalysis(args); },
     async buildReview(args) { return (await viewSession(args.repository, args.view)).buildReview(args); },

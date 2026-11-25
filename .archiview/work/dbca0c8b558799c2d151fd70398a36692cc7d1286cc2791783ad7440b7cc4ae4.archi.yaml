@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-application
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 10103072cb443937c6db5ec96d4e01a7d62a467d81d86abf47019e56bfdceae9
+check_hash: 3e5c3154f3e49194794b47df8349ace1a538330c97968caf281500c003fe7009
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -19,8 +19,8 @@ input_manifest:
   current:
     exists: true
     directory: web/web-backend
-    self_digest: sha256:d05a81e2064049d30e815a54da65bbdd77abd64b7aecb6e0f4eacb8b96c9f2ad
-    subtree_digest: sha256:b100d2c55a969877392fd6c0305e3757a1edb45f91b59caf8fc0716445a83879
+    self_digest: sha256:b61c5c9b4890d6e4c7298c8a949d6693845bbb5b2e9ff0ea8809a398fd80c614
+    subtree_digest: sha256:9cf8c5f08d9b160c18fed639fa7ce9c7667b4c7a532853f8da6e4f5a2150acc0
   analyzer:
     name: archiview-structure
     version: 1.1.0
@@ -281,10 +281,10 @@ current:
         digest: sha256:d8e36acfbff85d7ca84b51e9030e9d8b7a7b545c848e4d970d506b6912b4f48b
         normalization: text-lf/v1
       - path: web/web-backend/session.ts
-        digest: sha256:a7ccbead53f71c17b509e76a8c0af50f9e3bbac9a25958139f5b1b93d86f1669
+        digest: sha256:1e8e464dcbfc294f883bfb0088d0a93bb8740daa36f8680541eb17eeb2e6fccc
         normalization: text-lf/v1
       - path: web/web-backend/workspace-session.ts
-        digest: sha256:d515cf1acb25aec3664907a55427e81d8eb2c227b4859305ca50c1904f2cc116
+        digest: sha256:560071c4e3766ae0da7c1164db6c0e3953ad19734dba9ab34533f149ae153304
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -317,11 +317,11 @@ current:
       - module_id: architecture-change-view
         section: invariants
         id: I10
-        text: Приложение поддерживает встроенную панель Codex.
+        text: Приложение поддерживает интеграцию с Codex.
       - module_id: architecture-change-view
         section: invariants
         id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
       - module_id: architecture-change-view
         section: invariants
         id: I9
@@ -336,7 +336,7 @@ current:
         section: boundaries
         id: B3
         text: Интерфейс отображает полученные документы и исходники только как данные.
-  technical_digest: sha256:d05a81e2064049d30e815a54da65bbdd77abd64b7aecb6e0f4eacb8b96c9f2ad
+  technical_digest: sha256:b61c5c9b4890d6e4c7298c8a949d6693845bbb5b2e9ff0ea8809a398fd80c614
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -350,10 +350,10 @@ current:
         digest: sha256:d8e36acfbff85d7ca84b51e9030e9d8b7a7b545c848e4d970d506b6912b4f48b
         normalization: text-lf/v1
       - path: web/web-backend/session.ts
-        digest: sha256:a7ccbead53f71c17b509e76a8c0af50f9e3bbac9a25958139f5b1b93d86f1669
+        digest: sha256:1e8e464dcbfc294f883bfb0088d0a93bb8740daa36f8680541eb17eeb2e6fccc
         normalization: text-lf/v1
       - path: web/web-backend/workspace-session.ts
-        digest: sha256:d515cf1acb25aec3664907a55427e81d8eb2c227b4859305ca50c1904f2cc116
+        digest: sha256:560071c4e3766ae0da7c1164db6c0e3953ad19734dba9ab34533f149ae153304
         normalization: text-lf/v1
     contract:
       id: archiview-application
@@ -380,11 +380,11 @@ current:
       - module_id: architecture-change-view
         section: invariants
         id: I10
-        text: Приложение поддерживает встроенную панель Codex.
+        text: Приложение поддерживает интеграцию с Codex.
       - module_id: architecture-change-view
         section: invariants
         id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
       - module_id: architecture-change-view
         section: invariants
         id: I9
@@ -405,14 +405,15 @@ current:
         contract:
           id: archiview-analysis-service
           kind: module
-          purpose: Подготавливать поручение по модулю и снимку, передавать его в сессию
-            панели и предоставлять статус и результат анализа.
+          purpose: Передавать в новый чат выбранного harness поручение на анализ снимка
+            модуля или исправление сохранённого замечания, предоставлять статус
+            доставки и результат анализа.
           boundaries:
             B1: Подтверждать завершение запроса только после появления проверенного отчёта с
               ожидаемым reviewId.
           invariants:
-            I1: До доставки поручения фиксировать входные данные анализа и использовать
-              HostBridge, привязанный к сессии панели.
+            I1: До доставки поручения фиксировать входные данные анализа и доставлять их
+              через HostBridge выбранного пользователем harness.
             I2: Запросы пользователя
             I3: События системы
         document_state: documented
@@ -433,8 +434,8 @@ current:
         contract:
           id: archiview-host-bridge
           kind: module
-          purpose: Задавать интерфейс передачи поручений в чат привязанной сессии с
-            подтверждением доставки.
+          purpose: Обнаруживать живые регистрации harness и передавать поручение
+            выбранному экземпляру с подтверждением создания чата.
           boundaries: {}
           invariants: {}
         document_state: documented
@@ -464,58 +465,58 @@ current:
               рабочей папки пользователя.
           invariants: {}
         document_state: documented
-  self_digest: sha256:45098040ddd023b96644fef5e3e2ed03df9607ea74ee63ffa6ce561899a7da39
+  self_digest: sha256:8ffaa26a91aa93c8e9e741381bd7414a19f14fde85c50aa8e8b53fc0d96e69af
   subtree:
-    self: sha256:d05a81e2064049d30e815a54da65bbdd77abd64b7aecb6e0f4eacb8b96c9f2ad
+    self: sha256:b61c5c9b4890d6e4c7298c8a949d6693845bbb5b2e9ff0ea8809a398fd80c614
     children:
       - module_id: archiview-analysis-service
-        digest: sha256:3f4a1e46d8c941c23601c5a60cdd7f66b1898eaef0e47a7131e1633fb607d21d
+        digest: sha256:f95b285f95db9fa4485fd5e1c10f39c32a4cd2715ae1932e2bdf814642998ff8
       - module_id: archiview-file-watcher
-        digest: sha256:47586ff7b293260268a72e5033ebdcf9631931fdd8100edf9f0791f23dfa04f6
+        digest: sha256:4b4f969f1feebf7ac580220a473416c5b9becf13cd57f02785f04bc594a52f13
       - module_id: archiview-host-bridge
-        digest: sha256:4f669d7c48e826b45a75eef45bf916acde47a26a4b75b470d9d7805215ed6daf
+        digest: sha256:5c5653844f2a4ac64b1419a293a20b96197b3dddbdcd39a9267899c5594deb2e
       - module_id: archiview-http
-        digest: sha256:87b4cde57172e3b8d582675573c2ccb6d881cb8f367961f6dcb4fcd9cb9b17a9
+        digest: sha256:b19a3b87123a5cf3cd57fdf99fb90e7655df36ae6cf68be3da062a4f9e7b54ac
       - module_id: archiview-node-runtime
-        digest: sha256:67351205d4b59b3c9dc4bc47236742b47434e7fa1ba3c884c2572061131bbfd0
-  subtree_digest: sha256:b100d2c55a969877392fd6c0305e3757a1edb45f91b59caf8fc0716445a83879
+        digest: sha256:52ea2c0a94174253b5b86c8a0bb68c2f985eb2669392e58d3adb212343c2efd4
+  subtree_digest: sha256:9cf8c5f08d9b160c18fed639fa7ce9c7667b4c7a532853f8da6e4f5a2150acc0
   semantic_subtree:
-    self: sha256:45098040ddd023b96644fef5e3e2ed03df9607ea74ee63ffa6ce561899a7da39
+    self: sha256:8ffaa26a91aa93c8e9e741381bd7414a19f14fde85c50aa8e8b53fc0d96e69af
     children:
       - module_id: archiview-analysis-service
-        digest: sha256:2e34d88422e8990eb6e90dbfa66ad22975f8a11ae677abb1008fe4a7c20ff436
+        digest: sha256:e1f4d584dd7ad2bc6de6cf324d9a3157aa3ac6ee2fffef4d886812c31f128a3f
       - module_id: archiview-file-watcher
-        digest: sha256:229f026d01e0943fabde26a648f144f615c16405fdd637e2855eccc7369ddf73
+        digest: sha256:1416c1bebf0d29a3ef500695a75aa7b9c81826f13c7acac7bd1fd2c4de883104
       - module_id: archiview-host-bridge
-        digest: sha256:79462862739ce8b512f84e243018dce8e672926e301ac1cb346f09c0699b77b3
+        digest: sha256:4e69efd4c3dc2fc66ca7795172d61b82b90dff0ac281a84351f9738e9f2d1d19
       - module_id: archiview-http
-        digest: sha256:c2f5a45e77e1744b68fbaaf707f9a6303bc3cfba9becbebe1a06aaa7684d1c95
+        digest: sha256:af5d2456e025a0021aae6d7c7990068e1e4fe6b756c6c3209eae9874b5f489dd
       - module_id: archiview-node-runtime
-        digest: sha256:2f5c01f5a9bbdf7539fa62fb0461e6be90f5addee5e85b8281636dd9ce853f15
-  semantic_subtree_digest: sha256:3193b75216e21283d751141127e89aa21fb2b24162962357b2058c11926a1b19
+        digest: sha256:4c7080bcabcfad7d399b1810eb9f2194a32612dad1ea5428ab316188626febbb
+  semantic_subtree_digest: sha256:b330d472f9d0cb0b49cd42e7aea38eae0e8630a135b5b8203187cb683811ceab
 change:
   existence: retained
   own: true
   own_code: true
   own_contract: false
-  inherited_constraints: false
-  descendants: false
-  child_composition: false
+  inherited_constraints: true
+  descendants: true
+  child_composition: true
   moved: false
 structure:
   complete: true
   diagnostics: []
   document_state: documented
 publication:
-  generation: 244
-  comparison_key: sha256:3043961649f6014fa49bc705f13aa1181b9649a26cf4e1282c4247c704af9099
+  generation: 251
+  comparison_key: sha256:279dc9637de4616f30531ddeb5a9d4c92487e10157d20831403a768cf3e1eb0e
   baseline:
     metadata:
       id: git-d9ef55c491050e3727283582fcc1018d200da614
       digest: sha256:d38f9e4f50fa68a2feb9b2fad555727b5fd5eff723b87d9a15508a042bcafdff
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-24T20:29:15.750Z
+      capturedAt: 2026-11-24T18:52:06.357Z
       kind: git
       revision: d9ef55c491050e3727283582fcc1018d200da614
       label: HEAD
@@ -1484,48 +1485,48 @@ publication:
           text: '{"contract":"documented","format":"yaml","sources":["web/web-backend/repository-watch.ts","web/web-backend/session.ts","web/web-backend/workspace-session.ts"]}'
   current:
     metadata:
-      id: launch-a1a7aab24135b74e55b35cf29028e950a323894d13c1b8e1035737c070750659
-      digest: sha256:c230fe958537e7855cedec94b08355dbd5a500541e13caed7ef1fc0e601236be
+      id: launch-0285bb58b3be6e60f81cc6d866233a1193642f6598e4c3a1cd3d672468209736
+      digest: sha256:dbf5da7c05ec42e1778e8479c1cafcaa95b2abfb25ef79df2ceabccd5bc8ecb7
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-24T20:29:20.618Z
+      capturedAt: 2026-11-24T18:52:11.909Z
       kind: launch
       label: Начальное состояние
-      fingerprint: a1a7aab24135b74e55b35cf29028e950a323894d13c1b8e1035737c070750659
+      fingerprint: 0285bb58b3be6e60f81cc6d866233a1193642f6598e4c3a1cd3d672468209736
       complete: true
       diagnostics: []
       evidenceLimitations: []
       observations:
         architecture-change-view:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 697
+          revision: 651
         archiview-distribution:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 260
+          revision: 214
         archiview-skills:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 246
+          revision: 200
         archiview-module-boundaries-skill:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 253
+          revision: 207
         architecture-core:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 17
         archiview-application:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 306
+          revision: 260
         archiview-http:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 265
+          revision: 219
         archiview-codex:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 277
+          revision: 231
         archiview-contracts:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 255
+          revision: 209
         dsh-adapter:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 270
+          revision: 224
         dsh-client-panel:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 10
@@ -1534,34 +1535,34 @@ publication:
           revision: 12
         archiview-project-location:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 257
+          revision: 211
         archiview-reports:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 254
+          revision: 208
         archiview-reviews:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 249
+          revision: 203
         archiview-node-runtime:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 251
+          revision: 205
         archiview-serialization:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 249
+          revision: 203
         archiview-snapshots:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 259
+          revision: 213
         archiview-storage:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 12
         architecture-tests:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 316
+          revision: 270
         architecture-web:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 256
+          revision: 210
         archiview-client:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 284
+          revision: 238
         prototype-smoke-1674b57d:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
@@ -1636,7 +1637,7 @@ publication:
           revision: 13
         archiview-analyse:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 247
+          revision: 201
         archiview-analyse-type:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
@@ -1648,70 +1649,70 @@ publication:
           revision: 2
         archiview-bridges:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 262
+          revision: 216
         archiview-cli:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 248
+          revision: 202
         archiview-cli-operation:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
         archiview-framework:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 255
+          revision: 209
         archiview-project-types:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 240
+          revision: 194
         archiview-tools:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 240
+          revision: 194
         archiview-analysis-service:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 253
+          revision: 207
         archiview-file-service:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
         archiview-host-bridge:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 246
+          revision: 200
         archiview-web-api-client:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 244
+          revision: 198
         archiview-module-presenter:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 250
+          revision: 204
         archiview-views:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 248
+          revision: 202
         archiview-workspace-presenter:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 242
+          revision: 196
         archiview-file-watcher:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 247
+          revision: 201
         archiview-git-changes:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 253
+          revision: 207
         archiview-git-changes-report:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
         archiview-module-operations:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 266
+          revision: 220
         archiview-project-context:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 245
+          revision: 199
         archiview-module-access:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 2
         archiview-module-review:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 241
+          revision: 195
         archiview-module-relations:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 245
+          revision: 199
         archiview-relation-model:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 239
+          revision: 193
     module_index: 26
     module:
       directory: web/web-backend
@@ -1774,13 +1775,13 @@ publication:
           hash: bd4a99380e98ef4a233157dd4537a535564e50a6
           mode: "100644"
         - path: web/web-backend/session.ts
-          hash: a688eb75630d997901e56e0af5306e57e4d8c2cc
+          hash: 03ac48f2b0770b6175a884ce1b8f13cf6b2f1cdf
           mode: "100644"
         - path: web/web-backend/workspace-session.ts
-          hash: 12e4c3fd04b8ff65ed99001151da863e1947140c
+          hash: e1144270c7b2facf15c4c1f6af25561331c63f2e
           mode: "100644"
       sourceFiles: 3
-      fingerprint: 7445c82f42bfe8885a28664a1d6de2db759c62a00916bc75abae5a2e1b91dd92
+      fingerprint: 4764a74be352fdeae73406c814c1f3ae74534ae7c046bad66ecf9138596d7210
     facts:
       - index: 6
         fact:
@@ -1811,7 +1812,7 @@ publication:
               B7: Сессия подтверждает завершение содержательной проверки только после импорта результата.
               B8: В поручение агенту не входит определение зависимостей модулей.
             invariants: {}
-      - index: 162
+      - index: 168
         fact:
           id: sha256:274451226b42e17dca83e5431fba37f990fbd7eaabcc349e4e97051d55b880d3
           kind: file
@@ -1819,7 +1820,7 @@ publication:
           start_line: 1
           end_line: 1
           text: ""
-      - index: 165
+      - index: 171
         fact:
           id: sha256:2353615ee1588d0b8b0957fbc779c5625abe8949453cae7adb0608df71515564
           kind: file
@@ -1965,17 +1966,17 @@ publication:
 
               close() { this.closed = true; this.stop(); }
             }
-      - index: 167
+      - index: 173
         fact:
-          id: sha256:391a7d8549bb2c293d75f6e22b3e6f893455fa7a95fd5616957714ed67cc2b20
+          id: sha256:12a5cdf33086e26ed79c696c97c0e1916304153c414bd99d78c0e84cf3dfbf90
           kind: file
           path: web/web-backend/session.ts
           start_line: 1
-          end_line: 471
+          end_line: 474
           text: >
             import type { ComparisonView, ModuleDetail, SessionOperations,
-            ComparisonArgs, FileDiffArgs, ModuleArgs, SnapshotArgs } from
-            "../../module-operations/api.js";
+            FindingFixArgs, ComparisonArgs, FileDiffArgs, ModuleArgs,
+            SnapshotArgs } from "../../module-operations/api.js";
 
             import { fileDiff } from "../../module-operations/file-diff.js";
 
@@ -2050,14 +2051,15 @@ publication:
             запросе данных. */
 
             export async function createArchiViewSession({ root: requestedRoot,
-            stateDirectory, deferPublication = true }: { root: string;
-            stateDirectory?: string; deferPublication?: boolean }) {
+            stateDirectory, workspaceRoot, deferPublication = true }: { root:
+            string; stateDirectory?: string; workspaceRoot?: string;
+            deferPublication?: boolean }) {
               const root = await realpath(requestedRoot);
               const { store, migration } = await openProjectHistory(root, stateDirectory);
               const reviews = new ReviewStore(store);
               const reports = new ReportStore(store);
               const changes = new ChangeHistory(store);
-              const analysis = new AnalysisRequests(store, reports);
+              const analysis = new AnalysisRequests(store, reports, workspaceRoot ?? root);
               const reader = new GitTreeReader(root, store.snapshotRoot);
               const watcher = new RepositoryWatch(root, store.directory);
               const editor = createContractEditor(root);
@@ -2490,16 +2492,19 @@ publication:
                 return relations.getRelationSource(root, store.directory, view.currentSnapshot, args.file);
               };
               const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, getRelations, buildRelations, getRelationSource,
-                changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot } satisfies SessionOperations;
+                changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot,
+                listHarnesses: (_args: {repository?: string}) => analysis.harnesses(),
+                deliverFindingFix: (args: FindingFixArgs) => analysis.deliverFix(args),
+                deliverAnalysis: (args: {id: string; harnessId: string}) => analysis.deliver(args.id, args.harnessId) } satisfies SessionOperations;
               return { root, store, migration, reviews, reports, changes, analysis, startupComparison, ...operations, close: () => watcher.close() };
             }
-      - index: 169
+      - index: 175
         fact:
-          id: sha256:39db014c5716576744c8a23bc0559b4f1f06be02ce78870c4498fe220ea0f09c
+          id: sha256:e8b01efe67ba22ab32f6f06629987f42d692317e4e612a9ce2009ecd586d536b
           kind: file
           path: web/web-backend/workspace-session.ts
           start_line: 1
-          end_line: 146
+          end_line: 149
           text: >
             import { createHash } from "node:crypto";
 
@@ -2572,7 +2577,7 @@ publication:
               function liveSession(project: string, repository: string, deferPublication: boolean) {
                 let current = sessions.get(project);
                 if (!current) {
-                  current = sessionOptions(project, repository).then(options => createArchiViewSession({ ...options, deferPublication }));
+                  current = sessionOptions(project, repository).then(options => createArchiViewSession({ ...options, workspaceRoot: root, deferPublication }));
                   sessions.set(project, current);
                   current.catch(() => { if (sessions.get(project) === current) sessions.delete(project); });
                 }
@@ -2654,6 +2659,9 @@ publication:
                 async changeClause(args) { return (await viewSession(args.repository, args.view)).changeClause(args); },
                 async changePrototype(args) { return (await viewSession(args.repository, args.view)).changePrototype(args); },
                 async getFileDiff(args) { return (await readableView(args)).getFileDiff(args); },
+                async listHarnesses(args) { return (await open(selection(args.repository))).listHarnesses(args); },
+                async deliverFindingFix(args) { return (await open(selection(args.repository))).deliverFindingFix(args); },
+                async deliverAnalysis(args) { return (await open(selection(args.repository))).deliverAnalysis(args); },
                 async prepareAnalysis(args) { return (await viewSession(args.repository, args.view)).prepareAnalysis(args); },
                 async getAnalysis(args) { return (await open(selection(args.repository))).getAnalysis(args); },
                 async buildReview(args) { return (await viewSession(args.repository, args.view)).buildReview(args); },
@@ -2664,7 +2672,7 @@ publication:
               }
               return { ...operations, session, root, close, get showWorkspace() { return repositories.some((candidate) => candidate !== "."); } };
             }
-      - index: 226
+      - index: 233
         fact:
           id: sha256:9a9c0ce45fb1a6b21ad9a4d805b432ccf33fbe6c7382bb84570f1fa129951199
           kind: module

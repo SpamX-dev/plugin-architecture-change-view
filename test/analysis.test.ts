@@ -8,6 +8,7 @@ import test, { type TestContext } from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { parse, stringify } from "yaml";
+import { registerHarness } from "../web/web-backend/host-bridge/channel.js";
 import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
 import { createArchiView } from "../web/web-backend/web-service/http.js";
 import { digest } from "../framework/serialization/digest.js";
@@ -114,6 +115,77 @@ async function prepare(app: { url: string }, view: { id: string }, module = "chi
   return fetch(app.url + "/api/analysis", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ view: view.id, path: module }) });
 }
+
+test("only live harness registrations can receive a request, and concurrent delivery creates one chat", async t => {
+  const root = await repositoryFixture(t);
+  const folder = await mkdtemp(path.join(os.tmpdir(), "archiview-registrations-"));
+  const previous = process.env.ARCHIVIEW_BRIDGE_DIR;
+  process.env.ARCHIVIEW_BRIDGE_DIR = folder;
+  t.after(async () => {
+    if (previous === undefined) delete process.env.ARCHIVIEW_BRIDGE_DIR;
+    else process.env.ARCHIVIEW_BRIDGE_DIR = previous;
+    await rm(folder, { recursive: true, force: true });
+  });
+  let calls = 0;
+  let acknowledge!: () => void;
+  const ack = new Promise<void>(resolve => { acknowledge = resolve; });
+  let entered!: () => void;
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  const close = await registerHarness({ kind: "dsh", instance: "test-dsh", async available() {},
+    async start(job) {
+      calls++;
+      assert.equal(job.repositoryRoot, root);
+      assert.equal(job.moduleId, "child");
+      assert.ok(job.prompt.includes(job.requestId));
+      entered();
+      await ack;
+      return "test-chat";
+    } });
+  try {
+    const app = await serve(t, root);
+    const view = await (await fetch(app.url + "/api/comparison?baseline=initial")).json();
+    const request = await (await prepare(app, view)).json();
+    const list = async () => (await (await fetch(app.url + "/api/harnesses")).json()).harnesses;
+    const [host] = await list();
+    const post = () => fetch(app.url + "/api/analysis/deliver", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: request.id, harnessId: host.id }) });
+    const send = post();
+    await started;
+    assert.equal((await (await post()).json()).state, "pending");
+    acknowledge();
+    const receipt = await (await send).json();
+    assert.equal(receipt.state, "sent");
+    assert.equal(receipt.chatId, "test-chat");
+    assert.deepEqual(await (await post()).json(), receipt);
+    assert.equal(calls, 1);
+    const status = await (await fetch(app.url + "/api/analysis/" + request.id)).json();
+    assert.equal(status.status, "prepared");
+    assert.deepEqual(status.delivery, receipt);
+    await close();
+    assert.deepEqual(await list(), []);
+    const next = await (await prepare(app, view)).json();
+    const offline = await fetch(app.url + "/api/analysis/deliver", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: next.id, harnessId: host.id }) });
+    assert.equal(offline.status, 409);
+
+    let uncertainCalls = 0;
+    const stop = await registerHarness({ kind: "codex", instance: "lost-ack", async available() {}, async start() {
+      uncertainCalls++;
+      throw new Error("Хост закрыл соединение после запроса");
+    } });
+    try {
+      const [codex] = await list();
+      const deliver = () => app.deliverAnalysis({id: next.id, harnessId: codex.id});
+      assert.equal((await deliver()).state, "unknown");
+      const reopened = await createWorkspaceSession({root});
+      try {
+        assert.equal((await reopened.getAnalysis({id: next.id})).delivery?.state, "unknown");
+        assert.equal((await reopened.deliverAnalysis({id: next.id, harnessId: codex.id})).state, "unknown");
+      } finally { await reopened.close(); }
+      assert.equal(uncertainCalls, 1);
+    } finally { await stop(); }
+  } finally { acknowledge(); await close(); }
+});
 
 test("analysis exports exactly the selected view, imports through CLI once, and becomes stale against changed code", async (t) => {
   const root = await repositoryFixture(t);
