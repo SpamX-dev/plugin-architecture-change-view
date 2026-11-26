@@ -1,10 +1,10 @@
-import type { ArchiViewClient, ComparisonView, ModuleDetail } from "../types.js";
-import { errorMessage } from "../types.js";
+import type { ArchiViewClient, ComparisonView, ModuleDetail } from "../view-model/types.js";
+import { errorMessage } from "../view-model/types.js";
 import { el } from "../views/dom.js";
 import { openRelationSource, renderDependencyCycles, renderRelations } from "../views/relations.js";
 import type { Site } from "../../../framework/module-relations/types.js";
 
-export function createRelationsPanel(client: ArchiViewClient) {
+export function createRelationsPanel(client: ArchiViewClient, loadStatuses: (view: ComparisonView) => Promise<void>) {
   const builds = new Map<string, Promise<unknown>>();
   return async function show(panel: HTMLElement, view: ComparisonView, module: ModuleDetail, select: (key: string) => void, mode: "relations" | "cycles" = "relations") {
     const box = el("div", "relations-panel");
@@ -25,7 +25,9 @@ export function createRelationsPanel(client: ArchiViewClient) {
     };
     action.onclick = () => {
       if (!builds.has(view.root)) {
-        const task = client.buildRelations(args).finally(() => builds.delete(view.root));
+        const task = client.buildRelations(args).then(() => {
+          if (!view.watchCursor) void loadStatuses(view);
+        }).finally(() => builds.delete(view.root));
         builds.set(view.root, task);
       }
       void show(panel, view, module, select, mode);

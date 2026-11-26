@@ -1,4 +1,4 @@
-import type { Check, ClauseReference, Contract, Finding, Observation, ReviewBundle, Side } from "../web/web-ui/types.js";
+import type { Check, ClauseReference, Contract, Finding, Observation, ReviewBundle, Side } from "../web/web-ui/view-model/types.js";
 /** Проверяет состав видимого локального чеклиста без изменения сохранённого отчёта. */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -6,7 +6,7 @@ import { compareContracts } from "../analyse/git-changes/contract-diff.js";
 import { moduleAnalysisStatus } from "../web/web-ui/views/review-status.js";
 import { ownClauseGroups, reviewVersions, observedVersionGroups, evidenceLabel,
   reviewFindingItems, freshnessLabel, clauseFindingTargets, moduleFindingCount, treeFindingCounts,
-  findingFixPrompt, savedClauseText, savedClauseMatchesContract, clauseSectionLabel, reviewFreshnessStates } from "../web/web-ui/views/review.js";
+  findingFixPrompt, savedClauseText, savedClauseMatchesContract, clauseSectionLabel, reviewFreshnessStates } from "../web/web-ui/review-entry.js";
 
 /** Фикстура старого отчёта содержит локальные, родительские и исторические проверки. */
 function historicalReview(): ReviewBundle {

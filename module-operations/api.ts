@@ -42,6 +42,7 @@ export type TimelineEntry = Pick<Snapshot, "id" | "kind" | "label" | "revision" 
   & { capturedAt?: string };
 export interface ModuleReviewState {
   analyses?: Partial<Record<AnalysisType, { id: string; openFindings: number }>>;
+  dependencyCycleCount?: number;
   descendantsNeedAnalysis?: boolean;
   review?: {
     id: string;

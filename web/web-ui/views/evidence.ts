@@ -1,4 +1,4 @@
-import type { ReviewBundle, EvidenceReference, Fact, Side } from "../types.js";
+import type { ReviewBundle, EvidenceReference, Fact, Side } from "../view-model/types.js";
 import { el } from "./dom.js";
 
 /** Показывает зафиксированный текст доказательства с происхождением и координатами. */

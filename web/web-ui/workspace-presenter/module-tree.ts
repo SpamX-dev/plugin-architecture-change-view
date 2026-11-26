@@ -1,6 +1,6 @@
-import type { ComparisonView, ModuleSummary } from "../types.js";
+import type { ComparisonView, ModuleSummary } from "../view-model/types.js";
 import { moduleFindingCount, treeFindingCounts } from "./tree-findings.js";
-import { treeParents } from "./tree-paths.js";
+import { treeParents } from "../view-model/tree-paths.js";
 import { moduleAnalysisStatus } from "../views/review-status.js";
 import { createTreeView, type Filter, type ModuleRow, type TreeSection } from "../views/module-tree.js";
 
@@ -79,11 +79,13 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     }
     const modules = view.modules.filter(module => visible.has(module.key));
     const searching = search.length > 0 || filter !== "all";
-    const findingCounts = treeFindingCounts(modules, searching ? visible : expanded, parents);
+    const openRows = searching ? visible : expanded;
+    const findingCounts = treeFindingCounts(modules, openRows, parents);
+    const cycleCounts = treeFindingCounts(modules, openRows, parents, module => module.dependencyCycleCount ?? 0);
     const selected = getView()?.workspace?.repository === repository ? getSelection() : null;
     const rows = new Map<string, ModuleRow>();
     for (const module of modules) {
-      const open = searching || expanded.has(module.key);
+      const open = openRows.has(module.key);
       const findings = findingCounts.get(module.key) ?? 0;
       const ownFindings = moduleFindingCount(module);
       let finding: string | undefined;
@@ -94,8 +96,12 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
         finding = module.reviewStatus?.self?.current.current_violation ?
           "Сохранённая проверка выявила нарушение в модуле" : "Нарушение во вложенных модулях";
       }
+      const cycles = cycleCounts.get(module.key) ?? 0;
+      const ownCycles = module.dependencyCycleCount ?? 0;
+      const cycle = cycles ? "Циклические зависимости " + (ownCycles === cycles ? "модуля" :
+        ownCycles ? "в модуле и вложенных модулях" : "во вложенных модулях") + " · " + cycles : undefined;
       rows.set(module.key, { module, selected: selected === module.key, context: !matches.has(module.key), expanded: open,
-        finding, analysis: moduleAnalysisStatus(module, open ? "self" : "subtree"), children: [] });
+        finding, cycle, analysis: moduleAnalysisStatus(module, open ? "self" : "subtree"), children: [] });
     }
     const roots: ModuleRow[] = [];
     for (const row of rows.values()) {

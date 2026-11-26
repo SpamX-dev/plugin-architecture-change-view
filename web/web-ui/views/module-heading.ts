@@ -1,8 +1,8 @@
-import type { ModuleSummary } from "../types.js";
-import { byId, el, findingBug } from "./dom.js";
+import type { ModuleSummary } from "../view-model/types.js";
+import { byId, el, findingBug, findingMarker } from "./dom.js";
 import { badge } from "./change-status.js";
 import { moduleAnalysisStatus } from "./review-status.js";
-import { moduleTrail } from "../module-presenter/module-path.js";
+import { moduleTrail } from "../view-model/tree-paths.js";
 
 export function bindCardNavigation(actions: { createPrototype(): void; copyPath(): void; selectTab(tab: string): void }) {
   const tabs = document.querySelectorAll<HTMLElement>("[data-tab]");
@@ -64,11 +64,20 @@ export function renderHeading(module: ModuleSummary, modules: ModuleSummary[], s
   document.title = module.name + " — ArchiView";
 }
 
-export function renderFindingCount(module: Pick<ModuleSummary, "analyses">) {
+export function renderFindingCount(module: Pick<ModuleSummary, "analyses" | "dependencyCycleCount">, cycleCount = module.dependencyCycleCount ?? 0) {
   for (const [type, label] of [["grasp", "GRASP"], ["implementation", "Реализация"]] as const) {
     const count = module.analyses?.[type]?.openFindings ?? 0;
     const tab = byId(type === "grasp" ? "tab-grasp" : "tab-implementation");
     tab.textContent = count ? label + " · " + count : label;
     if (count) tab.prepend(findingBug());
+    if (type !== "implementation") continue;
+    tab.removeAttribute("aria-description");
+    if (cycleCount) {
+      const description = "Циклические зависимости · " + cycleCount;
+      const marker = findingMarker(description, "cycle");
+      marker.setAttribute("aria-hidden", "true");
+      tab.setAttribute("aria-description", description);
+      tab.prepend(marker);
+    }
   }
 }

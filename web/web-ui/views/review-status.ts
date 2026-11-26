@@ -1,8 +1,8 @@
-import type { Freshness, Coverage, Reason, ReviewBundle } from "../types.js";
+import type { Freshness, Coverage, Reason, ReviewBundle } from "../view-model/types.js";
 
 /** Поддерево добавляет сигнал только свёрнутой строке; карточка показывает собственный анализ. */
 export function moduleAnalysisStatus(module: {
-  analyses?: import("../types.js").ModuleSummary["analyses"];
+  analyses?: import("../view-model/types.js").ModuleSummary["analyses"];
   descendantsNeedAnalysis?: boolean;
   reviewStatus?: { self?: { current?: Freshness }; subtree?: { current?: Freshness } } | null;
 }, scope: "self" | "subtree" = "self") {

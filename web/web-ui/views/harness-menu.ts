@@ -1,5 +1,5 @@
 import type { HarnessOption } from "../../../module-operations/analysis-record.js";
-import { errorMessage } from "../types.js";
+import { errorMessage } from "../view-model/types.js";
 
 interface MenuActions {
   list(): Promise<{ harnesses: HarnessOption[] }>;

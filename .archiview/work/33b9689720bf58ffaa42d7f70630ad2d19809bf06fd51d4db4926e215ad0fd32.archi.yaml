@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-implementation
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 9731f2849b83835261e7f4d30a311fb50568b78374130e2f842dbb9a98f94e25
+check_hash: 4156d81a614bc37846fd827c487b5cac2f8db7c6ebe58ffbc18584d7379ed5ce
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,12 +10,12 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: a01e0166d2b853bc85b9ea49e163005902d9c8b8
+      id: d8304bd7550f4527428f2a07736bc14f45427e6a
     state:
       exists: true
       directory: analyse/implementation
-      self_digest: sha256:63816497e139e3abe0f040bfb3bb9127a6655dcca1e5bb41f5ceef68fe18030f
-      subtree_digest: sha256:7993bdd334f10abb5f8a6a4ed13534748b37a0678e5993bb0bf33f31c9643359
+      self_digest: sha256:8b1ecc1be0c06a775b127e2700c803c9438b57c8d37588f1b3f6a6756d556180
+      subtree_digest: sha256:4bace9e18c76da0a7047ec0a97183b0656c3858b6bb1b8b471671795a0303c92
   current:
     exists: true
     directory: analyse/implementation
@@ -38,14 +38,20 @@ baseline:
       - path: analyse/implementation/analysis.ts
         digest: sha256:d92cf2152d2280f38c6f5a51cc51c233bc4000f2b8b6d15a594ebf3191038130
         normalization: text-lf/v1
+      - path: analyse/implementation/dependency-cycles.ts
+        digest: sha256:884ce16ffe1e6d7e0b3b69ba3f534a3f0c462ad7171008e0ad5d6925e4a9c62c
+        normalization: text-lf/v1
     contract:
       schema_version: 1
       id: archiview-implementation
       title: Реализация
       kind: module
       purpose: Определять область и правила проверки соответствия собственной
-        реализации контракту модуля.
-      boundaries: {}
+        реализации контракту модуля и выявлять участие модуля в циклических
+        зависимостях.
+      boundaries:
+        B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с
+          местом использования для каждого перехода.
       invariants: {}
     document_state: documented
     inherited:
@@ -70,7 +76,7 @@ baseline:
         section: invariants
         id: I1
         text: Каждый вид анализа реализуется в отдельном модуле.
-  technical_digest: sha256:63816497e139e3abe0f040bfb3bb9127a6655dcca1e5bb41f5ceef68fe18030f
+  technical_digest: sha256:8b1ecc1be0c06a775b127e2700c803c9438b57c8d37588f1b3f6a6756d556180
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -80,12 +86,18 @@ baseline:
       - path: analyse/implementation/analysis.ts
         digest: sha256:d92cf2152d2280f38c6f5a51cc51c233bc4000f2b8b6d15a594ebf3191038130
         normalization: text-lf/v1
+      - path: analyse/implementation/dependency-cycles.ts
+        digest: sha256:884ce16ffe1e6d7e0b3b69ba3f534a3f0c462ad7171008e0ad5d6925e4a9c62c
+        normalization: text-lf/v1
     contract:
       id: archiview-implementation
       kind: module
       purpose: Определять область и правила проверки соответствия собственной
-        реализации контракту модуля.
-      boundaries: {}
+        реализации контракту модуля и выявлять участие модуля в циклических
+        зависимостях.
+      boundaries:
+        B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с
+          местом использования для каждого перехода.
       invariants: {}
     inherited:
       - module_id: architecture-change-view
@@ -110,15 +122,15 @@ baseline:
         id: I1
         text: Каждый вид анализа реализуется в отдельном модуле.
     children: []
-  self_digest: sha256:19ffb88a16fae01126112701721944495077228f34b198ce1736f09839b48b57
+  self_digest: sha256:4fce17d0a7e2c005f422fbde97acf5da019b91485e9c770a13afd6f6c63f220e
   subtree:
-    self: sha256:63816497e139e3abe0f040bfb3bb9127a6655dcca1e5bb41f5ceef68fe18030f
+    self: sha256:8b1ecc1be0c06a775b127e2700c803c9438b57c8d37588f1b3f6a6756d556180
     children: []
-  subtree_digest: sha256:7993bdd334f10abb5f8a6a4ed13534748b37a0678e5993bb0bf33f31c9643359
+  subtree_digest: sha256:4bace9e18c76da0a7047ec0a97183b0656c3858b6bb1b8b471671795a0303c92
   semantic_subtree:
-    self: sha256:19ffb88a16fae01126112701721944495077228f34b198ce1736f09839b48b57
+    self: sha256:4fce17d0a7e2c005f422fbde97acf5da019b91485e9c770a13afd6f6c63f220e
     children: []
-  semantic_subtree_digest: sha256:f9d935ad9d1cfa83ae72dd0b9c88f199f3a1132e2cfdc2685025e3267eebf670
+  semantic_subtree_digest: sha256:117d11f1704d5b307aaa7e1ccb537065648818b59d01a4ec12cb44b5c4b4dad0
 current:
   module_id: archiview-implementation
   directory: analyse/implementation
@@ -227,9 +239,9 @@ current:
   semantic_subtree_digest: sha256:117d11f1704d5b307aaa7e1ccb537065648818b59d01a4ec12cb44b5c4b4dad0
 change:
   existence: retained
-  own: true
-  own_code: true
-  own_contract: true
+  own: false
+  own_code: false
+  own_contract: false
   inherited_constraints: false
   descendants: false
   child_composition: false
@@ -239,524 +251,23 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 255
-  comparison_key: sha256:93a8f2a1f8de47545161a0f48ea26f02ecc8c3c79e66aa191f4453d0434536d1
+  generation: 257
+  comparison_key: sha256:e7c151c3b5db230453e71ff528f130e7dc0f0cb9586f7b36e6f563ef9355d70f
   baseline:
     metadata:
-      id: git-a01e0166d2b853bc85b9ea49e163005902d9c8b8
-      digest: sha256:a0fbc09147248a6e65c5df94a5703c8376e437817acf21d4d6e50f3d16dc4303
+      id: git-d8304bd7550f4527428f2a07736bc14f45427e6a
+      digest: sha256:05e952c19c55378381421cb25827a1e7ef20e40b8b752e846edd80a28ed10a6f
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-26T11:51:14.998Z
+      capturedAt: 2026-11-26T13:22:53.480Z
       kind: git
-      revision: a01e0166d2b853bc85b9ea49e163005902d9c8b8
+      revision: d8304bd7550f4527428f2a07736bc14f45427e6a
       label: HEAD
-      fingerprint: 79c5c319ff4856a430dc67e2014806a8767b305f5c1a1605e266e957ffcb98c9
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-      isHead: true
-    module_index: 4
-    module:
-      directory: analyse/implementation
-      document:
-        state: documented
-        text: >
-          schema_version: 1
-
-          id: archiview-implementation
-
-          title: Реализация
-
-          kind: module
-
-          purpose: Определять область и правила проверки соответствия
-          собственной реализации контракту модуля.
-
-          boundaries: {}
-
-          invariants: {}
-        format: yaml
-        contract:
-          schema_version: 1
-          id: archiview-implementation
-          title: Реализация
-          kind: module
-          purpose: Определять область и правила проверки соответствия собственной
-            реализации контракту модуля.
-          boundaries: {}
-          invariants: {}
-      documentPath: .archiview/modules/archiview-implementation.yaml
-      files:
-        - path: .archiview/modules/archiview-implementation.yaml
-          hash: 3a995a043bc333539075fd8a0c99781124914969
-          mode: "100644"
-        - path: analyse/implementation/analysis.ts
-          hash: 3c162e2fdb8f08bb00f50f787356ebeec3ed4106
-          mode: "100644"
-      sourceFiles: 1
-      fingerprint: bd3c2365744f17553c1d874a938daa24fbb380d8c2d7c11aa8d57088d6efac18
-    facts:
-      - index: 19
-        fact:
-          id: sha256:e710bf048dfe152ff5ac10173426233a11d8f73ea5520bae5ae13577b5075fb8
-          kind: file
-          path: .archiview/modules/archiview-implementation.yaml
-          start_line: 1
-          end_line: 8
-          text: >
-            schema_version: 1
-
-            id: archiview-implementation
-
-            title: Реализация
-
-            kind: module
-
-            purpose: Определять область и правила проверки соответствия
-            собственной реализации контракту модуля.
-
-            boundaries: {}
-
-            invariants: {}
-      - index: 54
-        fact:
-          id: sha256:8e4534afb0163a2f9884f6a0dc74b8aaa871d3155dea43925021323898a2ac12
-          kind: file
-          path: analyse/implementation/analysis.ts
-          start_line: 1
-          end_line: 10
-          text: >
-            import { isSource } from "../git-changes/module-layout.js";
-
-            import { excludedProjectPath } from
-            "../../framework/project/paths.js";
-
-            import type { SnapshotModule } from
-            "../../framework/snapshots/types.js";
-
-
-            export const instructions = "Проверь соответствие собственного
-            исходного кода модуля его назначению, границам и инвариантам. Укажи
-            фактические обязанности и подтверди выводы сохранёнными фактами
-            исходных файлов. Для отсутствующей реализации оцени, что требует
-            контракт. Композиция детей и контракты предков в эту проверку не
-            входят.";
-
-
-            export function sourceFiles(module: SnapshotModule) {
-              return module.files.filter(file => isSource(file.path) || file.path.split("/").at(-1) === "SKILL.md" && !excludedProjectPath(file.path));
-            }
-      - index: 231
-        fact:
-          id: sha256:aeb161e5da8c2b150fc98e5d138e42dfcab53e321520f8665853f948c9be71e1
-          kind: module
-          path: analyse/implementation
-          text: '{"contract":"documented","format":"yaml","sources":["analyse/implementation/analysis.ts"]}'
-  current:
-    metadata:
-      id: launch-3d2cd1df9d8c0d48a9261c2422d64e8fbfe1e91b5d269380642c7fc2087eb0a3
-      digest: sha256:df00125e424430a2ea0ab11600bfb1c5d1a1dbb5a85d397d6227acd93098337a
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-26T11:51:19.056Z
-      kind: launch
-      label: Начальное состояние
       fingerprint: 3d2cd1df9d8c0d48a9261c2422d64e8fbfe1e91b5d269380642c7fc2087eb0a3
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      baseRevision: a01e0166d2b853bc85b9ea49e163005902d9c8b8
-      observations:
-        architecture-change-view:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 859
-          grasp: 5
-          implementation: 1
-        archiview-distribution:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 392
-          grasp: 1
-          implementation: 3
-        archiview-skills:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 379
-          grasp: 4
-          implementation: 1
-        archiview-module-boundaries-skill:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 392
-          grasp: 4
-          implementation: 23
-          skillHistory:
-            since: 383
-            uncertainAt: 385
-            changedAt: 392
-        architecture-core:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 17
-          grasp: 1
-          implementation: 1
-        archiview-application:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 470
-          grasp: 7
-          implementation: 23
-        archiview-http:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 402
-          grasp: 1
-          implementation: 6
-        archiview-codex:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 408
-          grasp: 2
-          implementation: 2
-        archiview-contracts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 385
-          grasp: 1
-          implementation: 1
-        dsh-adapter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 406
-          grasp: 7
-          implementation: 7
-        dsh-client-panel:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 10
-          grasp: 1
-          implementation: 1
-        archiview-mcp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-          grasp: 1
-          implementation: 1
-        archiview-project-location:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 395
-          grasp: 1
-          implementation: 9
-        archiview-reports:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 386
-          grasp: 1
-          implementation: 1
-        archiview-reviews:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 385
-          grasp: 1
-          implementation: 3
-        archiview-node-runtime:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 382
-          grasp: 1
-          implementation: 2
-        archiview-serialization:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 390
-          grasp: 1
-          implementation: 12
-        archiview-snapshots:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 392
-          grasp: 1
-          implementation: 3
-        archiview-storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 15
-          grasp: 2
-          implementation: 4
-        architecture-tests:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 514
-          grasp: 1
-          implementation: 56
-        architecture-web:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 388
-          grasp: 3
-          implementation: 1
-        archiview-client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 418
-          grasp: 3
-          implementation: 2
-        prototype-smoke-1674b57d:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        prototype-smoke-9a3440c6:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        directory:.:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-          grasp: 1
-          implementation: 1
-        directory:scripts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-          grasp: 1
-          implementation: 1
-        directory:skills:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:skills/module-boundaries:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-          grasp: 1
-          implementation: 1
-        directory:src:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 8
-          grasp: 1
-          implementation: 1
-        directory:src/application:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 11
-          grasp: 1
-          implementation: 1
-        directory:src/archiview:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/codex:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-          grasp: 1
-          implementation: 1
-        directory:src/contracts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-          grasp: 1
-          implementation: 1
-        directory:src/dsh:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/dsh/client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/mcp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/project:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/reports:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 10
-          grasp: 1
-          implementation: 1
-        directory:src/reviews:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 8
-          grasp: 1
-          implementation: 1
-        directory:src/runtime:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/serialization:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/snapshots:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-          grasp: 1
-          implementation: 1
-        directory:src/storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:test:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-          grasp: 1
-          implementation: 1
-        directory:web:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:web/archiview:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 13
-          grasp: 1
-          implementation: 1
-        archiview-analyse:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 383
-          grasp: 6
-          implementation: 1
-        archiview-analyse-type:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-report-store:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-project-files:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-bridges:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 399
-          grasp: 8
-          implementation: 3
-        archiview-cli:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 395
-          grasp: 1
-          implementation: 17
-        archiview-cli-operation:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-framework:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 385
-          grasp: 1
-          implementation: 1
-        archiview-project-types:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 370
-          grasp: 1
-          implementation: 1
-        archiview-tools:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 371
-          grasp: 1
-          implementation: 2
-        archiview-analysis-service:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 418
-          grasp: 6
-          implementation: 32
-        archiview-file-service:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-host-bridge:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 378
-          grasp: 1
-          implementation: 3
-        archiview-web-api-client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 378
-          grasp: 2
-          implementation: 4
-        archiview-module-presenter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 394
-          grasp: 2
-          implementation: 12
-        archiview-views:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 390
-          grasp: 2
-          implementation: 9
-        archiview-workspace-presenter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 381
-          grasp: 3
-          implementation: 9
-        archiview-file-watcher:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 377
-          grasp: 1
-          implementation: 1
-        archiview-git-changes:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 390
-          grasp: 1
-          implementation: 7
-        archiview-git-changes-report:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-module-operations:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 419
-          grasp: 1
-          implementation: 13
-        archiview-project-context:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 376
-          grasp: 1
-          implementation: 2
-        archiview-module-access:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-module-review:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 394
-          grasp: 1
-          implementation: 13
-        archiview-module-relations:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 389
-          grasp: 2
-          implementation: 15
-        archiview-relation-model:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 373
-          grasp: 1
-          implementation: 5
-        archiview-grasp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-implementation:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 3
-          implementation: 5
-        directory:storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 2
-          implementation: 2
-        directory:analyse/project-sources:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 2
-          implementation: 2
-        archiview-project-sources:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 1
-          grasp: 1
-          implementation: 1
+      isHead: true
     module_index: 4
     module:
       directory: analyse/implementation
@@ -911,6 +422,574 @@ publication:
               return cycles;
             }
       - index: 233
+        fact:
+          id: sha256:1777593d87a3e38416a279ad054b7897d906626f9c64a574bcde93c8fb51e2d4
+          kind: module
+          path: analyse/implementation
+          text: '{"contract":"documented","format":"yaml","sources":["analyse/implementation/analysis.ts","analyse/implementation/dependency-cycles.ts"]}'
+  current:
+    metadata:
+      id: launch-29b179cf9bdced55db433435f43143c445f0d58e5c6fa5bd43ea874debbd20da
+      digest: sha256:e2ea79360ab25055ba78abacf627b50d7ef80fbed0ce6d1cdc0c2b577cb9252c
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-26T13:22:57.501Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 29b179cf9bdced55db433435f43143c445f0d58e5c6fa5bd43ea874debbd20da
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+      baseRevision: d8304bd7550f4527428f2a07736bc14f45427e6a
+      observations:
+        architecture-change-view:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 864
+          grasp: 5
+          implementation: 1
+        archiview-distribution:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 393
+          grasp: 1
+          implementation: 4
+        archiview-skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 379
+          grasp: 4
+          implementation: 1
+        archiview-module-boundaries-skill:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 393
+          grasp: 4
+          implementation: 24
+          skillHistory:
+            since: 383
+            uncertainAt: 385
+            changedAt: 393
+        architecture-core:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 17
+          grasp: 1
+          implementation: 1
+        archiview-application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 471
+          grasp: 7
+          implementation: 24
+        archiview-http:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 402
+          grasp: 1
+          implementation: 6
+        archiview-codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 408
+          grasp: 2
+          implementation: 2
+        archiview-contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 1
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 406
+          grasp: 7
+          implementation: 7
+        dsh-client-panel:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 10
+          grasp: 1
+          implementation: 1
+        archiview-mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        archiview-project-location:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 395
+          grasp: 1
+          implementation: 9
+        archiview-reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 386
+          grasp: 1
+          implementation: 1
+        archiview-reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 3
+        archiview-node-runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 382
+          grasp: 1
+          implementation: 2
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 1
+          implementation: 12
+        archiview-snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 392
+          grasp: 1
+          implementation: 3
+        archiview-storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 15
+          grasp: 2
+          implementation: 4
+        architecture-tests:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 520
+          grasp: 1
+          implementation: 62
+        architecture-web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 388
+          grasp: 3
+          implementation: 1
+        archiview-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 420
+          grasp: 4
+          implementation: 4
+        prototype-smoke-1674b57d:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        prototype-smoke-9a3440c6:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        directory:.:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:scripts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:skills/module-boundaries:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+          grasp: 1
+          implementation: 1
+        directory:src/application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 11
+          grasp: 1
+          implementation: 1
+        directory:src/archiview:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src/contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:src/dsh:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/dsh/client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/project:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 10
+          grasp: 1
+          implementation: 1
+        directory:src/reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+          grasp: 1
+          implementation: 1
+        directory:src/runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src/storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:test:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:web/archiview:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 13
+          grasp: 1
+          implementation: 1
+        archiview-analyse:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 383
+          grasp: 6
+          implementation: 1
+        archiview-analyse-type:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-report-store:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-project-files:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-bridges:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 399
+          grasp: 8
+          implementation: 3
+        archiview-cli:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 396
+          grasp: 1
+          implementation: 18
+        archiview-cli-operation:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-framework:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 1
+        archiview-project-types:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 370
+          grasp: 1
+          implementation: 1
+        archiview-tools:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 371
+          grasp: 1
+          implementation: 2
+        archiview-analysis-service:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 420
+          grasp: 6
+          implementation: 34
+        archiview-file-service:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-host-bridge:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 378
+          grasp: 1
+          implementation: 3
+        archiview-web-api-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 379
+          grasp: 2
+          implementation: 5
+        archiview-module-presenter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 400
+          grasp: 2
+          implementation: 18
+        archiview-views:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 395
+          grasp: 2
+          implementation: 14
+        archiview-workspace-presenter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 388
+          grasp: 3
+          implementation: 16
+        archiview-file-watcher:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 377
+          grasp: 1
+          implementation: 1
+        archiview-git-changes:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 1
+          implementation: 7
+        archiview-git-changes-report:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-module-operations:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 420
+          grasp: 1
+          implementation: 14
+        archiview-project-context:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 376
+          grasp: 1
+          implementation: 2
+        archiview-module-access:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-module-review:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 395
+          grasp: 1
+          implementation: 14
+        archiview-module-relations:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 389
+          grasp: 2
+          implementation: 15
+        archiview-relation-model:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 373
+          grasp: 1
+          implementation: 5
+        archiview-grasp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+          grasp: 1
+          implementation: 2
+        archiview-implementation:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 3
+          implementation: 5
+        directory:storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 2
+          implementation: 2
+        directory:analyse/project-sources:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 2
+          implementation: 2
+        archiview-project-sources:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 1
+          grasp: 1
+          implementation: 1
+        archiview-view-model:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 1
+          grasp: 1
+          implementation: 1
+    module_index: 4
+    module:
+      directory: analyse/implementation
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-implementation
+
+          title: Реализация
+
+          kind: module
+
+          purpose: Определять область и правила проверки соответствия
+          собственной реализации контракту модуля и выявлять участие модуля в
+          циклических зависимостях.
+
+          boundaries:
+            B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с местом использования для каждого перехода.
+          invariants: {}
+        format: yaml
+        contract:
+          schema_version: 1
+          id: archiview-implementation
+          title: Реализация
+          kind: module
+          purpose: Определять область и правила проверки соответствия собственной
+            реализации контракту модуля и выявлять участие модуля в циклических
+            зависимостях.
+          boundaries:
+            B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с
+              местом использования для каждого перехода.
+          invariants: {}
+      documentPath: .archiview/modules/archiview-implementation.yaml
+      files:
+        - path: .archiview/modules/archiview-implementation.yaml
+          hash: d09ec7040e5d2b7c40b5c2c1e0c328b5bf23e310
+          mode: "100644"
+        - path: analyse/implementation/analysis.ts
+          hash: 3c162e2fdb8f08bb00f50f787356ebeec3ed4106
+          mode: "100644"
+        - path: analyse/implementation/dependency-cycles.ts
+          hash: 5f824f0a45c4d587aa8372e17902ac33b4b14661
+          mode: "100644"
+      sourceFiles: 2
+      fingerprint: 583f2758d90b243ce7e293846557006f59225c4a2885dff572d7b57ab6a1ba8a
+    facts:
+      - index: 19
+        fact:
+          id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+          kind: file
+          path: .archiview/modules/archiview-implementation.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-implementation
+
+            title: Реализация
+
+            kind: module
+
+            purpose: Определять область и правила проверки соответствия
+            собственной реализации контракту модуля и выявлять участие модуля в
+            циклических зависимостях.
+
+            boundaries:
+              B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с местом использования для каждого перехода.
+            invariants: {}
+      - index: 55
+        fact:
+          id: sha256:8e4534afb0163a2f9884f6a0dc74b8aaa871d3155dea43925021323898a2ac12
+          kind: file
+          path: analyse/implementation/analysis.ts
+          start_line: 1
+          end_line: 10
+          text: >
+            import { isSource } from "../git-changes/module-layout.js";
+
+            import { excludedProjectPath } from
+            "../../framework/project/paths.js";
+
+            import type { SnapshotModule } from
+            "../../framework/snapshots/types.js";
+
+
+            export const instructions = "Проверь соответствие собственного
+            исходного кода модуля его назначению, границам и инвариантам. Укажи
+            фактические обязанности и подтверди выводы сохранёнными фактами
+            исходных файлов. Для отсутствующей реализации оцени, что требует
+            контракт. Композиция детей и контракты предков в эту проверку не
+            входят.";
+
+
+            export function sourceFiles(module: SnapshotModule) {
+              return module.files.filter(file => isSource(file.path) || file.path.split("/").at(-1) === "SKILL.md" && !excludedProjectPath(file.path));
+            }
+      - index: 56
+        fact:
+          id: sha256:cc9af1c0292a7d6f3089eba9d3b7bab7105beb82716851f4727643b88fb72748
+          kind: file
+          path: analyse/implementation/dependency-cycles.ts
+          start_line: 1
+          end_line: 42
+          text: >
+            import type { CycleStep, RelationEdge } from
+            "../../framework/module-relations/types.js";
+
+
+            /** One shortest closed path through each participating outgoing
+            dependency of the selected module. */
+
+            export function dependencyCycles(edges: RelationEdge[], owner:
+            string): CycleStep[][] {
+              const incoming = new Map<string, RelationEdge[]>();
+              const outgoing: RelationEdge[] = [];
+              for (const edge of edges) {
+                if (edge.from === edge.to) continue;
+                if (edge.from === owner) outgoing.push(edge);
+                const list = incoming.get(edge.to);
+                if (list) list.push(edge);
+                else incoming.set(edge.to, [edge]);
+              }
+
+              // A reverse breadth-first search gives every reachable module one next hop back to the owner.
+              const next = new Map<string, RelationEdge>();
+              const queue = [owner];
+              for (let i = 0; i < queue.length; i++) {
+                const predecessors = incoming.get(queue[i]) ?? [];
+                predecessors.sort((a, b) => a.from.localeCompare(b.from));
+                for (const edge of predecessors) {
+                  if (edge.from === owner || next.has(edge.from)) continue;
+                  next.set(edge.from, edge);
+                  queue.push(edge.from);
+                }
+              }
+              const cycles: CycleStep[][] = [];
+              for (const first of outgoing.sort((a, b) => a.to.localeCompare(b.to))) {
+                if (!next.has(first.to)) continue;
+                const cycle: CycleStep[] = [];
+                let edge = first;
+                for (;;) {
+                  const symbol = edge.symbols.find(s => s.id.endsWith("/")) ?? edge.symbols[0];
+                  cycle.push({ from: edge.from, to: edge.to, use: symbol.uses[0] });
+                  if (edge.to === owner) break;
+                  edge = next.get(edge.to)!;
+                }
+                cycles.push(cycle);
+              }
+              return cycles;
+            }
+      - index: 234
         fact:
           id: sha256:1777593d87a3e38416a279ad054b7897d906626f9c64a574bcde93c8fb51e2d4
           kind: module

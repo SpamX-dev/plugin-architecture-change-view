@@ -168,17 +168,34 @@ test("module relations build the project, reveal source lines and navigate to th
   await page.getByRole("button",{name:"Функция браузера",exact:true}).waitFor();
 });
 
-test("implementation shows a module cycle with source evidence before its first agent review", browserOptions, async t => {
+test("implementation and tree flag indexed cycles and clear them when the working snapshot changes", browserOptions, async t => {
   const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   await writeFile(path.join(root, "main.ts"), 'import "./src/feature.js";\nexport type Options = string;\n');
   await writeFile(path.join(root, "src/feature.ts"), 'import type { Options } from "../main.js";\nexport const feature: Options = "enabled";\n');
+  commitTestFiles(root);
+  const app = await createArchiView({ root });
   const page = await (await browserContext(defer)).newPage();
-  await page.goto(await cliOrigin(defer, root));
-  await page.getByRole("treeitem").filter({hasText:"Функция браузера"}).click();
-  await page.getByRole("tab", {name:"Реализация"}).click();
+  await page.goto(await listen(defer, app.server));
+  const feature = page.locator('.tree-row[data-directory="src"]');
+  const project = page.locator('.tree-row[data-directory="."]');
+  const implementation = page.getByRole("tab", {name:"Реализация"});
+  const tabBug = implementation.locator(".cycle-bug");
+  const featureBug = feature.getByRole("img", {name:"Циклические зависимости модуля · 1"});
+  await feature.click();
+  await implementation.click();
   await page.getByText(/Циклы не проверены/).waitFor();
+  assert.equal(await tabBug.count(), 0);
+  assert.equal(await featureBug.count(), 0);
   await page.getByRole("button", {name:"Построить связи проекта"}).click();
+  await tabBug.waitFor();
+  assert.equal(await implementation.getAttribute("aria-description"), "Циклические зависимости · 1");
+  await featureBug.waitFor();
+  await project.getByRole("img", {name:"Циклические зависимости модуля · 1"}).waitFor();
+  await project.locator("[data-toggle]").click();
+  await featureBug.waitFor({state:"hidden"});
+  await project.getByRole("img", {name:"Циклические зависимости в модуле и вложенных модулях · 2"}).waitFor();
+  await project.locator("[data-toggle]").click();
   await page.getByText("Функция браузера → Новый заголовок проекта → Функция браузера", {exact:true}).click();
   await page.getByRole("button", {name:/^main\.ts:1:/}).click();
   assert.equal(await page.locator("dialog mark").textContent(), 'import "./src/feature.js";');
@@ -187,6 +204,54 @@ test("implementation shows a module cycle with source evidence before its first 
   assert.equal(await page.locator("dialog mark").textContent(), 'import type { Options } from "../main.js";');
   await page.getByRole("button", {name:"Закрыть",exact:true}).click();
   assert.equal(await page.locator("#analyze-module").isEnabled(), true);
+
+  const review = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root),
+    "browser-feature", {analysisType:"implementation"});
+  completeChecks(review);
+  review.report.assessment.current = {verdict:"needs_review", summary:"Замечание реализации."};
+  review.report.analysis.model = review.manifest.model = {provider:"test", id:"cycle-fixture"};
+  review.report.analysis.prompt_digest = review.manifest.prompt_digest = digest("Cycle indicator fixture");
+  review.report.analysis.input_digest = digest(review.manifest);
+  review.report.findings = [{id:"implementation-finding", kind:"responsibility_gap", severity:"warning",
+    certainty:"confirmed", lifecycle:"unknown", summary:"Замечание реализации", clauses:[review.report.checks[0].contract],
+    evidence:[{snapshot:"current", fact_id:review.current.facts[0].id}]}];
+  await app.reports.saveReview(review);
+  const tabFinding = implementation.locator(".finding-bug:not(.cycle-bug)");
+  const featureFinding = feature.getByRole("img", {name:"Открытые замечания модуля · 1"});
+  await tabFinding.waitFor();
+  await featureFinding.waitFor();
+  await tabBug.waitFor();
+  await featureBug.waitFor();
+
+  await writeFile(path.join(root, "main.ts"), "export type Options = string;\n");
+  await page.getByText(/Циклы не проверены/).waitFor();
+  await tabBug.waitFor({state:"hidden"});
+  await featureBug.waitFor({state:"hidden"});
+  await promisify(execFile)(process.execPath, ["dist/cli.mjs", "--root", root, "--build-relations"], {windowsHide:true});
+  await page.getByText(/циклов через этот модуль не найдено/).waitFor();
+  assert.equal(await tabBug.count(), 0);
+  await tabFinding.waitFor();
+  await featureFinding.waitFor();
+  const timeline = page.locator("#timeline");
+  await timeline.selectOption({label:"HEAD"});
+  await tabBug.waitFor();
+  await featureBug.waitFor();
+
+  await page.route("**/api/comparison?**", async route => {
+    const response = await route.fetch();
+    const comparison: ComparisonView = await response.json();
+    delete comparison.watchCursor;
+    delete comparison.watchError;
+    await route.fulfill({response, json:comparison});
+  });
+  await writeFile(path.join(root, "main.ts"), 'import "./src/feature.js";\nexport type Options = string;\nexport const enabled = true;\n');
+  await timeline.selectOption("current");
+  await page.getByText(/Циклы не проверены/).waitFor();
+  await page.locator('.finding-card[data-finding-id="implementation-finding"]').waitFor();
+  await page.getByRole("button", {name:"Построить связи проекта"}).click();
+  await tabBug.waitFor();
+  await featureBug.waitFor();
+  await tabFinding.waitFor();
   await page.getByRole("tab", {name:"GRASP"}).click();
   assert.equal(await page.getByRole("heading", {name:"Циклические зависимости"}).count(), 0);
 });

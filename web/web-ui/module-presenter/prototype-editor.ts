@@ -1,8 +1,8 @@
 import type { PrototypeChange } from "../../../module-operations/api.js";
-import type { ArchiViewClient, ComparisonView, ModuleDetail } from "../types.js";
-import { errorMessage } from "../types.js";
+import type { ArchiViewClient, ComparisonView, ModuleDetail } from "../view-model/types.js";
+import { errorMessage } from "../view-model/types.js";
 import { el } from "../views/dom.js";
-import { prototypeLocation } from "../workspace-presenter/prototype-location.js";
+import { prototypeLocation } from "../views/prototype-location.js";
 
 type Mode = "create" | "edit" | "delete";
 const headings: Record<Mode, string> = {

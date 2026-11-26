@@ -22,6 +22,7 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
   const decisions = new FindingDecisions(root, path.dirname(work));
   const { baseline, current } = published.pair;
   const tree = await compareRepositorySnapshots(root, baseline, current);
+  const cycleCounts = await relations.getDependencyCycleCounts(root, stateDirectory, current);
   const byId = new Map(published.reports.map(report => [report.module_id, report]));
   const modules: SessionView["modules"] = tree.modules.map(module => {
     const id = module.moduleId ?? "directory:" + module.directory;
@@ -29,6 +30,7 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
     if (!report) throw new Error("В публикации нет технического отчёта модуля " + id);
     return { ...module, structure: { automatic: true, complete: tree.complete,
       checkHash: report.check_hash, diagnostics: report.structure.diagnostics },
+      dependencyCycleCount: module.currentPath === null ? 0 : cycleCounts.get(module.currentPath) ?? 0,
       reviewStatus: report.review_status ?? null, ...(published.hasReviews(id) ? {} : { review: null }) };
   });
   const target = { id: "current", kind: "current", label: "Последнее опубликованное состояние", capturedAt: current.capturedAt };

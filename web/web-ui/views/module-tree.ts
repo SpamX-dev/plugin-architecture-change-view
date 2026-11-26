@@ -1,5 +1,5 @@
-import type { ChangeStatus, ModuleSummary } from "../types.js";
-import { byId, el, findingBug, icon } from "./dom.js";
+import type { ChangeStatus, ModuleSummary } from "../view-model/types.js";
+import { byId, el, findingMarker, icon } from "./dom.js";
 import { badge, labels } from "./change-status.js";
 import { roleBadge } from "./role-badge.js";
 import { initializeTreeWidth } from "./tree-layout.js";
@@ -11,6 +11,7 @@ export interface ModuleRow {
   context: boolean;
   expanded: boolean;
   finding?: string;
+  cycle?: string;
   analysis: string | null;
   children: ModuleRow[];
 }
@@ -98,7 +99,7 @@ export function createTreeView(actions: TreeActions) {
   }
 
   function moduleItem(data: ModuleRow, repository?: string): HTMLLIElement {
-    const { module, selected, context, expanded, children, finding, analysis } = data;
+    const { module, selected, context, expanded, children, finding, cycle, analysis } = data;
     const item = el("li", "tree-item");
     item.setAttribute("role", "none");
     const row = el("button", "tree-row" + (selected ? " selected" : "") + (context ? " context-row" : "") +
@@ -125,14 +126,8 @@ export function createTreeView(actions: TreeActions) {
       row.title += "\nРоли по контракту: " + module.roles.map(role => role.id).join(" · ");
     }
     row.append(caret, icon("folder"), label);
-    if (finding) {
-      const marker = el("span", "finding-marker");
-      marker.title = finding;
-      marker.setAttribute("role", "img");
-      marker.setAttribute("aria-label", finding);
-      marker.append(findingBug());
-      row.append(marker);
-    }
+    if (finding) row.append(findingMarker(finding));
+    if (cycle) row.append(findingMarker(cycle, "cycle"));
     if (module.documentState !== "documented") {
       const marker = el("span", "missing-marker", "!");
       marker.title = module.documentState === "missing" ? "Нет контракта модуля" : "Контракт требует исправления";

@@ -1,9 +1,9 @@
 import { clauseEntries, type StoredContract } from "../../../framework/contracts/types.js";
-import type { Section, Contract, ClauseReference, ReviewBundle, ContractDocument, ContractRenderOptions } from "../types.js";
+import type { Section, Contract, ClauseReference, ReviewBundle, ContractDocument, ContractRenderOptions } from "../view-model/types.js";
 import { el, icon } from "./dom.js";
 import { ROLE_EXTENSION } from "../../../framework/contracts/roles.js";
 import { roleBadge } from "./role-badge.js";
-import { clauseFindingTargets, findingBug } from "../module-presenter/findings.js";
+import { clauseFindingTargets, findingBug } from "./findings.js";
 
 const sections = { boundaries: "Границы", invariants: "Инварианты" } as const;
 type FieldChange = ContractRenderOptions["contractDiff"]["fields"][number];

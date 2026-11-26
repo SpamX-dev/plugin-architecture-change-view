@@ -1,12 +1,11 @@
-import type { ModuleDetail, ComparisonView, ClauseReference, ReviewBundle, FindingTarget } from "../types.js";
+import type { ModuleDetail, ComparisonView, ClauseControls, ClauseReference, ReviewBundle, FindingTarget } from "../view-model/types.js";
 import { isModuleDocumentFile } from "../../../framework/project/storage-paths.js";
 import { byId, el, icon, notice } from "./dom.js";
 import { labels } from "./change-status.js";
 import { renderContract, renderContractRoles, savedClauseText, clauseSectionLabel } from "./contract.js";
-import { moduleTrail } from "../module-presenter/module-path.js";
-import { timelineDate } from "../workspace-presenter/timeline.js";
+import { moduleTrail } from "../view-model/tree-paths.js";
+import { timelineDate } from "./timeline.js";
 import { diffBox, diffLine, openDiffDialog } from "./diff.js";
-import type { ClauseControls } from "../module-presenter/clause-editor.js";
 
 /** Показывает структурированный контракт либо исторический документ удалённого модуля. */
 export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: ComparisonView,

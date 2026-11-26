@@ -1,6 +1,6 @@
 import { readAnalysisStatus, readPreparedAnalysis, readDelivery } from "../../../module-operations/analysis-record.js";
-import type { ArchiViewClient, ClientOptions } from "../types.js";
-import { isRecord } from "../types.js";
+import type { ArchiViewClient, ClientOptions } from "../view-model/types.js";
+import { isRecord } from "../view-model/types.js";
 
 /** Browser-facing operations scoped to the selected workspace repository. */
 export function createArchiViewClient({ fetcher = globalThis.fetch, base = "" }: ClientOptions = {}): ArchiViewClient {

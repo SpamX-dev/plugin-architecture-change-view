@@ -228,6 +228,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   }
 
   async function loadAnalysisSummaries(view: SessionView, entries = view.reviews) {
+    const cycleCounts = await relations.getDependencyCycleCounts(root, store.directory, view.currentSnapshot);
     const byModule = new Map<string, typeof entries>();
     for (const entry of entries) {
       const group = byModule.get(entry.module_id);
@@ -237,6 +238,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     for (const module of view.modules) {
       const reviews = byModule.get(module.moduleId ?? "");
       module.analyses = reviews ? await analysisSummary(await selectedAnalyses(reviews, view), decisions) : {};
+      module.dependencyCycleCount = module.currentPath === null ? 0 : cycleCounts.get(module.currentPath) ?? 0;
       module.descendantsNeedAnalysis = false;
     }
     const directories = new Map(view.modules.map(module => [module.directory, module]));
@@ -256,7 +258,8 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     const entries = await reports.readReviews();
     await ensureReviews(view, entries);
     await loadAnalysisSummaries(view, entries);
-    return structuredClone({ modules: view.modules.map(({key, review, reviewStatus, analyses, descendantsNeedAnalysis}) => ({key, review, reviewStatus, analyses, descendantsNeedAnalysis})), diagnostics: view.reviewDiagnostics });
+    return structuredClone({ modules: view.modules.map(({key, review, reviewStatus, analyses, dependencyCycleCount, descendantsNeedAnalysis}) =>
+      ({key, review, reviewStatus, analyses, dependencyCycleCount, descendantsNeedAnalysis})), diagnostics: view.reviewDiagnostics });
   }
 
   async function workingEvidence(tree: Snapshot, head: string | null) {

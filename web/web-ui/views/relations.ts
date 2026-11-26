@@ -1,7 +1,7 @@
 import type { DependencyCycleCheck, ModuleRelations, RelationPeer, Site } from "../../../framework/module-relations/types.js";
 import { el } from "./dom.js";
 import { openDiffDialog } from "./diff.js";
-import { errorMessage } from "../types.js";
+import { errorMessage } from "../view-model/types.js";
 
 function places(n: number) {
   const ending = new Intl.PluralRules("ru").select(n);

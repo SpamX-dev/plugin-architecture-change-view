@@ -233,9 +233,19 @@ test("Stop and the CLI share module and relation review work without opening rev
   const {relations:reviewed, checks} = await list();
   assert.equal(reviewed.status, "reviewed");
   assert.deepEqual(reviewed.report.findings, report.findings);
+  assert.deepEqual(reviewed.findings, [{
+    kind:"dependency_cycle",
+    summary:"Циклическая зависимость модулей: . → child → .",
+    evidence:cycles.find(chain => chain[0].from === ".")!.map(({from,to,use}) => ({from,to,...use})),
+  }, ...report.findings]);
   assert.deepEqual(checks, []);
   assert.equal((await hook("Stop")).decision, "block", "open relation findings also block");
   assert.ok((await hook("Stop",{stop_hook_active:true})).systemMessage);
+  await completeRelations({...report, findings:[]});
+  const automatic = (await list()).relations;
+  assert.deepEqual(automatic.report.findings, []);
+  assert.deepEqual(automatic.findings, reviewed.findings.slice(0, 1));
+  assert.equal((await hook("Stop")).decision, "block", "a graph cycle still requires repair after an empty relation review");
 
   await writeFile(code, "export const value = 3;\n");
   await finishImplementation();
@@ -247,7 +257,9 @@ test("Stop and the CLI share module and relation review work without opening rev
   await assert.rejects(completeRelations(report), {code:1});
   assert.equal((await list()).relations.status, "pending");
   await completeRelations({graphId:fixed.graphId, summary:"The revised graph has no cycle", findings:[]});
-  assert.equal((await list()).relations.status, "reviewed");
+  const repaired = (await list()).relations;
+  assert.equal(repaired.status, "reviewed");
+  assert.deepEqual(repaired.findings, []);
   assert.deepEqual(await hook("Stop"), {});
 });
 

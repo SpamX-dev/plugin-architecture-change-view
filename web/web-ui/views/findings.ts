@@ -2,9 +2,9 @@ import { bindHarnessMenu } from "./harness-menu.js";
 import { findingFixPrompt } from "../../../module-operations/finding-fix.js";
 export { findingFixPrompt };
 import { clauseEntries } from "../../../framework/contracts/types.js";
-import type { ReviewBundle, Finding, ClauseReference, Contract, FixRecord, ReviewRenderOptions } from "../types.js";
-import { errorMessage } from "../types.js";
-import { el } from "../views/dom.js";
+import type { ReviewBundle, Finding, ClauseReference, Contract, FixRecord, ReviewRenderOptions } from "../view-model/types.js";
+import { errorMessage } from "../view-model/types.js";
+import { el } from "./dom.js";
 
 /** Дата обозначает выполнение анализа; время сохранения исходников не выдумывается. */
 export function reviewDate(bundle: ReviewBundle) {
@@ -44,7 +44,7 @@ export function clauseFindingTargets(bundle: ReviewBundle | null | undefined, co
       (bundle.freshness?.current?.status !== "fresh" ? " · нужна перепроверка" : "") }));
 }
 
-export { findingBug } from "../views/dom.js";
+export { findingBug } from "./dom.js";
 
 /** Keep the action status on its original finding when the review is redrawn. */
 export function findingFixAction(bundle: ReviewBundle, finding: Finding, options: ReviewRenderOptions) {

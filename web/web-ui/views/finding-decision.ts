@@ -1,5 +1,5 @@
 import { openFinding, type FindingDisposition } from "../../../framework/ai-report/types.js";
-import { errorMessage, type Finding, type ReviewBundle, type ReviewRenderOptions } from "../types.js";
+import { errorMessage, type Finding, type ReviewBundle, type ReviewRenderOptions } from "../view-model/types.js";
 import { el } from "./dom.js";
 
 export function findingDecision(bundle: ReviewBundle, finding: Finding, options: ReviewRenderOptions) {

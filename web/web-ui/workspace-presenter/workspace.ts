@@ -1,27 +1,10 @@
-import type { ArchiViewClient, ComparisonView, ModuleSummary } from "../types.js";
-import { errorCode, errorMessage } from "../types.js";
-import type { ClauseNavigation, ModulePresenter } from "../module-presenter/module-card.js";
+import type { ArchiViewClient, ClauseNavigation, ComparisonView, WorkspaceContext, WorkspaceSelection } from "../view-model/types.js";
+import { errorCode, errorMessage } from "../view-model/types.js";
+import type { ModulePresenter } from "../module-presenter/module-card.js";
 import { byId, el, icon, renderFailure } from "../views/dom.js";
 import { createModuleTree } from "./module-tree.js";
-import { renderTimeline, timelineDate } from "./timeline.js";
+import { renderTimeline, timelineDate } from "../views/timeline.js";
 import { openReviewSettings } from "./review-settings.js";
-
-interface Selection {
-  target?: string;
-  historyLimit?: number;
-  clause?: ClauseNavigation;
-  repository?: string;
-  key?: string;
-}
-export interface WorkspaceContext {
-  readonly view: ComparisonView | null;
-  readonly refreshing: boolean;
-  readonly reviewError?: string;
-  readonly statusLoaded: boolean;
-  refresh(selection?: Selection): Promise<void>;
-  loadStatuses(view: ComparisonView): Promise<void>;
-  reveal(module: ModuleSummary): void;
-}
 
 function initialSelection(): { key?: string; repository?: string } {
   const hash = location.hash.slice(1);
@@ -159,7 +142,7 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
     }
   }
 
-  async function refresh({ target = currentTarget, historyLimit = currentHistoryLimit, clause, repository = current?.workspace?.repository, key }: Selection = {}) {
+  async function refresh({ target = currentTarget, historyLimit = currentHistoryLimit, clause, repository = current?.workspace?.repository, key }: WorkspaceSelection = {}) {
     subscription?.abort();
     const token = ++generation;
     const switching = current && repository !== current.workspace?.repository;

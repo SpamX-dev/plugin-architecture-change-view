@@ -1,4 +1,4 @@
-import type { ArchiViewClient } from "./types.js";
+import type { ArchiViewClient } from "./view-model/types.js";
 import { createModulePresenter } from "./module-presenter/module-card.js";
 import { openWorkspace } from "./workspace-presenter/workspace.js";
 

@@ -1,7 +1,7 @@
 import type { AnalysisType } from "../../../framework/ai-report/types.js";
-import { bindHarnessMenu } from "./harness-menu.js";
-import type { AnalysisRecord, ArchiViewClient, ComparisonView, ModuleSummary } from "../types.js";
-import { errorMessage } from "../types.js";
+import { bindHarnessMenu } from "../views/harness-menu.js";
+import type { AnalysisRecord, ArchiViewClient, ComparisonView, ModuleSummary } from "../view-model/types.js";
+import { errorMessage } from "../view-model/types.js";
 import { byId } from "../views/dom.js";
 
 export function createAnalysisControls({ client, selection, copyPrompt, refresh, toast }: {

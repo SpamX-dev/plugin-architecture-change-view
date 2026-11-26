@@ -5,16 +5,18 @@ import type { SnapshotStore } from "../../../analyse/git-changes/snapshot-store.
 import { dependencyCycles } from "../../../analyse/implementation/dependency-cycles.js";
 import { hasRelationSources, readRelationGraph, relationGraphPath } from "../../../analyse/module-relations/store.js";
 import { moduleId } from "../../../analyse/module-review/module-state.js";
-import type { RelationGraph, Site } from "../../../framework/module-relations/types.js";
+import type { CycleStep, RelationGraph, Site } from "../../../framework/module-relations/types.js";
 import { digest } from "../../../framework/serialization/digest.js";
 import type { Snapshot } from "../../../framework/snapshots/types.js";
 import { errorDetails } from "../../../node-errors.js";
 
 interface RelationEvidence extends Site { from: string; to: string }
+interface RelationFinding { summary: string; evidence: RelationEvidence[] }
+interface DependencyCycleFinding extends RelationFinding { kind: "dependency_cycle" }
 interface RelationReviewReport {
   graphId: string;
   summary: string;
-  findings: { summary: string; evidence: RelationEvidence[] }[];
+  findings: RelationFinding[];
 }
 
 type GraphState =
@@ -24,7 +26,29 @@ type GraphState =
 
 export type RelationReviewStatus = Exclude<GraphState, {status: "indexed"}>
   | {status: "pending"; graphId: string; message?: string}
-  | {status: "reviewed"; graphId: string; report: RelationReviewReport};
+  | {status: "reviewed"; graphId: string; report: RelationReviewReport; findings: RelationFinding[]};
+
+function graphCycles(graph: RelationGraph) {
+  return [...new Set(graph.edges.map(edge => edge.from))].flatMap(owner => dependencyCycles(graph.edges, owner));
+}
+
+function cycleFindings(cycles: CycleStep[][]): DependencyCycleFinding[] {
+  const findings = new Map<string, DependencyCycleFinding>();
+  for (const cycle of cycles) {
+    const directories = cycle.map(step => step.from);
+    const first = directories.indexOf([...directories].sort()[0]);
+    const chain = [...cycle.slice(first), ...cycle.slice(0, first)];
+    const route = [...chain.map(step => step.from), chain[0].from];
+    const key = JSON.stringify(route);
+    if (findings.has(key)) continue;
+    findings.set(key, {
+      kind: "dependency_cycle",
+      summary: "Циклическая зависимость модулей: " + route.join(" → "),
+      evidence: chain.map(({from, to, use: {file, line, column}}) => ({from, to, file, line, column})),
+    });
+  }
+  return [...findings.values()];
+}
 
 function fields(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Ожидался объект отчёта о связях");
@@ -108,14 +132,15 @@ export class RelationReviews {
     const target = await this.target(snapshot);
     if (target.status !== "indexed") return target;
     const {graphId, graph} = target;
+    let report: RelationReviewReport;
     try {
       const file = await this.reportPath(graphId);
-      const report = readReport(JSON.parse(await readFile(file, "utf8")), graphId, graph);
-      return {status:"reviewed", graphId, report};
+      report = readReport(JSON.parse(await readFile(file, "utf8")), graphId, graph);
     } catch (error) {
       const message = errorDetails(error);
       return {status:"pending", graphId, ...(message.code !== "ENOENT" && {message:message.message})};
     }
+    return {status:"reviewed", graphId, report, findings:[...cycleFindings(graphCycles(graph)), ...report.findings]};
   }
 
   private async indexed(snapshot: Snapshot) {
@@ -135,7 +160,7 @@ export class RelationReviews {
       eligible: graph.eligible,
       edges: graph.edges.length,
       modules: snapshot.modules.map(module => ({id:moduleId(module), directory:module.directory})),
-      cycles: [...new Set(graph.edges.map(edge => edge.from))].flatMap(owner => dependencyCycles(graph.edges, owner)),
+      cycles: graphCycles(graph),
     };
   }
 

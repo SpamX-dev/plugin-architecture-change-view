@@ -1,9 +1,9 @@
 import type { SnapshotData, SourceFile, SnapshotModule } from "../../framework/snapshots/types.js";
 import type { StoredContract as Contract } from "../../framework/contracts/types.js";
 import type { FileInput, ModuleState, SelfState } from "../../framework/static-report/types.js";
-import path from "node:path";
 import { MODULE_TREE_FILE } from "../../framework/project/storage-paths.js";
 import { canonical, digest } from "../../framework/serialization/digest.js";
+import { compositionChildren } from "../grasp/analysis.js";
 
 const NORMALIZATION = "archiview/module-state/v1";
 // Historical snapshots can contain R clauses. Include them only when replaying those saved inputs.
@@ -59,19 +59,12 @@ function inheritedInputs(modules: SnapshotModule[], directory: string) {
 
 /** Граница композиции — объявления ближайших модулей, без их реализации и потомков. */
 export function directChildContracts(modules: SnapshotModule[]) {
-  const directories = new Set(modules.map(module => module.directory));
   const children = new Map<string, SelfState["children"]>();
-  for (const module of modules) {
-    if (module.directory === ".") continue;
-    let parent = path.posix.dirname(module.directory);
-    while (parent !== "." && !directories.has(parent)) parent = path.posix.dirname(parent);
-    if (!directories.has(parent)) continue;
-    const declarations = children.get(parent) ?? [];
-    declarations.push({ module_id: moduleId(module), directory: module.directory,
-      contract: semanticContract(module.document?.contract), document_state: module.document?.state ?? "missing" });
-    children.set(parent, declarations);
+  for (const [parent, members] of compositionChildren(modules)) {
+    const declarations = members.map(module => ({ module_id: moduleId(module), directory: module.directory,
+      contract: semanticContract(module.document?.contract), document_state: module.document?.state ?? "missing" }));
+    children.set(parent, declarations.sort((a, b) => compare(a.module_id, b.module_id)));
   }
-  for (const declarations of children.values()) declarations.sort((a, b) => compare(a.module_id, b.module_id));
   return children;
 }
 

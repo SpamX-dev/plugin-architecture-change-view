@@ -11,7 +11,7 @@ export async function buildWeb(root = new URL("../", import.meta.url)) {
     entryPoints: {
       app: "web/web-ui/web-entry.ts",
       client: "web/web-ui/archiview-client/client.ts",
-      review: "web/web-ui/views/review.ts",
+      review: "web/web-ui/review-entry.ts",
     },
     outdir: fileURLToPath(assets),
     outExtension: { ".js": ".mjs" },

@@ -1,4 +1,4 @@
-import type { ChangeStatus } from "../types.js";
+import type { ChangeStatus } from "../view-model/types.js";
 import { el } from "./dom.js";
 
 /** Человекочитаемые подписи сравнительных статусов. */

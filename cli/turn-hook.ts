@@ -49,7 +49,7 @@ export async function turnHook(kind: string, event: HookEvent, requestedRoot?: s
     let relationProblem: string | undefined;
     if (relations.status === "unindexed") relationProblem = "Требуется построить актуальный граф связей.";
     if (relations.status === "pending") relationProblem = "Требуется разобрать актуальный граф связей.";
-    if (relations.status === "reviewed" && relations.report.findings.length) relationProblem = "Остались открытые замечания по связям.";
+    if (relations.status === "reviewed" && relations.findings.length) relationProblem = "Остались открытые замечания по связям.";
     if ((remaining || relationProblem) && !event.stop_hook_active) {
       return {decision:"block", reason:"ArchiView обнаружил незавершённые проверки. " +
         (relationProblem ? relationProblem + " " : "") + instruction};

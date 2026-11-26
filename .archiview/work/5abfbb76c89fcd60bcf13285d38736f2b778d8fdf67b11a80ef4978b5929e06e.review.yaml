@@ -5784,3 +5784,341 @@ entries:
     result_digest: sha256:045a93463bf1ab3602cd7ea9bb04b88fbd9344c74d7ba6c81f2e18185a74c6f4
     content_digest: sha256:d3b84825ad082fca4097e044befc9347d49e287fd6fd54b927fe17535e78ea75
     registration_order: 866
+  - schema_version: 2
+    kind: review
+    module_id: archiview-grasp
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-aa0e0abd-4aea-4705-a01b-796b4abb8dda
+    check_hash: 94fd7ade95254e26477ea7a154931c0776df0e938579b58aa448c2ae72d02680
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-grasp
+      baseline: null
+      current:
+        exists: true
+        directory: analyse/grasp
+        self_digest: sha256:0e605f01a2ef29c58f1c9cac74f0bb26f900f805ab88fd447b47652dd0445a34
+        subtree_digest: sha256:5540fd2a6de80b53acb42617ff189ba01f2969b560c106d6ff7fc03dc3a90946
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-grasp
+          directory: analyse/grasp
+          own_files:
+            - path: analyse/grasp/analysis.ts
+              digest: sha256:1545c345ebf05168607a211479920585dcf7bb8f3c4ee2578e8c8fa53c699bba
+              normalization: text-lf/v1
+          contract:
+            id: archiview-grasp
+            kind: module
+            purpose: Определять область и правила проверки согласованности контрактов в
+              композиции модуля.
+            boundaries:
+              B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+            invariants: {}
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:e35af3088c819648d1dc8d70d59b3d887d8454ab625486d000bce6996875aa85
+      change_digest: sha256:89123ce97b1cfba7146a4f9270f4c29d313ec014ba2104b331c1cbb96cd7fafc
+    report:
+      schema_version: 1
+      id: review-aa0e0abd-4aea-4705-a01b-796b4abb8dda
+      module:
+        id: archiview-grasp
+        baseline_path: null
+        current_path: analyse/grasp
+      comparison:
+        baseline: null
+        current:
+          id: working-d520de8964fc9f11261b5e60771f0f7808d4ed0312b45de68165815ffc227cde
+          digest: sha256:73ad7012cf04fb3ed05cfe392b6dded1fc5c53829d00e0aaee9488b51de11256
+      analysis:
+        created_at: 2026-11-26T12:24:24.958Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:6f42dba9427e24e552f07fd9bd314d1c64b1b47df2bc2bc68aaf2943254471d5
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: openai
+          id: gpt-6
+        prompt_digest: sha256:130019c29902078e1434c1922f4a8dd30f28133f94f7e5159e19c7a263cb51e9
+      observed:
+        baseline: null
+        current:
+          summary: Код задаёт правила проверки состава модуля, находит непосредственных
+            детей по карте каталогов и проверяет полноту классификации
+            участников.
+          responsibilities:
+            - text: Определяет ближайший зарегистрированный каталог-предок для каждого модуля
+                и возвращает состав его непосредственных детей.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:60e42ff99a62c9c61dd41ec38ccf10ff2b7b0ef151285eb07693151bfa35f582
+            - text: Задаёт инструкции содержательной проверки композиции и валидирует
+                классификацию и оценку каждого ожидаемого участника.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:60e42ff99a62c9c61dd41ec38ccf10ff2b7b0ef151285eb07693151bfa35f582
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-grasp
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Инструкция требует проверить совместимость контрактов исполнителей
+            и пригодность утилит с указанием потребителей. Валидация требует
+            корректную роль, задачу и оценку для каждого ожидаемого ребёнка и
+            отклоняет чужие и повторные записи.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:60e42ff99a62c9c61dd41ec38ccf10ff2b7b0ef151285eb07693151bfa35f582
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-grasp
+            section: boundaries
+            id: B1
+          subject: current
+          verdict: consistent
+          explanation: Каждый каталог входит в группу ближайшего существующего предка,
+            поэтому в составе выбранного модуля нет потомков через другого
+            зарегистрированного ребёнка. Инструкция исключает более глубоких
+            потомков, а проверка отчёта ограничивает список ожидаемыми
+            участниками.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:60e42ff99a62c9c61dd41ec38ccf10ff2b7b0ef151285eb07693151bfa35f582
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Реализация задаёт правила проверки контрактов композиции и ограничивает
+            её выбранным модулем и непосредственными детьми.
+        change:
+          verdict: not_applicable
+          summary: Первый анализ без базового снимка.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-d520de8964fc9f11261b5e60771f0f7808d4ed0312b45de68165815ffc227cde
+          digest: sha256:73ad7012cf04fb3ed05cfe392b6dded1fc5c53829d00e0aaee9488b51de11256
+      module:
+        id: archiview-grasp
+        baseline_path: null
+        current_path: analyse/grasp
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-grasp
+              section: purpose
+              id: purpose
+            text: Определять область и правила проверки согласованности контрактов в
+              композиции модуля.
+          - reference:
+              snapshot: current
+              module_id: archiview-grasp
+              section: boundaries
+              id: B1
+            text: Композиция охватывает выбранный модуль и его непосредственных детей.
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-d520de8964fc9f11261b5e60771f0f7808d4ed0312b45de68165815ffc227cde
+        digest: sha256:d520de8964fc9f11261b5e60771f0f7808d4ed0312b45de68165815ffc227cde
+      source_head: d8304bd7550f4527428f2a07736bc14f45427e6a
+      source_captured_at: 2026-11-26T12:24:24.782Z
+      review_scope: self
+      model:
+        provider: openai
+        id: gpt-6
+      prompt_digest: sha256:130019c29902078e1434c1922f4a8dd30f28133f94f7e5159e19c7a263cb51e9
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-d520de8964fc9f11261b5e60771f0f7808d4ed0312b45de68165815ffc227cde
+      digest: sha256:73ad7012cf04fb3ed05cfe392b6dded1fc5c53829d00e0aaee9488b51de11256
+      kind: working
+      complete: true
+      modules:
+        - directory: analyse/grasp
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-grasp
+
+              title: GRASP
+
+              kind: module
+
+              purpose: Определять область и правила проверки согласованности
+              контрактов в композиции модуля.
+
+              boundaries:
+                B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-grasp
+              title: GRASP
+              kind: module
+              purpose: Определять область и правила проверки согласованности контрактов в
+                композиции модуля.
+              boundaries:
+                B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-grasp.yaml
+          files:
+            - path: .archiview/modules/archiview-grasp.yaml
+              hash: e123f159b1e2981c118386004071c9432b067ca9
+              mode: "100644"
+            - path: analyse/grasp/analysis.ts
+              hash: 7b841f62cab5c69f544d2ca8da7b7dffd4de18f5
+              mode: "100644"
+          sourceFiles: 1
+          fingerprint: sha256:0c37b42e5df8d3fba6c675b2305ea42f69f992c4b0e901d46e57f11b1e4c2bca
+      facts:
+        - id: sha256:d898bbc685fb58299debbd4c84ce6d2ac1acbe3153f8a06e57e602544a04d46c
+          kind: file
+          path: .archiview/modules/archiview-grasp.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-grasp
+
+            title: GRASP
+
+            kind: module
+
+            purpose: Определять область и правила проверки согласованности
+            контрактов в композиции модуля.
+
+            boundaries:
+              B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+            invariants: {}
+        - id: sha256:60e42ff99a62c9c61dd41ec38ccf10ff2b7b0ef151285eb07693151bfa35f582
+          kind: file
+          path: analyse/grasp/analysis.ts
+          start_line: 1
+          end_line: 37
+          text: >
+            import path from "node:path";
+
+            import { graspParticipants, type ReviewReport } from
+            "../../framework/ai-report/types.js";
+
+            import type { SnapshotModule } from
+            "../../framework/snapshots/types.js";
+
+
+            export const instructions = "Проверь композицию по собственному
+            контракту и контрактам непосредственных детей. Разбери детей по их
+            роли относительно обещания родителя. Для непосредственных
+            исполнителей проверь совместимость их контрактов между собой и
+            способность вместе выполнить обещание родителя. Для утилит (Pure
+            Fabrication) укажи потребителя и задачу, проверь достаточность и
+            границы обязанностей. Для листа объясни неприменимость композиции.
+            Выводы и замечания обоснуй сохранёнными контрактами. Заполни
+            report.extensions[\"archiview.grasp\"] для каждого непосредственного
+            ребёнка из экспорта: moduleId, role (executor или utility), task
+            (задача), assessment (результат сравнения). Для утилиты добавь
+            consumers со списком потребителей; если по контрактам потребитель не
+            установлен, укажи это в assessment и оставь пустой список. Для листа
+            используй пустой массив. Код, контракты предков и более глубоких
+            потомков в эту проверку не входят.";
+
+
+            export function validateComposition(report: ReviewReport, children:
+            string[]) {
+              const participants = graspParticipants(report);
+              const pending = new Set(children);
+              const text = (value: unknown) => typeof value === "string" && value.trim().length > 0;
+              for (const item of participants) {
+                if (!item || !pending.delete(item.moduleId) || !["executor", "utility"].includes(item.role) ||
+                    !text(item.task) || !text(item.assessment) ||
+                    (item.role === "utility" && !Array.isArray(item.consumers)) ||
+                    (item.consumers !== undefined && (!Array.isArray(item.consumers) || !item.consumers.every(text))))
+                  throw new Error("GRASP: некорректная оценка участника композиции.");
+              }
+              if (pending.size || !Array.isArray(report.extensions?.["archiview.grasp"]))
+                throw new Error("GRASP: требуется оценка каждого непосредственного ребёнка: " + [...pending].join(", "));
+            }
+
+
+            /** The closest mapped ancestor owns each child in the composition.
+            */
+
+            export function compositionChildren(modules: SnapshotModule[]) {
+              const directories = new Set(modules.map(module => module.directory));
+              const children = new Map<string, SnapshotModule[]>();
+              for (const module of modules) {
+                if (module.directory === ".") continue;
+                let parent = path.posix.dirname(module.directory);
+                while (parent !== "." && !directories.has(parent)) parent = path.posix.dirname(parent);
+                if (!directories.has(parent)) continue;
+                const siblings = children.get(parent);
+                if (siblings) siblings.push(module);
+                else children.set(parent, [module]);
+              }
+              return children;
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-grasp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 3
+          grasp: 1
+          implementation: 2
+      scope_digest: sha256:ba8b82008e0c661e3deb1179cc8d89a597c004abb77f78b3e464cbba240fbf71
+    input_digest: sha256:4e488c6ecbd2bc3987adc106b2641a9c6593c77723b34a336fad9dec573f09c9
+    result_digest: sha256:d35567fa9173a3751e575ec55b37051aa5486c46ccad8e9f62afd84da9a66c2e
+    content_digest: sha256:518dfcb9b985e78a4979dd20dab1edaa890a40a86972a0dba4671a63e620a52c
+    registration_order: 1024

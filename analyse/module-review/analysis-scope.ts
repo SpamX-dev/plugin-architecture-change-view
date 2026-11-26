@@ -10,8 +10,7 @@ export const analysisInstructions = { grasp: grasp.instructions, implementation:
 
 export function analysisModules(type: AnalysisType, snapshot: SnapshotData, own: SnapshotModule) {
   if (type === "implementation") return [own];
-  const children = grasp.childDirectories(snapshot.modules, own.directory);
-  return [own, ...snapshot.modules.filter(module => children.has(module.directory))];
+  return [own, ...(grasp.compositionChildren(snapshot.modules).get(own.directory) ?? [])];
 }
 
 /** Both full bundles and compact records must prove the projection of the declared analysis. */

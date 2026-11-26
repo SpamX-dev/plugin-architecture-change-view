@@ -1,7 +1,7 @@
-import type { ModuleSummary } from "../types.js";
-import { treeParents } from "./tree-paths.js";
+import type { ModuleSummary } from "../view-model/types.js";
+import { treeParents } from "../view-model/tree-paths.js";
 
-type CountedModule = Pick<ModuleSummary, "key" | "directory" | "status" | "analyses"> & {
+type CountedModule = Pick<ModuleSummary, "key" | "directory" | "status" | "analyses" | "dependencyCycleCount"> & {
   review?: { activeFindings?: number; findings?: number; assessment?: { current?: { verdict: string } } } | null;
 };
 
@@ -13,10 +13,11 @@ export function moduleFindingCount(module: Pick<CountedModule, "review" | "analy
 }
 
 /** Свёрнутая строка включает замечания видимых потомков своей стороны сравнения. */
-export function treeFindingCounts(modules: CountedModule[], expanded: Set<string>, parents = treeParents(modules)) {
-  const counts = new Map(modules.map((module) => [module.key, moduleFindingCount(module)]));
+export function treeFindingCounts(modules: CountedModule[], expanded: Set<string>, parents = treeParents(modules),
+  countFor: (module: CountedModule) => number = moduleFindingCount) {
+  const counts = new Map(modules.map((module) => [module.key, countFor(module)]));
   for (const module of modules) {
-    const count = moduleFindingCount(module);
+    const count = countFor(module);
     if (!count || module.directory === ".") continue;
     let parent = parents.get(module.key);
     while (parent) {

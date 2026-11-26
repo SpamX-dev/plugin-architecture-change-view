@@ -16,6 +16,18 @@ export async function getDependencyCycles(root: string, state: string | undefine
   return graph ? { status: "checked", cycles: dependencyCycles(graph.edges, module.directory) } : { status: "unindexed" };
 }
 
+export async function getDependencyCycleCounts(root: string, state: string | undefined, snapshot: Snapshot): Promise<Map<string, number>> {
+  try {
+    const graph = await readRelationGraph(root, state, snapshot);
+    if (!graph) return new Map();
+    const owners = new Set(graph.edges.map(edge => edge.from));
+    return new Map([...owners].map(owner => [owner, dependencyCycles(graph.edges, owner).length]));
+  } catch {
+    // Keep the tree usable when the optional graph cannot be read. The cycle panel shows the error.
+    return new Map();
+  }
+}
+
 export async function buildRelations(root: string, state: string | undefined, snapshot: Snapshot, directory: string | null) {
   try { return moduleRelations(await rebuildRelationGraph(root, state, snapshot), snapshot, directory); }
   catch (cause) {

@@ -1,6 +1,6 @@
+import path from "node:path";
 import { graspParticipants, type ReviewReport } from "../../framework/ai-report/types.js";
 import type { SnapshotModule } from "../../framework/snapshots/types.js";
-import { directChildContracts } from "../module-review/module-state.js";
 
 export const instructions = "Проверь композицию по собственному контракту и контрактам непосредственных детей. Разбери детей по их роли относительно обещания родителя. Для непосредственных исполнителей проверь совместимость их контрактов между собой и способность вместе выполнить обещание родителя. Для утилит (Pure Fabrication) укажи потребителя и задачу, проверь достаточность и границы обязанностей. Для листа объясни неприменимость композиции. Выводы и замечания обоснуй сохранёнными контрактами. Заполни report.extensions[\"archiview.grasp\"] для каждого непосредственного ребёнка из экспорта: moduleId, role (executor или utility), task (задача), assessment (результат сравнения). Для утилиты добавь consumers со списком потребителей; если по контрактам потребитель не установлен, укажи это в assessment и оставь пустой список. Для листа используй пустой массив. Код, контракты предков и более глубоких потомков в эту проверку не входят.";
 
@@ -19,6 +19,18 @@ export function validateComposition(report: ReviewReport, children: string[]) {
     throw new Error("GRASP: требуется оценка каждого непосредственного ребёнка: " + [...pending].join(", "));
 }
 
-export function childDirectories(modules: SnapshotModule[], directory: string) {
-  return new Set((directChildContracts(modules).get(directory) ?? []).map(child => child.directory));
+/** The closest mapped ancestor owns each child in the composition. */
+export function compositionChildren(modules: SnapshotModule[]) {
+  const directories = new Set(modules.map(module => module.directory));
+  const children = new Map<string, SnapshotModule[]>();
+  for (const module of modules) {
+    if (module.directory === ".") continue;
+    let parent = path.posix.dirname(module.directory);
+    while (parent !== "." && !directories.has(parent)) parent = path.posix.dirname(parent);
+    if (!directories.has(parent)) continue;
+    const siblings = children.get(parent);
+    if (siblings) siblings.push(module);
+    else children.set(parent, [module]);
+  }
+  return children;
 }

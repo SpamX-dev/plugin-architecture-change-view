@@ -1,6 +1,5 @@
-import type { ArchiViewClient, ClauseReference, ComparisonView, FindingTarget, FixRecord, ModuleDetail, ModuleSummary, ReviewBundle } from "../types.js";
-import { errorCode, errorMessage } from "../types.js";
-import type { WorkspaceContext } from "../workspace-presenter/workspace.js";
+import type { ArchiViewClient, ClauseNavigation, ClauseReference, ComparisonView, FindingTarget, FixRecord, ModuleDetail, ModuleSummary, ReviewBundle, WorkspaceContext } from "../view-model/types.js";
+import { errorCode, errorMessage } from "../view-model/types.js";
 import { byId, el, renderFailure } from "../views/dom.js";
 import { bindCardNavigation, renderHeading as showHeading, renderFindingCount } from "../views/module-heading.js";
 import { renderContractHeading, savedClauseMatchesContract } from "../views/contract.js";
@@ -14,10 +13,6 @@ import { prototypeDialog } from "./prototype-editor.js";
 import { isAnalysisType } from "../../../framework/ai-report/types.js";
 import { isPrototype } from "../../../framework/contracts/types.js";
 
-export interface ClauseNavigation {
-  reference: ClauseReference;
-  review: ReviewBundle;
-}
 export type ModulePresenter = ReturnType<typeof createModulePresenter>;
 
 export function createModulePresenter(client: ArchiViewClient, workspace: WorkspaceContext) {
@@ -29,7 +24,7 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
     findingFixes: Map<string, FixRecord>;
   } = { detail: null, selected: null, selection: 0, tab: "document", findingFixes: new Map() };
   const collapsedFileDirectories = new Set<string>();
-  const showRelations = createRelationsPanel(client);
+  const showRelations = createRelationsPanel(client, workspace.loadStatuses);
   const fixesByRepository = new Map<string, Map<string, FixRecord>>();
   let reviewDetail: ModuleDetail | undefined;
   let detailRequest: ModuleDetail | undefined;
@@ -259,7 +254,8 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
       const repository = view.workspace?.repository;
       const type = state.tab;
       const entry = state.detail.reviews.find(review => review.report.id === state.detail?.analyses?.[type]?.id);
-      renderFindingCount(state.detail);
+      const cycleCount = view.modules.find(module => module.key === moduleKey)?.dependencyCycleCount;
+      renderFindingCount(state.detail, cycleCount);
       if (!entry) {
         reviewPanel.append(analysisActions);
         analysisActions.hidden = false;

@@ -1,6 +1,6 @@
-import { el, icon } from "../views/dom.js";
-import { ancestors, treeParents } from "./tree-paths.js";
-import type { ModuleSummary } from "../types.js";
+import { el, icon } from "./dom.js";
+import { ancestors, treeParents } from "../view-model/tree-paths.js";
+import type { ModuleSummary } from "../view-model/types.js";
 
 /** Select a parent from the current side of this repository's comparison. */
 export function prototypeLocation(dialog: HTMLDialogElement, modules: ModuleSummary[]) {

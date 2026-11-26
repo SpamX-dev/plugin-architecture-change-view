@@ -1,14 +1,7 @@
 import type { ClauseChange, DeletedClause } from "../../../module-operations/api.js";
-import type { ContractFieldChange } from "../../../analyse/git-changes/contract-diff.js";
-import type { ArchiViewClient, ComparisonView, ModuleDetail, Section } from "../types.js";
-import { errorMessage } from "../types.js";
+import type { ArchiViewClient, ClauseControls, ClauseItem, ComparisonView, ModuleDetail, Section } from "../view-model/types.js";
+import { errorMessage } from "../view-model/types.js";
 import { el } from "../views/dom.js";
-
-interface ClauseItem { id: string; change: ContractFieldChange }
-
-export interface ClauseControls {
-  open(section: Section, title: string, item?: ClauseItem): void;
-}
 
 function clauseDialog(title: string, section: Section, item: ClauseItem | undefined, deleted: DeletedClause[],
   save: (change: ClauseChange) => Promise<void>) {

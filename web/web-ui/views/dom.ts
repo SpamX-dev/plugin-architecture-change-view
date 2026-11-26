@@ -1,4 +1,4 @@
-import { errorMessage } from "../types.js";
+import { errorMessage } from "../view-model/types.js";
 
 /** Статические SVG-значки, не содержащие пользовательских строк. */
 const icons = {
@@ -37,15 +37,25 @@ export function icon(name: keyof typeof icons) {
 }
 
 /** Общий жук для пункта, вкладки и дерева, независимый от цвета изменения контракта. */
-export function findingBug() {
+export function findingBug(kind: "cycle" | "review" = "review") {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 20 20");
   svg.setAttribute("aria-hidden", "true");
   svg.classList.add("finding-bug");
+  if (kind === "cycle") svg.classList.add("cycle-bug");
   const shape = document.createElementNS(svg.namespaceURI, "path");
   shape.setAttribute("d", "M7 7h6v6a3 3 0 0 1-6 0V7ZM8 7V5a2 2 0 0 1 4 0v2M10 8v8M7 9H4M7 12H3M7 15l-3 2M13 9h3M13 12h4M13 15l3 2M8 4 6 2M12 4l2-2");
   svg.append(shape);
   return svg;
+}
+
+export function findingMarker(label: string, kind: "cycle" | "review" = "review") {
+  const marker = el("span", "finding-marker");
+  marker.title = label;
+  marker.setAttribute("role", "img");
+  marker.setAttribute("aria-label", label);
+  marker.append(findingBug(kind));
+  return marker;
 }
 
 /** Создаёт уведомление в контексте документа, не подменяя его содержимое. */

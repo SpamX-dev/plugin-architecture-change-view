@@ -1,6 +1,6 @@
 import type { ReviewSetting, ReviewSettings } from "../../../module-operations/api.js";
-import type { ArchiViewClient, ComparisonView } from "../types.js";
-import { errorMessage } from "../types.js";
+import type { ArchiViewClient, ComparisonView } from "../view-model/types.js";
+import { errorMessage } from "../view-model/types.js";
 import { el } from "../views/dom.js";
 
 export function openReviewSettings(client: ArchiViewClient, view: ComparisonView) {

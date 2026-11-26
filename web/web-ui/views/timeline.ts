@@ -1,5 +1,5 @@
-import type { TimelineEntry, ComparisonView } from "../types.js";
-import { byId, el } from "../views/dom.js";
+import type { TimelineEntry, ComparisonView } from "../view-model/types.js";
+import { byId, el } from "./dom.js";
 
 /** Хронология различает изменения, снятые в пределах одной минуты. */
 export function timelineDate(value: string | undefined) {

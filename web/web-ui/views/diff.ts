@@ -1,8 +1,8 @@
 import type { DocumentDiffLine, FileDiff } from "../../../module-operations/api.js";
-import type { ComparisonView } from "../types.js";
-import { errorMessage } from "../types.js";
+import type { ComparisonView } from "../view-model/types.js";
+import { errorMessage } from "../view-model/types.js";
 import { el, icon } from "./dom.js";
-import { timelineLabel } from "../workspace-presenter/timeline.js";
+import { timelineLabel } from "./timeline.js";
 
 export function openDiffDialog(title: string) {
   const dialog = el("dialog", "contract-diff-dialog");
