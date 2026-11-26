@@ -2,11 +2,12 @@ import { isUtf8 } from "node:buffer";
 import { open } from "node:fs/promises";
 import path from "node:path";
 import { structuredPatch } from "diff";
-import { regularProjectFile } from "../analyse/project/source-files.js";
+import { regularProjectFile } from "../analyse/project-sources/source-files.js";
+import { isProjectMetadataPath } from "../framework/project/paths.js";
 import { repositoryDirectoryOwnership } from "../analyse/project/workspace.js";
 import { errorDetails } from "../node-errors.js";
 import { git } from "../analyse/git-changes/capture.js";
-import { MODULE_TREE_FILE, readContractStorageFile } from "../analyse/project/module-tree.js";
+import { MODULE_TREE_FILE, readContractStorageFile } from "../analyse/project-sources/module-tree.js";
 import type { ComparisonModule, Snapshot, SnapshotModule } from "../framework/snapshots/types.js";
 import type { FileDiff } from "./api.js";
 import { ApplicationError } from "./errors.js";
@@ -30,7 +31,8 @@ async function workingContent(root: string, file: string, hash: string): Promise
     if (bytes.length > maxBytes) return { message: tooLarge };
     return verifiedWorkingText(root, file, hash, bytes);
   }
-  if (!await regularProjectFile(root, file) || !await repositoryDirectoryOwnership(root)(path.posix.dirname(file))) throw stale();
+  if (!await regularProjectFile(root, file, isProjectMetadataPath) ||
+      !await repositoryDirectoryOwnership(root, isProjectMetadataPath)(path.posix.dirname(file))) throw stale();
   try {
     const handle = await open(path.join(root, file), "r");
     try {

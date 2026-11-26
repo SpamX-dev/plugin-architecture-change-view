@@ -3,7 +3,7 @@ import { lstat, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { errorDetails } from "../../node-errors.js";
-import { excludedProjectPath, STATE_DIRECTORY, within } from "./paths.js";
+import { excludedProjectPath, STATE_DIRECTORY, within } from "../../framework/project/paths.js";
 import { MODULE_TREE_FILE } from "../../framework/contracts/module-tree.js";
 import type { ProjectSourceLocation, WorkspaceProject } from "../../framework/project-types/types.js";
 
@@ -22,6 +22,16 @@ async function isRepositoryRoot(directory: string) {
   if (!marker || marker.isSymbolicLink() || !marker.isDirectory() && !marker.isFile()) return false;
   const top = await gitTopLevel(directory);
   return top !== null && path.relative(top, directory) === "";
+}
+
+/** A selected project can start in any directory of a Git worktree, including a planned path. */
+export async function containingWorktree(directory: string) {
+  while (!await entry(directory)) {
+    const parent = path.dirname(directory);
+    if (parent === directory) return null;
+    directory = parent;
+  }
+  return gitTopLevel(directory);
 }
 
 async function gitTopLevel(directory: string) {
@@ -66,20 +76,22 @@ export async function discoverWorkspaceRepositories(workspace: string): Promise<
 /** A Git checkout is a project candidate even before its first ArchiView map exists. */
 export async function discoverWorkspaceProjects(workspace: string): Promise<WorkspaceProject[]> {
   const repositories = await discoverWorkspaceRepositories(workspace);
-  return Promise.all(repositories.map(async repository => {
-    const root = path.join(workspace, repository);
-    const state = await entry(path.join(root, STATE_DIRECTORY));
-    const map = state?.isDirectory() ? await entry(path.join(root, MODULE_TREE_FILE)) : undefined;
-    return { repository, hasModuleMap: map?.isFile() ?? false };
-  }));
+  return Promise.all(repositories.map(async repository =>
+    ({ repository, hasModuleMap: await hasModuleMap(path.join(workspace, repository)) })));
 }
 
-function checkedTarget(root: string, relative: string) {
+export async function hasModuleMap(root: string) {
+  const state = await entry(path.join(root, STATE_DIRECTORY));
+  const map = state?.isDirectory() ? await entry(path.join(root, MODULE_TREE_FILE)) : undefined;
+  return map?.isFile() ?? false;
+}
+
+function checkedTarget(root: string, relative: string, excluded = excludedProjectPath) {
   if (path.isAbsolute(relative) || path.win32.isAbsolute(relative) || /^[a-z]:/i.test(relative))
     throw new Error("source path must be relative");
   const target = path.resolve(root, relative);
   if (!within(root, target)) throw new Error("source path is outside project");
-  if (excludedProjectPath(path.relative(root, target))) throw new Error("path is excluded from project sources");
+  if (excluded(path.relative(root, target))) throw new Error("path is excluded from project sources");
   return target;
 }
 
@@ -98,14 +110,14 @@ export async function resolveWorkspaceRepository(workspace: string, repository: 
 }
 
 /** Check only the ancestors of paths actually listed by Git or the contract map. */
-export function repositoryDirectoryOwnership(root: string) {
+export function repositoryDirectoryOwnership(root: string, excluded = excludedProjectPath) {
   const states = new Map<string, Promise<boolean>>([[".", Promise.resolve(true)]]);
   function owns(directory: string): Promise<boolean> {
     const cached = states.get(directory);
     if (cached) return cached;
     const result = owns(path.posix.dirname(directory)).then(async (parentOwned) => {
       if (!parentOwned) return false;
-      const candidate = checkedTarget(root, directory);
+      const candidate = checkedTarget(root, directory, excluded);
       const info = await entry(candidate);
       if (!info) return true; // Its parent owns any planned path or deleted tracked file.
       if (info.isSymbolicLink() || !info.isDirectory()) return false;

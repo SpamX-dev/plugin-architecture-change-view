@@ -2,8 +2,14 @@ import type { Freshness, Coverage, Reason, ReviewBundle } from "../types.js";
 
 /** Поддерево добавляет сигнал только свёрнутой строке; карточка показывает собственный анализ. */
 export function moduleAnalysisStatus(module: {
+  analyses?: import("../types.js").ModuleSummary["analyses"];
+  descendantsNeedAnalysis?: boolean;
   reviewStatus?: { self?: { current?: Freshness }; subtree?: { current?: Freshness } } | null;
 }, scope: "self" | "subtree" = "self") {
+  if (module.analyses) {
+    if (!module.analyses.grasp || !module.analyses.implementation) return "Требует анализа";
+    return scope === "subtree" && module.descendantsNeedAnalysis ? "Вложенные модули требуют анализа" : null;
+  }
   if (module.reviewStatus === undefined) return null;
   const requiresAnalysis = (value?: Freshness) => value?.status !== "fresh" || value.conflict;
   if (requiresAnalysis(module.reviewStatus?.self?.current)) return "Требует анализа";

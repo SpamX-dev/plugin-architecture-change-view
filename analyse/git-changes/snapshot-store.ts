@@ -1,5 +1,5 @@
 import type { Comparison, Snapshot } from "../../framework/snapshots/types.js";
-import { ArchiveCache, readArchiveFile } from "../project/archive-cache.js";
+import { ArchiveCache, readArchiveFile } from "../../storage/archive-cache.js";
 import { errorDetails } from "../../node-errors.js";
 /**
  * Сохраняет снимки в <root>/.archiview либо явно выбранном внешнем хранилище.
@@ -14,8 +14,8 @@ import { parseYaml } from "../../framework/serialization/yaml.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
 import { digest } from "../../framework/serialization/digest.js";
 import { comparisonId } from "./comparison.js";
-import { ensureProjectIdentity, readSnapshotRoot } from "../project/identity.js";
-import { assertStateLocation, projectStateDirectory } from "../project/paths.js";
+import { ensureProjectIdentity, readSnapshotRoot } from "../../storage/identity.js";
+import { assertStateLocation, projectStateDirectory } from "../../storage/paths.js";
 
 /** Адресует переносимое хранилище внутри выбранного проекта. */
 export function defaultSnapshotDirectory(root: string) { return projectStateDirectory(root); }

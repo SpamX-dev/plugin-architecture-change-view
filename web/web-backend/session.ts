@@ -6,13 +6,17 @@ import type { PublishedComparison } from "../../framework/static-report/types.js
 import type { SessionView } from "../../module-operations/session-view.js";
 import { errorDetails } from "../../node-errors.js";
 /** Прикладная сессия проекта: снимки и операции просмотра без зависимости от транспорта. */
+import { followsAnalysis } from "../../analyse/module-review/analysis-timeline.js";
+import { DecisionConflict, FindingDecisions } from "../../analyse/module-review/dispositions.js";
+import { currentAnalysisEntries, analysisSummary } from "../../module-operations/module-view.js";
 import { observeModules } from "../../analyse/module-review/module-observations.js";
 import { RepositoryWatch } from "./repository-watch.js";
+import { repositoryStateDirectory } from "./state-directory.js";
 import { GitTreeReader } from "../../analyse/git-changes/git-tree.js";
 import { realpath } from "node:fs/promises";
 import { ApplicationError } from "../../module-operations/errors.js";
 import { captureGitHead, captureWorkingTree, listGitRevisions, readGitHeadRevision } from "../../analyse/git-changes/capture.js";
-import { compareRepositorySnapshots } from "../../analyse/git-changes/comparison.js";
+import { compareGitFiles, compareRepositorySnapshots } from "../../analyse/git-changes/comparison.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
 import { openProjectHistory } from "../../analyse/module-review/legacy-history.js";
 import { ReviewStore } from "../../analyse/module-review/review-store.js";
@@ -26,12 +30,13 @@ import { createContractEditor } from "../../module-operations/contract-editor.js
 import { changeExistingPrototype, createPrototypes } from "../../module-operations/prototypes.js";
 
 /** Открывает хранилища одного проекта; вызывается лениво при первом запросе данных. */
-export async function createArchiViewSession({ root: requestedRoot, stateDirectory, workspaceRoot, deferPublication = true }: { root: string; stateDirectory?: string; workspaceRoot?: string; deferPublication?: boolean }) {
+export async function createArchiViewSession({ root: requestedRoot, stateDirectory, sharedStateDirectory, workspaceRoot, deferPublication = true }: { root: string; stateDirectory?: string; sharedStateDirectory?: boolean; workspaceRoot?: string; deferPublication?: boolean }) {
   const root = await realpath(requestedRoot);
-  const { store, migration } = await openProjectHistory(root, stateDirectory);
+  const { store, migration } = await openProjectHistory(root, await repositoryStateDirectory(root, stateDirectory, sharedStateDirectory));
   const reviews = new ReviewStore(store);
   const reports = new ReportStore(store);
   const changes = new ChangeHistory(store);
+  const decisions = new FindingDecisions(root, store.directory);
   const analysis = new AnalysisRequests(store, reports, workspaceRoot ?? root);
   const reader = new GitTreeReader(root, store.snapshotRoot);
   const watcher = new RepositoryWatch(root, store.directory);
@@ -59,10 +64,11 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     // Уже прочитанные опубликованные снимки остаются доступными по точному id.
     // Перечень сохранённых баз не должен заново читать всю историю отчётов.
     publishedSnapshots = published ? [published.baseline, published.current].filter((snapshot): snapshot is Snapshot => snapshot !== null) : [];
-    const startupView = await compareRepositorySnapshots(root, initialBaseline, launch, { emptyTree: !initialBaseline });
+    const options = { emptyTree: !initialBaseline };
+    const startupView = await compareRepositorySnapshots(root, initialBaseline, launch, options);
     if (startupView.complete) {
       const publication = await reports.rebuild(initialBaseline, launch, startupView.modules);
-      startupComparison = startupView;
+      startupComparison = await compareGitFiles(root, initialBaseline, launch, options);
       publishedSnapshots = publication.comparison ? [publication.comparison.baseline, publication.comparison.current].filter((snapshot): snapshot is Snapshot => snapshot !== null) : [];
     }
   });
@@ -137,6 +143,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   async function liveTree(head: string | null) {
     await reports.prepareLocalState();
     const snapshot = await reader.working(head);
+    snapshot.baseRevision = head;
     await observeModules(store, snapshot);
     snapshot.digest = snapshotDigest(snapshot);
     snapshot.id = "working-" + snapshot.digest.slice(7);
@@ -152,6 +159,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       if (!observed || signature(module) !== signature(observed))
         throw new ApplicationError("STALE_VIEW", "Файлы изменились, обновите дерево");
     }
+    full.baseRevision = tree.baseRevision;
     full.observations = tree.observations;
     full.digest = snapshotDigest(full);
     if (full.kind === "working") full.id = "working-" + full.digest.slice(7);
@@ -196,10 +204,10 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     return view;
   }
 
-  async function ensureReviews(view: SessionView) {
+  async function ensureReviews(view: SessionView, loaded?: SessionView["reviews"]) {
     if (!view.gitTree) return;
     view.reviewLoad ??= (async () => {
-      const entries = await reports.readReviews();
+      const entries = loaded ?? await reports.readReviews();
       const model = view.reportModel;
       const statuses = model.aggregateTreeStatuses(entries);
       for (const module of view.modules) {
@@ -212,10 +220,40 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     await view.reviewLoad;
   }
 
+  function selectedAnalyses(entries: SessionView["reviews"], view: SessionView) {
+    return currentAnalysisEntries(entries, view.reportModel, view.currentSnapshot, entry => followsAnalysis(entry, view.currentSnapshot, reader));
+  }
+
+  async function loadAnalysisSummaries(view: SessionView, entries = view.reviews) {
+    const byModule = new Map<string, typeof entries>();
+    for (const entry of entries) {
+      const group = byModule.get(entry.module_id);
+      if (group) group.push(entry);
+      else byModule.set(entry.module_id, [entry]);
+    }
+    for (const module of view.modules) {
+      const reviews = byModule.get(module.moduleId ?? "");
+      module.analyses = reviews ? await analysisSummary(await selectedAnalyses(reviews, view), decisions) : {};
+      module.descendantsNeedAnalysis = false;
+    }
+    const directories = new Map(view.modules.map(module => [module.directory, module]));
+    for (const module of view.modules) {
+      if (!module.after || module.analyses?.grasp && module.analyses.implementation) continue;
+      let directory = module.directory;
+      while (directory !== ".") {
+        directory = directory.includes("/") ? directory.slice(0, directory.lastIndexOf("/")) : ".";
+        const parent = directories.get(directory);
+        if (parent) parent.descendantsNeedAnalysis = true;
+      }
+    }
+  }
+
   async function getReviewStatuses({view:id}: {view:string}) {
     const view = findView(id);
-    await ensureReviews(view);
-    return structuredClone({ modules: view.modules.map(({key, review, reviewStatus}) => ({key, review, reviewStatus})), diagnostics: view.reviewDiagnostics });
+    const entries = await reports.readReviews();
+    await ensureReviews(view, entries);
+    await loadAnalysisSummaries(view, entries);
+    return structuredClone({ modules: view.modules.map(({key, review, reviewStatus, analyses, descendantsNeedAnalysis}) => ({key, review, reviewStatus, analyses, descendantsNeedAnalysis})), diagnostics: view.reviewDiagnostics });
   }
 
   /** Full evidence is only collected for an explicit action on the immutable tree. */
@@ -307,10 +345,9 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       baseline = current.baseRevision ? await gitSnapshot(current.baseRevision, headRevision) : null;
     } else usePublishedBaseline = true;
     if (!baseline && selected && !["initial", "auto"].includes(selected)) throw new ApplicationError("NOT_FOUND", "База сравнения не найдена");
-    // An explicit current selection updates work. A historical view only observes live changes
-    // against the authoritative base, including a base chosen by another session.
-    const selectLiveBaseline = targetId === "current" && !usePublishedBaseline ? () => baseline : retainedBaseline;
-    const { history, liveReports } = await reports.refreshWorking(working, selectLiveBaseline);
+    const { history, liveReports } = targetId === "current"
+      ? await reports.refreshWorking(working, usePublishedBaseline ? retainedBaseline : () => baseline)
+      : { history: await reports.list(), liveReports: [] };
     if (usePublishedBaseline) baseline = retainedBaseline(history.comparison);
     if (history.comparison) {
       initialBaseline = history.comparison.baseline;
@@ -335,6 +372,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       module.structure = { automatic: true, complete: view.complete,
         checkHash: technical?.check_hash ?? null, diagnostics: technical?.structure.diagnostics ?? [] };
     }
+    await loadAnalysisSummaries(view);
     views.set(view.id, view);
     while (views.size > 8) views.delete(views.keys().next().value!);
     const localChanges = new Map([...saved.filter((entry) => entry.kind === "change" && (entry.baseRevision ?? null) === headRevision),
@@ -357,10 +395,16 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   /** Возвращает детали и доказательства из выбранного неизменяемого представления. */
   async function getModule(args: ModuleArgs): Promise<ModuleDetail> {
     const { view, module } = selectedModule(args);
-    if (args.analysis !== false) await ensureReviews(view);
-    const matching = args.analysis === false ? [] : view.reviews.filter((bundle) => module.moduleId ? bundle.report.module.id === module.moduleId :
-      (bundle.report.module.current_path ?? bundle.report.module.baseline_path) === module.directory);
-    const detail = moduleDetail(module, matching, matching.length ? view.reportModel : undefined, view.modules, root, reports.work);
+    if (args.analysis !== false && !args.currentOnly) await ensureReviews(view);
+    let matching: SessionView["reviews"] = [];
+    if (args.analysis !== false) {
+      if (args.currentOnly && module.moduleId) matching = await reports.readModuleReviews(module.moduleId);
+      else matching = view.reviews.filter(bundle => module.moduleId ? bundle.module_id === module.moduleId :
+        (bundle.report.module.current_path ?? bundle.report.module.baseline_path) === module.directory);
+    }
+    const current = matching.length ? await selectedAnalyses(matching, view) : [];
+    const detail = moduleDetail(module, args.currentOnly ? current : matching, matching.length ? view.reportModel : undefined, view.modules, root, reports.work);
+    if (args.analysis !== false) detail.analyses = await analysisSummary(current, decisions, detail.reviews);
     if (view.target?.id === "current" && module.after) {
       detail.deletedClauses = editor.deletedClauses(module.after);
       const last = detail.deletedClauses.at(-1);
@@ -388,7 +432,9 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     const { view, module } = selectedModule(args);
     if (!view.complete || !(module.after ?? module.before)?.document.contract || !module.moduleId)
       throw new ApplicationError("INCOMPLETE_VIEW", "Нужны полный снимок и корректный контракт модуля");
-    return reports.withLivePublication(async () => analysis.create(await evidenceView(view), module));
+    if (args.analysisType && !module.after) throw new ApplicationError("INVALID_ARGUMENT", "Модуль отсутствует в выбранном срезе.");
+    if (args.analysisType === "grasp") return analysis.create(view, module, "grasp");
+    return reports.withLivePublication(async () => analysis.create(await evidenceView(view), module, args.analysisType, view.after));
   }
 
   /** Читает сохранённый статус запроса, не подменяя его запуском модели. */
@@ -450,6 +496,22 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     if (!module.after) throw new ApplicationError("STALE_VIEW", "Прототип отсутствует в текущем состоянии");
     return changeExistingPrototype(root, module.after, args.action === "edit" ? args.text : undefined);
   };
+  const updateFinding: SessionOperations["updateFinding"] = async args => {
+    const {view, module} = selectedModule(args);
+    const entries = module.moduleId ? await reports.readModuleReviews(module.moduleId) : [];
+    const review = (await selectedAnalyses(entries, view)).find(entry => entry.review_id === args.reviewId);
+    if (!review) throw new ApplicationError("STALE_VIEW", "Анализ отсутствует в выбранном срезе.");
+    const finding = review.report.findings.find(item => item.id === args.findingId && item.kind !== "contract_change");
+    const summary = !review.report.findings.length && review.report.assessment.current.verdict === "violation" && args.findingId === "assessment-summary";
+    if (!finding && !summary) throw new ApplicationError("NOT_FOUND", "Замечание не найдено.");
+    try {
+      return await decisions.update(args.reviewId, args.findingId, {status:args.status, decision:args.decision}, args.expected,
+        {status:finding?.lifecycle === "resolved" ? "resolved" : "open", decision:""});
+    } catch (error) {
+      if (error instanceof DecisionConflict) throw new ApplicationError("DECISION_CONFLICT", error.message);
+      throw error;
+    }
+  };
   const getRelations: SessionOperations["getRelations"] = async args => {
     const { view, module } = selectedModule(args);
     return relations.getRelations(root, store.directory, view.currentSnapshot, module.currentPath);
@@ -464,7 +526,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     if (!module.after?.files.some(f => f.path === args.file)) throw new ApplicationError("NOT_FOUND", "Файл отсутствует в модуле.");
     return relations.getRelationSource(root, store.directory, view.currentSnapshot, args.file);
   };
-  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, getRelations, buildRelations, getRelationSource,
+  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, updateFinding, getRelations, buildRelations, getRelationSource,
     changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot,
     listHarnesses: (_args: {repository?: string}) => analysis.harnesses(),
     deliverFindingFix: (args: FindingFixArgs) => analysis.deliverFix(args),

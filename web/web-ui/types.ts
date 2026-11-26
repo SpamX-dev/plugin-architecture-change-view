@@ -17,10 +17,10 @@ export type Freshness = Pick<AggregateAssessment, "status"> & {
   conflict?: boolean; current_violation?: boolean; coverage?: Coverage; reasons?: Reason[];
 };
 export type Finding = Pick<SavedFinding, "id" | "severity" | "summary" | "clauses" | "evidence"> & Partial<SavedFinding> & { assessmentOnly?: boolean };
-export type ReviewBundle = Pick<ModuleReview, "contracts"> & Partial<Pick<ModuleReview, "reviewFile" | "stale" | "dependencies" | "referencedContracts">> & {
+export type ReviewBundle = Pick<ModuleReview, "contracts"> & Partial<Pick<ModuleReview, "analysisType" | "dispositions" | "reviewFile" | "stale" | "dependencies" | "referencedContracts">> & {
   freshness?: Partial<Record<"current" | "change", Freshness>>;
   facts: Record<Side, (Pick<Fact, "id" | "path"> & Partial<Fact>)[]>;
-  report: Pick<ReviewReport, "id" | "module" | "assessment" | "observed" | "checks"> & {
+  report: Pick<ReviewReport, "id" | "module" | "assessment" | "observed" | "checks" | "extensions"> & {
     comparison: Partial<Record<Side, SnapshotReference | null>>;
     analysis: Pick<ReviewReport["analysis"], "created_at" | "coverage">;
     findings: Finding[];
@@ -40,13 +40,14 @@ export type ArchiViewClient = SessionOperations;
 export interface ContractRenderOptions {
   clauseControls?: ClauseControls;
   contractDiff: ModuleDetail["contractDiff"]; previousReferences?: Contract["references"]; titleElement?: HTMLElement; groupElement?: HTMLElement;
-  hideHeading?: boolean; rawChanged?: boolean; showRawDiff?: () => void; review?: ReviewBundle; openFinding?: (target: FindingTarget) => void;
+  hideHeading?: boolean; rawChanged?: boolean; showRawDiff?: () => void; reviews?: ReviewBundle[]; review?: ReviewBundle; openFinding?: (target: FindingTarget) => void;
 }
 export interface ReviewRenderOptions {
   reviewId?: string; findingId?: string; projectRoot?: string; fixStates?: Map<string, FixRecord>;
   listFixHarnesses?: () => ReturnType<SessionOperations["listHarnesses"]>;
   deliverFix?: (args: Omit<FindingFixArgs, "repository">) => Promise<Delivery>;
   copyFixPrompt?: (prompt: string) => Promise<void>; fixChanged?: (reviewId: string) => void;
+  saveDecision?: (reviewId: string, findingId: string, next: import("../../framework/ai-report/types.js").FindingDisposition, previous: import("../../framework/ai-report/types.js").FindingDisposition) => Promise<void>;
   openClause?: (reference: ClauseReference, review: ReviewBundle) => void;
 }
 export function errorMessage(error: unknown): string { return error instanceof Error ? error.message : String(error); }

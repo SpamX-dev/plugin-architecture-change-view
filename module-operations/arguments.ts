@@ -1,3 +1,4 @@
+import { isAnalysisType, validDisposition } from "../framework/ai-report/types.js";
 import type { SessionOperations } from "./api.js";
 import { ApplicationError } from "./errors.js";
 
@@ -42,7 +43,7 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
       if (args.analysis !== undefined && ![true, false, "true", "false"].includes(args.analysis as boolean | string))
         throw new ApplicationError("INVALID_ARGUMENT", "Некорректный параметр analysis");
       if (typeof args.view !== "string" || typeof args.path !== "string") throw new ApplicationError("INVALID_ARGUMENT", "Нужны view и path");
-      return session.getModule({view:args.view, path:args.path, analysis: args.analysis !== false && args.analysis !== "false", ...selector});
+      return session.getModule({view:args.view, path:args.path, currentOnly: args.currentOnly === true || args.currentOnly === "true", analysis: args.analysis !== false && args.analysis !== "false", ...selector});
     case "getRelationSource":
     case "getFileDiff":
       if (typeof args.view !== "string" || typeof args.path !== "string" || typeof args.file !== "string" || !args.file)
@@ -77,7 +78,19 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
         return session.changeClause({ ...target, section, clauseId, action, undoToken });
       throw new ApplicationError("INVALID_ARGUMENT", "Некорректные параметры изменения пункта");
     }
+    case "updateFinding": {
+      const {view, path, reviewId, findingId, status, decision, expected} = args;
+      const next = {status, decision};
+      if (Object.keys(args).some(key => !["repository","view","path","reviewId","findingId","status","decision","expected"].includes(key)) ||
+          typeof view !== "string" || typeof path !== "string" || typeof reviewId !== "string" || typeof findingId !== "string" ||
+          !validDisposition(next) || !validDisposition(expected))
+        throw new ApplicationError("INVALID_ARGUMENT", "Можно изменить только статус и решение замечания.");
+      return session.updateFinding({...selector, view, path, reviewId, findingId, ...next, expected});
+    }
     case "prepareAnalysis":
+      if (typeof args.view !== "string" || typeof args.path !== "string" || (args.analysisType !== undefined && !isAnalysisType(args.analysisType)))
+        throw new ApplicationError("INVALID_ARGUMENT", "Нужны view, path и корректный вид анализа");
+      return session.prepareAnalysis({view: args.view, path: args.path, analysisType: args.analysisType, ...selector});
     case "getRelations":
     case "buildRelations":
     case "buildReview":

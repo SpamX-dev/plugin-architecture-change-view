@@ -1,7 +1,7 @@
 import { rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as wait } from "node:timers/promises";
-import { withFileLock } from "../analyse/project/file-lock.js";
+import { withFileLock } from "../storage/file-lock.js";
 
 const [directory, role] = process.argv.slice(2);
 await withFileLock(directory, ".report-store.lock", async () => {

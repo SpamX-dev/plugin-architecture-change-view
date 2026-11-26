@@ -15,7 +15,7 @@ import { digest } from "../framework/serialization/digest.js";
 import { parseYaml } from "../framework/serialization/yaml.js";
 import { contractDocument, currentContractYaml, validateArch } from "../framework/contracts/document.js";
 import { validateReview } from "../framework/ai-report/schema.js";
-import { moduleContext, moduleInventory } from "../analyse/project/inventory.js";
+import { moduleContext, moduleInventory } from "../analyse/project-sources/inventory.js";
 import { captureWorkingTree } from "../analyse/git-changes/capture.js";
 import { compareSnapshots } from "../analyse/git-changes/comparison.js";
 import { createStructuralReview, validateReviewBundle } from "../analyse/module-review/bundle.js";
@@ -110,6 +110,40 @@ test("stable ids preserve module identity across moves and initial analysis has 
   const bundle = createStructuralReview(null, after, initial.modules[0]);
   assert.equal(bundle.report.comparison.baseline, null);
   assert.equal(bundle.report.assessment.change.verdict, "not_applicable");
+});
+
+test("review schema requires string SHA-256 digests", async (t) => {
+  const { root } = await fixture(t);
+  const snapshot = await captureWorkingTree(root);
+  const module = compareSnapshots(null, snapshot).modules[0];
+  const { report } = createStructuralReview(null, snapshot, module);
+  const { analysis } = report;
+  assert.equal(validateReview(report), report);
+  assert.throws(() => validateReview({ ...report, analysis: { ...analysis, input_digest: [analysis.input_digest] } }),
+    /review\.analysis\.input_digest: ожидается sha256/);
+  assert.throws(() => validateReview({ ...report, analysis: { ...analysis,
+    analyzer: { ...analysis.analyzer, config_digest: [analysis.analyzer.config_digest] } } }),
+    /review\.analysis\.analyzer\.config_digest: ожидается sha256/);
+});
+
+test("review evidence, checks and findings can only reference sides present in the comparison", async t => {
+  const { root } = await fixture(t);
+  const current = await captureWorkingTree(root);
+  const { report } = createStructuralReview(null, current, compareSnapshots(null, current).modules[0]);
+  const check = report.checks[0];
+  const fact = { snapshot: "baseline" as const, fact_id: current.facts[0].id };
+  const reject = (candidate: unknown) => assert.throws(() => validateReview(candidate), /отсутствующий базовый снимок/);
+  reject({ ...report, checks: [{ ...check, verdict: "consistent", evidence: [fact] }] });
+  reject({ ...report, checks: [{ ...check, subject: "baseline" }] });
+  reject({ ...report, checks: [{ ...check, contract: { ...check.contract, snapshot: "baseline" } }] });
+  reject({ ...report, observed: { ...report.observed, current: { summary: "Observation",
+    responsibilities: [{ text: "Responsibility", evidence: [fact] }] } } });
+  const finding = { id: "gap", kind: "responsibility_gap", certainty: "confirmed", severity: "warning",
+    lifecycle: "unknown", summary: "Gap", clauses: [check.contract], evidence: [fact] };
+  reject({ ...report, findings: [finding] });
+  reject({ ...report, findings: [{ ...finding, evidence: [{ ...fact, snapshot: "current" }],
+    clauses: [{ ...check.contract, snapshot: "baseline" }] }] });
+  assert.equal(validateReview(report), report);
 });
 
 test("reviews retain old evidence and own clauses, remain immutable and become stale", async (t) => {

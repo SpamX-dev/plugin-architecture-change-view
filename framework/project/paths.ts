@@ -3,15 +3,23 @@ import { STATE_DIRECTORY } from "./storage-paths.js";
 
 export { STATE_DIRECTORY };
 
-/** Metadata, dependencies and generated content are outside a source tree. */
-const EXCLUDED = new Set([
-  STATE_DIRECTORY,
-  ".git", ".hg", ".svn", "node_modules", "target", "dist", "build", "coverage",
+const metadata = new Set([STATE_DIRECTORY, ".git", ".hg", ".svn"]);
+const excludedSources = new Set([
+  ...metadata, "node_modules", "target", "dist", "build", "coverage",
   ".venv", "venv", "__pycache__", ".next", ".nuxt", ".cache", "obj",
 ]);
 
+function hasDirectory(relative: string, names: Set<string>) {
+  return relative.split(/[\\/]/).some(part => names.has(process.platform === "win32" ? part.toLowerCase() : part));
+}
+
+/** Git comparisons retain ordinary files under source-inventory exclusions such as build/. */
+export function isProjectMetadataPath(relative: string) {
+  return hasDirectory(relative, metadata);
+}
+
 export function excludedProjectPath(relative: string) {
-  return relative.split(/[\\/]/).some(part => EXCLUDED.has(process.platform === "win32" ? part.toLowerCase() : part));
+  return hasDirectory(relative, excludedSources);
 }
 
 export function within(root: string, target: string) {

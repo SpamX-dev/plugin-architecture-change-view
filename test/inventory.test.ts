@@ -8,7 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import { moduleContext, moduleInventory } from "../analyse/project/inventory.js";
+import { moduleContext, moduleInventory } from "../analyse/project-sources/inventory.js";
 import { discoverWorkspaceRepositories, resolveWorkspaceRepository } from "../analyse/project/workspace.js";
 
 /** Запускает Git без оболочки в изолированном тестовом репозитории. */

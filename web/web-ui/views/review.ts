@@ -1,5 +1,6 @@
-import type { Check, EvidenceReference, ModuleDetail, Observation, ReviewBundle, ReviewRenderOptions, ClauseReference } from "../types.js";
-import { freshnessLabel, coverageLabel, reviewCoverage, reviewFreshnessStates } from "./review-status.js";
+import type { Check, EvidenceReference, Observation, ReviewBundle, ReviewRenderOptions, ClauseReference } from "../types.js";
+import { graspParticipants } from "../../../framework/ai-report/types.js";
+import { findingDecision } from "./finding-decision.js";
 export { freshnessLabel, coverageLabel, reviewFreshnessStates } from "./review-status.js";
 import { el } from "./dom.js";
 import { evidenceLinks } from "./evidence.js";
@@ -88,19 +89,6 @@ export function observedVersionGroups(bundle: ReviewBundle) {
   return { side, primary, previous: identity(primary) === identity(previous) ? null : previous };
 }
 
-/** Происхождение доступно по раскрытию; сохранённая оценка изменения не скрывается. */
-function reviewOrigin(bundle: ReviewBundle) {
-  const versions = reviewVersions(bundle);
-  const origin = el("details", "review-origin");
-  origin.append(el("summary", "", "Версии анализа"), el("p", "", "Проверено: " + versions.current));
-  if (versions.showChange) {
-    origin.append(el("p", "", "Сравнение: " + versions.baseline));
-    const verdict = bundle.report.assessment?.change?.verdict;
-    if (verdict) origin.append(el("p", "", "Оценка изменений модуля относительно базы: " + (verdicts[verdict] ?? verdict)));
-  }
-  return origin;
-}
-
 /** Показывает собственную наблюдаемую ответственность с отдельным прошлым описанием. */
 function observedResponsibilities(bundle: ReviewBundle) {
   const observed = el("details", "observed-note");
@@ -123,124 +111,90 @@ function observedResponsibilities(bundle: ReviewBundle) {
   return observed;
 }
 
-/** Действие анализа уже есть в заголовке модуля. */
-function analysisNotice(title: string) { return el("p", "review-empty", title); }
-
-/** Компактный просмотр: статус и ограничения, затем собственные проверки либо замечания. */
-export function renderReview(panel: HTMLElement, detail: ModuleDetail, mode: string, options: ReviewRenderOptions = {}) {
-  if (!detail.reviews.length) { panel.append(analysisNotice("Анализ не проводился")); return; }
-  const overview = el("div", "review-overview"), body = el("div", "review-body");
-  panel.append(overview);
-  let selected = detail.reviews.findIndex((bundle) => bundle.report.id === (options.reviewId ?? detail.review?.id));
-  if (selected < 0) selected = 0;
-  if (detail.reviews.length > 1) {
-    const picker = el("select", "review-picker");
-    picker.setAttribute("aria-label", "История проверок");
-    detail.reviews.forEach((bundle, index) => {
-      const option = el("option", "", reviewDate(bundle));
-      option.value = String(index); option.selected = index === selected; picker.append(option);
-    });
-    picker.onchange = () => draw(detail.reviews[Number(picker.value)]);
-    panel.append(picker);
-  }
+/** Both the checks and findings belong to the same immutable result. */
+export function renderReview(panel: HTMLElement, bundle: ReviewBundle, options: ReviewRenderOptions = {}) {
+  const report = bundle.report;
+  const body = el("div", "review-body");
+  body.dataset.reviewId = report.id;
   panel.append(body);
-  draw(detail.reviews[selected]);
+  body.append(el("p", "review-state", "Анализ · " + reviewDate(bundle)), el("p", "", report.assessment.current.summary));
+  if (bundle.analysisType === "grasp") {
+    const participants = graspParticipants(report);
+    body.append(el("h3", "section-heading", "Композиция"));
+    if (!participants.length) body.append(el("p", "", "У модуля нет непосредственных детей."));
+    for (const item of participants) {
+      const card = el("article", "check-card");
+      card.append(el("h4", "", item.moduleId), el("p", "", (item.role === "utility" ? "Утилита" : "Исполнитель") + " · " + item.task));
+      if (item.role === "utility") card.append(el("p", "", "Потребители: " + (item.consumers?.join(", ") || "не установлены")));
+      card.append(el("p", "", item.assessment));
+      body.append(card);
+    }
+  }
+  const groups = ownClauseGroups(bundle);
+  if (bundle.analysisType === "implementation") body.append(observedResponsibilities(bundle));
+  body.append(el("h3", "section-heading", "Собственные пункты · " + groups.length));
+  if (!groups.length) body.append(el("p", "empty-clauses", "Нет проверок собственного контракта."));
+  for (const checks of groups) {
+    const states = [...new Set(checks.map((check) => check.verdict))];
+    const card = el("article", "check-card check-" + (states.length === 1 ? states[0] : "mixed"));
+    card.append(clauseText(bundle, checks[0].contract));
+    for (const check of checks) {
+      const result = el("div", "check-result check-" + check.verdict);
+      result.setAttribute("role", "group");
+      result.setAttribute("aria-label", verdicts[check.verdict]);
+      result.title = verdicts[check.verdict];
+      const explanation = el("details", "check-explanation");
+      explanation.append(el("summary", "", "Обоснование"), el("p", "", check.explanation));
+      result.append(el("strong", "", verdicts[check.verdict]), evidenceLinks(bundle, check.evidence), explanation);
+      card.append(result);
+    }
+    body.append(card);
+  }
 
-  /** Выбор попытки сохраняет её исходные доказательства и вычисленный статус. */
-  function draw(bundle: ReviewBundle) {
-    overview.replaceChildren(); body.replaceChildren();
-    const report = bundle.report;
-    body.dataset.reviewId = report.id;
-    // Совпадение проверенных входов и актуальность оценки изменения показываются
-    // раздельно: частичное покрытие или другая база не подменяют fresh. Первый
-    // анализ без базы не имеет оценки изменения, поэтому второй статус не нужен.
-    const states = reviewFreshnessStates(bundle);
-    const visible = report.comparison?.baseline ? states : states.slice(0, 1);
-    const strip = el("div", "review-state " + visible[0].status);
-    strip.append(el("span", "", "Анализ · " + reviewDate(bundle)));
-    for (const state of visible) {
-      const group = el("div", "review-state-group " + state.status);
-      group.append(el("span", "review-state-label", state.title),
-        el("strong", "", freshnessLabel(state, { compact: true })));
-      if (state.reasons.length) {
-        const why = el("details", "review-reasons"), list = el("ul");
-        why.append(el("summary", "", "Причины · " + state.reasons.length));
-        for (const reason of state.reasons) list.append(el("li", "", reason));
-        why.append(list); group.append(why);
-      }
-      strip.append(group);
+  body.append(el("h3", "section-heading", "Замечания"));
+  const findings = reviewFindingItems(bundle);
+  if (!findings.length) body.append(el("p", "empty-clauses", "Замечаний нет."));
+  for (const finding of findings) {
+    const card = el("article", "finding-card " + finding.severity);
+    card.dataset.findingId = finding.id;
+    if (report.id === options.reviewId && finding.id === options.findingId) {
+      card.classList.add("finding-target");
+      card.tabIndex = -1;
     }
-    overview.append(strip);
-    const checkedCoverage = reviewCoverage(bundle), coverage = el("details", "coverage-note compact-note"), list = el("ul");
-    coverage.append(el("summary", "", "Проверка: " + coverageLabel(checkedCoverage)));
-    for (const limitation of checkedCoverage.limitations) list.append(el("li", "",
-      limitation === "Полнота зависимостей не подтверждена." ? "Не установлено, учтены ли все зависимости." : limitation));
-    coverage.append(list); overview.append(coverage);
-    body.append(reviewOrigin(bundle));
-    if (mode === "findings") {
-      const findings = reviewFindingItems(bundle);
-      if (!findings.length) body.append(el("p", "empty-clauses", "Замечаний нет."));
-      for (const finding of findings) {
-        const card = el("article", "finding-card " + finding.severity);
-        card.dataset.findingId = finding.id;
-        if (report.id === options.reviewId && finding.id === options.findingId) {
-          card.classList.add("finding-target");
-          card.tabIndex = -1;
-        }
-        const meta = finding.assessmentOnly ? "Общий вывод · пункт не указан" :
-          [finding.kind ? kinds[finding.kind as keyof typeof kinds] : "", ({ confirmed: "подтверждено", suspected: "предположение" } as Record<string, string>)[finding.certainty ?? ""],
-            ({ introduced: "новое", persisting: "сохраняется", resolved: "устранено", unknown: "" } as Record<string, string>)[finding.lifecycle ?? ""]].filter(Boolean).join(" · ");
-        card.append(el("div", "finding-meta", meta), el("h3", "", finding.summary));
-        if (finding.details) {
-          const details = el("details", "finding-details");
-          details.append(el("summary", "", "Подробности"), el("p", "", finding.details)); card.append(details);
-        }
-        if (finding.recommendation) {
-          const advice = el("details", "finding-recommendation");
-          advice.append(el("summary", "", "Рекомендация"), el("p", "", finding.recommendation)); card.append(advice);
-        }
-        const clauses = el("div", "finding-clauses");
-        for (const reference of finding.clauses) {
-          const button = el("button", "finding-clause", reference.module_id + " / " + reference.id);
-          button.title = clauseDescription(bundle, reference);
-          // Попытка передаётся вместе со ссылкой: сохранённый пункт и сторона
-          // снимка известны только её неизменяемому пакету.
-          button.onclick = () => options.openClause?.(reference, bundle);
-          button.disabled = !options.openClause; clauses.append(button);
-        }
-        card.append(clauses, evidenceLinks(bundle, finding.evidence));
-        const fix = findingFixAction(bundle, finding, options);
-        if (fix) card.append(fix);
-        body.append(card);
-      }
-    } else {
-      const groups = ownClauseGroups(bundle);
-      body.append(observedResponsibilities(bundle), el("h3", "section-heading", "Собственные пункты · " + groups.length));
-      if (!groups.length) body.append(el("p", "empty-clauses", "Нет проверок собственного контракта."));
-      for (const checks of groups) {
-        const states = [...new Set(checks.map((check) => check.verdict))];
-        const card = el("article", "check-card check-" + (states.length === 1 ? states[0] : "mixed"));
-        card.append(clauseText(bundle, checks[0].contract));
-        for (const check of checks) {
-          const result = el("div", "check-result check-" + check.verdict);
-          result.setAttribute("role", "group");
-          result.setAttribute("aria-label", verdicts[check.verdict]);
-          result.title = verdicts[check.verdict];
-          const explanation = el("details", "check-explanation");
-          explanation.append(el("summary", "", "Обоснование"), el("p", "", check.explanation));
-          result.append(evidenceLinks(bundle, check.evidence), explanation);
-          card.append(result);
-        }
-        body.append(card);
-      }
+    const meta = finding.assessmentOnly ? "Общий вывод · пункт не указан" :
+      [finding.kind ? kinds[finding.kind as keyof typeof kinds] : "", ({ confirmed: "подтверждено", suspected: "предположение" } as Record<string, string>)[finding.certainty ?? ""],
+        ({ introduced: "новое", persisting: "сохраняется", resolved: "устранено", unknown: "" } as Record<string, string>)[finding.lifecycle ?? ""]].filter(Boolean).join(" · ");
+    card.append(el("div", "finding-meta", meta), el("h3", "", finding.summary));
+    if (finding.details) {
+      const details = el("details", "finding-details");
+      details.append(el("summary", "", "Подробности"), el("p", "", finding.details)); card.append(details);
     }
-    const raw = el("details", "raw-document");
-    raw.append(el("summary", "", "Полный отчёт"), el("pre", "", JSON.stringify(report, null, 2))); body.append(raw);
-    const target = body.querySelector<HTMLElement>(".finding-target");
-    if (target) {
-      target.scrollIntoView({ block: "center" });
-      target.focus({ preventScroll: true });
+    if (finding.recommendation) {
+      const advice = el("details", "finding-recommendation");
+      advice.append(el("summary", "", "Рекомендация"), el("p", "", finding.recommendation)); card.append(advice);
     }
+    const clauses = el("div", "finding-clauses");
+    for (const reference of finding.clauses) {
+      const button = el("button", "finding-clause", reference.module_id + " / " + reference.id);
+      button.title = clauseDescription(bundle, reference);
+      // Попытка передаётся вместе со ссылкой: сохранённый пункт и сторона
+      // снимка известны только её неизменяемому пакету.
+      button.onclick = () => options.openClause?.(reference, bundle);
+      button.disabled = !options.openClause; clauses.append(button);
+    }
+    card.append(clauses, evidenceLinks(bundle, finding.evidence));
+    const decision = findingDecision(bundle, finding, options);
+    card.append(decision);
+    const fix = bundle.dispositions?.[finding.id]?.status === "resolved" ? null : findingFixAction(bundle, finding, options);
+    if (fix) card.append(fix);
+    body.append(card);
+  }
+  const raw = el("details", "raw-document");
+  raw.append(el("summary", "", "Полный отчёт"), el("pre", "", JSON.stringify(report, null, 2))); body.append(raw);
+  const target = body.querySelector<HTMLElement>(".finding-target");
+  if (target) {
+    target.scrollIntoView({ block: "center" });
+    target.focus({ preventScroll: true });
   }
 }
 

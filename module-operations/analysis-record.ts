@@ -1,4 +1,7 @@
+import { isAnalysisType, type AnalysisType } from "../framework/ai-report/types.js";
+
 export interface AnalysisRequest {
+  analysisType?: AnalysisType;
   schema_version: number;
   id: string;
   moduleId: string;
@@ -7,7 +10,7 @@ export interface AnalysisRequest {
   reviewId: string;
   createdAt: string;
   inputDigest: string;
-  snapshotsDigest: string;
+  snapshotsDigest?: string;
 }
 
 export interface HarnessOption { id: string; name: string; reason?: string }
@@ -45,12 +48,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function readAnalysisRequest(value: unknown): AnalysisRequest {
   if (!isRecord(value)) throw new Error("Некорректная запись запроса анализа");
   const { schema_version, id, moduleId, directory, viewId, reviewId, createdAt, inputDigest, snapshotsDigest } = value;
-  if (schema_version !== 1 || typeof id !== "string" || typeof moduleId !== "string" ||
+  if ((value.analysisType !== undefined && !isAnalysisType(value.analysisType)) || schema_version !== 1 || typeof id !== "string" || typeof moduleId !== "string" ||
       typeof directory !== "string" || typeof viewId !== "string" || typeof reviewId !== "string" ||
-      typeof createdAt !== "string" || typeof inputDigest !== "string" || typeof snapshotsDigest !== "string") {
+      typeof createdAt !== "string" || typeof inputDigest !== "string" || (snapshotsDigest !== undefined && typeof snapshotsDigest !== "string") || (snapshotsDigest === undefined && !value.analysisType)) {
     throw new Error("Некорректная запись запроса анализа");
   }
-  return { schema_version, id, moduleId, directory, viewId, reviewId, createdAt, inputDigest, snapshotsDigest };
+  return { ...(value.analysisType ? {analysisType: value.analysisType} : {}), schema_version, id, moduleId, directory, viewId, reviewId, createdAt, inputDigest, snapshotsDigest };
 }
 
 export function readAnalysisStatus(value: Record<string, unknown>): AnalysisStatus {

@@ -36,6 +36,7 @@ export function createArchiViewClient({ fetcher = globalThis.fetch, base = "" }:
     deliverFindingFix: args => request("POST", "/api/findings/fix", args, true, readDelivery),
     deliverAnalysis: args => request("POST", "/api/analysis/deliver", args, true, readDelivery),
     prepareAnalysis: args => request("POST", "/api/analysis", args, true, readPreparedAnalysis),
+    updateFinding: args => request("POST", "/api/findings/decision", args),
     getAnalysis: args => request("GET", "/api/analysis/" + encodeURIComponent(args.id), args, false, readAnalysisStatus),
     buildReview: args => request("POST", "/api/reviews", args),
     saveSnapshot: args => request("POST", "/api/snapshots", args),

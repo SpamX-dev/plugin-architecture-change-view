@@ -1,3 +1,5 @@
+import type { FindingDecisions } from "../analyse/module-review/dispositions.js";
+import type { ModuleReviewState } from "./api.js";
 import path from "node:path";
 import { isModuleDocumentFile } from "../framework/project/storage-paths.js";
 import { isPrototype } from "../framework/contracts/types.js";
@@ -38,6 +40,8 @@ function referencedContracts(bundle: ReviewEntry) {
   const references = new Set(bundle.report.findings.flatMap(finding => finding.clauses).map(canonical));
   function clauses(side: "baseline" | "current") {
     const declared = new Set(bundle.manifest.contracts[side].map(item => canonical(item.reference)));
+    if (bundle.manifest.analysis_type === "grasp") return (bundle[side]?.modules ?? []).flatMap(module =>
+      effectiveClauses(bundle[side], module.directory, side, "own").filter(item => references.has(canonical(item.reference)) && !declared.has(canonical(item.reference))));
     return effectiveClauses(bundle[side], bundle.report.module[`${side}_path`], side, "effective", bundle.manifest.clause_format ?? "legacy")
       .filter(item => references.has(canonical(item.reference)) && !declared.has(canonical(item.reference)));
   }
@@ -75,6 +79,7 @@ export function moduleSummary(entry: SessionView["modules"][number]) {
 }
 
 export function reviewSummary(matching: ReviewEntry[], model: ReportModel) {
+  matching = matching.filter(entry => !entry.manifest.analysis_type);
   const latest = matching.find((bundle) => {
     const freshness = model.reviewFreshness(bundle);
     return freshness.current.status === "fresh" && freshness.change.status === "fresh";
@@ -88,6 +93,34 @@ export function reviewSummary(matching: ReviewEntry[], model: ReportModel) {
     createdAt: latest.report.analysis.created_at } : null;
 }
 
+/** Prefer the result of this slice over a carried-forward result, including after late imports. */
+export async function currentAnalysisEntries(entries: ReviewEntry[], model: ReportModel, target: Snapshot, follows: (entry: ReviewEntry) => Promise<boolean>) {
+  const selected = new Map<NonNullable<ReviewEntry["manifest"]["analysis_type"]>, ReviewEntry>();
+  const exact = (entry: ReviewEntry) => entry.manifest.source_snapshot?.id === target.id &&
+    (target.revision || entry.manifest.source_snapshot.digest === target.digest) ? 1 : 0;
+  const ordered = [...entries].sort((a, b) => exact(b) - exact(a) || (b.registration_order ?? 0) - (a.registration_order ?? 0));
+  for (const entry of ordered) {
+    const type = entry.manifest.analysis_type;
+    if (!type || selected.has(type) || model.reviewFreshness(entry).current.status !== "fresh") continue;
+    if (await follows(entry)) selected.set(type, entry);
+  }
+  return [...selected.values()];
+}
+
+export async function analysisSummary(entries: ReviewEntry[], decisions: FindingDecisions, details: ModuleDetail["reviews"] = []) {
+  const analyses: NonNullable<ModuleReviewState["analyses"]> = {};
+  for (const entry of entries) {
+    const states = await decisions.read(entry.review_id);
+    const detail = details.find(review => review.report.id === entry.review_id);
+    if (detail) detail.dispositions = states;
+    const findings = entry.report.findings.filter(item => item.kind !== "contract_change");
+    const open = findings.length ? findings.filter(item => (states[item.id]?.status ?? (item.lifecycle === "resolved" ? "resolved" : "open")) === "open").length :
+      Number(entry.report.assessment.current.verdict === "violation" && (states["assessment-summary"]?.status ?? "open") === "open");
+    analyses[entry.manifest.analysis_type!] = {id:entry.review_id, openFindings:open};
+  }
+  return analyses;
+}
+
 export function reviewFilePath(root: string, work: string, moduleId: string) {
   return path.relative(root, path.join(work, moduleReportName(moduleId) + ".review.yaml")).split(path.sep).join("/");
 }
@@ -99,7 +132,7 @@ export function moduleDetail(module: SessionView["modules"][number], matching: R
   const yaml = document?.text && document.contract ? currentContractYaml(document.text) : undefined;
   return structuredClone({ ...module, ...(yaml && yaml !== document?.text ? { contractYaml: yaml } : {}),
     files, filesChanged: files.length, reviews: matching.map((bundle) => ({
-    report: bundle.report, stale: model!.reviewFreshness(bundle).current.status !== "fresh",
+    analysisType: bundle.manifest.analysis_type, report: bundle.report, stale: model!.reviewFreshness(bundle).current.status !== "fresh",
     // Путь берётся из фактического хранилища, включая явно заданное внешнее.
     // ID попытки и замечания выбирают запись внутри общей истории модуля.
     reviewFile: reviewFilePath(root, work, bundle.module_id),

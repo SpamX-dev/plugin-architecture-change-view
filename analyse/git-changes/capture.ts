@@ -7,12 +7,13 @@ import { errorDetails } from "../../node-errors.js";
 import { spawn } from "node:child_process";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
-import { excludedProjectPath, projectFiles, regularProjectFile } from "../project/source-files.js";
-import { decodeContractText, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY, MODULE_TREE_FILE, readContractStorageFile } from "../project/module-tree.js";
+import { projectFiles, regularProjectFile } from "../project-sources/source-files.js";
+import { isProjectMetadataPath } from "../../framework/project/paths.js";
+import { decodeContractText, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY, MODULE_TREE_FILE, readContractStorageFile } from "../project-sources/module-tree.js";
 import { isSource, snapshotModules, type WorkingLayout } from "./module-layout.js";
 import { repositoryDirectoryOwnership } from "../project/workspace.js";
 import { digest as contentDigest } from "../../framework/serialization/digest.js";
-import { readSnapshotRoot } from "../project/identity.js";
+import { readSnapshotRoot } from "../../storage/identity.js";
 
 function isContractStorage(file: string) {
   return file === MODULE_TREE_FILE || path.posix.dirname(file) === MODULE_DIRECTORY && file.endsWith(".yaml");
@@ -170,13 +171,13 @@ export async function captureWorkingTree(projectRoot: string, options: SnapshotO
   const root = await realpath(projectRoot);
   const info = await gitInfo(root);
   if (!info) throw new Error("Для ArchiView требуется рабочее дерево Git");
-  const working = { root, ownsDirectory: repositoryDirectoryOwnership(root) };
-  const listed = await projectFiles(root, options.maxFiles ?? 50000, working.ownsDirectory);
+  const working = { root, ownsDirectory: repositoryDirectoryOwnership(root, isProjectMetadataPath) };
+  const listed = await projectFiles(root, options.maxFiles ?? 50000, working.ownsDirectory, isProjectMetadataPath);
   const diagnostics = [...listed.diagnostics];
   const files = [];
   for (const file of listed.files) {
     try {
-      if (await regularProjectFile(root, file)) files.push(portable(file));
+      if (await regularProjectFile(root, file, isProjectMetadataPath)) files.push(portable(file));
     } catch (errorCause) { const error = errorDetails(errorCause); diagnostics.push(file + ": " + error.message); }
   }
   // Capture only the registry and contract documents from the reserved metadata directory.
@@ -283,7 +284,7 @@ export async function captureGitHead(projectRoot: string, options: SnapshotOptio
         diagnostics.push("Expected regular contract storage: " + file);
       continue;
     }
-    if (!excludedProjectPath(file) || isContractStorage(file)) records.push({ path: file, hash, mode });
+    if (!isProjectMetadataPath(file) || isContractStorage(file)) records.push({ path: file, hash, mode });
   }
   const maxFiles = options.maxFiles ?? 50000;
   // The registry is required to interpret the captured files and does not consume a file slot.

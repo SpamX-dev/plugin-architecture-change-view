@@ -9,8 +9,8 @@ import path from "node:path";
 import test from "node:test";
 import { codexAdapter } from "../bridges/codex/host.js";
 import { callerThread, desktopBinding } from "../bridges/codex/context.js";
-import { dshAdapter } from "../bridges/dsh/host.js";
-import { connectHarness, harnessInstanceId } from "../web/web-backend/host-bridge/channel.js";
+import { apply, dshAdapter } from "../bridges/dsh/host.js";
+import { connectHarness, harnessInstanceId, listHarnesses } from "../web/web-backend/host-bridge/channel.js";
 
 const workspaceRoot = path.resolve("workspace");
 const repositoryRoot = path.join(workspaceRoot, "repository");
@@ -119,6 +119,33 @@ test("DeepSeek attaches a new session to the matching workspace or opens the rep
     assert.deepEqual(requests.at(-1), {sessionId, ...location});
     projects.pop();
   }
+});
+
+test("DeepSeek registers its live instance for the lifetime of the plugin", async t => {
+  const previous = process.env.ARCHIVIEW_BRIDGE_DIR;
+  const directory = await mkdtemp(path.join(tmpdir(), "archiview-dsh-"));
+  process.env.ARCHIVIEW_BRIDGE_DIR = directory;
+  t.after(async () => {
+    if (previous === undefined) delete process.env.ARCHIVIEW_BRIDGE_DIR;
+    else process.env.ARCHIVIEW_BRIDGE_DIR = previous;
+    await rm(directory, { recursive: true, force: true });
+  });
+  let dispose!: () => void;
+  apply({
+    workspaceRegistry: { list: () => [] },
+    sessionController: {
+      async create({ sessionId }) { return { sessionId }; },
+      async prompt() { return { accepted: true }; },
+    },
+    effect(setup) { dispose = setup(); },
+  });
+  const id = harnessInstanceId("dsh", String(process.pid));
+  try {
+    await t.waitFor(async () => assert.deepEqual((await listHarnesses(job)).harnesses.map(host => host.id), [id]));
+    assert.equal(await (await connectHarness(id, job)).start(job), "session-" + job.requestId);
+  } finally { dispose(); }
+  await t.waitFor(async () => assert.deepEqual(await readdir(directory), []));
+  assert.deepEqual((await listHarnesses(job)).harnesses, []);
 });
 
 test("MCP uses host metadata and shares an explicit binding only within the same Desktop", async t => {

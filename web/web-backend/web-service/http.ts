@@ -3,13 +3,13 @@ import type { SessionOperations } from "../../../module-operations/api.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 /** HTTP-адаптер самостоятельного ArchiView: статические ресурсы, маршрутизация и защита origin. */
 import { createServer } from "node:http";
-import { createWorkspaceSession } from "../workspace-session.js";
+import { createWorkspaceSession, listWorkspaceModules } from "../workspace-session.js";
 import { applicationError, ApplicationError } from "../../../module-operations/errors.js";
 import { readWebAsset } from "../runtime/package-paths.js";
-import { getModuleContract, listModuleFiles, listModules, saveModuleContract } from "../../../module-operations/module-access.js";
+import { getModuleContract, listModuleFiles, saveModuleContract } from "../../../module-operations/module-access.js";
 
 /** Сопоставляет прикладную ошибку HTTP-статусу, не добавляя HTTP в сервис. */
-const errorStatus: Record<string, number> = { HARNESS_UNAVAILABLE: 409, DELIVERY_CONFLICT: 409, INVALID_ARGUMENT: 400, REPOSITORY_UNAVAILABLE: 400, NOT_FOUND: 404, STALE_VIEW: 409, INCOMPLETE_VIEW: 422 };
+const errorStatus: Record<string, number> = { DECISION_CONFLICT: 409, HARNESS_UNAVAILABLE: 409, DELIVERY_CONFLICT: 409, INVALID_ARGUMENT: 400, REPOSITORY_UNAVAILABLE: 400, NOT_FOUND: 404, STALE_VIEW: 409, INCOMPLETE_VIEW: 422 };
 
 /** Читает ограниченный JSON-запрос; проверка предметных аргументов остаётся в сервисе. */
 async function bodyOf(request: IncomingMessage, limit = 4096): Promise<Record<string, unknown>> {
@@ -103,7 +103,7 @@ export function createArchiViewHttpServer(session: SessionOperations & { root: s
       const repository = url.searchParams.get("repository");
       const selection = { repository: repository ?? undefined, target: url.searchParams.get("target") ?? undefined };
       if (request.method === "GET" && url.pathname === "/api/modules")
-        return json(response, 200, await listModules(session.root, selection));
+        return json(response, 200, await listWorkspaceModules(session.root, selection));
       if (request.method === "GET" && (url.pathname === "/api/module-files" || url.pathname === "/api/contract")) {
         const id = url.searchParams.get("id");
         if (!id) throw new ApplicationError("INVALID_ARGUMENT", "Укажите ID модуля");
@@ -142,6 +142,7 @@ export function createArchiViewHttpServer(session: SessionOperations & { root: s
       if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))
         return json(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: url.pathname.split("/").at(-1) })));
       if (request.method === "POST") {
+        if (url.pathname === "/api/findings/decision") return json(response, 200, await callSessionOperation(session, "updateFinding", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "buildRelations", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/contract-clause") return json(response, 200, await callSessionOperation(session, "changeClause", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
         if (url.pathname === "/api/prototype") return json(response, 200, await callSessionOperation(session, "changePrototype", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));

@@ -1,5 +1,6 @@
 import type { Snapshot, SnapshotData } from "../../framework/snapshots/types.js";
 import type { FreshnessReason, Coverage, ReviewBundle } from "../../framework/ai-report/types.js";
+import { analysisFingerprint, analysisModules } from "./analysis-scope.js";
 import { ANALYZER } from "./bundle.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
 import type { SelfState, ReviewState, ReviewEntry, Freshness, ReviewFreshness } from "../../framework/static-report/types.js";
@@ -62,6 +63,31 @@ function inputFreshness(previous: ReviewState | null, current: ReviewState | nul
 
 /** Все проекции одной оценки используют те же состояния зафиксированных снимков. */
 export function freshness(entry: ReviewEntry, baseline: SnapshotData | null, current: SnapshotData, context: ModuleStateContext): ReviewFreshness {
+  const type = entry.manifest?.analysis_type;
+  if (type) {
+    const own = current.modules.find(module => moduleId(module) === entry.module_id);
+    const saved = entry.current.modules.find(module => moduleId(module) === entry.module_id);
+    const previous = entry.current.observations?.[entry.module_id];
+    const now = current.observations?.[entry.module_id];
+    const comparable = previous && now && previous.lineage === now.lineage;
+    const history = type === "implementation" && comparable && previous.revision <= now.revision ? now.skillHistory : undefined;
+    const beforeRevision = previous?.revision ?? 0;
+    const sharedOrder = history && beforeRevision >= history.since && beforeRevision < (history.sharedSince ?? Infinity);
+    const sameSkillRevision = type === "implementation" && comparable && previous.revision === now.revision &&
+      (previous.skillHistory || now.skillHistory);
+    const interrupted = sharedOrder ? beforeRevision < (history.changedAt ?? 0) :
+      !sameSkillRevision && comparable && previous[type] !== undefined && now[type] !== previous[type];
+    const uncertain = sharedOrder && beforeRevision < (history.uncertainAt ?? 0);
+    const matches = own && saved && analysisFingerprint(type, analysisModules(type, current, own)) ===
+      analysisFingerprint(type, analysisModules(type, entry.current, saved));
+    const status = !current.complete ? "unknown" : !matches || interrupted ? "stale" : uncertain ? "unknown" : "fresh";
+    const result = { status, reasons: status === "stale" ? [{code:"module_changed_since_analysis"}] :
+      uncertain ? [{code:"module_order_unknown"}] : [],
+      coverage: status === "unknown" && uncertain ?
+        {status:"partial", limitations:["Прежний наблюдатель не сохранил промежуточные входы реализации."]} :
+        {status:"complete", limitations:[]} };
+    return {current: result, change: structuredClone(result)};
+  }
   if (!entry?.inputs || entry.schema_version !== REPORT_SCHEMA_VERSION || entry.inputs.schema_version !== 1) {
     const unavailable = { status: "unknown", reasons: [{ code: "legacy_manifest_missing" }],
       coverage: { status: "unavailable", limitations: ["Нет проверяемого описания входов прежнего анализа."] } };

@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { createArchiViewHttpServer } from "../web/web-backend/web-service/http.js";
 import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
+import { listModules } from "../module-operations/module-access.js";
+import type { Comparison } from "../framework/snapshots/types.js";
 import { commitTestFiles, contractYaml, initTestRepository } from "./support.js";
 
 const run = promisify(execFile);
@@ -60,6 +62,33 @@ test("CLI reopens the saved file report by ID after the index and working tree c
     ["main.js", "staged.js", "working.js"]);
 });
 
+test("CLI file reports compare repository paths when the first source creates a module", async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "archiview-cli-file-owner-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  initTestRepository(root);
+  const settings = "feature/settings.json", source = "feature/main.ts";
+  await mkdir(path.join(root, "feature"));
+  await writeFile(path.join(root, settings), "{}\n");
+  commitTestFiles(root);
+  await writeFile(path.join(root, source), "export {};\n");
+  const read = async (id: string): Promise<Comparison> => JSON.parse(await cli(root, "--read-comparison", id));
+  const working = await read(JSON.parse(await cli(root, "--save-comparison")).id);
+  const build = await cli(root, "--build-report");
+  const buildId = /Git comparison saved: ([a-f0-9]+)/.exec(build)?.[1];
+  assert.ok(buildId, build);
+  for (const report of [working, await read(buildId)]) {
+    assert.deepEqual(report.modules.flatMap(m => m.files), [{ path: source, status: "new" }]);
+  }
+  await run("git", ["add", "--", source], { cwd: root });
+  await run("git", ["update-index", "--chmod=+x", "--", settings], { cwd: root });
+  const staged = await read(JSON.parse(await cli(root, "--save-comparison", "--baseline", "HEAD", "--target", "index")).id);
+  assert.deepEqual(staged.modules.find(m => m.directory === "feature")!.files, [
+    { path: source, status: "new" }, { path: settings, status: "changed" },
+  ]);
+  assert.equal(staged.modules[0].filesChanged, 0);
+  assert.deepEqual(await read(working.id), working);
+});
+
 test("CLI discovers legacy repositories and reads module files and contracts at the requested Git state", async t => {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-commands-"));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -73,6 +102,8 @@ test("CLI discovers legacy repositories and reads module files and contracts at 
   const discovered = JSON.parse(await cli(root, "--list-modules")).projects;
   assert.deepEqual(discovered.map((project: {repository: string; hasModuleMap: boolean}) => [project.repository, project.hasModuleMap]),
     [["a", false], ["b", false]]);
+  await assert.rejects(listModules(root), { code: "INVALID_ARGUMENT" });
+  assert.deepEqual((await listModules(root, { repository: "a" })).projects.map(p => p.repository), ["a"]);
   assert.deepEqual(JSON.parse(await cli(root, "--repository", "a", "--module-files", "src")).files, ["src/main.js"]);
   const inventory = JSON.parse(await cli(root, "--inventory"));
   assert.deepEqual(inventory.repositories, ["a", "b"]);

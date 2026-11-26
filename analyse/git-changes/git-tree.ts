@@ -1,15 +1,16 @@
 import path from "node:path";
 import { git, gitFileHashes, readGitHeadRevision, untrackedFileModes, workingTreeDiff } from "./capture.js";
 import { snapshotModules } from "./module-layout.js";
-import { excludedProjectPath, regularProjectFile } from "../project/source-files.js";
-import { MODULE_TREE_FILE, isModuleContractPath, moduleDocumentPath, readContractStorageFile, decodeContractText, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES } from "../project/module-tree.js";
+import { regularProjectFile } from "../project-sources/source-files.js";
+import { isProjectMetadataPath } from "../../framework/project/paths.js";
+import { MODULE_TREE_FILE, isModuleContractPath, moduleDocumentPath, readContractStorageFile, decodeContractText, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES } from "../project-sources/module-tree.js";
 import { repositoryDirectoryOwnership } from "../project/workspace.js";
 import { digest } from "../../framework/serialization/digest.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
 import type { Snapshot, FileRecord } from "../../framework/snapshots/types.js";
 
 const contract = (file: string) => file === MODULE_TREE_FILE || isModuleContractPath(file);
-const included = (file: string) => !excludedProjectPath(file) || contract(file);
+const included = (file: string) => !isProjectMetadataPath(file) || contract(file);
 const regular = (mode: string) => mode === "100644" || mode === "100755";
 const fields = (bytes: Buffer) => bytes.toString().split("\0").filter(Boolean);
 
@@ -79,7 +80,7 @@ export async function gitContractTexts(root: string, moduleId: string) {
 
 async function snapshot(root: string, origin: string, records: Map<string, FileRecord>, diagnostics: string[], revision?: string): Promise<Snapshot> {
   const modules = await snapshotModules([...records.values()], diagnostics,
-    revision ? undefined : {root, ownsDirectory: repositoryDirectoryOwnership(root)});
+    revision ? undefined : {root, ownsDirectory: repositoryDirectoryOwnership(root, isProjectMetadataPath)});
   const value: Snapshot = { schema_version: 2, id: "", digest: "", root: origin, modules, facts: [], evidenceLimitations: [],
     capturedAt: new Date().toISOString(), fingerprint: digest(modules), diagnostics, complete: !diagnostics.length,
     kind: revision ? "git" : "working", label: revision ? "Revision " + revision.slice(0, 7) : "Рабочее дерево", revision };
@@ -90,6 +91,7 @@ async function snapshot(root: string, origin: string, records: Map<string, FileR
 
 /** Immutable Git objects supply unchanged file identities. Only contract blobs need decoding for the tree. */
 export class GitTreeReader {
+  private readonly histories = new Map<string, Promise<string[]>>();
   private readonly commits = new Map<string, Awaited<ReturnType<typeof readGitTreeRecords>> & { snapshot?: Snapshot }>();
   constructor(private readonly root: string, private readonly origin: string) {}
 
@@ -102,6 +104,15 @@ export class GitTreeReader {
       this.commits.set(revision, value);
     }
     return value;
+  }
+
+  firstParentHistory(revision: string) {
+    const cached = this.histories.get(revision);
+    if (cached) return cached;
+    const history = git(this.root, ["rev-list", "--first-parent", revision]).then(result => result.toString().trim().split(/\s+/));
+    this.histories.set(revision, history);
+    if (this.histories.size > 8) this.histories.delete(this.histories.keys().next().value!);
+    return history.catch(error => { this.histories.delete(revision); throw error; });
   }
 
   async revision(revision: string) {
@@ -141,7 +152,7 @@ export class GitTreeReader {
     for (const record of records.values()) {
       if (record.error && !changes.has(record.path)) diagnostics.push(record.path + ": " + record.error);
     }
-    const owns = repositoryDirectoryOwnership(root);
+    const owns = repositoryDirectoryOwnership(root, isProjectMetadataPath);
     // A directory tracked in HEAD may now belong to a separate nested checkout.
     const directories = new Set([...records.keys()].filter(file => !contract(file)).map(file => path.posix.dirname(file)));
     const foreign = new Set<string>();
@@ -164,7 +175,7 @@ export class GitTreeReader {
           diagnostics.push(file + ": " + String(cause));
           continue;
         }
-      } else if (!await owns(path.posix.dirname(file)) || !await regularProjectFile(root, file)) continue;
+      } else if (!await owns(path.posix.dirname(file)) || !await regularProjectFile(root, file, isProjectMetadataPath)) continue;
       candidates.push({ file, mode: mode || await newFileMode(file), text });
     }
     if (candidates.length) {

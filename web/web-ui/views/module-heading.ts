@@ -1,9 +1,19 @@
 import type { ModuleSummary } from "../types.js";
-import { byId, el } from "./dom.js";
+import { byId, el, findingBug } from "./dom.js";
 import { badge } from "./change-status.js";
 import { moduleAnalysisStatus } from "./review-status.js";
-import { findingBug, moduleFindingCount } from "../module-presenter/findings.js";
 import { moduleTrail } from "../module-presenter/module-path.js";
+
+export function bindCardNavigation(actions: { createPrototype(): void; copyPath(): void; selectTab(tab: string): void }) {
+  const tabs = document.querySelectorAll<HTMLElement>("[data-tab]");
+  byId("new-prototype").addEventListener("click", actions.createPrototype);
+  byId("copy-path").addEventListener("click", actions.copyPath);
+  for (const button of tabs) button.addEventListener("click", () => actions.selectTab(button.dataset.tab ?? "document"));
+  return (selected: string) => {
+    for (const button of tabs) button.setAttribute("aria-selected", String(button.dataset.tab === selected));
+    byId("document-panel").setAttribute("aria-labelledby", "tab-" + selected);
+  };
+}
 
 /** Обновляет хлебные крошки, статус и контекст выбранного каталога. */
 export function renderHeading(module: ModuleSummary, modules: ModuleSummary[], selectModule: (key: string) => void) {
@@ -54,9 +64,11 @@ export function renderHeading(module: ModuleSummary, modules: ModuleSummary[], s
   document.title = module.name + " — ArchiView";
 }
 
-export function renderFindingCount(module: Pick<ModuleSummary, "review" | "reviewStatus">) {
-  const findings = moduleFindingCount(module);
-  const tab = byId("tab-findings");
-  tab.textContent = "Замечания" + (findings ? " · " + findings : "");
-  if (findings || (!module.review && module.reviewStatus?.self.current.current_violation)) tab.prepend(findingBug());
+export function renderFindingCount(module: Pick<ModuleSummary, "analyses">) {
+  for (const [type, label] of [["grasp", "GRASP"], ["implementation", "Реализация"]] as const) {
+    const count = module.analyses?.[type]?.openFindings ?? 0;
+    const tab = byId(type === "grasp" ? "tab-grasp" : "tab-implementation");
+    tab.textContent = count ? label + " · " + count : label;
+    if (count) tab.prepend(findingBug());
+  }
 }

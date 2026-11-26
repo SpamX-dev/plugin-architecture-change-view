@@ -15,6 +15,8 @@ export function comparisonId(report: Omit<Comparison, "id">) {
 
 type ModeReader = (file: SourceFile) => string | undefined;
 type ComparisonOptions = { projectRoot?: string; emptyTree?: boolean };
+type FileScope = "module" | "repository";
+type ModulePair = [SnapshotModule | null, SnapshotModule | null];
 interface SnapshotFiles {
   modules: SnapshotModule[];
   mode: ModeReader;
@@ -68,20 +70,28 @@ async function repositoryFiles(root: string, snapshot: Snapshot): Promise<Snapsh
   }
 }
 
-export async function compareRepositorySnapshots(root: string, before: Snapshot | null, after: Snapshot, options: ComparisonOptions = {}) {
+async function compareRecordedSnapshots(root: string, before: Snapshot | null, after: Snapshot, options: ComparisonOptions, fileScope: FileScope) {
   const display = { projectRoot: root, ...options };
   const [oldFiles, newFiles] = await Promise.all([
     before ? repositoryFiles(root, before) : snapshotFiles(null),
     repositoryFiles(root, after),
   ]);
-  return compareWithFiles(before, after, display, oldFiles, newFiles);
+  return compareWithFiles(before, after, display, oldFiles, newFiles, fileScope);
 }
 
-/** Вычисляет изменения собственных файлов модуля, включая конфигурацию и документы. */
-function changedFiles(before: SnapshotModule | null | undefined, after: SnapshotModule | null | undefined,
+export function compareRepositorySnapshots(root: string, before: Snapshot | null, after: Snapshot, options: ComparisonOptions = {}) {
+  return compareRecordedSnapshots(root, before, after, options, "module");
+}
+
+/** A file's identity in a Git report is its repository-relative path across both snapshots. */
+export function compareGitFiles(root: string, before: Snapshot | null, after: Snapshot, options: ComparisonOptions = {}) {
+  return compareRecordedSnapshots(root, before, after, options, "repository");
+}
+
+function changedFiles(before: SourceFile[], after: SourceFile[],
   oldMode: ModeReader, newMode: ModeReader, unknownModes: string[], mapKnown: boolean): FileChange[] {
-  const oldFiles = new Map((before?.files ?? []).map((file) => [file.path, file]));
-  const newFiles = new Map((after?.files ?? []).map((file) => [file.path, file]));
+  const oldFiles = new Map(before.map((file) => [file.path, file]));
+  const newFiles = new Map(after.map((file) => [file.path, file]));
   return [...new Set([...oldFiles.keys(), ...newFiles.keys()])].sort().flatMap((file: string) => {
     if (file === MODULE_TREE_FILE && !mapKnown) return [];
     const previous = oldFiles.get(file);
@@ -98,6 +108,25 @@ function changedFiles(before: SnapshotModule | null | undefined, after: Snapshot
   });
 }
 
+function repositoryFileChanges(before: SnapshotFiles, after: SnapshotFiles, pairs: ModulePair[], unknownModes: string[]) {
+  const owners = new Map<string, SnapshotModule>();
+  // For a deletion, keep the former owner's row, including when that module moved.
+  for (const [previous, current] of pairs) {
+    if (previous) for (const file of previous.files) owners.set(file.path, current ?? previous);
+  }
+  for (const module of after.modules) for (const file of module.files) owners.set(file.path, module);
+  const changes = changedFiles(before.modules.flatMap(module => module.files), after.modules.flatMap(module => module.files),
+    before.mode, after.mode, unknownModes, before.mapKnown && after.mapKnown);
+  const byModule = new Map<SnapshotModule, FileChange[]>();
+  for (const change of changes) {
+    const owner = owners.get(change.path)!;
+    const group = byModule.get(owner) ?? [];
+    group.push(change);
+    byModule.set(owner, group);
+  }
+  return byModule;
+}
+
 /**
  * Сравнивает объединение модулей двух снимков. Родитель сохраняет собственный
  * статус, а число изменённых потомков передаётся отдельным полем.
@@ -107,7 +136,7 @@ export function compareSnapshots(before: Snapshot | null, after: Snapshot, optio
 }
 
 function compareWithFiles(before: Snapshot | null, after: Snapshot, { projectRoot = after.root, emptyTree = false }: ComparisonOptions,
-  oldFiles: SnapshotFiles, newFiles: SnapshotFiles) {
+  oldFiles: SnapshotFiles, newFiles: SnapshotFiles, fileScope: FileScope = "module") {
   if (before && before.root !== after.root) throw new Error("Snapshots belong to different projects");
   const previous = new Map(oldFiles.modules.map((module) => [module.directory, module]));
   const current = new Map(newFiles.modules.map((module) => [module.directory, module]));
@@ -115,21 +144,24 @@ function compareWithFiles(before: Snapshot | null, after: Snapshot, { projectRoo
   const oldIds = new Map([...previous.values()].filter(identity).map((m) => [identity(m), m]));
   const currentIds = new Set([...current.values()].map(identity).filter(Boolean));
   const matched = new Set<string>();
-  const pairs = [...current.values()].map((m) => {
+  const pairs: ModulePair[] = [...current.values()].map((m) => {
     const byId = identity(m) ? oldIds.get(identity(m)) : null;
     const byPath = previous.get(m.directory);
     const prior = byId ?? (identity(m) && identity(byPath) && identity(m) !== identity(byPath) ? null :
       byPath && !matched.has(byPath.directory) && (!identity(byPath) || !currentIds.has(identity(byPath))) ? byPath : null);
     if (prior) matched.add(prior.directory);
-    return [prior, m] as [SnapshotModule | null | undefined, SnapshotModule | null];
+    return [prior ?? null, m];
   });
   for (const m of previous.values()) if (!matched.has(m.directory)) pairs.push([m, null]);
   const unknownModes: string[] = [];
+  const repositoryChanges = fileScope === "repository" ? repositoryFileChanges(oldFiles, newFiles, pairs, unknownModes) : undefined;
   const modules = pairs.map(([oldModule, newModule]): ComparisonModule => {
     const entry = newModule ?? oldModule;
     if (!entry) throw new Error("Missing comparison module");
     const directory = entry.directory;
-    const files = changedFiles(oldModule, newModule, oldFiles.mode, newFiles.mode, unknownModes, oldFiles.mapKnown && newFiles.mapKnown);
+    const files = repositoryChanges
+      ? repositoryChanges.get(entry) ?? []
+      : changedFiles(oldModule?.files ?? [], newModule?.files ?? [], oldFiles.mode, newFiles.mode, unknownModes, oldFiles.mapKnown && newFiles.mapKnown);
     return { key: "", directory, name: directory === "." ? path.basename(projectRoot) :
       path.posix.basename(directory),
       moduleId: identity(newModule ?? oldModule),

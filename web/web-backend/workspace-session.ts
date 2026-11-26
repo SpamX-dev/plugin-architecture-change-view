@@ -1,13 +1,25 @@
-import { createHash } from "node:crypto";
 import { realpath } from "node:fs/promises";
 import path from "node:path";
-import { within } from "../../analyse/project/paths.js";
-import { readSnapshotRoot } from "../../analyse/project/identity.js";
+import { repositoryStateDirectory } from "./state-directory.js";
 import { discoverWorkspaceRepositories, resolveWorkspaceRepository } from "../../analyse/project/workspace.js";
 import { createArchiViewSession } from "./session.js";
 import { createPublishedView } from "../../module-operations/published-view.js";
 import { ApplicationError } from "../../module-operations/errors.js";
 import type { SessionOperations } from "../../module-operations/api.js";
+import { listModules, type ModuleSelection } from "../../module-operations/module-access.js";
+
+/** The workspace overview composes one repository-scoped query per checkout. */
+export async function listWorkspaceModules(workspace: string, selection: ModuleSelection = {}) {
+  if (selection.repository !== undefined) return listModules(workspace, selection);
+  const repositories = await discoverWorkspaceRepositories(workspace);
+  if (!repositories.length) throw new ApplicationError("REPOSITORY_UNAVAILABLE", "В выбранной папке нет репозитория Git");
+  const projects = [];
+  for (const repository of repositories) {
+    const result = await listModules(workspace, { ...selection, repository });
+    projects.push(...result.projects);
+  }
+  return { projects };
+}
 
 /** Route a panel request within its host-bound folder. The selected repository belongs to the request. */
 export async function createWorkspaceSession({ root: folder, stateDirectory, sharedStateDirectory = false, initialRepository }: {
@@ -25,17 +37,8 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
   const sessions = new Map<string, ReturnType<typeof createArchiViewSession>>();
   const publishedViews = new Map<string, NonNullable<Awaited<ReturnType<typeof createPublishedView>>>>();
 
-  async function sessionOptions(project: string, repository: string) {
-    const configured = stateDirectory && path.resolve(project, stateDirectory);
-    let directory = configured;
-    if (configured && !within(project, configured) && (repository !== "." || sharedStateDirectory)) {
-      // A pre-existing unpartitioned store keeps serving its original physical checkout.
-      const origin = await readSnapshotRoot(project, configured);
-      if (!origin || !path.isAbsolute(origin) || path.relative(project, origin) !== "") {
-        directory = path.join(configured, "repositories", createHash("sha256").update(project).digest("hex"));
-      }
-    }
-    return { root: project, stateDirectory: directory };
+  function sessionOptions(project: string, repository: string) {
+    return { root: project, stateDirectory, sharedStateDirectory: repository !== "." || sharedStateDirectory };
   }
 
   async function projectPath(repository: string) {
@@ -51,7 +54,7 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
   function liveSession(project: string, repository: string, deferPublication: boolean) {
     let current = sessions.get(project);
     if (!current) {
-      current = sessionOptions(project, repository).then(options => createArchiViewSession({ ...options, workspaceRoot: root, deferPublication }));
+      current = createArchiViewSession({ ...sessionOptions(project, repository), workspaceRoot: root, deferPublication });
       sessions.set(project, current);
       current.catch(() => { if (sessions.get(project) === current) sessions.delete(project); });
     }
@@ -107,7 +110,9 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
         const project = await projectPath(repository);
         let published;
         if (args.published && (args.target ?? "current") === "current" && (args.baseline ?? "auto") === "auto") {
-          published = await createPublishedView(await sessionOptions(project, repository));
+          const options = sessionOptions(project, repository);
+          const directory = await repositoryStateDirectory(project, stateDirectory, options.sharedStateDirectory);
+          published = await createPublishedView({ root: project, stateDirectory: directory });
           if (published) {
             publishedViews.delete(published.comparison.id);
             publishedViews.set(published.comparison.id, published);
@@ -125,6 +130,7 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
     async waitForChanges(args, signal) {
       return (await open(selection(args.repository))).waitForChanges(args, signal);
     },
+    async updateFinding(args) { return (await viewSession(args.repository, args.view)).updateFinding(args); },
     async getReviewStatuses(args) { return (await viewSession(args.repository, args.view)).getReviewStatuses(args); },
     async getModule(args) { return (await readableView(args)).getModule(args); },
     async getRelations(args) { return (await readableView(args)).getRelations(args); },

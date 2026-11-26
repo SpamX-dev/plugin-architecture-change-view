@@ -37,6 +37,15 @@ async function fixture(t: TestContext) {
   return { root, temporary };
 }
 
+test("CLI rejects report commands combined with --check-index before accessing the repository", async (t) => {
+  const { temporary } = await fixture(t);
+  const missing = path.join(temporary, "unopened-repository");
+  assert.throws(() => run(missing, ["--import-review", "review.yaml", "--check-index"]),
+    /--check-index несовместим с --import-review/);
+  assert.throws(() => run(missing, ["--check-index", "--build-report"]),
+    /--check-index несовместим с --build-report/);
+});
+
 test("prepared-index validation uses staged code and current reports, never working files or baseline", async (t) => {
   const { root } = await fixture(t);
   run(root, ["--build-report"]);

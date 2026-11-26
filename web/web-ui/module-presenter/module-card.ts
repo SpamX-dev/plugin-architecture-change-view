@@ -2,7 +2,7 @@ import type { ArchiViewClient, ClauseReference, ComparisonView, FindingTarget, F
 import { errorCode, errorMessage } from "../types.js";
 import type { WorkspaceContext } from "../workspace-presenter/workspace.js";
 import { byId, el, renderFailure } from "../views/dom.js";
-import { renderHeading as showHeading, renderFindingCount } from "../views/module-heading.js";
+import { bindCardNavigation, renderHeading as showHeading, renderFindingCount } from "../views/module-heading.js";
 import { renderContractHeading, savedClauseMatchesContract } from "../views/contract.js";
 import { renderReview } from "../views/review.js";
 import { renderDocument, renderHistoricalClause, renderFiles } from "../views/module-document.js";
@@ -11,6 +11,7 @@ import { createAnalysisControls } from "./analysis-controls.js";
 import { createRelationsPanel } from "./relations.js";
 import { createClauseEditor } from "./clause-editor.js";
 import { prototypeDialog } from "./prototype-editor.js";
+import { isAnalysisType } from "../../../framework/ai-report/types.js";
 import { isPrototype } from "../../../framework/contracts/types.js";
 
 export interface ClauseNavigation {
@@ -38,8 +39,9 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
     if (!navigator.clipboard) throw new Error("Буфер обмена недоступен в этом браузере");
     await navigator.clipboard.writeText(prompt);
   }
+  const analysisActions = document.getElementById("analysis-actions")!;
   const renderAnalysisControls = createAnalysisControls({ client, copyPrompt,
-    selection: () => ({ view: workspace.refreshing || !state.detail || workspace.view?.published ? null : workspace.view, module: workspace.view?.modules.find((entry) => entry.key === state.selected) }),
+    selection: () => ({ type: isAnalysisType(state.tab) ? state.tab : undefined, view: workspace.refreshing || !state.detail || workspace.view?.published ? null : workspace.view, module: workspace.view?.modules.find((entry) => entry.key === state.selected) }),
     refresh: workspace.refresh, toast });
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
   const clauseControls = createClauseEditor(client, async (view, key, change) => {
@@ -104,7 +106,7 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
     }
     byId("document-panel").replaceChildren(el("div", "loading-state", "Читаем документ…"));
     try {
-      const detail = await client.getModule({ view: view.id, path: module.key, repository: view.workspace?.repository, ...(view.separateAnalysis ? {analysis:false} : {}) });
+      const detail = await client.getModule({ currentOnly: true, view: view.id, path: module.key, repository: view.workspace?.repository, ...(view.separateAnalysis ? {analysis:false} : {}) });
       if (token !== state.selection) return;
       state.detail = detail;
       renderFindingCount(view.separateAnalysis ? module : detail);
@@ -157,18 +159,17 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
 
   /** Жук открывает конкретное замечание той попытки, из которой он был показан. */
   function openReviewFinding(target: FindingTarget) {
-    state.tab = "findings";
+    const type = state.detail?.reviews.find(bundle => bundle.report.id === target.reviewId)?.analysisType;
+    if (!type) return;
+    state.tab = type;
     selectedClause = undefined;
     renderPanel({ reviewId: target.reviewId, findingId: target.findingId });
   }
 
   /** Переключает представления одного модуля, сохраняя навигацию и базу сравнения. */
   function renderPanel(navigation: { reviewId?: string; findingId?: string } = {}) {
-    for (const button of document.querySelectorAll<HTMLElement>("[data-tab]")) {
-      button.setAttribute("aria-selected", String(button.dataset.tab === state.tab));
-    }
+    showSelectedTab(state.tab);
     const panel = byId("document-panel");
-    panel.setAttribute("aria-labelledby", "tab-" + state.tab);
     if (!state.detail) return;
     panel.replaceChildren();
     const heading = byId("module-contract-heading");
@@ -182,7 +183,7 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
     });
     const needsReview = viewNeedsReview();
     if (needsReview && state.detail !== reviewDetail && state.tab !== "files") {
-      if (["checks", "findings"].includes(state.tab)) {
+      if (isAnalysisType(state.tab)) {
         panel.replaceChildren(el("div", "loading-state", detailError ?? workspace.reviewError ?? "Загружаем анализ…"));
         if (detailError || workspace.reviewError) {
           const retry = el("button", "button button-quiet", "Повторить");
@@ -199,7 +200,7 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
       if (workspace.statusLoaded && !detailError && detailRequest !== detail) {
         detailRequest = detail;
         const view = currentView();
-        void client.getModule({view:view.id, path:detail.key, repository:view.workspace?.repository, analysis:true}).then(result => {
+        void client.getModule({currentOnly:true,view:view.id, path:detail.key, repository:view.workspace?.repository, analysis:true}).then(result => {
           if (state.detail !== detail || workspace.view !== view) return;
           state.detail = reviewDetail = result;
           renderPanel(navigation);
@@ -224,16 +225,29 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
       renderDocument(panel, state.detail, currentView(), selectModule, openReviewFinding, clauseControls(currentView(), state.detail));
       if (selectedClause) revealClause(selectedClause, state.detail);
     }
-    else if (["checks", "findings"].includes(state.tab)) {
+    else if (isAnalysisType(state.tab)) {
       const moduleKey = state.detail.key;
       const view = currentView();
       const repository = view.workspace?.repository;
-      renderReview(panel, state.detail, state.tab, { openClause: openReviewClause,
+      const type = state.tab;
+      const entry = state.detail.reviews.find(review => review.report.id === state.detail?.analyses?.[type]?.id);
+      renderFindingCount(state.detail);
+      if (!entry) {
+        panel.append(analysisActions);
+        analysisActions.hidden = false;
+        renderAnalysisControls();
+        return;
+      }
+      renderReview(panel, entry, { openClause: openReviewClause,
         projectRoot: view.root, fixStates: state.findingFixes, copyFixPrompt: copyPrompt,
         listFixHarnesses: () => client.listHarnesses({ repository }),
         deliverFix: args => client.deliverFindingFix({ ...args, repository }),
+        saveDecision: view.published ? undefined : async (reviewId, findingId, next, expected) => {
+          await client.updateFinding({view:view.id, path:moduleKey, repository, reviewId, findingId, ...next, expected});
+          if (workspace.view === view && state.detail?.key === moduleKey) await workspace.refresh();
+        },
         fixChanged: (reviewId) => {
-          if (workspace.view?.root === view.root && state.detail?.key === moduleKey && state.tab === "findings" &&
+          if (workspace.view?.root === view.root && state.detail?.key === moduleKey && state.tab === type &&
               panel.querySelector<HTMLElement>(".review-body")?.dataset.reviewId === reviewId)
             renderPanel({ reviewId });
         },
@@ -253,8 +267,8 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
   function viewNeedsReview() {
     const view = workspace.view;
     if (!view?.separateAnalysis) return false;
-    if (state.tab === "checks" || state.tab === "findings") return true;
-    return state.tab === "document" && Boolean(view.modules.find(m => m.key === state.selected)?.review);
+    if (isAnalysisType(state.tab)) return true;
+    return state.tab === "document" && Boolean(Object.keys(view.modules.find(m => m.key === state.selected)?.analyses ?? {}).length);
   }
 
   /** Копирует путь выбранного модуля или файла без изменения документов. */
@@ -263,18 +277,18 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
     catch { toast(text); }
   }
 
-  byId("new-prototype").addEventListener("click", () => openPrototype("create"));
-  byId("copy-path").addEventListener("click", () => {
-    if (state.detail) copyText(state.detail.directory === "." ? currentView().root :
-      currentView().root.replace(/[\\/]$/, "") + "/" + state.detail.directory);
-  });
-  for (const tab of document.querySelectorAll<HTMLElement>("[data-tab]")) {
-    tab.addEventListener("click", () => {
-      state.tab = tab.dataset.tab ?? "document";
+  const showSelectedTab = bindCardNavigation({
+    createPrototype: () => openPrototype("create"),
+    copyPath() {
+      if (state.detail) void copyText(state.detail.directory === "." ? currentView().root :
+        currentView().root.replace(/[\\/]$/, "") + "/" + state.detail.directory);
+    },
+    selectTab(tab) {
+      state.tab = tab;
       selectedClause = undefined;
       renderPanel();
-    });
-  }
+    },
+  });
 
   return {
     get selected() { return state.selected; },

@@ -1,6 +1,6 @@
 import { realpath } from "node:fs/promises";
 import path from "node:path";
-import { discoverWorkspaceProjects, locateSourceRepository, resolveWorkspaceRepository } from "./workspace.js";
+import { discoverWorkspaceProjects, locateSourceRepository, resolveWorkspaceRepository } from "../project/workspace.js";
 import { errorDetails } from "../../node-errors.js";
 import type { ModuleDocument } from "./module-tree.js";
 import { isPrototype } from "../../framework/contracts/types.js";

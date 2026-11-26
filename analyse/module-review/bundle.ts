@@ -93,6 +93,7 @@ export function validateContractScope(report: ReviewReport, manifest: ReviewMani
     throw new Error("Review check references a clause outside the manifest");
   const localConstraint = (clause: ClauseReference) => {
     if (clause.module_id === report.module.id) return true;
+    if (manifest.analysis_type === "grasp") return snapshots?.current?.modules.some(module => module.document.contract?.id === clause.module_id);
     if (!["boundaries", "invariants"].includes(clause.section)) return false;
     const directory = report.module[`${clause.snapshot}_path`];
     const ancestor = snapshots?.[clause.snapshot]?.modules.find((module) =>

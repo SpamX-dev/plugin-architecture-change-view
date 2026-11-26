@@ -23,7 +23,7 @@ test("standalone CLI serves its startup UI even after a rebuild, before opening 
   await cp(new URL("../dist/", import.meta.url), distribution, { recursive: true });
   const script = path.join(distribution, "web/archiview/app.mjs");
   const original = await readFile(script, "utf8");
-  const child = spawn(process.execPath, [path.join(distribution, "cli.mjs"), "--root", root, "--port", "0"], { windowsHide: true });
+  const child = spawn(process.execPath, [path.join(distribution, "cli.mjs"), "--root", root, "--port", "0"], { cwd: distribution, windowsHide: true });
   const closed = once(child, "close");
   try {
     for await (const line of createInterface({ input: child.stdout })) {

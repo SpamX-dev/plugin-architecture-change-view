@@ -1,8 +1,8 @@
 import { lstat, readdir } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { readSnapshotRoot } from "../project/identity.js";
-import { assertStateLocation, projectStateDirectory } from "../project/paths.js";
+import { readSnapshotRoot } from "../../storage/identity.js";
+import { assertStateLocation, projectStateDirectory } from "../../storage/paths.js";
 import { digest } from "../../framework/serialization/digest.js";
 import { validateReviewRelations } from "./review-identity.js";
 import type { ReviewHistory, TechnicalReport } from "../../framework/static-report/types.js";

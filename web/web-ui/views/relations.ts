@@ -37,7 +37,7 @@ export async function openRelationSource(site: Site, load: () => Promise<{text: 
 
 export function renderRelations(body: HTMLElement, data: ModuleRelations, owner: string, openModule: (dir: string) => void, openSite: OpenSite) {
   if (!data.ready) {
-    body.append(el("p", "empty-state", "Связи ещё не построены для этого снимка."));
+    body.append(el("p", "empty-state", "Связи ещё не построены для этого снимка. Индексатор поддерживает TypeScript и JavaScript."));
     return;
   }
   const coverage = el("p", "relations-coverage", "TypeScript / JavaScript · файлов в индексе: " + data.indexed + " из " + data.eligible);

@@ -1,3 +1,4 @@
+import type { AnalysisType } from "../../../framework/ai-report/types.js";
 import { bindHarnessMenu } from "./harness-menu.js";
 import type { AnalysisRecord, ArchiViewClient, ComparisonView, ModuleSummary } from "../types.js";
 import { errorMessage } from "../types.js";
@@ -5,20 +6,26 @@ import { byId } from "../views/dom.js";
 
 export function createAnalysisControls({ client, selection, copyPrompt, refresh, toast }: {
   client: Pick<ArchiViewClient, "prepareAnalysis" | "getAnalysis" | "listHarnesses" | "deliverAnalysis">;
-  selection: () => { module?: ModuleSummary; view: ComparisonView | null };
+  selection: () => { type?: AnalysisType; module?: ModuleSummary; view: ComparisonView | null };
   copyPrompt: (prompt: string) => Promise<void>;
   refresh: () => Promise<void>;
   toast: (message: string) => void;
 }) {
   const analyses = new Map<string, AnalysisRecord>();
-  let activePoll: { record: AnalysisRecord; timer: ReturnType<typeof setTimeout> } | undefined;
+  type PendingRequest = {
+    record: AnalysisRecord;
+    request: NonNullable<AnalysisRecord["request"]>;
+    poll?: { timer: ReturnType<typeof setTimeout> };
+  };
+  const pending = new Map<string, PendingRequest>();
   function selectedAnalysis() {
-    const { module, view } = selection();
-    const key = module?.moduleId && view ? JSON.stringify([view.root, view.id, module.moduleId]) : undefined;
-    return { module, view, key, request: key ? analyses.get(key) : undefined };
+    const { module, view, type } = selection();
+    const key = module?.moduleId && view && type ? JSON.stringify([view.root, view.id, module.moduleId, type]) : undefined;
+    return { module, view, key, type, request: key ? analyses.get(key) : undefined };
   }
 
   const trigger = document.querySelector<HTMLButtonElement>("#analyze-module")!;
+  const status = byId("analysis-status");
   const menu = document.getElementById("analysis-menu")!;
   const hosts = document.getElementById("analysis-harnesses")!;
   const copy = document.querySelector<HTMLButtonElement>("#copy-analysis")!;
@@ -36,18 +43,20 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
   }
 
   function renderAnalysisControls() {
-    const { request, view, module } = selectedAnalysis();
-    trigger.disabled = !view?.complete || module?.documentState !== "documented" || !module.moduleId || request?.status === "preparing";
-    trigger.textContent = request?.status === "preparing" ? "Подготавливаем…" : "Анализировать ▾";
+    const { request, view, module, type } = selectedAnalysis();
+    trigger.disabled = !type || !module?.currentPath || !view?.complete || module?.documentState !== "documented" || !module.moduleId || request?.status === "preparing";
+    trigger.textContent = request?.status === "preparing" ? "Подготавливаем…" : "Выполнить анализ ▾";
     updateMenu();
-    watchPreparedRequest(request, view?.workspace?.repository);
-    const status = byId("analysis-status");
-    status.hidden = !request;
-    status.textContent = request?.message ?? "";
+    watchPreparedRequests(view, module);
+    const unavailable = !module?.currentPath ? "Модуль отсутствует в выбранном срезе." :
+      module.documentState !== "documented" ? "Для анализа нужен контракт модуля." :
+      view && !view.complete ? "Для анализа нужен полный срез." : "";
+    status.textContent = request?.message || unavailable;
+    status.hidden = !status.textContent;
   }
 
   async function runAnalysis(harnessId?: string) {
-    const { module, view, key, request: previous } = selectedAnalysis();
+    const { module, view, key, type, request: previous } = selectedAnalysis();
     if (!module || !view || !key || previous?.status === "preparing") return;
     const record: AnalysisRecord = previous && previous.status !== "completed" && !(harnessId && previous.delivery) ? previous :
       { status: "ready", message: "" };
@@ -58,8 +67,8 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
     renderAnalysisControls();
     try {
       if (!record.request) {
-        const prepared = await client.prepareAnalysis({ view: view.id, path: module.key, repository: view.workspace?.repository });
-        if (prepared.viewId !== view.id || prepared.moduleId !== module.moduleId)
+        const prepared = await client.prepareAnalysis({ view: view.id, path: module.key, analysisType: type, repository: view.workspace?.repository });
+        if (prepared.analysisType !== type || prepared.viewId !== view.id || prepared.moduleId !== module.moduleId)
           throw new Error("Получен запрос для другого снимка модуля");
         record.request = prepared;
       }
@@ -88,46 +97,56 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
       record.status = alreadyCopied ? "prepared" : "error";
       record.message = (record.request ? "Не удалось скопировать промпт: " : "Не удалось подготовить промпт: ") + errorMessage(error);
     } finally {
+      if (record.status === "prepared" && record.request && !pending.has(record.request.id)) {
+        pending.set(record.request.id, { record, request: record.request });
+      }
       renderAnalysisControls();
     }
   }
 
-  /** Follow only the visible request. A previous observer may still be awaiting its response. */
-  function watchPreparedRequest(request?: AnalysisRecord, repository?: string) {
-    const record = request?.status === "prepared" ? request : undefined;
-    if (activePoll?.record === record) return;
-    clearTimeout(activePoll?.timer);
-    activePoll = undefined;
-    if (!record?.request) return;
-    const { id, viewId, moduleId } = record.request;
-    const observer = { record, timer: setTimeout(check, 3000) };
-    activePoll = observer;
+  /** Every pending request belongs to one card, across all of its tabs. */
+  function watchPreparedRequests(view: ComparisonView | null, module?: ModuleSummary) {
+    for (const item of pending.values()) {
+      if (item.request.viewId !== view?.id || item.request.moduleId !== module?.moduleId || item.record.status !== "prepared") {
+        clearTimeout(item.poll?.timer);
+        item.poll = undefined;
+      } else if (!item.poll) startPoll(item, view.workspace?.repository);
+    }
+  }
+
+  function startPoll(item: PendingRequest, repository?: string) {
+    const { id, viewId, moduleId } = item.request;
+    const { record } = item;
+    const observer = { timer: setTimeout(check, 3000) };
+    item.poll = observer;
 
     async function check() {
-      if (activePoll !== observer) return;
+      if (item.poll !== observer) return;
       if (document.visibilityState === "hidden") {
         observer.timer = setTimeout(check, 3000);
         return;
       }
       try {
         const status = await client.getAnalysis({ id, repository });
-        if (activePoll !== observer) return;
+        if (item.poll !== observer) return;
         if (status.id !== id || status.viewId !== viewId || status.moduleId !== moduleId)
           throw new Error("Получен статус другого запроса анализа");
         if (status.delivery) {
-          observer.record.delivery = status.delivery;
-          observer.record.message = deliveryMessage(status.delivery);
+          record.delivery = status.delivery;
+          record.message = deliveryMessage(status.delivery);
         }
         if (status.status === "completed") {
-          observer.record.status = "completed";
-          observer.record.message = "Анализ выбранного снимка сохранён. Актуальность показана в результатах проверки.";
+          pending.delete(id);
+          item.poll = undefined;
+          record.status = "completed";
+          record.message = "Анализ выбранного снимка сохранён. Актуальность показана в результатах проверки.";
           renderAnalysisControls();
           await refresh();
           return;
         }
       } catch (error) {
-        if (activePoll !== observer) return;
-        observer.record.message = "Не удалось обновить статус: " + errorMessage(error);
+        if (item.poll !== observer) return;
+        record.message = "Не удалось обновить статус: " + errorMessage(error);
       }
       observer.timer = setTimeout(check, 3000);
       renderAnalysisControls();

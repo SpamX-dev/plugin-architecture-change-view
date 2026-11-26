@@ -20,6 +20,7 @@ test("linked worktree subscriptions ignore local storage, wake all readers and s
   commitTestFiles(repo);
   const git = (...args: string[]) => execFileSync("git", args, {cwd:repo, windowsHide:true}).toString().trim();
   git("worktree", "add", "-qb", "linked", linked);
+  await mkdir(path.join(linked, "build"));
   await mkdir(path.join(linked, ".archiview/snapshots"), {recursive:true});
   await mkdir(path.join(storage, "work"));
   const cursor = await watcher.current();
@@ -34,6 +35,9 @@ test("linked worktree subscriptions ignore local storage, wake all readers and s
   assert.notEqual(one.cursor, cursor);
   assert.deepEqual(one, two);
   assert.equal(one.reviewsChanged, false);
+  const buildChange = watcher.wait(one.cursor, AbortSignal.timeout(5000));
+  await writeFile(path.join(linked, "build/maintained.ts"), "export const value = 1;\n");
+  assert.notEqual((await buildChange).cursor, one.cursor);
   // Change the checked-out branch's tip without changing any files in the linked worktree.
   const newTip = git("-c", "user.name=Test", "-c", "user.email=test@example.test", "commit-tree",
     git("rev-parse", "HEAD^{tree}"), "-p", "HEAD", "-m", "new tip");

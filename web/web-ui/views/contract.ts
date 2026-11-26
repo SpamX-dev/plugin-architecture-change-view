@@ -61,7 +61,7 @@ function clauseRow(contract: StoredContract, section: Section, id: string, title
   row.append(el("p", "", section === "purpose" ? contract.purpose ?? "Назначение не задано" : change.after ?? change.before));
   decorateContractChange(row, change, section === "purpose" ? title : id);
   if (change.status === "unchanged") row.title = "Пункт не изменялся";
-  const findings = clauseFindingTargets(options.review, contract, section, id);
+  const findings = (options.reviews ?? (options.review ? [options.review] : [])).flatMap(review => clauseFindingTargets(review, contract, section, id));
   if (findings.length || controls) {
     const issues = el("div", "clause-issues");
     if (controls) {

@@ -7,18 +7,19 @@ import type { ReviewInput } from "../framework/static-report/types.js";
 import { parseArgs } from "node:util";
 import { readFile, writeFile, lstat } from "node:fs/promises";
 import { stringify } from "yaml";
-import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
+import { createWorkspaceSession, listWorkspaceModules } from "../web/web-backend/workspace-session.js";
 import type { SessionOperations } from "../module-operations/api.js";
 import type { openProjectHistory } from "../analyse/module-review/legacy-history.js";
 import { readReviewBundle } from "../analyse/module-review/review-store.js";
 import { parseYaml } from "../framework/serialization/yaml.js";
 import { digest } from "../framework/serialization/digest.js";
+import { isAnalysisType } from "../framework/ai-report/types.js";
 import { createReviewInput } from "../analyse/module-review/review-input.js";
 import { checkPreparedIndex } from "../analyse/module-review/report-index.js";
-import { moduleContext, moduleInventory } from "../analyse/project/inventory.js";
+import { moduleContext, moduleInventory } from "../analyse/project-sources/inventory.js";
 import { resolveWorkspaceRepository } from "../analyse/project/workspace.js";
 import { createScaffold } from "../module-operations/prototypes.js";
-import { listModules, listModuleFiles, getModuleContract, saveModuleContract, saveGitComparison } from "../module-operations/module-access.js";
+import { listModuleFiles, getModuleContract, saveModuleContract, saveGitComparison } from "../module-operations/module-access.js";
 import { errorDetails } from "../node-errors.js";
 
 async function serve(workspace: SessionOperations & { root: string }, port: number, prepareWeb?: () => Promise<void>, history?: Awaited<ReturnType<typeof openProjectHistory>>) {
@@ -52,7 +53,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
     "save-comparison": { type: "boolean" }, "read-comparison": { type: "string" }, baseline: { type: "string" },
     "complete-analysis": { type: "string" },
     "prepare-analysis": { type: "string" },
-    "check-index": { type: "boolean" }, "export-review-input": { type: "string" },
+    "check-index": { type: "boolean" }, "export-review-input": { type: "string" }, "analysis-type": {type:"string"},
     output: { type: "string" }, dependencies: { type: "string" },
     "dependencies-complete": { type: "boolean" },
     repository: { type: "string" }, target: { type: "string" }, directory: { type: "string" }, input: { type: "string" },
@@ -65,15 +66,21 @@ async function execute(prepareWeb?: () => Promise<void>) {
   const selection = { repository: values.repository, target: values.target };
   const moduleCommands = (["list-modules", "module-files", "module-relations", "build-relations", "get-contract", "write-contract", "inventory", "module-context", "scaffold", "save-comparison", "read-comparison"] as const)
     .filter(name => values[name] !== undefined);
-  if (!values.help && moduleCommands.length && (moduleCommands.length > 1 || values["check-index"] || values["import-review"] ||
-    values["build-report"] || values["export-review-input"] || values["complete-analysis"] || values["prepare-analysis"]))
+  const reportCommands = (["import-review", "build-report", "export-review-input", "complete-analysis", "prepare-analysis"] as const)
+    .filter(name => values[name] !== undefined);
+  if (!values.help && moduleCommands.length && (moduleCommands.length > 1 || values["check-index"] || reportCommands.length))
     throw new Error("Выберите одну операцию с модулем");
+  if (!values.help && values["check-index"] && reportCommands.length)
+    throw new Error("--check-index несовместим с --" + reportCommands[0]);
   if (!values.help && (values.input !== undefined || values.directory !== undefined) && !values["write-contract"])
     throw new Error("--input и --directory используются с --write-contract");
   if (!values.help && values.baseline !== undefined && !values["save-comparison"])
     throw new Error("--baseline используется с --save-comparison");
   if (!values.help && values.target !== undefined && !["list-modules", "module-files", "module-relations", "get-contract", "write-contract", "save-comparison"].some(name => name === moduleCommands[0]))
     throw new Error("--target используется с операциями снимка модуля");
+  const analysisType = values["analysis-type"];
+  if (analysisType !== undefined && (!isAnalysisType(analysisType) || !values["export-review-input"]))
+    throw new Error("--analysis-type grasp|implementation применяется с --export-review-input");
   if (!values.help && (values.dependencies !== undefined || values["dependencies-complete"]))
     throw new Error("Сбор зависимостей через LLM отключён. Для связей TS/JS используйте --build-relations.");
   if (values.help) {
@@ -85,7 +92,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
       "  --import-review FILE_OR_BUNDLE       Импортировать YAML review или прежний пакет\n" +
       "  --complete-analysis REQUEST_ID       Проверить и импортировать result.yaml запроса панели\n" +
       "  --prepare-analysis REQUEST_ID        Повторить экспорт исходного снимка без зависимостей\n" +
-      "  --export-review-input MODULE_ID --output FILE\n" +
+      "  --export-review-input MODULE_ID --output FILE [--analysis-type grasp|implementation]\n" +
       "  --list-modules                       Проекты и модули выбранной рабочей папки (JSON)\n" +
       "  --module-files ID                    Список файлов модуля (JSON)\n" +
       "  --build-relations                    Построить связи TS/JS всего репозитория\n" +
@@ -138,7 +145,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
         } finally { await workspace.close(); }
         break;
       }
-      case "list-modules": json(await listModules(root, selection)); break;
+      case "list-modules": json(await listWorkspaceModules(root, selection)); break;
       case "module-files": json(await listModuleFiles(root, values["module-files"]!, selection)); break;
       case "get-contract": process.stdout.write(await getModuleContract(root, values["get-contract"]!, selection)); break;
       case "write-contract": {
@@ -200,7 +207,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
       const comparison = await reports.publishedComparison();
       if (!comparison) throw new Error("No complete published comparison");
       const input = createReviewInput(digest(store.snapshotRoot), comparison.baseline, comparison.current,
-        values["export-review-input"]);
+        values["export-review-input"], {analysisType});
       await writeFile(values.output, stringify(input, { aliasDuplicateObjects: false }), { flag: "wx" });
       process.stdout.write("Review input exported: " + values.output + "\n");
     }

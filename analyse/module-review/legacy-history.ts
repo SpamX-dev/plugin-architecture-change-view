@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import { errorDetails } from "../../node-errors.js";
 import { defaultSnapshotDirectory, readSavedSnapshot, savedSnapshotPaths, SnapshotStore } from "../git-changes/snapshot-store.js";
-import { readArchiveFile } from "../project/archive-cache.js";
-import { ensureProjectIdentity, readSnapshotRoot } from "../project/identity.js";
-import { assertStateLocation } from "../project/paths.js";
+import { readArchiveFile } from "../../storage/archive-cache.js";
+import { ensureProjectIdentity, readSnapshotRoot } from "../../storage/identity.js";
+import { assertStateLocation } from "../../storage/paths.js";
 import { readReviewBundle } from "./review-store.js";
 
 function legacyDirectoryFor(root: string) {

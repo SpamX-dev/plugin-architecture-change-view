@@ -1,13 +1,13 @@
 import { lstat, realpath } from "node:fs/promises";
 import path from "node:path";
-import { errorDetails } from "../../node-errors.js";
+import { errorDetails } from "../node-errors.js";
 
-import { STATE_DIRECTORY, within } from "../../framework/project/paths.js";
+import { STATE_DIRECTORY, within } from "../framework/project/paths.js";
 
-export { excludedProjectPath, projectStateDirectory, STATE_DIRECTORY, within } from "../../framework/project/paths.js";
+export { projectStateDirectory, STATE_DIRECTORY, within } from "../framework/project/paths.js";
 
 /** Resolves existing components before checking the location of a pending write. */
-async function physicalPath(target: string): Promise<string> {
+export async function physicalPath(target: string): Promise<string> {
   let ancestor = target;
   while (true) {
     try {

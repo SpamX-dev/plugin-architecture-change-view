@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { contractDocument } from "../../framework/contracts/document.js";
-import { moduleDocumentPath } from "./module-tree.js";
-import type { Section, StoredContract } from "../../framework/contracts/types.js";
-import { assertStateLocation, STATE_DIRECTORY } from "./paths.js";
-import { errorDetails } from "../../node-errors.js";
-import { gitContractTexts } from "../git-changes/git-tree.js";
+import { contractDocument } from "../framework/contracts/document.js";
+import { moduleDocumentPath } from "../framework/contracts/module-tree.js";
+import type { Section, StoredContract } from "../framework/contracts/types.js";
+import { assertStateLocation, STATE_DIRECTORY } from "../storage/paths.js";
+import { errorDetails } from "../node-errors.js";
+import { gitContractTexts } from "../analyse/git-changes/git-tree.js";
 
 type NumberedSection = Exclude<Section, "purpose">;
 const prefixes = { boundaries: "B", invariants: "I" } as const;

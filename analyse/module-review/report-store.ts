@@ -1,5 +1,5 @@
-import { withFileLock } from "../project/file-lock.js";
-import { ArchiveCache } from "../project/archive-cache.js";
+import { withFileLock } from "../../storage/file-lock.js";
+import { ArchiveCache } from "../../storage/archive-cache.js";
 import { parseReportYaml } from "../../framework/serialization/yaml.js";
 import type { SnapshotStore } from "../git-changes/snapshot-store.js";
 import type { SnapshotData, Snapshot, ComparisonModule } from "../../framework/snapshots/types.js";
@@ -117,6 +117,18 @@ export class ReportStore {
     return this.#locked(async () => {
       const state = await this.#read();
       return this.#result(state);
+    });
+  }
+
+  async readModuleReviews(moduleId: string) {
+    return this.#locked(async () => {
+      const file = path.join(this.work, moduleReportName(moduleId) + ".review.yaml");
+      await this.snapshotStore.assertLocation(file);
+      try {
+        const checked = await this.#checkedFile(file, true);
+        if (checked.kind !== "reviews") throw new Error("Invalid module review history");
+        return structuredClone(checked.entries);
+      } catch (error) { if (errorDetails(error).code === "ENOENT") return []; throw error; }
     });
   }
 

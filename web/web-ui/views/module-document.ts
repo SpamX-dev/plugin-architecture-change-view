@@ -20,7 +20,7 @@ export function renderDocument(panel: HTMLElement, detail: ModuleDetail, view: C
     renderContract(panel, { ...selected.document, text: detail.contractYaml ?? selected.document.text },
       { contractDiff: detail.contractDiff, previousReferences: detail.before?.document.contract?.references,
       rawChanged: detail.documentChanged, showRawDiff: () => openDocumentDiff(detail, view), hideHeading: true,
-      review: detail.reviews.find((bundle) => bundle.report.id === detail.review?.id) ?? detail.reviews[0],
+      reviews: detail.reviews.filter(bundle => bundle.analysisType && detail.analyses?.[bundle.analysisType]?.id === bundle.report.id),
       openFinding, clauseControls }); return;
   }
   if (selected.document.state !== "documented") {

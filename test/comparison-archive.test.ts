@@ -4,12 +4,50 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { captureGitHead, captureWorkingTree } from "../analyse/git-changes/capture.js";
-import { compareSnapshots, comparisonId } from "../analyse/git-changes/comparison.js";
+import { compareGitFiles, compareSnapshots, comparisonId } from "../analyse/git-changes/comparison.js";
 import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
 import { checkPreparedIndex } from "../analyse/module-review/report-index.js";
 import { ReportStore } from "../analyse/module-review/report-store.js";
 import type { Snapshot } from "../framework/snapshots/types.js";
 import { commitTestFiles, contractYaml, initTestRepository, writeModuleTree } from "./support.js";
+
+test("saved file comparisons preserve real changes when a module gains or loses ownership", async t => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "archiview-file-owner-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const root = path.join(directory, "repo");
+  await mkdir(path.join(root, "feature"), { recursive: true });
+  initTestRepository(root);
+  const settings = "feature/settings.json", source = "feature/main.ts";
+  await writeFile(path.join(root, settings), "{}\n");
+  const store = new SnapshotStore(root, path.join(directory, "state"));
+  const original = await store.save(await captureWorkingTree(root));
+  await writeFile(path.join(root, source), "export {};\n");
+  const split = await store.save(await captureWorkingTree(root));
+  await writeFile(path.join(root, settings), '{"enabled":true}\n');
+  const edited = await store.save(await captureWorkingTree(root));
+  await rm(path.join(root, "feature"), { recursive: true });
+
+  const owned = compareSnapshots(original, split);
+  assert.deepEqual(owned.modules.find(m => m.directory === ".")!.files, [{ path: settings, status: "removed" }]);
+  const historical = await store.saveComparison(owned);
+  const saved = await store.saveComparison(await compareGitFiles(root, original, split));
+  assert.notEqual(saved.id, historical.id);
+  assert.deepEqual(await store.readComparison(historical.id), historical);
+  assert.deepEqual(saved.modules.map(m => [m.directory, m.status, m.files]), [
+    [".", "unchanged", []], ["feature", "new", [{ path: source, status: "new" }]],
+  ]);
+  assert.equal(saved.modules[0].descendantChanges, 1);
+  assert.deepEqual((await compareGitFiles(root, split, original)).modules.flatMap(m => m.files),
+    [{ path: source, status: "removed" }]);
+  const forward = await compareGitFiles(root, original, edited);
+  assert.deepEqual(forward.modules.find(m => m.directory === "feature")!.files, [
+    { path: source, status: "new" }, { path: settings, status: "changed" },
+  ]);
+  const reverse = await compareGitFiles(root, edited, original);
+  assert.deepEqual(reverse.modules.map(m => [m.directory, m.files]), [
+    [".", [{ path: settings, status: "changed" }]], ["feature", [{ path: source, status: "removed" }]],
+  ]);
+});
 
 test("Git reports reopen by ID after recapture, transfer and changes to the source tree", async t => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "archiview-comparison-"));

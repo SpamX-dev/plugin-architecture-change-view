@@ -2,17 +2,18 @@
 import type { AggregateAssessment, DependencySelector, ReviewFreshness, TreeReviewStatus } from "../framework/static-report/types.js";
 import type { AnalysisStatus, PreparedAnalysis, HarnessOption, Delivery } from "./analysis-record.js";
 export type { AnalysisStatus, PreparedAnalysis } from "./analysis-record.js";
-import type { ClauseInput, ReviewReport, Side } from "../framework/ai-report/types.js";
+import type { AnalysisType, ClauseInput, ReviewReport, Side } from "../framework/ai-report/types.js";
 import type { Comparison, ComparisonModule, Fact, Snapshot } from "../framework/snapshots/types.js";
 import type { compareContracts, RoleChange } from "../analyse/git-changes/contract-diff.js";
 import type { StructuredPatchHunk } from "diff";
 import type { Section } from "../framework/contracts/types.js";
 import type { ModuleRelations } from "../framework/module-relations/types.js";
 
+import type { FindingDisposition } from "../framework/ai-report/types.js";
 export interface RepositoryArgs { repository?: string }
 export type FindingFixArgs = RepositoryArgs & { id: string; harnessId: string; reviewId: string; findingId: string };
 export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number; published?: boolean; watch?: boolean };
-export type ModuleArgs = RepositoryArgs & { view: string; path: string; analysis?: boolean };
+export type ModuleArgs = RepositoryArgs & { view: string; path: string; analysis?: boolean; currentOnly?: boolean; analysisType?: AnalysisType };
 export type ClauseChange = { action: "add"; section: Exclude<Section, "purpose">; clauseId?: string; text: string }
   | ({ section: Section; clauseId: string } & (
     | { action: "edit"; text: string }
@@ -34,6 +35,8 @@ export type SnapshotArgs = RepositoryArgs & { view: string; label?: string };
 export type TimelineEntry = Pick<Snapshot, "id" | "kind" | "label" | "revision" | "isHead" | "subject" | "baseRevision">
   & { capturedAt?: string };
 export interface ModuleReviewState {
+  analyses?: Partial<Record<AnalysisType, { id: string; openFindings: number }>>;
+  descendantsNeedAnalysis?: boolean;
   review?: {
     id: string;
     stale: boolean;
@@ -68,6 +71,8 @@ export interface ComparisonView extends Pick<Comparison, "schema_version" | "id"
 }
 
 export interface ModuleReview {
+  analysisType?: AnalysisType;
+  dispositions?: Record<string, FindingDisposition>;
   report: ReviewReport;
   stale: boolean;
   reviewFile: string;
@@ -115,6 +120,7 @@ export interface SessionOperations {
   deliverAnalysis(args: RepositoryArgs & { id: string; harnessId: string }): Promise<Delivery>;
   prepareAnalysis(args: ModuleArgs): Promise<PreparedAnalysis>;
   getAnalysis(args: RepositoryArgs & { id: string }): Promise<AnalysisStatus>;
+  updateFinding(args: ModuleArgs & { reviewId: string; findingId: string; status: FindingDisposition["status"]; decision: string; expected: FindingDisposition }): Promise<FindingDisposition>;
   buildReview(args: ModuleArgs): Promise<{ automatic: boolean; module_id?: string | null }>;
   saveSnapshot(args: SnapshotArgs): Promise<TimelineEntry>;
 }

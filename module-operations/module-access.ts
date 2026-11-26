@@ -1,9 +1,9 @@
 import path from "node:path";
 import { captureGitIndex, readGitHeadRevision } from "../analyse/git-changes/capture.js";
 import { GitTreeReader } from "../analyse/git-changes/git-tree.js";
-import { compareRepositorySnapshots } from "../analyse/git-changes/comparison.js";
+import { compareGitFiles } from "../analyse/git-changes/comparison.js";
 import type { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
-import { discoverWorkspaceProjects, resolveWorkspaceRepository } from "../analyse/project/workspace.js";
+import { discoverWorkspaceRepositories, hasModuleMap, resolveWorkspaceRepository } from "../analyse/project/workspace.js";
 import { MODULE_TREE_FILE } from "../framework/contracts/module-tree.js";
 import { isModuleDocumentFile } from "../framework/project/storage-paths.js";
 import type { SnapshotModule } from "../framework/snapshots/types.js";
@@ -12,17 +12,18 @@ import { writeModuleContract } from "./prototypes.js";
 
 export interface ModuleSelection { repository?: string; target?: string }
 
-async function projectsIn(workspace: string, repository?: string) {
-  const projects = await discoverWorkspaceProjects(workspace);
-  const selected = repository === undefined ? projects : projects.filter(project => project.repository === repository);
-  if (!selected.length) throw new ApplicationError("REPOSITORY_UNAVAILABLE", "В выбранной папке нет указанного репозитория Git");
-  return selected;
-}
-
-async function selectedRoot(workspace: string, repository?: string) {
-  const projects = await projectsIn(workspace, repository);
-  if (projects.length !== 1) throw new ApplicationError("INVALID_ARGUMENT", "Укажите репозиторий модуля");
-  return resolveWorkspaceRepository(workspace, projects[0].repository);
+async function selectedProject(workspace: string, repository?: string) {
+  if (repository === undefined) {
+    const repositories = await discoverWorkspaceRepositories(workspace);
+    if (!repositories.length) throw new ApplicationError("REPOSITORY_UNAVAILABLE", "В выбранной папке нет репозитория Git");
+    if (repositories.length !== 1) throw new ApplicationError("INVALID_ARGUMENT", "Укажите репозиторий модуля");
+    [repository] = repositories;
+  }
+  try {
+    return { root: await resolveWorkspaceRepository(workspace, repository), repository };
+  } catch (cause) {
+    throw new ApplicationError("REPOSITORY_UNAVAILABLE", cause instanceof Error ? cause.message : "Репозиторий недоступен");
+  }
 }
 
 async function readSnapshot(root: string, target = "current", snapshotRoot = root) {
@@ -48,7 +49,7 @@ export async function saveGitComparison(store: SnapshotStore, baseline = "HEAD",
   const snapshot = (id: string) => readSnapshot(store.root, id, store.snapshotRoot);
   const before = from === null || from === "empty" ? null : await snapshot(from);
   const after = before && from === to ? before : await snapshot(to);
-  const comparison = await compareRepositorySnapshots(store.root, before, after, { emptyTree: before === null });
+  const comparison = await compareGitFiles(store.root, before, after, { emptyTree: before === null });
   return store.saveComparison(comparison);
 }
 
@@ -56,22 +57,18 @@ function moduleId(module: SnapshotModule) {
   return module.documentPath === MODULE_TREE_FILE ? null : path.posix.basename(module.documentPath, ".yaml");
 }
 
-/** Include directories discovered in projects that have no registered contracts yet. */
+/** List the selected checkout, including directories without registered contracts. */
 export async function listModules(workspace: string, selection: ModuleSelection = {}) {
-  const results = [];
-  for (const project of await projectsIn(workspace, selection.repository)) {
-    const root = await resolveWorkspaceRepository(workspace, project.repository);
-    const snapshot = await readSnapshot(root, selection.target);
-    results.push({ ...project, complete: snapshot.complete, diagnostics: snapshot.diagnostics,
-      modules: snapshot.modules.map(module => ({
-        id: moduleId(module), directory: module.directory, documentState: module.document.state,
-      })) });
-  }
-  return { projects: results };
+  const { root, repository } = await selectedProject(workspace, selection.repository);
+  const snapshot = await readSnapshot(root, selection.target);
+  return { projects: [{ repository, hasModuleMap: await hasModuleMap(root), complete: snapshot.complete,
+    diagnostics: snapshot.diagnostics, modules: snapshot.modules.map(module => ({
+      id: moduleId(module), directory: module.directory, documentState: module.document.state,
+    })) }] };
 }
 
 async function selectedModule(workspace: string, selector: string, selection: ModuleSelection) {
-  const root = await selectedRoot(workspace, selection.repository);
+  const { root } = await selectedProject(workspace, selection.repository);
   const snapshot = await readSnapshot(root, selection.target);
   const module = snapshot.modules.find(module => moduleId(module) === selector)
     ?? snapshot.modules.find(module => !moduleId(module) && module.directory === selector);
@@ -95,5 +92,6 @@ export async function saveModuleContract(workspace: string, id: string, text: st
   selection: ModuleSelection & { directory?: string; expectedText?: string } = {}) {
   if ((selection.target ?? "current") !== "current")
     throw new ApplicationError("INVALID_ARGUMENT", "Контракт можно записать только в рабочем дереве");
-  return writeModuleContract(await selectedRoot(workspace, selection.repository), id, text, selection.directory, selection.expectedText);
+  const { root } = await selectedProject(workspace, selection.repository);
+  return writeModuleContract(root, id, text, selection.directory, selection.expectedText);
 }

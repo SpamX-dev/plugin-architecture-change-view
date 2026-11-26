@@ -35,7 +35,7 @@ export function clauseFindingTargets(bundle: ReviewBundle | null | undefined, co
   const matches = (ref: ClauseReference) => ref.snapshot === side && ref.module_id === contract.id && ref.section === section && ref.id === id;
   const saved = bundle.contracts[side].find((item) => matches(item.reference));
   if (!saved) return [];
-  const findings = reviewFindingItems(bundle).filter((finding) => finding.lifecycle !== "resolved" &&
+  const findings = reviewFindingItems(bundle).filter((finding) => (bundle.dispositions?.[finding.id]?.status ?? (finding.lifecycle === "resolved" ? "resolved" : "open")) === "open" &&
     (finding.assessmentOnly ? bundle.report.checks.some((check) => check.subject === side &&
       check.verdict === "violation" && matches(check.contract)) : finding.clauses.some(matches)));
   return findings.map((finding) => ({ reviewId: bundle.report.id, findingId: finding.id,
@@ -45,12 +45,13 @@ export function clauseFindingTargets(bundle: ReviewBundle | null | undefined, co
       (bundle.freshness?.current?.status !== "fresh" ? " · нужна перепроверка" : "") }));
 }
 
-type CountedModule = Pick<ModuleSummary, "key" | "directory" | "status"> & {
+type CountedModule = Pick<ModuleSummary, "key" | "directory" | "status" | "analyses"> & {
   review?: { activeFindings?: number; findings?: number; assessment?: { current?: { verdict: string } } } | null;
 };
 
 /** Older summaries may only carry the assessment or the total number of findings. */
-export function moduleFindingCount(module: Pick<CountedModule, "review">) {
+export function moduleFindingCount(module: Pick<CountedModule, "review" | "analyses">) {
+  if (module.analyses) return Object.values(module.analyses).reduce((sum, value) => sum + value.openFindings, 0);
   return module.review?.activeFindings ?? (module.review?.findings ||
     Number(module.review?.assessment?.current?.verdict === "violation"));
 }
@@ -74,17 +75,7 @@ export function treeFindingCounts(modules: CountedModule[], expanded: Set<string
   return counts;
 }
 
-/** Общий жук для пункта, вкладки и дерева, независимый от цвета изменения контракта. */
-export function findingBug() {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", "0 0 20 20");
-  svg.setAttribute("aria-hidden", "true");
-  svg.classList.add("finding-bug");
-  const shape = document.createElementNS(svg.namespaceURI, "path");
-  shape.setAttribute("d", "M7 7h6v6a3 3 0 0 1-6 0V7ZM8 7V5a2 2 0 0 1 4 0v2M10 8v8M7 9H4M7 12H3M7 15l-3 2M13 9h3M13 12h4M13 15l3 2M8 4 6 2M12 4l2-2");
-  svg.append(shape);
-  return svg;
-}
+export { findingBug } from "../views/dom.js";
 
 /** Keep the action status on its original finding when the review is redrawn. */
 export function findingFixAction(bundle: ReviewBundle, finding: Finding, options: ReviewRenderOptions) {

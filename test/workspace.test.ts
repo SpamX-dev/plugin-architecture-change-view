@@ -182,3 +182,52 @@ test("the physical owner retains its existing external DSH history when another 
   assert.notEqual(other.store.directory, stateDirectory);
   assert.equal((await other.getComparison()).baselines.some((item) => item.label === "Previous DSH history"), false);
 });
+
+test("a checkout using another clone's local state cannot share its requests with the host clone", async t => {
+  const { a, b } = await fixture(t);
+  const directory = path.join(b, ".archiview");
+  // The clone initially carries A's portable identity, then repeats the scenario without an identity.
+  for (const fresh of [false, true]) {
+    if (fresh) await rm(path.join(directory, "project.json"), { force: true });
+    const caller = await createWorkspaceSession({ root: a, stateDirectory: directory });
+    const host = await createWorkspaceSession({ root: b });
+    const remote = await caller.session();
+    const local = await host.session();
+    try {
+      assert.notEqual(remote.store.directory, local.store.directory);
+      const view = await remote.getComparison();
+      const request = await remote.prepareAnalysis({ view: view.id, path: "." });
+      await assert.rejects(local.getAnalysis({ id: request.id }), { code: "ENOENT" });
+      const reopened = await createWorkspaceSession({ root: a, stateDirectory: remote.store.directory });
+      try {
+        assert.equal((await reopened.session()).store.directory, remote.store.directory);
+        const partitions = path.dirname(remote.store.directory);
+        for (const selected of [remote.store.directory, path.join(partitions, path.basename(remote.store.directory).toUpperCase()), path.join(remote.store.directory, "nested")]) {
+          const other = await createWorkspaceSession({ root: b, stateDirectory: selected });
+          try {
+            assert.notEqual((await other.session()).store.directory, remote.store.directory);
+            await assert.rejects((await other.session()).getAnalysis({ id: request.id }), { code: "ENOENT" });
+          } finally { await other.close(); }
+        }
+      } finally { await reopened.close(); }
+    } finally { await caller.close(); await host.close(); }
+  }
+});
+
+test("an external store cannot claim a subdirectory project's state before the project opens it", async t => {
+  const { a, b } = await fixture(t);
+  const component = path.join(b, "component");
+  const directory = path.join(component, ".archiview");
+  // The external caller opens this location before even the component directory exists.
+  const caller = await createWorkspaceSession({ root: a, stateDirectory: directory });
+  t.after(() => caller.close());
+  const remote = await caller.session();
+  const view = await remote.getComparison();
+  const request = await remote.prepareAnalysis({ view: view.id, path: "." });
+  const host = await createWorkspaceSession({ root: component });
+  t.after(() => host.close());
+  const local = await host.session();
+  assert.equal(local.store.directory, directory);
+  assert.notEqual(remote.store.directory, local.store.directory);
+  await assert.rejects(local.getAnalysis({ id: request.id }), { code: "ENOENT" });
+});

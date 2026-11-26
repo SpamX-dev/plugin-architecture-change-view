@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { link, lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { errorDetails } from "../../node-errors.js";
+import { errorDetails } from "../node-errors.js";
 import { assertStateLocation, projectStateDirectory } from "./paths.js";
-import { isProjectIdentity } from "../../framework/project/identity.js";
-import type { ProjectIdentity } from "../../framework/project-types/types.js";
+import { isProjectIdentity } from "../framework/project/identity.js";
+import type { ProjectIdentity } from "../framework/project-types/types.js";
 
 /** Читает происхождение истории; отсутствующий манифест не создаётся при анализе. */
 export async function readSnapshotRoot(root: string, directory = projectStateDirectory(root)) {

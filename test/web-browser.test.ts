@@ -20,12 +20,22 @@ import { createReviewInput } from "../analyse/module-review/review-input.js";
 import { digest } from "../framework/serialization/digest.js";
 import { captureWorkingTree } from "../analyse/git-changes/capture.js";
 
+function completeChecks(input: ReviewInput) {
+  if (input.manifest.analysis_type === "grasp") input.report.extensions = {"archiview.grasp": input.current.modules.filter(m => m.document.contract?.id !== input.module_id).map(m => ({moduleId:m.document.contract!.id, role:"executor", task:"Fixture task", assessment:"Fixture result"}))};
+  input.report.analysis.coverage = {status:"complete", limitations:[]};
+  for (const check of input.report.checks) {
+    check.verdict = "consistent";
+    check.explanation = "Проверено по сохранённым данным тестового среза.";
+    check.evidence = [{snapshot:"current", fact_id:input.current.facts[0].id}];
+  }
+}
+
 const browserOptions = { skip: process.env.ARCHIVIEW_BROWSER_TEST !== "1", timeout: 60_000 };
 
 type DeferCleanup = (close: () => Promise<void>) => void;
 
 // Close the browser and HTTP server before deleting the project they are reading.
-function fixtureCleanup(t: TestContext): DeferCleanup {
+async function fixtureCleanup(t: TestContext): Promise<DeferCleanup> {
   const pending: (() => Promise<void>)[] = [];
   t.after(async () => {
     const errors: unknown[] = [];
@@ -34,7 +44,9 @@ function fixtureCleanup(t: TestContext): DeferCleanup {
     }
     if (errors.length) throw new AggregateError(errors, "Browser fixture cleanup failed");
   });
-  return (close) => { pending.push(close); };
+  const defer: DeferCleanup = close => { pending.push(close); };
+  await isolateHarnesses(defer);
+  return defer;
 }
 
 async function browserProject(defer: DeferCleanup) {
@@ -99,7 +111,7 @@ async function cliOrigin(defer: DeferCleanup, project: string) {
 }
 
 test("module relations build the project, reveal source lines and navigate to the consumer", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   await writeFile(path.join(root,"main.ts"), 'import { feature } from "./src/feature.js";\nexport const result = feature;\n');
   const origin = await cliOrigin(defer,root);
@@ -138,12 +150,12 @@ async function isolateHarnesses(defer: DeferCleanup) {
 }
 
 test("analysis menu refreshes registrations and delivers only on selecting a harness", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
-  await isolateHarnesses(defer);
   const app = await createArchiView({ root });
   const page = await (await browserContext(defer)).newPage();
   await page.goto(await listen(defer, app.server));
+  await page.locator("#tab-grasp").click();
   const trigger = page.locator("#analyze-module");
   await trigger.click();
   await page.getByText("Нет подключённых harness", { exact: true }).waitFor();
@@ -162,7 +174,7 @@ test("analysis menu refreshes registrations and delivers only on selecting a har
 });
 
 test("standalone browser loads modules, navigates history, copies analysis and fits mobile", browserOptions, async (t) => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const origin = await cliOrigin(defer, root);
   const context = await browserContext(defer);
@@ -177,6 +189,17 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   assert.equal(fallback.status(), 200);
   assert.match(fallback.headers()["content-type"], /image\/svg\+xml/);
   await feature.waitFor();
+  const rootItem = page.locator('.tree-row[data-key="."]');
+  await rootItem.locator(".review-marker").waitFor();
+  await rootItem.press("ArrowLeft");
+  assert.equal(await rootItem.getAttribute("aria-expanded"), "false");
+  assert.equal(await rootItem.evaluate(row => row === document.activeElement), true);
+  await page.keyboard.press("ArrowRight");
+  assert.equal(await rootItem.getAttribute("aria-expanded"), "true");
+  await page.keyboard.press("ArrowDown");
+  assert.equal(await feature.evaluate(row => row === document.activeElement), true);
+  await page.keyboard.press("ArrowUp");
+  assert.equal(await rootItem.evaluate(row => row === document.activeElement), true);
   await feature.click();
   await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
   assert.equal(await page.locator("#module-meta #review-status .meta-value").innerText(), "Требует анализа");
@@ -185,6 +208,7 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   await page.getByRole("tab", { name: /^Файлы/ }).click();
   await page.locator("#document-panel").getByText("feature.ts", { exact: true }).waitFor();
   await page.getByRole("tab", { name: "Контракт", exact: true }).click();
+  await page.locator("#tab-implementation").click();
   await page.locator("#analyze-module").click();
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
   await page.getByText("Промпт скопирован. Вставьте его в чат с агентом.", { exact: false }).waitFor();
@@ -217,6 +241,9 @@ test("standalone browser loads modules, navigates history, copies analysis and f
     const response = await route.fetch();
     const view: ComparisonView = await response.json();
     for (const module of view.modules) {
+      const result = {id: "test", openFindings: 0};
+      module.analyses = module.key === "src" && childRequiresAnalysis ? {} : {grasp: result, implementation: result};
+      module.descendantsNeedAnalysis = childRequiresAnalysis && module.key === ".";
       for (const scope of [module.reviewStatus!.self, module.reviewStatus!.subtree]) {
         Object.assign(scope.current, { status: "fresh", conflict: false });
         Object.assign(scope.change, { status: "stale", conflict: true });
@@ -264,7 +291,7 @@ test("standalone browser loads modules, navigates history, copies analysis and f
 });
 
 test("a user can create, edit, reopen and delete a module prototype", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
   const page = await (await browserContext(defer)).newPage();
@@ -310,7 +337,7 @@ test("a user can create, edit, reopen and delete a module prototype", browserOpt
 });
 
 test("the prototype parent picker builds the saved path from the chosen module and ID", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   await mkdir(path.join(root, "src/tools"));
   await writeFile(path.join(root, "src/tools/format.ts"), "export const format = String;");
@@ -356,7 +383,7 @@ test("the prototype parent picker builds the saved path from the chosen module a
 });
 
 test("contract clauses can be edited, added, deleted and restored from the working tree", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const file = path.join(root, ".archiview/modules/browser-feature.yaml");
   const base = parse(await readFile(file, "utf8"));
@@ -375,7 +402,8 @@ test("contract clauses can be edited, added, deleted and restored from the worki
   const dialog = page.getByRole("dialog");
   const finish = async (name: string) => {
     await dialog.getByRole("button", { name, exact: true }).click();
-    await dialog.waitFor({ state: "detached" });
+    try { await dialog.waitFor({ state: "detached" }); }
+    catch (error) { throw new Error(await dialog.getByRole("alert").innerText(), { cause: error }); }
   };
   const row = (id: string) => page.locator('.clause-row[data-clause-id="' + id + '"]');
   await page.locator(".contract-paper").getByRole("button", { name: "Редактировать назначение" }).click();
@@ -436,15 +464,16 @@ test("contract clauses can be edited, added, deleted and restored from the worki
 });
 
 test("a native watch updates the selected files and review status after atomic saves, removals and commits", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
   const origin = await listen(defer, app.server);
   const initial = await app.getComparison();
-  for (const key of [".", "src"]) {
-    const request = await app.prepareAnalysis({ view: initial.id, path: key });
+  for (const key of [".", "src"]) for (const analysisType of ["grasp", "implementation"] as const) {
+    const request = await app.prepareAnalysis({ view: initial.id, path: key, analysisType });
     const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
     const input: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
+    completeChecks(input);
     input.report.analysis.model = input.manifest.model = { provider: "test", id: "watch-fixture" };
     input.report.analysis.prompt_digest = input.manifest.prompt_digest = digest("Watch integration fixture");
     input.report.assessment.current = { verdict: "consistent", summary: "Fixture" };
@@ -508,7 +537,7 @@ test("a native watch updates the selected files and review status after atomic s
 });
 
 test("module files keep their directory and status on both sides of the comparison", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   await mkdir(path.join(root, "docs"), { recursive: true });
   const oldPath = path.join(root, "docs/guide.md");
@@ -577,7 +606,7 @@ test("module files keep their directory and status on both sides of the comparis
 });
 
 test("the file viewer keeps its header in place while scrolling and loading more rows", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   await writeFile(path.join(root, "long.md"), Array.from({ length: 550 }, (_, i) => "Line " + (i + 1)).join("\n"));
   const app = await createArchiView({ root });
@@ -604,7 +633,7 @@ test("the file viewer keeps its header in place while scrolling and loading more
 });
 
 test("the file tab starts at each snapshot's module directory and excludes its contract", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const name = "browser-feature.yaml";
   await mkdir(path.join(root, "src/docs"));
@@ -643,7 +672,7 @@ test("the file tab starts at each snapshot's module directory and excludes its c
 });
 
 test("files remain browsable while independent review statuses load, fail and retry", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const origin = await cliOrigin(defer, root);
   const page = await (await browserContext(defer)).newPage();
@@ -658,13 +687,13 @@ test("files remain browsable while independent review statuses load, fail and re
   assert.equal(await page.locator(".review-marker").count(),0);
   await request.fulfill({status:500,json:{error:"Ошибка чтения анализа"}});
   await page.locator("#updated").filter({hasText:"Ошибка чтения анализа"}).waitFor();
-  await page.locator("#tab-findings").click();
+  await page.locator("#tab-grasp").click();
   await page.getByRole("button",{name:"Повторить"}).click();
   await page.locator('.tree-row[data-key="src"] .review-marker').waitFor();
 });
 
 test("a reused directory retains its exact module under search and status filters", browserOptions, async (t) => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const child = path.join(root, "src/undocumented");
   await mkdir(child);
@@ -726,7 +755,7 @@ test("a reused directory retains its exact module under search and status filter
 });
 
 test("a workspace keeps identical modules, history and deep links scoped to each repository", browserOptions, async (t) => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-browser-workspace-"));
   defer(() => rm(root, { recursive: true, force: true, maxRetries: 5 }));
   const revisions = new Map<string, string>();
@@ -764,6 +793,13 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   assert.equal(await page.locator("#module-total").getAttribute("title"), "");
   assert.ok(await alpha.isVisible(), "the other open repository stays accessible");
   assert.equal(await alpha.getAttribute("aria-selected"), "false");
+  assert.equal(await beta.getAttribute("aria-selected"), "true");
+  const betaHeader = page.locator('[data-repository-root="beta"]');
+  await betaHeader.press("ArrowLeft");
+  assert.equal(await betaHeader.getAttribute("aria-expanded"), "false");
+  assert.equal(await beta.count(), 0);
+  await page.keyboard.press("ArrowRight");
+  assert.equal(await betaHeader.getAttribute("aria-expanded"), "true");
   assert.equal(await beta.getAttribute("aria-selected"), "true");
   const timeline = page.locator("#timeline");
   const betaRevision = revisions.get("beta")!;
@@ -808,6 +844,7 @@ test("a workspace keeps identical modules, history and deep links scoped to each
   await page.getByRole("heading", { name: "beta feature", exact: true }).waitFor();
   await page.locator("#updated").filter({ hasText: /^Обновлено/ }).waitFor();
   assert.deepEqual(repositoriesRequested, ["beta"]);
+  await page.locator("#tab-implementation").click();
   await page.locator("#analyze-module").click();
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
   await page.getByText("Промпт скопирован. Вставьте его в чат с агентом.", { exact: false }).waitFor();
@@ -832,7 +869,7 @@ test("a workspace keeps identical modules, history and deep links scoped to each
 });
 
 test("analysis reuses a prepared request after clipboard denial and refreshes only after import", browserOptions, async t => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
   const page = await (await browserContext(defer)).newPage();
@@ -848,6 +885,7 @@ test("analysis reuses a prepared request after clipboard denial and refreshes on
   });
   const copy = page.getByRole("button", { name: "Копировать промпт", exact: true });
   const preparation = page.waitForResponse(response => new URL(response.url()).pathname === "/api/analysis");
+  await page.locator("#tab-implementation").click();
   await page.locator("#analyze-module").click();
   await copy.click();
   const request = await (await preparation).json();
@@ -855,6 +893,7 @@ test("analysis reuses a prepared request after clipboard denial and refreshes on
   await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#analyze-module")?.disabled);
   assert.match(await status.textContent() ?? "", /Не удалось скопировать промпт: Нет разрешения/);
   await page.evaluate(() => Reflect.deleteProperty(navigator.clipboard, "writeText"));
+  await page.locator("#tab-implementation").click();
   await page.locator("#analyze-module").click();
   await copy.click();
   await status.filter({hasText: "Ожидаем импорт"}).waitFor();
@@ -864,20 +903,62 @@ test("analysis reuses a prepared request after clipboard denial and refreshes on
 
   const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
   const result: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
+  completeChecks(result);
   result.report.analysis.model = result.manifest.model = { provider: "test", id: "browser-import" };
   result.report.analysis.prompt_digest = result.manifest.prompt_digest = digest("Standalone import fixture");
   result.report.assessment.current = { verdict: "consistent", summary: "Проверка из браузерного теста" };
   await writeFile(path.join(folder, "result.yaml"), stringify(result, { aliasDuplicateObjects: false }));
   assert.equal((await app.getAnalysis({ id: request.id })).status, "prepared");
   await app.analysis.complete(request.id);
-  await status.filter({hasText: "Анализ выбранного снимка сохранён"}).waitFor();
-  await page.locator("#tab-checks").click();
+  await page.locator(".review-body").waitFor();
+  assert.equal(await page.locator("#document-panel #analyze-module").count(), 0);
   await page.getByText("Полный отчёт", { exact: true }).click();
   await page.locator(".raw-document pre").filter({ hasText: "Проверка из браузерного теста" }).waitFor();
 });
 
+test("an import refreshes a historical card while its files tab stays selected", browserOptions, async t => {
+  const defer = await fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const app = await createArchiView({ root });
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(await listen(defer, app.server) + "/#src");
+  const timeline = page.locator("#timeline");
+  const revision = await timeline.getByRole("option", { name: "HEAD", exact: true }).getAttribute("value");
+  assert.ok(revision);
+  await timeline.selectOption(revision);
+  await page.waitForFunction(target => {
+    const picker = document.querySelector<HTMLSelectElement>("#timeline")!;
+    return picker.value === target && !picker.disabled;
+  }, revision);
+  await page.locator("#tab-implementation").click();
+  await page.locator("#analyze-module").click();
+  const preparation = page.waitForResponse(response => new URL(response.url()).pathname === "/api/analysis");
+  await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
+  const request = await (await preparation).json();
+  await page.locator("#analysis-status").filter({hasText: "Промпт скопирован"}).waitFor();
+  await page.locator("#tab-files").click();
+
+  const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
+  const result: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
+  completeChecks(result);
+  result.report.analysis.model = result.manifest.model = { provider: "test", id: "historical-card" };
+  result.report.analysis.prompt_digest = result.manifest.prompt_digest = digest("Historical card fixture");
+  result.report.assessment.current = { verdict: "consistent", summary: "Проверен выбранный срез" };
+  await writeFile(path.join(folder, "result.yaml"), stringify(result, { aliasDuplicateObjects: false }));
+  const reloaded = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/module" && url.searchParams.get("path") === "src" && response.ok();
+  });
+  await app.analysis.complete(request.id);
+  await reloaded;
+  assert.equal(await timeline.inputValue(), revision);
+  assert.equal(await page.locator("#tab-files").getAttribute("aria-selected"), "true");
+  await page.locator("#tab-implementation").click();
+  await page.getByText("Проверен выбранный срез", { exact: true }).waitFor();
+});
+
 test("navigation cancels an in-flight analysis poll and resumes it only on return", browserOptions, async (t) => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
   const origin = await listen(defer, app.server);
@@ -892,6 +973,7 @@ test("navigation cancels an in-flight analysis poll and resumes it only on retur
     return route.continue();
   });
   await page.goto(origin);
+  await page.locator("#tab-implementation").click();
   await page.locator("#analyze-module").click();
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
   await page.locator("#analysis-status").filter({hasText: "Промпт скопирован."}).waitFor();
@@ -942,7 +1024,7 @@ test("navigation cancels an in-flight analysis poll and resumes it only on retur
 });
 
 test("retry preserves the failed navigation and reloads a comparison only for an expired module view", browserOptions, async (t) => {
-  const defer = fixtureCleanup(t);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
   const origin = await listen(defer, app.server);
@@ -1005,12 +1087,13 @@ test("retry preserves the failed navigation and reloads a comparison only for an
 });
 
 test("retrying a finding link reveals the original clause only after its document loads", browserOptions, async (t) => {
-  const defer = fixtureCleanup(t);
-  await isolateHarnesses(defer);
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
   const origin = await listen(defer, app.server);
-  const review = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root), "browser-project");
+  const review = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root), "browser-project", {analysisType:"grasp"});
+  completeChecks(review);
+  review.report.assessment.current = {verdict:"needs_review", summary:"Замечания композиции."};
   const reference = review.report.checks.find((check) => check.contract.id === "purpose")!.contract;
   review.report.analysis.model = review.manifest.model = { provider: "test", id: "browser-fixture" };
   review.report.analysis.prompt_digest = review.manifest.prompt_digest = digest("Finding navigation fixture");
@@ -1023,7 +1106,7 @@ test("retrying a finding link reveals the original clause only after its documen
 
   const page = await (await browserContext(defer)).newPage();
   await page.goto(origin);
-  await page.locator("#tab-findings").click();
+  await page.locator("#tab-grasp").click();
   const card = page.locator('.finding-card[data-finding-id="finding-link"]');
   const fix = card.getByRole("button", { name: "Исправить", exact: true });
   await fix.click();
@@ -1054,6 +1137,17 @@ test("retrying a finding link reveals the original clause only after its documen
   const invalid = await page.request.post(origin + "/api/findings/fix", {data: {...args, findingId: "absent"}});
   assert.equal(invalid.status(), 400);
   assert.deepEqual(delivered, [fixPrompt.replace(/\r\n/g, "\n")]);
+  await card.getByLabel("Статус", {exact:true}).selectOption("accepted");
+  await card.getByLabel("Решение", {exact:true}).fill("Принято для этого среза.");
+  await card.getByRole("button", {name:"Сохранить решение"}).click();
+  await page.waitForFunction(() => document.querySelector<HTMLSelectElement>('[data-finding-id="finding-link"] select')?.value === "accepted" &&
+    document.querySelector("#tab-grasp")?.textContent?.includes("· 1"));
+  await page.reload();
+  await page.locator("#tab-grasp").click();
+  await card.waitFor();
+  assert.equal(await card.getByLabel("Решение", {exact:true}).inputValue(), "Принято для этого среза.");
+  assert.equal(await card.locator("h3").innerText(), "Проверить пункт");
+  assert.equal(await page.locator(".review-picker").count(), 0);
   const link = card.locator(".finding-clauses button").first();
   await link.waitFor();
   const requested: string[] = [];
@@ -1076,54 +1170,23 @@ test("retrying a finding link reveals the original clause only after its documen
   assert.equal(requested[1], requested[0], "the first retry must keep the same module and view");
 });
 
-test("native own finding navigates to its saved ancestor clause and retains historical text after changes", browserOptions, async (t) => {
-  const defer = fixtureCleanup(t);
+test("legacy reports stay intact and do not populate either typed analysis tab", browserOptions, async t => {
+  const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
-  const contractFile = path.join(root, ".archiview/modules/browser-project.yaml");
-  const savedText = "Граница предка из сохранённого снимка.";
-  const contract = (await readFile(contractFile, "utf8")).replace("boundaries: {}", "boundaries:\n  B1: " + savedText);
-  await writeFile(contractFile, contract);
-  const app = await createArchiView({ root });
+  const app = await createArchiView({root});
   const origin = await listen(defer, app.server);
   const input = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root), "browser-feature");
-  const reference = { snapshot: "current", module_id: "browser-project", section: "boundaries", id: "B1" } as const;
-  input.report.analysis.model = input.manifest.model = { provider: "test", id: "ancestor-navigation-fixture" };
-  input.report.analysis.prompt_digest = input.manifest.prompt_digest = digest("Own review ancestor finding browser fixture");
+  input.report.analysis.model = input.manifest.model = {provider:"test", id:"legacy"};
+  input.report.analysis.prompt_digest = input.manifest.prompt_digest = digest("legacy");
   input.report.analysis.input_digest = digest(input.manifest);
-  input.report.findings = [{ id: "ancestor-link", kind: "boundary_violation", severity: "warning", certainty: "confirmed",
-    lifecycle: "unknown", summary: "Проверить ограничение предка", clauses: [reference],
-    evidence: [{ snapshot: "current", fact_id: input.current.facts[0].id }] }];
-  assert.ok(input.manifest.contracts.current.every(item => item.reference.module_id === "browser-feature"));
   await app.reports.saveReview(input);
-
+  const before = (await app.reports.readReviews())[0];
   const page = await (await browserContext(defer)).newPage();
-  const errors: string[] = [];
-  page.on("pageerror", error => errors.push(error.message));
-  await page.goto(origin);
-  async function openFinding() {
-    await page.getByRole("treeitem").filter({ hasText: "Функция браузера" }).click();
-    await page.getByRole("heading", { name: "Функция браузера", exact: true }).waitFor();
-    await page.locator("#tab-findings").click();
-    const link = page.locator(".finding-clauses button").first();
-    await link.waitFor();
-    await link.click();
+  await page.goto(origin + "/#src");
+  for (const tab of ["grasp", "implementation"]) {
+    await page.locator("#tab-" + tab).click();
+    await page.locator("#document-panel #analyze-module").waitFor();
+    assert.equal(await page.locator(".review-body, .review-picker").count(), 0);
   }
-  await openFinding();
-  const target = page.locator(".clause-target:focus");
-  await target.waitFor();
-  assert.equal(await target.getAttribute("data-clause-id"), "B1");
-  assert.equal(await target.getAttribute("data-clause-section"), "boundaries");
-  assert.match(await target.innerText(), new RegExp(savedText));
-  assert.equal(await page.locator("[data-historical-clause]").count(), 0);
-
-  await writeFile(contractFile, contract.replace(savedText, "Позднейшая граница с тем же ID."));
-  await page.locator("#refresh").click();
-  await page.waitForFunction(() => !(document.querySelector("#refresh") as HTMLButtonElement).disabled);
-  await openFinding();
-  const historical = page.locator("[data-historical-clause]:focus");
-  await historical.waitFor();
-  assert.equal(await historical.locator(".historical-clause-text").innerText(), savedText);
-  assert.equal(await historical.locator(".historical-clause-missing").count(), 0);
-  assert.match(await historical.locator(".historical-clause-origin").innerText(), /проверенная версия/);
-  assert.deepEqual(errors, []);
+  assert.deepEqual((await app.reports.readReviews())[0], before);
 });

@@ -10,7 +10,7 @@ const icons = {
 };
 
 /** Возвращает элемент по фиксированному идентификатору страницы. */
-type PageElements = { "analysis-status": HTMLElement; "toast": HTMLElement; "timeline": HTMLSelectElement; "app-shell": HTMLElement; "tree-resizer": HTMLElement; "module-sidebar": HTMLElement; "filters": HTMLElement; "module-total": HTMLElement; "tree": HTMLElement; "module-heading-content": HTMLElement; "module-title": HTMLElement; "module-status": HTMLElement; "module-subtitle": HTMLElement; "module-contract-heading": HTMLElement; "breadcrumbs": HTMLElement; "module-meta": HTMLElement; "copy-path": HTMLButtonElement; "files-count": HTMLElement; "tab-findings": HTMLButtonElement; "document-panel": HTMLElement; "project-name": HTMLElement; "project-path": HTMLElement; "refresh": HTMLButtonElement; "warning": HTMLElement; "updated": HTMLElement; "search": HTMLInputElement; "collapse": HTMLButtonElement; "tree-toggle": HTMLButtonElement };
+type PageElements = { "analysis-status": HTMLElement; "toast": HTMLElement; "timeline": HTMLSelectElement; "app-shell": HTMLElement; "tree-resizer": HTMLElement; "module-sidebar": HTMLElement; "filters": HTMLElement; "module-total": HTMLElement; "tree": HTMLElement; "module-heading-content": HTMLElement; "module-title": HTMLElement; "module-status": HTMLElement; "module-subtitle": HTMLElement; "module-contract-heading": HTMLElement; "breadcrumbs": HTMLElement; "module-meta": HTMLElement; "copy-path": HTMLButtonElement; "files-count": HTMLElement; "tab-grasp": HTMLButtonElement; "tab-implementation": HTMLButtonElement; "document-panel": HTMLElement; "project-name": HTMLElement; "project-path": HTMLElement; "refresh": HTMLButtonElement; "warning": HTMLElement; "updated": HTMLElement; "search": HTMLInputElement; "collapse": HTMLButtonElement; "tree-toggle": HTMLButtonElement };
 type PageControls = PageElements & { "new-prototype": HTMLButtonElement };
 export function byId<K extends keyof PageControls>(id: K): PageControls[K] {
   const node = document.getElementById(id);
@@ -34,6 +34,18 @@ export function icon(name: keyof typeof icons) {
   node.setAttribute("aria-hidden", "true");
   node.innerHTML = icons[name] ?? icons.file;
   return node;
+}
+
+/** Общий жук для пункта, вкладки и дерева, независимый от цвета изменения контракта. */
+export function findingBug() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 20 20");
+  svg.setAttribute("aria-hidden", "true");
+  svg.classList.add("finding-bug");
+  const shape = document.createElementNS(svg.namespaceURI, "path");
+  shape.setAttribute("d", "M7 7h6v6a3 3 0 0 1-6 0V7ZM8 7V5a2 2 0 0 1 4 0v2M10 8v8M7 9H4M7 12H3M7 15l-3 2M13 9h3M13 12h4M13 15l3 2M8 4 6 2M12 4l2-2");
+  svg.append(shape);
+  return svg;
 }
 
 /** Создаёт уведомление в контексте документа, не подменяя его содержимое. */

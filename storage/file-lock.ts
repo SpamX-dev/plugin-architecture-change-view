@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { link, lstat, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as wait } from "node:timers/promises";
-import { errorDetails } from "../../node-errors.js";
+import { errorDetails } from "../node-errors.js";
 
 interface Owner {
   pid: number;

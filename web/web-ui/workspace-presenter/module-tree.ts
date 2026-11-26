@@ -1,110 +1,75 @@
 import type { ComparisonView, ModuleSummary } from "../types.js";
-import { byId, el, icon } from "../views/dom.js";
-import { badge, labels } from "../views/change-status.js";
-import { findingBug, moduleFindingCount, treeFindingCounts } from "../module-presenter/findings.js";
-import { moduleAnalysisStatus } from "../views/review-status.js";
-import { roleBadge } from "../views/role-badge.js";
-
+import { moduleFindingCount, treeFindingCounts } from "../module-presenter/findings.js";
 import { treeParents } from "../module-presenter/module-path.js";
-
-import { initializeTreeWidth } from "../views/tree-layout.js";
+import { moduleAnalysisStatus } from "../views/review-status.js";
+import { createTreeView, type Filter, type ModuleRow, type TreeSection } from "../views/module-tree.js";
 
 export function createModuleTree(getView: () => ComparisonView | null, getSelection: () => string | null,
   selectModule: (key: string, repository?: string) => Promise<void>) {
-  let filter = "all";
+  let filter: Filter = "all";
   let search = "";
-  // Keep expansion and cached comparisons separate even when two checkouts have identical modules.
   const trees = new Map<string, { view: ComparisonView; expanded: Set<string>; historyLimit: number }>();
   const closed = new Set<string>();
   let treeRoot: string | undefined;
+  const display = createTreeView({
+    selectModule,
+    filter(status) { filter = status; renderFilters(); renderTree(); },
+    search(value) { search = value.trim().toLowerCase(); renderTree(); },
+    collapse() {
+      for (const [repository, { expanded, view }] of trees) {
+        expanded.clear();
+        if (view.workspace) closed.add(repository);
+        else for (const module of view.modules) if (module.directory === ".") expanded.add(module.key);
+      }
+      renderTree();
+    },
+    expandModule(key, repository, expand) {
+      const expanded = trees.get(repository ?? "")!.expanded;
+      if (expand ?? !expanded.has(key)) expanded.add(key);
+      else expanded.delete(key);
+      renderTree();
+    },
+    toggleRepository(repository) {
+      if (closed.has(repository)) closed.delete(repository);
+      else closed.add(repository);
+      renderTree();
+    },
+    selectRepository(repository) { closed.delete(repository); void selectModule(".", repository); },
+  });
 
-  /** Перерисовывает счётчики и сохраняет выбранный статус фильтра. */
   function renderFilters() {
-    const filters = byId("filters");
-    filters.replaceChildren();
-    const view = getView();
-    if (!view) return;
-    const loaded = [...trees.values()].map((entry) => entry.view);
-    const total = loaded.reduce((count, entry) => count + entry.modules.length, 0);
-    for (const status of ["all", "initial", "new", "changed", "removed", "unchanged"]) {
-      const count = status === "all" ? total : loaded.reduce((sum, entry) => sum + (entry.counts[status] ?? 0), 0);
-      const button = el("button", "filter-chip " + status +
-        (filter === status ? " active" : ""));
-      button.type = "button";
-      button.setAttribute("aria-pressed", String(filter === status));
-      button.append(el("span", "filter-dot"), el("span", "", status === "all" ? "Все" : labels[status]),
-        el("span", "filter-count", count));
-      button.addEventListener("click", () => {
-        filter = status;
-        renderFilters();
-        renderTree();
-      });
-      filters.append(button);
-    }
-    byId("module-total").textContent = String(total);
+    const loaded = [...trees.values()].map(entry => entry.view);
+    const total = loaded.reduce((sum, entry) => sum + entry.modules.length, 0);
+    const filters = (["all", "initial", "new", "changed", "removed", "unchanged"] as const).map(status => ({
+      status, count: status === "all" ? total : loaded.reduce((sum, entry) => sum + (entry.counts[status] ?? 0), 0),
+    }));
+    display.filters(filters, filter, total);
   }
 
-  /** Строит отфильтрованное дерево, оставляя предков совпавших модулей видимыми. */
   function renderTree() {
-    const tree = byId("tree");
-    tree.replaceChildren();
     const view = getView();
-    if (!view) return;
-    if (!view.workspace) {
-      renderModules(tree, view, trees.get("")!.expanded);
-      return;
-    }
-    for (const repository of view.workspace.repositories) {
+    if (!view) return display.tree([]);
+    if (!view.workspace) return display.tree([{rows: rowsFor(view, trees.get("")!.expanded)}]);
+    const { repositories, root } = view.workspace;
+    const sections = repositories.map((repository): TreeSection => {
       const cached = trees.get(repository);
-      const open = Boolean(cached && !closed.has(repository));
-      const section = el("div", "repository-section");
-      section.setAttribute("role", "none");
-      const label = repository === "." ? view.workspace.root.split(/[\\/]/).at(-1) || "." : repository;
-      const header = el("button", "tree-row repository-row");
-      header.type = "button";
-      header.dataset.repositoryRoot = repository;
-      header.setAttribute("role", "treeitem");
-      header.setAttribute("aria-expanded", String(open));
-      const caret = el("span", "tree-caret" + (open ? " expanded" : ""), "›");
-      caret.dataset.toggle = "true";
-      header.append(caret, icon("folder"), el("span", "repository-name", label));
-      header.title = label;
-      const activate = (toggle: boolean) => {
-        if (toggle && cached) {
-          if (open) closed.add(repository); else closed.delete(repository);
-          renderTree();
-          focusRepository(repository);
-        } else {
-          closed.delete(repository);
-          void selectModule(".", repository);
-        }
-      };
-      header.addEventListener("click", (event) => activate(event.target instanceof Element && !!event.target.closest("[data-toggle]")));
-      header.addEventListener("keydown", (event) => {
-        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-        event.preventDefault();
-        event.stopPropagation();
-        if ((event.key === "ArrowRight") !== open) activate(true);
-      });
-      section.append(header);
-      if (open && cached) renderModules(section, cached.view, cached.expanded, repository);
-      tree.append(section);
-    }
+      const loaded = cached !== undefined;
+      const expanded = loaded && !closed.has(repository);
+      const label = repository === "." ? root.split(/[\\/]/).at(-1) || "." : repository;
+      return {repository: {key: repository, label, loaded, expanded},
+        rows: expanded ? rowsFor(cached.view, cached.expanded, repository) : []};
+    });
+    display.tree(sections);
   }
 
-  function focusRepository(repository: string) {
-    [...byId("tree").querySelectorAll<HTMLButtonElement>("[data-repository-root]")]
-      .find((node) => node.dataset.repositoryRoot === repository)?.focus();
-  }
-
-  function renderModules(tree: HTMLElement, view: ComparisonView, expanded: Set<string>, repository?: string) {
+  /** Keep the matching side's ancestors visible, including an old owner of a reused path. */
+  function rowsFor(view: ComparisonView, expanded: Set<string>, repository?: string): ModuleRow[] {
     const visible = new Set<string>();
     const matches = new Set<string>();
     const parents = treeParents(view.modules);
     for (const module of view.modules) {
       if (filter !== "all" && module.status !== filter) continue;
-      if (search && !module.directory.toLowerCase().includes(search) &&
-          !module.name.toLowerCase().includes(search) && !module.title?.toLowerCase().includes(search) && !module.moduleId?.toLowerCase().includes(search)) continue;
+      if (search && ![module.directory, module.name, module.title, module.moduleId].some(text => text?.toLowerCase().includes(search))) continue;
       matches.add(module.key);
       let row: ModuleSummary | undefined = module;
       while (row && !visible.has(row.key)) {
@@ -112,117 +77,33 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
         row = parents.get(row.key);
       }
     }
-    if (!matches.size) {
-      const empty = el("div", "empty-tree");
-      empty.append(el("strong", "", "Модули не найдены"),
-        el("p", "", "Попробуйте другой запрос или статус."));
-      tree.append(empty);
-      return;
-    }
-    const children = new Map<string, ModuleSummary[]>();
-    const visibleModules = view.modules.filter((module) => visible.has(module.key));
-    const roots: ModuleSummary[] = [];
-    for (const module of visibleModules) {
-      const parent = parents.get(module.key);
-      if (!parent) { roots.push(module); continue; }
-      if (!children.has(parent.key)) children.set(parent.key, []);
-      children.get(parent.key)!.push(module);
-    }
+    const modules = view.modules.filter(module => visible.has(module.key));
     const searching = search.length > 0 || filter !== "all";
-    const findingCounts = treeFindingCounts(visibleModules,
-      searching ? visible : expanded, parents);
-    const render = (module: ModuleSummary): HTMLLIElement => {
-      const item = el("li", "tree-item");
-      item.setAttribute("role", "none");
-      const selected = getView()?.workspace?.repository === repository && getSelection() === module.key;
-      const row = el("button", "tree-row" +
-        (selected ? " selected" : "") +
-        (!matches.has(module.key) ? " context-row" : "") +
-        (module.status === "removed" ? " removed-row" : ""));
-      row.type = "button";
-      row.dataset.directory = module.directory;
-      row.dataset.key = module.key;
-      if (repository !== undefined) row.dataset.repository = repository;
-      row.setAttribute("role", "treeitem");
-      row.setAttribute("aria-selected", String(selected));
-      const title = module.title?.trim() || module.name;
-      row.title = title + "\n" + module.directory;
-      const nested = children.get(module.key) ?? [];
-      const isExpanded = searching || expanded.has(module.key);
-      if (nested.length) row.setAttribute("aria-expanded", String(isExpanded));
-      const caret = el("span", "tree-caret", nested.length ? "›" : "");
-      caret.dataset.toggle = "true";
-      if (isExpanded) caret.classList.add("expanded");
-      const label = el("span", "tree-label");
-      label.append(el("span", "tree-name", title));
-      if (module.prototypeModule) label.append(el("span", "tree-path", "Прототип"));
-      if (title !== module.name) label.append(el("span", "tree-path", module.name));
-      if (module.roles?.length) {
-        const roles = el("span", "tree-roles");
-        roles.append(...module.roles.map(roleBadge));
-        label.append(roles);
-        row.title += "\nРоли по контракту: " + module.roles.map(role => role.id).join(" · ");
-      }
-      row.append(caret, icon("folder"), label);
+    const findingCounts = treeFindingCounts(modules, searching ? visible : expanded, parents);
+    const selected = getView()?.workspace?.repository === repository ? getSelection() : null;
+    const rows = new Map<string, ModuleRow>();
+    for (const module of modules) {
+      const open = searching || expanded.has(module.key);
       const findings = findingCounts.get(module.key) ?? 0;
       const ownFindings = moduleFindingCount(module);
-      const ownViolation = module.reviewStatus?.self?.current.current_violation;
-      const savedViolation = view.published && (isExpanded ? module.reviewStatus?.self : module.reviewStatus?.subtree)?.current.current_violation;
-      if (findings || savedViolation) {
-        const marker = el("span", "finding-marker");
-        if (findings) {
-          const location = ownFindings === findings ? "модуля" : ownFindings ? "в модуле и вложенных модулях" : "во вложенных модулях";
-          marker.title = "Открытые замечания " + location + " · " + findings;
-        } else {
-          marker.title = ownViolation ? "Сохранённая проверка выявила нарушение в модуле" : "Нарушение во вложенных модулях";
-        }
-        marker.setAttribute("role", "img");
-        marker.setAttribute("aria-label", marker.title);
-        marker.append(findingBug());
-        row.append(marker);
+      let finding: string | undefined;
+      if (findings) {
+        const location = ownFindings === findings ? "модуля" : ownFindings ? "в модуле и вложенных модулях" : "во вложенных модулях";
+        finding = "Открытые замечания " + location + " · " + findings;
+      } else if (!module.analyses && view.published && (open ? module.reviewStatus?.self : module.reviewStatus?.subtree)?.current.current_violation) {
+        finding = module.reviewStatus?.self?.current.current_violation ?
+          "Сохранённая проверка выявила нарушение в модуле" : "Нарушение во вложенных модулях";
       }
-      if (module.documentState !== "documented") {
-        const marker = el("span", "missing-marker", "!");
-        marker.title = module.documentState === "missing" ? "Нет контракта модуля" : "Контракт требует исправления";
-        row.append(marker);
-      }
-      if (module.descendantChanges) {
-        const count = el("span", "descendant-count", module.descendantChanges);
-        count.title = "Изменённые вложенные модули";
-        row.append(count);
-      }
-      const analysis = moduleAnalysisStatus(module, isExpanded ? "self" : "subtree");
-      if (analysis) {
-        const review = el("span", "review-marker", "◷");
-        review.title = analysis;
-        review.setAttribute("role", "img");
-        review.setAttribute("aria-label", analysis);
-        row.append(review);
-      }
-      row.append(badge(module.status, true, module.descendantChanges));
-      row.addEventListener("click", (event) => {
-        if ((event.target instanceof Element ? event.target : null)?.closest("[data-toggle]") && nested.length) {
-          if (expanded.has(module.key)) expanded.delete(module.key);
-          else expanded.add(module.key);
-          renderTree();
-        } else void selectModule(module.key, repository);
-      });
-      item.append(row);
-      if (nested.length) {
-        const group = el("ul", "tree-group");
-        group.setAttribute("role", "group");
-        group.hidden = !isExpanded;
-        for (const child of nested) group.append(render(child));
-        item.append(group);
-      }
-      return item;
-    };
-    const list = el("ul", "tree-root");
-    list.setAttribute("role", "group");
-    for (const root of roots) list.append(render(root));
-    tree.append(list);
+      rows.set(module.key, { module, selected: selected === module.key, context: !matches.has(module.key), expanded: open,
+        finding, analysis: moduleAnalysisStatus(module, open ? "self" : "subtree"), children: [] });
+    }
+    const roots: ModuleRow[] = [];
+    for (const row of rows.values()) {
+      const parent = parents.get(row.module.key);
+      (parent ? rows.get(parent.key)!.children : roots).push(row);
+    }
+    return roots;
   }
-
   function showComparison(view: ComparisonView, historyLimit: number, automatic = false) {
     const root = view.workspace?.root ?? view.root;
     if (treeRoot !== root) {
@@ -241,15 +122,7 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     trees.set(repository, { view, expanded, historyLimit });
     if (!automatic) closed.delete(repository);
     const repositoryCount = view.workspace?.repositories.length ?? trees.size;
-    const partial = trees.size < repositoryCount;
-    const searchInput = byId("search");
-    const searchLabel = partial ? "Найти модуль в загруженных репозиториях" : "Найти модуль";
-    const scope = partial ? `Поиск и счётчики учитывают загруженные репозитории (${trees.size} из ${repositoryCount}). Раскройте остальные, чтобы добавить их модули.` : "";
-    searchInput.placeholder = searchLabel + "…";
-    searchInput.setAttribute("aria-label", searchLabel);
-    searchInput.title = scope;
-    byId("module-total").title = scope;
-    byId("filters").title = scope;
+    display.searchScope(trees.size, repositoryCount);
     renderFilters();
     // Selecting the initial module reveals its parents and renders the tree in one pass.
     if (automatic || !view.modules.length) renderTree();
@@ -270,47 +143,5 @@ export function createModuleTree(getView: () => ComparisonView | null, getSelect
     renderTree();
   }
 
-  initializeTreeWidth();
-  byId("search").addEventListener("input", (event) => {
-    search = (event.target as HTMLInputElement | HTMLSelectElement).value.trim().toLowerCase();
-    renderTree();
-  });
-  byId("collapse").addEventListener("click", () => {
-    for (const [repository, { expanded, view }] of trees) {
-      expanded.clear();
-      if (view.workspace) closed.add(repository);
-      else for (const module of view.modules) if (module.directory === ".") expanded.add(module.key);
-    }
-    renderTree();
-  });
-  byId("tree-toggle").addEventListener("click", () => document.body.classList.toggle("tree-open"));
-
-  document.addEventListener("keydown", (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-      event.preventDefault();
-      byId("search").focus();
-    }
-  });
-  byId("tree").addEventListener("keydown", (event) => {
-    const row = (event.target instanceof Element ? event.target : null)?.closest<HTMLButtonElement>(".tree-row");
-    if (!row) return;
-    const rows = [...byId("tree").querySelectorAll<HTMLButtonElement>(".tree-row")].filter((node) => node.offsetParent);
-    const index = rows.indexOf(row);
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      rows[Math.max(0, Math.min(rows.length - 1, index +
-        (event.key === "ArrowDown" ? 1 : -1)))].focus();
-    } else if (["ArrowLeft", "ArrowRight"].includes(event.key) && row.hasAttribute("aria-expanded")) {
-      event.preventDefault();
-      const key = row.dataset.key;
-      if (!key) return;
-      const expanded = trees.get(row.dataset.repository ?? "")!.expanded;
-      if (event.key === "ArrowRight") expanded.add(key);
-      else expanded.delete(key);
-      renderTree();
-      [...byId("tree").querySelectorAll<HTMLButtonElement>(".tree-row")].find((node) =>
-        node.dataset.key === key && node.dataset.repository === row.dataset.repository)?.focus();
-    }
-  });
   return { showComparison, reveal, refreshStatuses() { renderFilters(); renderTree(); }, getRepository: (repository: string) => trees.get(repository) };
 }

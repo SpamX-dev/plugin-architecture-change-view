@@ -7,14 +7,14 @@ import { contractDocument, validateArch } from "../framework/contracts/document.
 import {
   assertModuleDirectory, listModuleContractPaths, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY,
   MODULE_TREE_FILE, moduleDocumentPath, parseModuleTree, readContractStorageFile, validateModuleMapping,
-} from "../analyse/project/module-tree.js";
+} from "../analyse/project-sources/module-tree.js";
 import { isPrototype, PROTOTYPE_EXTENSION, type Contract } from "../framework/contracts/types.js";
-import { assertStateLocation, STATE_DIRECTORY } from "../analyse/project/paths.js";
+import { assertStateLocation, STATE_DIRECTORY } from "../storage/paths.js";
 import { repositoryDirectoryOwnership, resolveWorkspaceRepository } from "../analyse/project/workspace.js";
 import { errorDetails } from "../node-errors.js";
 import { parseYaml } from "../framework/serialization/yaml.js";
 import type { SnapshotModule } from "../framework/snapshots/types.js";
-import { withFileLock } from "../analyse/project/file-lock.js";
+import { withFileLock } from "../storage/file-lock.js";
 import { ApplicationError } from "./errors.js";
 
 const invalid = (message: string) => new ApplicationError("INVALID_ARGUMENT", message);

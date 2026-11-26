@@ -3,6 +3,7 @@ import { isModuleDocumentFile } from "../../framework/project/storage-paths.js";
 import type { ReviewReport } from "../../framework/ai-report/types.js";
 import type { ReviewOptions, ReviewEntry } from "../../framework/static-report/types.js";
 import { digest } from "../../framework/serialization/digest.js";
+import { analysisInstructions, analysisSnapshot } from "./analysis-scope.js";
 import { createStructuralReview } from "./bundle.js";
 import { randomUUID } from "node:crypto";
 import { moduleId, ModuleStateContext } from "./module-state.js";
@@ -82,6 +83,16 @@ function scopedSnapshot(snapshot: SnapshotData | null, id: string, options: Revi
  */
 export function createReviewInput(projectId: string, baseline: Snapshot | null, current: Snapshot, id: string, options: ReviewOptions = {}): ReviewEntry {
   const context = new ModuleStateContext();
+  const type = options.analysisType;
+  const { id: snapshotId, digest: snapshotDigest } = options.sourceSnapshot ?? current;
+  const sourceHead = current.revision ?? current.baseRevision;
+  const capturedAt = current.capturedAt;
+  if (type) {
+    current = analysisSnapshot(type, current, id);
+    current.id = snapshotId;
+    baseline = null;
+    options = { ...options, dependencyCoverage: { status: "complete", potential_influence: [] } };
+  }
   options = { ...options, contractScope: options.contractScope ?? "own" };
   const states = context.states(current);
   const beforeStates = context.states(baseline);
@@ -96,6 +107,16 @@ export function createReviewInput(projectId: string, baseline: Snapshot | null, 
   bundle.report.analysis.analyzer = { name: "agent-review", version: "1", config_digest: digest({ method: "agent" }) };
   bundle.manifest.analyzer = structuredClone(bundle.report.analysis.analyzer);
   bundle.manifest.instructions = "Проверить назначение, границы и инварианты модуля, включая соответствие его реализации и контракта границам предков. Пункты предков не добавлять в собственный чеклист; противоречия отразить в замечаниях со ссылками на сохранённые ограничения и доказательства. Фактические обязанности кода записывай в observed.responsibilities с доказательствами. Функция в пределах назначения сама по себе не требует изменения контракта. Композицию проверяй по объявленным контрактам непосредственных детей. Их код, замечания, оценки изменений и контракты более глубоких потомков не входят в собственную проверку родителя. Определение зависимостей через LLM отключено: не добавлять dependencies и не заявлять полноту их перечня. Если сохранённых данных недостаточно, указать ограничение покрытия и not_checked. Заполнить модель, prompt и результаты.";
+  if (type) {
+    if (type === "grasp") bundle.report.extensions = {"archiview.grasp": []};
+    bundle.manifest.analysis_type = type;
+    bundle.manifest.source_snapshot = { id: snapshotId, digest: snapshotDigest };
+    bundle.manifest.source_head = sourceHead;
+    bundle.manifest.source_captured_at = capturedAt;
+    bundle.manifest.instructions = analysisInstructions[type];
+    bundle.report.analysis.analyzer.name = "archiview-" + type;
+    bundle.manifest.analyzer = structuredClone(bundle.report.analysis.analyzer);
+  }
   bundle.manifest.review_scope = options.scope ?? "self";
   bundle.report.analysis.input_digest = digest(bundle.manifest);
   const inputs = createInputs(baseline, current, id, options, true, context);

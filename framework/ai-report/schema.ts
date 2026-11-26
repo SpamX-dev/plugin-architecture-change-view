@@ -4,7 +4,9 @@ import type { Validator } from "../serialization/schema.js";
 
 import type { ReviewReport } from "./types.js";
 
-const hash: Validator = (v, at) => /^sha256:[a-f0-9]{64}$/.test(String(v)) ? undefined : fail(at, "ожидается sha256:<64 hex>");
+const hash: Validator = (value, at) => {
+  if (typeof value !== "string" || !/^sha256:[a-f0-9]{64}$/.test(value)) fail(at, "ожидается sha256:<64 hex>");
+};
 const version = enumeration(1);
 const side = enumeration("baseline", "current");
 const section = enumeration("purpose", "responsibilities", "boundaries", "invariants");
@@ -51,7 +53,15 @@ export function validateReview(input: unknown): ReviewReport {
   for (const s of ["baseline", "current"] as const) {
     if ((value.module[`${s}_path`] === null) !== (value.observed[s] === null)) fail("review.observed." + s, "не совпадает с наличием модуля");
   }
-  if (value.comparison.baseline === null && (value.module.baseline_path !== null || value.assessment.change.verdict !== "not_applicable")) fail("review.comparison", "первый анализ не имеет базы и оценки изменения");
+  if (value.comparison.baseline === null) {
+    if (value.module.baseline_path !== null || value.assessment.change.verdict !== "not_applicable")
+      fail("review.comparison", "первый анализ не имеет базы и оценки изменения");
+    const fromBaseline = (ref: { snapshot: string }) => ref.snapshot === "baseline";
+    if (value.checks.some(check => check.subject === "baseline" || fromBaseline(check.contract) || check.evidence.some(fromBaseline)) ||
+        value.findings.some(finding => finding.clauses.some(fromBaseline) || finding.evidence.some(fromBaseline)) ||
+        value.observed.current?.responsibilities.some(item => item.evidence.some(fromBaseline)))
+      fail("review.comparison", "ссылка на отсутствующий базовый снимок");
+  }
   if (Boolean(value.analysis.model) !== Boolean(value.analysis.prompt_digest)) fail("review.analysis", "model и prompt_digest нужны вместе");
   if (value.analysis.coverage.status !== "complete" && !value.analysis.coverage.limitations.length) fail("review.analysis.coverage", "укажите ограничения анализа");
   for (const key of ["checks", "findings"] as const) {

@@ -2,15 +2,16 @@ import path from "node:path";
 import {
   assertModuleDirectory, mappedContractDocument, MODULE_DIRECTORY, MODULE_TREE_FILE,
   moduleDocumentPath, parseModuleTree,
-} from "../project/module-tree.js";
-import { SOURCE_EXTENSIONS } from "../project/source-files.js";
+} from "../project-sources/module-tree.js";
+import { SOURCE_EXTENSIONS } from "../project-sources/source-files.js";
+import { excludedProjectPath } from "../../framework/project/paths.js";
 import type { ContractDocument } from "../../framework/contracts/types.js";
 import { isPrototype } from "../../framework/contracts/types.js";
 import { errorDetails } from "../../node-errors.js";
 import { structureHash } from "../../framework/snapshots/identity.js";
 import type { FileRecord, SnapshotModule } from "../../framework/snapshots/types.js";
 
-export const isSource = (file: string) => SOURCE_EXTENSIONS.has(path.posix.extname(file).toLowerCase());
+export const isSource = (file: string) => SOURCE_EXTENSIONS.has(path.posix.extname(file).toLowerCase()) && !excludedProjectPath(file);
 
 function addAncestors(directories: Set<string>, directory: string) {
   while (!directories.has(directory)) {

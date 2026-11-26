@@ -1,3 +1,6 @@
+import path from "node:path";
+import { followsAnalysis } from "../analyse/module-review/analysis-timeline.js";
+import { FindingDecisions } from "../analyse/module-review/dispositions.js";
 import { realpath } from "node:fs/promises";
 import { compareRepositorySnapshots } from "../analyse/git-changes/comparison.js";
 import { createReportModel, type ReportModel } from "../analyse/module-review/model.js";
@@ -7,7 +10,7 @@ import type { ComparisonView, FileDiffArgs, ModuleArgs, ModuleDetail } from "./a
 import { fileDiff } from "./file-diff.js";
 import * as relations from "./relations.js";
 import { ApplicationError } from "./errors.js";
-import { metadata, moduleDetail, moduleSummary, reviewSummary } from "./module-view.js";
+import { metadata, moduleDetail, moduleSummary, reviewSummary, currentAnalysisEntries, analysisSummary } from "./module-view.js";
 import type { SessionView } from "./session-view.js";
 
 /** Open the published comparison using only its portable work directory. */
@@ -16,6 +19,7 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
   const published = await readPublishedTree(root, stateDirectory);
   if (!published) return null;
   const { id, work, readReviews } = published;
+  const decisions = new FindingDecisions(root, path.dirname(work));
   const { baseline, current } = published.pair;
   const tree = await compareRepositorySnapshots(root, baseline, current);
   const byId = new Map(published.reports.map(report => [report.module_id, report]));
@@ -43,7 +47,11 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
     try {
       const entries = await readReviews(module.moduleId ?? "directory:" + module.directory);
       model ??= createReportModel(baseline, current);
-      return moduleDetail({ ...module, review: reviewSummary(entries, model) }, entries, model, modules, root, work);
+      const selected = await currentAnalysisEntries(entries, model, current, entry => followsAnalysis(entry, current));
+      const detail = moduleDetail({ ...module, review: reviewSummary(entries, model) },
+        args.currentOnly ? selected : entries, model, modules, root, work);
+      detail.analyses = await analysisSummary(selected, decisions, detail.reviews);
+      return detail;
     } catch (cause) {
       if (cause instanceof PublicationChanged || errorDetails(cause).code === "ENOENT")
         throw new ApplicationError("STALE_VIEW", "Публикация изменилась. Откройте сохранённое состояние ещё раз.");

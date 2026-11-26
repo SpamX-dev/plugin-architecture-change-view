@@ -1,6 +1,28 @@
 import type { ReviewSection } from "../contracts/types.js";
 import type { Snapshot, SnapshotReference } from "../snapshots/types.js";
 
+export const analysisTypes = ["grasp", "implementation"] as const;
+export type AnalysisType = typeof analysisTypes[number];
+export function isAnalysisType(value: unknown): value is AnalysisType {
+  return analysisTypes.some(type => type === value);
+}
+
+export interface GraspParticipant { moduleId: string; role: "executor" | "utility"; task: string; assessment: string; consumers?: string[] }
+export function graspParticipants(report: Pick<ReviewReport, "extensions">): GraspParticipant[] {
+  const value = report.extensions?.["archiview.grasp"];
+  if (!Array.isArray(value)) return [];
+  return value;
+}
+
+export interface FindingDisposition { status: "open" | "accepted" | "resolved"; decision: string }
+export function validDisposition(value: unknown): value is FindingDisposition {
+  if (!value || typeof value !== "object") return false;
+  const item = value as FindingDisposition;
+  return Object.keys(item).every(key => key === "status" || key === "decision") &&
+    ["open", "accepted", "resolved"].includes(item.status) && typeof item.decision === "string";
+}
+export const openFinding: FindingDisposition = {status: "open", decision: ""};
+
 export type Side = "baseline" | "current";
 
 export type AssessmentSide = "current" | "change";
@@ -65,6 +87,10 @@ export interface ReviewManifest {
   model?: Model;
   prompt_digest?: string;
   review_scope?: string;
+  analysis_type?: AnalysisType;
+  source_snapshot?: SnapshotReference;
+  source_head?: string | null;
+  source_captured_at?: string;
 }
 
 export interface Observation {

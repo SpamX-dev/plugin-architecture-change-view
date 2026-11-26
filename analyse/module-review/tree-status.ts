@@ -57,7 +57,7 @@ function activeReviewsByModule(entries: ReviewEntry[]) {
   const resolved = new Set(entries.flatMap((entry) => entry.resolution?.review_ids ?? []));
   const active = new Map<string, ReviewEntry[]>();
   for (const entry of entries) {
-    if (resolved.has(entry.review_id) || !isSemanticReview(entry)) continue;
+    if (entry.manifest.analysis_type || resolved.has(entry.review_id) || !isSemanticReview(entry)) continue;
     const group = active.get(entry.module_id);
     if (group) group.push(entry);
     else active.set(entry.module_id, [entry]);

@@ -20,6 +20,7 @@ export interface Adapter {
 interface Registration { id: string; kind: HarnessKind; instance: string; token: string; pid: number }
 const names = { codex: "Codex", dsh: "DeepSeek Harness" };
 const idPattern = /^[a-f0-9-]{36}$/;
+export const startTimeoutMs = 60_000;
 export const bridgeDirectory = () => process.env.ARCHIVIEW_BRIDGE_DIR || path.join(homedir(), ".archiview", "harnesses");
 const endpoint = (id: string) => process.platform === "win32" ? "\\\\.\\pipe\\archiview-" + id : unixEndpoint(id);
 
@@ -106,7 +107,7 @@ async function registrations(): Promise<Registration[]> {
 function call(row: Registration, route: "/probe" | "/start", input: ProjectTarget | Assignment) {
   return new Promise<Record<string, unknown>>((resolve, reject) => {
     const req = request({ socketPath: endpoint(row.id), path: route, method: "POST", agent: false,
-      signal: AbortSignal.timeout(route === "/probe" ? 3500 : 60000),
+      signal: AbortSignal.timeout(route === "/probe" ? 3500 : startTimeoutMs),
       headers: { authorization: "Bearer " + row.token, "content-type": "application/json" } }, res => {
       message(res).then(result => {
         if (res.statusCode !== 200 || result?.id !== row.id) throw new Error(result?.error || "Мост отклонил запрос");

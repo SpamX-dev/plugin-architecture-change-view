@@ -5,7 +5,7 @@ import path from "node:path";
 import type { Snapshot } from "../../framework/snapshots/types.js";
 
 import type { ModuleRelations, RelationEdge, RelationGraph, RelationPeer, Site, SymbolReferences } from "../../framework/module-relations/types.js";
-import { loadImportSites, sideEffectResolver } from "./import-sites.mjs";
+import { loadImportSites } from "./import-sites.mjs";
 
 export function supportsFile(file: string) {
   return /\.(?:[mc]?[jt]s|[jt]sx)$/i.test(file);
@@ -25,18 +25,21 @@ export function projectDocuments(index: Index, owners: Map<string, string>) {
 
 type ProjectDocuments = ReturnType<typeof projectDocuments>;
 
-export async function indexImportSites(root: string, projects: string[], docs: ProjectDocuments, sources: Record<string, string>) {
-  const locate = await loadImportSites();
-  const resolve = await sideEffectResolver(root, projects);
-  const fileSymbols = new Map(docs.map(({ doc, file }) => [file, doc.symbols.find(s => s.kind === SymbolInformation_Kind.File)?.symbol]));
+export async function indexImportSites(root: string, projects: string[], docs: ProjectDocuments, sources: Record<string, string>, definitions = docs) {
+  const locate = await loadImportSites(root, projects);
+  const fileSymbols = new Map(definitions.map(({ doc, file }) => [file, doc.symbols.find(s => s.kind === SymbolInformation_Kind.File)?.symbol]));
   const positions = new Map<string, Set<string>>();
   for (const { doc, file } of docs) {
-    const existing = new Set(doc.occurrences.filter(o => o.symbol.endsWith("/")).map(o => position(o).join(":")));
-    positions.set(file, locate(file, sources[file], (specifier, range) => {
-      if (existing.has(range.join(":"))) return;
-      const target = resolve(file, specifier);
+    const existing = new Map(doc.occurrences.filter(o => o.symbol.endsWith("/") && !(o.symbolRoles & SymbolRole.Definition))
+      .map(o => [position(o).join(":"), o]));
+    positions.set(file, locate(file, sources[file], (range, target) => {
+      const occurrence = existing.get(range.join(":"));
+      if (target && !fileSymbols.has(target)) return false;
       const symbol = target && fileSymbols.get(target);
-      if (symbol) doc.occurrences.push(create(OccurrenceSchema, { range, symbol, symbolRoles: SymbolRole.Import }));
+      if (!symbol) return;
+      // Join the exact TypeScript target to its SCIP definition, including conditional package imports.
+      if (occurrence) occurrence.symbol = symbol;
+      else doc.occurrences.push(create(OccurrenceSchema, { range, symbol, symbolRoles: SymbolRole.Import }));
     }));
   }
   return positions;

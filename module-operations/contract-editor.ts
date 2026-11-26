@@ -3,14 +3,14 @@ import { lstat, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { isMap, isScalar, parseDocument, type Pair, type YAMLMap } from "yaml";
-import { assertModuleDirectory, MAX_DOCUMENT_BYTES, MODULE_DIRECTORY, moduleDocumentPath, readContractStorageFile, readModuleTree } from "../analyse/project/module-tree.js";
+import { assertModuleDirectory, MAX_DOCUMENT_BYTES, MODULE_DIRECTORY, moduleDocumentPath, readContractStorageFile, readModuleTree } from "../analyse/project-sources/module-tree.js";
 import { contractDocument, currentContractYaml } from "../framework/contracts/document.js";
 import { clauseEntries, isPrototype, type ContractDocument, type Section, type StoredContract } from "../framework/contracts/types.js";
-import { assertStateLocation, STATE_DIRECTORY } from "../analyse/project/paths.js";
+import { assertStateLocation, STATE_DIRECTORY } from "../storage/paths.js";
 import { repositoryDirectoryOwnership } from "../analyse/project/workspace.js";
 import type { SnapshotModule } from "../framework/snapshots/types.js";
-import { withFileLock } from "../analyse/project/file-lock.js";
-import { nextClauseId, rememberClauseId } from "../analyse/project/clause-ids.js";
+import { withFileLock } from "../storage/file-lock.js";
+import { nextClauseId, rememberClauseId } from "./clause-ids.js";
 import type { ClauseChange, DeletedClause } from "./api.js";
 import { ApplicationError } from "./errors.js";
 

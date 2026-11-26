@@ -2,8 +2,8 @@ import { execFile } from "node:child_process";
 import { lstat, realpath } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import { excludedProjectPath, within } from "./paths.js";
-export { excludedProjectPath } from "./paths.js";
+import { excludedProjectPath, within } from "../../framework/project/paths.js";
+export { excludedProjectPath } from "../../framework/project/paths.js";
 import { errorDetails } from "../../node-errors.js";
 
 /** Расширения исходного кода; список можно дополнить при запуске сервера. */
@@ -26,13 +26,13 @@ export function portable(value: string) {
  * Отсекает внешние пути, исключённые каталоги и символические ссылки.
  * Отсутствующий после Git-фильтра файл считается удалённым, а не исходником.
  */
-export async function regularProjectFile(root: string, relative: string) {
-  if (excludedProjectPath(relative)) return false;
+export async function regularProjectFile(root: string, relative: string, excluded = excludedProjectPath) {
+  if (excluded(relative)) return false;
   const candidate = path.resolve(root, relative);
   if (!within(root, candidate)) return false;
   try {
     const resolved = await realpath(candidate);
-    if (!within(root, resolved) || excludedProjectPath(path.relative(root, resolved))) return false;
+    if (!within(root, resolved) || excluded(path.relative(root, resolved))) return false;
     const info = await lstat(candidate);
     return info.isFile() && !info.isSymbolicLink();
   } catch (errorCause) { const error = errorDetails(errorCause);
@@ -45,12 +45,12 @@ export async function regularProjectFile(root: string, relative: string) {
  * Получает учитываемые файлы и признак полноты. Ошибка Git внутри репозитория
  * не маскируется полным результатом обхода: причина возвращается диагностикой.
  */
-export async function projectFiles(root: string, maxFiles: number, ownsDirectory: (relative: string) => boolean | Promise<boolean>) {
+export async function projectFiles(root: string, maxFiles: number, ownsDirectory: (relative: string) => boolean | Promise<boolean>, excluded = excludedProjectPath) {
   const output = await runFile("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "."],
     { cwd: root, timeout: 15000, maxBuffer: 16 * 1024 * 1024, windowsHide: true });
   const files: string[] = [];
   for (const file of new Set(output.stdout.split("\0"))) {
-    if (!file || excludedProjectPath(file) || !await ownsDirectory(path.posix.dirname(file))) continue;
+    if (!file || file.endsWith("/") || excluded(file) || !await ownsDirectory(path.posix.dirname(file))) continue;
     files.push(file);
     if (files.length > maxFiles) break;
   }

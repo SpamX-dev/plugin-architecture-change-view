@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { git } from "../../analyse/git-changes/capture.js";
-import { excludedProjectPath, within } from "../../analyse/project/paths.js";
+import { isProjectMetadataPath, within } from "../../framework/project/paths.js";
 import { watchFileChanges } from "./file-watcher/events.js";
 
 const waitMs = 15000;
@@ -73,18 +73,18 @@ export class RepositoryWatch {
         // Windows also reports timestamp changes on these containing directories.
         // Their child events carry the actual ref, contract or review filename.
         if (event === "change" && (rel(commonDir) === "refs/heads" || rel(commonDir) === "reftable" ||
-            rel(this.storage) === "work" || rel(this.root) === ".archiview/modules")) return;
+            ["work", "decisions"].includes(rel(this.storage)) || rel(this.root) === ".archiview/modules")) return;
         if (within(gitDir, file) || within(commonDir, file)) {
           if (!["HEAD", "index", "commondir"].includes(rel(gitDir)) &&
               !/^(?:packed-refs|refs\/heads(?:\/.*)?|info\/(?:exclude|attributes)|config|reftable(?:\/.*)?)$/.test(rel(commonDir))) return;
           if (file.endsWith(".lock")) return;
           this.dirty = true;
-        } else if (within(this.storage, file) && /^(?:work|work\/[^/]+\.review\.yaml)$/.test(rel(this.storage))) {
+        } else if (within(this.storage, file) && /^(?:work|work\/[^/]+\.review\.yaml|decisions|decisions\/[a-f0-9]{64}\.json)$/.test(rel(this.storage))) {
           this.reviewDirty = true;
         } else if (within(this.root, file)) {
           const source = rel(this.root);
           if (/^\.archiview\/(?:modules\.tree|modules(?:\/[^/]+\.yaml)?)$/.test(source)) this.dirty = true;
-          else if (excludedProjectPath(source)) return;
+          else if (isProjectMetadataPath(source)) return;
           else this.pending.add(source);
         } else return;
       }

@@ -16,6 +16,8 @@ import { snapshotDigest, structureHash } from "../framework/snapshots/identity.j
 import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
 import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
 import { GitTreeReader } from "../analyse/git-changes/git-tree.js";
+import { saveGitComparison } from "../module-operations/module-access.js";
+import { fileDiff } from "../module-operations/file-diff.js";
 
 /** Git-команды выполняются только в явно созданном временном проекте. */
 const run = promisify(execFile);
@@ -56,6 +58,52 @@ test("the live Git tree spans HEAD to disk across the index, renames and unborn 
     {path: "b/move.ts", status: "new"}, {path: "b/new.ts", status: "new"},
   ]);
   assert.equal(current.modules.find(m => m.key === ".")!.status, "unchanged");
+});
+
+test("Git views and saved reports retain maintained build files across untracked, staged and committed states", async t => {
+  const file = "build/maintained.ts";
+  const { root, store } = await fixture(t, {
+    ".gitignore": "*.tmp\nnode_modules/\n",
+    [file]: "initial\n",
+    "build/scratch.tmp": "ignored",
+    "node_modules/dep/src.ts": "ignored",
+    ".archiview/work/internal.ts": "private report",
+    "build/child/src.ts": "foreign",
+  });
+  initTestRepository(path.join(root, "build/child"));
+  const reader = new GitTreeReader(root, root);
+  const [full, fast] = await Promise.all([captureWorkingTree(root), reader.working(null)]);
+  for (const snapshot of [full, fast]) {
+    assert.ok(snapshot.complete, snapshot.diagnostics.join("\n"));
+    assert.deepEqual(snapshot.modules.map(m => m.directory), ["."]);
+    assert.deepEqual(snapshot.modules[0].files.map(f => f.path).sort(), [".gitignore", file]);
+    assert.equal(snapshot.modules[0].sourceFiles, 0);
+  }
+  assert.equal(full.facts.find(f => f.path === file)?.text, "initial\n");
+  const repository = new SnapshotStore(root, store);
+  const added = await saveGitComparison(repository, "index", "current");
+  assert.deepEqual((await repository.readComparison(added.id))!.modules[0].files,
+    [{ path: ".gitignore", status: "new" }, { path: file, status: "new" }]);
+  const first = compareSnapshots(null, fast, { emptyTree: true }).modules[0];
+  assert.deepEqual((await fileDiff(first, null, fast, file, root)).hunks[0].lines, ["+initial"]);
+
+  const git = (args: string[]) => run("git", args, { cwd: root, windowsHide: true });
+  await git(["add", "--", ".gitignore", file]);
+  await writeFile(path.join(root, file), "edited\n");
+  const staged = (await captureGitIndex(root))!;
+  const changed = await saveGitComparison(repository, "index", "current");
+  assert.deepEqual(changed.modules[0].files, [{ path: file, status: "changed" }]);
+  assert.equal(staged.facts.find(f => f.path === file)?.text, "initial\n");
+  await git(["-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "Stage build file"]);
+  const committed = (await captureGitHead(root))!;
+  const lightCommit = await reader.revision(committed.revision!);
+  assert.deepEqual(staged.modules, committed.modules);
+  assert.deepEqual(lightCommit.modules, committed.modules);
+  const disk = await captureWorkingTree(root);
+  assert.deepEqual((await reader.working(committed.revision!)).modules, disk.modules);
+  assert.equal(disk.facts.find(f => f.path === file)?.text, "edited\n");
+  await rm(path.join(root, file));
+  assert.deepEqual((await saveGitComparison(repository)).modules[0].files, [{ path: file, status: "removed" }]);
 });
 
 test("compares new, changed, removed and old modules without changing parent status", async (t) => {

@@ -1,7 +1,7 @@
 import { isUtf8 } from "node:buffer";
 import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import path from "node:path";
-import { assertStateLocation, STATE_DIRECTORY, within } from "./paths.js";
+import { assertStateLocation, STATE_DIRECTORY, within } from "../../storage/paths.js";
 import { errorDetails } from "../../node-errors.js";
 import {
   isModuleContractPath, MAX_DOCUMENT_BYTES, MAX_TREE_BYTES, MODULE_DIRECTORY, MODULE_TREE_FILE, parseModuleTree,

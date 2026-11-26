@@ -105,6 +105,23 @@ test("historical refresh reuses loaded history and preserves the current publica
   assert.deepEqual(await workBytes(app), before);
 });
 
+test("opening a named snapshot after a source edit leaves the published working pair intact", async t => {
+  const app = await fixture(t);
+  const current = await app.get("?baseline=auto");
+  const saved = await app.saveSnapshot({ view: current.id, label: "Before edit" });
+  const before = await workBytes(app);
+  await writeFile(path.join(app.root, "code.js"), "export const value = 2;\n");
+
+  const view = await app.get("?baseline=auto&target=" + saved.id);
+  assert.equal(view.after.id, saved.id);
+  const selected = await app.getModule({ view: view.id, path: "." });
+  const working = await app.get("?baseline=auto");
+  const live = await app.getModule({ view: working.id, path: "." });
+  const codeHash = (detail: ModuleResponse) => detail.after!.files.find(file => file.path === "code.js")!.hash;
+  assert.notEqual(codeHash(selected), codeHash(live));
+  assert.deepEqual(await workBytes(app), before);
+});
+
 test("an explicit snapshot published by another store remains available through a lazy lookup", async (t) => {
   const app = await fixture(t);
   await writeFile(path.join(app.root, "code.js"), "export const value = 2;\n");

@@ -49,9 +49,18 @@ export interface Snapshot {
   modules: SnapshotModule[];
   facts: Fact[];
   evidenceLimitations: string[];
-  observations?: Record<string, { lineage: string; revision: number }>;
+  observations?: Record<string, { lineage: string; revision: number; grasp?: number; implementation?: number;
+    skillHistory?: SkillObservationHistory }>;
   scoped?: boolean;
   scope_digest?: string;
+}
+
+/** Full-module revisions bound the intervals witnessed by observers with different skill projections. */
+export interface SkillObservationHistory {
+  since: number;
+  changedAt?: number;
+  uncertainAt?: number;
+  sharedSince?: number;
 }
 
 export interface SnapshotOptions {

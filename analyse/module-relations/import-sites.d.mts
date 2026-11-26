@@ -1,2 +1,2 @@
-export function loadImportSites(): Promise<(file: string, text: string, sideEffect?: (specifier: string, range: number[]) => void) => Set<string>>;
-export function sideEffectResolver(root: string, projects: string[]): Promise<(file: string, specifier: string) => string | undefined>;
+export function loadImportSites(root?: string, projects?: string[]): Promise<(file: string, text: string,
+  onLiteral?: (range: number[], target?: string) => false | void) => Set<string>>;

@@ -1,5 +1,5 @@
-import { withFileLock } from "../project/file-lock.js";
-import { ArchiveCache } from "../project/archive-cache.js";
+import { withFileLock } from "../../storage/file-lock.js";
+import { ArchiveCache } from "../../storage/archive-cache.js";
 import type { Snapshot } from "../../framework/snapshots/types.js";
 import { errorDetails } from "../../node-errors.js";
 /**

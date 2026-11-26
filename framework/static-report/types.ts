@@ -102,6 +102,8 @@ export interface ReviewInputs {
 }
 
 export interface ReviewOptions {
+  analysisType?: import("../ai-report/types.js").AnalysisType;
+  sourceSnapshot?: import("../snapshots/types.js").SnapshotReference;
   scope?: string;
   contractScope?: string;
   dependencies?: DependencySelector[];

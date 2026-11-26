@@ -11,8 +11,9 @@ import { IndexSchema } from "@scip-code/scip";
 import { digest } from "../../framework/serialization/digest.js";
 import type { Snapshot } from "../../framework/snapshots/types.js";
 import { errorDetails } from "../../node-errors.js";
-import { assertStateLocation, projectStateDirectory } from "../project/paths.js";
-import { regularProjectFile } from "../project/source-files.js";
+import { assertStateLocation, projectStateDirectory } from "../../storage/paths.js";
+import { regularProjectFile } from "../project-sources/source-files.js";
+import { excludedProjectPath } from "../../framework/project/paths.js";
 import { GitTreeReader } from "../git-changes/git-tree.js";
 import { readGitHeadRevision } from "../git-changes/capture.js";
 import type { RelationGraph } from "../../framework/module-relations/types.js";
@@ -45,7 +46,10 @@ export async function readRelationGraph(root: string, state: string | undefined,
   await assertStateLocation(root, directory, file);
   try {
     const graph: RelationGraph = JSON.parse(await readFile(file, "utf8"));
-    if ((graph.version !== 1 && graph.version !== 2) || graph.inputs !== key) throw new Error("Некорректный сохранённый граф связей");
+    if (![1, 2, 3, 4, 5].includes(graph.version) || graph.inputs !== key) throw new Error("Некорректный сохранённый граф связей");
+    if (graph.indexed !== graph.eligible) return null;
+    // Live callers can rebuild older indexes with location-specific TypeScript resolution.
+    if (graph.version < 5 && snapshot.kind === "working") return null;
     if (graph.version === 1) graph.edges = await directImportEdges(graph.edges, graph.sources);
     return graph;
   } catch (cause) {
@@ -73,7 +77,8 @@ async function build(root: string, directory: string, snapshot: Snapshot, key: s
     if (!current.complete || inputs(current) !== key) throw new RelationBuildError("STALE_VIEW", "Рабочее дерево изменилось. Обновите сравнение и повторите построение.");
   }
   await verifyInputs();
-  const owners = new Map(snapshot.modules.flatMap(m => m.files.map(f => [f.path, m.directory] as const)));
+  const owners = new Map(snapshot.modules.flatMap(m =>
+    m.files.filter(f => !excludedProjectPath(f.path)).map(f => [f.path, m.directory] as const)));
   const eligible = [...owners.keys()].filter(supportsFile);
   if (!eligible.length) throw new RelationBuildError("INVALID_ARGUMENT", "В снимке нет файлов TypeScript или JavaScript.");
   const tempRoot = await realpath(tmpdir());
@@ -81,30 +86,46 @@ async function build(root: string, directory: string, snapshot: Snapshot, key: s
   const output = path.join(temp, "index.scip");
   try {
     const projects = [...owners.keys()].filter(file => /^(?:ts|js)config\.json$/.test(path.posix.basename(file)));
-    const cwd = projects.length ? root : await inferredProject(root, temp, owners.keys());
     const worker = typeof ARCHIVIEW_SCIP_WORKER === "undefined"
       ? createRequire(import.meta.url).resolve("@sourcegraph/scip-typescript")
       : fileURLToPath(new URL(ARCHIVIEW_SCIP_WORKER, import.meta.url));
-    try {
-      await run(process.execPath, [worker, "index", "--output", output, "--no-progress-bar", "--", ...projects],
-        { cwd, windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
-    } catch (cause) {
-      const failure = cause as { stderr?: string; stdout?: string; message?: string };
-      throw new Error("Не удалось построить индекс SCIP. " + (failure.stderr?.trim() || failure.stdout?.trim() || failure.message || "").slice(-1600));
+    async function indexProject(cwd: string, configs: string[]) {
+      try {
+        await run(process.execPath, [worker, "index", "--output", output, "--no-progress-bar", "--", ...configs],
+          { cwd, windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
+      } catch (cause) {
+        const failure = cause as { stderr?: string; stdout?: string; message?: string };
+        if (failure.stdout?.includes("error: no files got indexed.")) return;
+        throw new Error("Не удалось построить индекс SCIP. " + (failure.stderr?.trim() || failure.stdout?.trim() || failure.message || "").slice(-1600));
+      }
+      return fromBinary(IndexSchema, await readFile(output));
     }
-    const index = fromBinary(IndexSchema, await readFile(output));
-    const docs = projectDocuments(index, owners);
+    const configured = projects.length ? await indexProject(root, projects) : undefined;
+    const configuredDocs = configured ? projectDocuments(configured, owners) : [];
+    const covered = new Set(configuredDocs.map(doc => doc.file));
+    const missing = eligible.filter(file => !covered.has(file));
+    const inferred = missing.length ? await inferredProject(root, temp, owners.keys(), missing, projects) : undefined;
+    const supplement = inferred && await indexProject(inferred.root, inferred.configs);
+    const looseDocs = supplement ? projectDocuments(supplement, owners).filter(doc => !covered.has(doc.file)) : [];
+    for (const { file } of looseDocs) covered.add(file);
+    const skipped = missing.filter(file => !covered.has(file));
+    if (skipped.length) throw new RelationBuildError("INCOMPLETE_VIEW", "SCIP не проиндексировал файлы: " + skipped.join(", "));
+    const docs = [...configuredDocs, ...looseDocs];
     const sources: Record<string,string> = Object.create(null);
     for (const file of new Set(docs.map(d => d.file))) {
       if (!await regularProjectFile(root, file)) throw new RelationBuildError("STALE_VIEW", "Файл изменился: " + file);
-      sources[file] = (await readFile(path.join(cwd, file), "utf8")).replace(/\r\n?/g, "\n");
+      sources[file] = (await readFile(path.join(root, file), "utf8")).replace(/\r\n?/g, "\n");
     }
-    const imports = await indexImportSites(cwd, projects, docs, sources);
+    const imports = await indexImportSites(root, projects, configuredDocs, sources, docs);
+    if (inferred) {
+      const looseImports = await indexImportSites(inferred.root, inferred.configs, looseDocs, sources, docs);
+      for (const [file, sites] of looseImports) imports.set(file, sites);
+    }
     const { edges, indexed } = extractEdges(docs, owners);
     const direct = await directImportEdges(edges, sources, imports);
     const evidence = new Set(direct.flatMap(edge => edge.symbols.flatMap(s => [s.definition.file, ...s.uses.map(u => u.file)])));
-    const info = index.metadata?.toolInfo;
-    const graph: RelationGraph = { version: 2, inputs: key, snapshotDigest: snapshot.digest,
+    const info = (configured ?? supplement)?.metadata?.toolInfo;
+    const graph: RelationGraph = { version: 5, inputs: key, snapshotDigest: snapshot.digest,
       indexer: [info?.name, info?.version].filter(Boolean).join(" "), indexed, eligible: eligible.length,
       edges: direct, sources: Object.fromEntries([...evidence].map(file => [file, sources[file]])) };
     await verifyInputs();
