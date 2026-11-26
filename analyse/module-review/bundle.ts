@@ -14,6 +14,7 @@ import path from "node:path";
 import { canonical, digest } from "../../framework/serialization/digest.js";
 import { validateReview } from "../../framework/ai-report/schema.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
+import { validateTypedAnalysis } from "./analysis-scope.js";
 
 /** Версия включает алгоритм структурной проверки; настройки участвуют в manifest. */
 export const ANALYZER = { name: "archiview-structure", version: "1.1.0",
@@ -199,5 +200,6 @@ export function validateReviewBundle(bundle: ReviewBundle) {
   for (const { item, subject } of requiredClauseChecks(manifest, report.module.current_path !== null)) {
     if (!report.checks.some((c) => c.subject === subject && digest(c.contract) === digest(item.reference))) throw new Error("Missing explicit clause check: " + item.reference.id);
   }
+  validateTypedAnalysis(bundle);
   return bundle;
 }

@@ -1,7 +1,5 @@
 import type { ReviewBundle, ClauseReference, EvidenceReference } from "../../framework/ai-report/types.js";
 import type { ReviewEntry } from "../../framework/static-report/types.js";
-import { validateComposition } from "../grasp/analysis.js";
-import { isAnalysisType } from "../../framework/ai-report/types.js";
 import { canonical, digest } from "../../framework/serialization/digest.js";
 import { clauseEntries } from "../../framework/contracts/types.js";
 import { contractDocument } from "../../framework/contracts/document.js";
@@ -16,6 +14,7 @@ import { normalizeText, moduleId, ModuleStateContext, baselineIdentity } from ".
 import { REPORT_SCHEMA_VERSION } from "../../framework/static-report/types.js";
 import { entryContentDigest, resultDigest } from "./review-identity.js";
 import { reviewState } from "./review-state.js";
+import { validateTypedAnalysis } from "./analysis-scope.js";
 
 /** Проверяет ссылки внутри сохранённых частей, не читая нынешние исходники. */
 function validateScopedProof(entry: ReviewEntry) {
@@ -76,15 +75,6 @@ export function validateReviewEntry(input: unknown): ReviewEntry {
   if (entry?.schema_version !== REPORT_SCHEMA_VERSION || entry.kind !== "review" || !["native-v2", "legacy-v1"].includes(entry.format)) throw new Error("Unsupported review entry schema");
   if (!entry.module_id || entry.review_id !== entry.report?.id || !/^[a-f0-9]{64}$/.test(entry.check_hash)) throw new Error("Invalid review entry identity");
   validateReview(entry.report);
-  if (entry.manifest?.analysis_type !== undefined || ["archiview-grasp", "archiview-implementation"].includes(entry.report.analysis.analyzer.name)) {
-    const type = entry.manifest?.analysis_type;
-    if (type === "grasp") validateComposition(entry.report, entry.current.modules.filter(module =>
-      module.document.contract?.id !== entry.module_id).map(module => moduleId(module)));
-    if (!isAnalysisType(type) || entry.report.analysis.analyzer.name !== "archiview-" + type || entry.baseline ||
-        entry.manifest.source_snapshot?.id !== entry.current.id || !/^sha256:[0-9a-f]{64}$/.test(entry.manifest.source_snapshot?.digest ?? "") ||
-        entry.report.analysis.coverage.status !== "complete" || entry.report.assessment.current.verdict === "inconclusive")
-      throw new Error("Для сохранения нужен завершённый анализ выбранного вида и среза.");
-  }
   if (entry.report.module.id !== null && entry.module_id !== entry.report.module.id) throw new Error("Review module identity mismatch");
   if (!entry.inputs || entry.inputs.schema_version !== 1 || !["self", "subtree"].includes(entry.inputs.scope)) throw new Error("Unsupported review inputs");
   const contractScope = validateContractScope(entry.report, entry.manifest, entry);
@@ -112,6 +102,7 @@ export function validateReviewEntry(input: unknown): ReviewEntry {
       digest(entry.manifest.analyzer) !== digest(entry.report.analysis.analyzer) ||
       digest(entry.manifest.model) !== digest(entry.report.analysis.model) || entry.manifest.prompt_digest !== entry.report.analysis.prompt_digest) throw new Error("Native review manifest mismatch");
     validateScopedProof(entry);
+    validateTypedAnalysis(entry);
     for (const [side, snapshot] of ([["baseline", entry.baseline], ["current", entry.current]] as const)) {
       const reference = entry.report.comparison[side];
       if ((snapshot === null) !== (reference === null) || (snapshot &&

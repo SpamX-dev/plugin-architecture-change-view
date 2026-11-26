@@ -136,12 +136,18 @@ export function createArchiViewHttpServer(session: SessionOperations & { root: s
       if (request.method === "GET" && url.pathname === "/api/review-statuses") return json(response, 200, await callSessionOperation(session, "getReviewStatuses", args));
       if (request.method === "GET" && url.pathname === "/api/module") return json(response, 200, await callSessionOperation(session, "getModule", args));
       if (request.method === "GET" && url.pathname === "/api/harnesses") return json(response, 200, await callSessionOperation(session, "listHarnesses", args));
+      if (request.method === "GET" && url.pathname === "/api/review-settings") return json(response, 200, await callSessionOperation(session, "getReviewSettings", args));
       if (request.method === "GET" && url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "getRelations", args));
       if (request.method === "GET" && url.pathname === "/api/relations/source") return json(response, 200, await callSessionOperation(session, "getRelationSource", args));
       if (request.method === "GET" && url.pathname === "/api/file-diff") return json(response, 200, await callSessionOperation(session, "getFileDiff", args));
       if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))
         return json(response, 200, await callSessionOperation(session, "getAnalysis", repositoryArguments(repository, { id: url.pathname.split("/").at(-1) })));
       if (request.method === "POST") {
+        if (url.pathname === "/api/review-settings") {
+          if (request.headers["content-type"]?.split(";")[0].trim().toLowerCase() !== "application/json")
+            throw new ApplicationError("INVALID_ARGUMENT", "Требуется application/json");
+          return json(response, 200, await callSessionOperation(session, "setReviewSetting", repositoryArguments(repository, await bodyOf(request))));
+        }
         if (url.pathname === "/api/findings/decision") return json(response, 200, await callSessionOperation(session, "updateFinding", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "buildRelations", repositoryArguments(repository, await bodyOf(request))));
         if (url.pathname === "/api/contract-clause") return json(response, 200, await callSessionOperation(session, "changeClause", repositoryArguments(repository, await bodyOf(request, 1024 * 1024))));
@@ -171,5 +177,8 @@ export function createArchiViewHttpServer(session: SessionOperations & { root: s
     for (const response of active) response.shouldKeepAlive = false;
     stopping.abort();
   }
-  return Object.assign(server, { shutdown });
+  function listenLocal(port: number, listening: () => void) {
+    return server.listen(port, "127.0.0.1", listening);
+  }
+  return Object.assign(server, { shutdown, listenLocal });
 }

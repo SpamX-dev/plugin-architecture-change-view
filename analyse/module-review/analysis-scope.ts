@@ -1,9 +1,10 @@
-import type { AnalysisType } from "../../framework/ai-report/types.js";
+import { isAnalysisType, type AnalysisType, type ReviewManifest, type ReviewReport } from "../../framework/ai-report/types.js";
 import type { Snapshot, SnapshotData, SnapshotModule } from "../../framework/snapshots/types.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
 import { digest } from "../../framework/serialization/digest.js";
 import * as grasp from "../grasp/analysis.js";
 import * as implementation from "../implementation/analysis.js";
+import { directChildContracts } from "./module-state.js";
 
 export const analysisInstructions = { grasp: grasp.instructions, implementation: implementation.instructions };
 
@@ -11,6 +12,53 @@ export function analysisModules(type: AnalysisType, snapshot: SnapshotData, own:
   if (type === "implementation") return [own];
   const children = grasp.childDirectories(snapshot.modules, own.directory);
   return [own, ...snapshot.modules.filter(module => children.has(module.directory))];
+}
+
+/** Both full bundles and compact records must prove the projection of the declared analysis. */
+export function validateTypedAnalysis({ report, manifest, current, baseline }: {
+  report: ReviewReport; manifest: ReviewManifest; current: SnapshotData; baseline: SnapshotData | null;
+}) {
+  const type = manifest.analysis_type;
+  const analyzer = report.analysis.analyzer.name;
+  if (type === undefined && analyzer !== "archiview-grasp" && analyzer !== "archiview-implementation") return;
+  const source = manifest.source_snapshot;
+  if (!isAnalysisType(type) || analyzer !== "archiview-" + type || baseline || !current.complete ||
+      !source || source.id !== current.id || typeof source.digest !== "string" || !/^sha256:[0-9a-f]{64}$/.test(source.digest) ||
+      report.analysis.coverage.status !== "complete" || report.assessment.current.verdict === "inconclusive" ||
+      report.checks.some(check => check.verdict === "not_checked" || check.verdict === "uncertain"))
+    throw new Error("Для сохранения нужен завершённый анализ выбранного вида и среза.");
+  const own = current.modules.find(module => module.document.contract?.id === report.module.id);
+  if (!own) throw new Error("Missing analysis module: " + report.module.id);
+  const selected = analysisModules(type, current, own);
+  if (current.modules.length !== selected.length) throw new Error("Modules outside analysis scope");
+  if (type === "grasp") {
+    const children = selected.slice(1).map(module => {
+      if (!module.document.contract) throw new Error("Missing analysis contract: " + module.directory);
+      return module.document.contract.id;
+    });
+    grasp.validateComposition(report, children);
+  }
+  const paths = new Set(selected.map(module => module.documentPath));
+  if (type === "implementation") {
+    for (const file of implementation.sourceFiles(own)) paths.add(file.path);
+  }
+  for (const fact of current.facts) {
+    if (fact.kind !== "file" || !paths.delete(fact.path)) throw new Error("Evidence outside analysis scope: " + fact.path);
+  }
+  if (paths.size) throw new Error("Missing analysis evidence: " + [...paths].join(", "));
+}
+
+/** Build the immediate-child index once when comparing analysis inputs for a whole repository. */
+export function projectAnalysisScopes(snapshot: SnapshotData) {
+  const children = directChildContracts(snapshot.modules);
+  const directories = new Map(snapshot.modules.map(module => [module.directory, module]));
+  return snapshot.modules.map(module => {
+    const composition = children.get(module.directory) ?? [];
+    const participants = composition.map(child => directories.get(child.directory)!);
+    const hashes = { grasp: analysisFingerprint("grasp", [module, ...participants]),
+      implementation: analysisFingerprint("implementation", [module]) };
+    return {module, composition, hashes};
+  });
 }
 
 export function analysisFingerprint(type: AnalysisType, modules: SnapshotModule[]) {

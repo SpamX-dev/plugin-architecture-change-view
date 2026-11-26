@@ -9,7 +9,8 @@ import { savedClauseText } from "./contract.js";
 
 // Public exports of the standalone review.mjs asset.
 export { evidenceLabel } from "./evidence.js";
-export { clauseFindingTargets, findingBug, findingFixPrompt, moduleFindingCount, reviewFindingItems, treeFindingCounts } from "../module-presenter/findings.js";
+export { clauseFindingTargets, findingBug, findingFixPrompt, reviewFindingItems } from "../module-presenter/findings.js";
+export { moduleFindingCount, treeFindingCounts } from "../workspace-presenter/tree-findings.js";
 export { clauseSectionLabel, renderContract, renderContractHeading, savedClauseText, savedClauseMatchesContract } from "./contract.js";
 type GroupedObservation = { summary: string | null; responsibilities: { text: string; evidence: EvidenceReference[] }[] };
 

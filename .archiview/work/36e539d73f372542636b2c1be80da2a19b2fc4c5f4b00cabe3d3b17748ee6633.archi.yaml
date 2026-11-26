@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: dsh-adapter
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 68dd9b30e4a44ee9cc4317a6a8ff6fd604f02ad6481e44adb5484b85c94bbc6d
+check_hash: 1fc606ded87287c898ae41a44ba283ce2681c838bd8d1e79a017a05bb37c784a
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,17 +10,17 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: d9ef55c491050e3727283582fcc1018d200da614
+      id: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
     state:
       exists: true
       directory: bridges/dsh
-      self_digest: sha256:6f6d17ed30f87c7a0f465098526fb1bc31dea48bdcb6c540be504581d1cfa101
-      subtree_digest: sha256:cf990d6d14f4a033fc7da2ae1fdfd3182a2549aa9640c3e2c7175b8e348bf506
+      self_digest: sha256:61c6c7a6ed59165a0f69e434209aa8a10aff5f539d5a5cf800d6cc9981525e78
+      subtree_digest: sha256:18c1721c89408c54e762776beff7a73983923cb5df2cce893a6f5c18250e5cf8
   current:
     exists: true
     directory: bridges/dsh
-    self_digest: sha256:b1952da40366869d0599f1a4d5e30630f63be542ab66bc1b986a62ca4ef09a85
-    subtree_digest: sha256:8aab3ba3930573f5f37baf7a5be12d11380c9ec0a367ab373dfb85aff1f52279
+    self_digest: sha256:0b82d0bb1d61bca2b57494aad653f7cd062761577d088e844093f111922e5b4a
+    subtree_digest: sha256:fabcddcfc372e2404c6601b58ece007395c3157e1f4a0ba27f1f91d1d197a635
   analyzer:
     name: archiview-structure
     version: 1.1.0
@@ -35,8 +35,14 @@ baseline:
     module_id: dsh-adapter
     directory: bridges/dsh
     own_files:
-      - path: bridges/dsh/.gitkeep
-        digest: sha256:63be7e41e020bc00ee1c7926929730c6f0a0b9c0c3d83427c76eb5acfba8dc67
+      - path: bridges/dsh/cordis.patch.yml
+        digest: sha256:ba51440aac11c8e5cbc5af6d28f6e24a5360a563f45734f5e9fc055b8593b405
+        normalization: text-lf/v1
+      - path: bridges/dsh/host.ts
+        digest: sha256:3d4f01ff25e7c1984390011c69312335adbcdca3c4232a60fd308278fe7ba85b
+        normalization: text-lf/v1
+      - path: bridges/dsh/package.json
+        digest: sha256:a1d11e01db3ba27634da85b42d58eabf8b68522d62cb04a99a3a997bd6fa1453
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -46,9 +52,9 @@ baseline:
       extensions:
         archiview.roles:
           - plugin
-        archiview.prototype: true
-      purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с текущей сессией
-        DSH.
+      purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+        время активности плагина, создавать новый чат в соответствующем проекте
+        или каталоге репозитория и передавать поручение анализа.
       boundaries: {}
       invariants:
         I6: OS Windows 11
@@ -63,31 +69,43 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I10
-        text: Приложение поддерживает встроенную панель Codex.
+        text: Приложение поддерживает интеграцию с Codex.
       - module_id: architecture-change-view
         section: invariants
         id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
       - module_id: architecture-change-view
         section: invariants
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-  technical_digest: sha256:6f6d17ed30f87c7a0f465098526fb1bc31dea48bdcb6c540be504581d1cfa101
+      - module_id: archiview-bridges
+        section: invariants
+        id: I1
+        text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+          Desktop и DeepSeek Harness.
+  technical_digest: sha256:61c6c7a6ed59165a0f69e434209aa8a10aff5f539d5a5cf800d6cc9981525e78
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: dsh-adapter
     directory: bridges/dsh
     own_files:
-      - path: bridges/dsh/.gitkeep
-        digest: sha256:63be7e41e020bc00ee1c7926929730c6f0a0b9c0c3d83427c76eb5acfba8dc67
+      - path: bridges/dsh/cordis.patch.yml
+        digest: sha256:ba51440aac11c8e5cbc5af6d28f6e24a5360a563f45734f5e9fc055b8593b405
+        normalization: text-lf/v1
+      - path: bridges/dsh/host.ts
+        digest: sha256:3d4f01ff25e7c1984390011c69312335adbcdca3c4232a60fd308278fe7ba85b
+        normalization: text-lf/v1
+      - path: bridges/dsh/package.json
+        digest: sha256:a1d11e01db3ba27634da85b42d58eabf8b68522d62cb04a99a3a997bd6fa1453
         normalization: text-lf/v1
     contract:
       id: dsh-adapter
       kind: module
-      purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с текущей сессией
-        DSH.
+      purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+        время активности плагина, создавать новый чат в соответствующем проекте
+        или каталоге репозитория и передавать поручение анализа.
       boundaries: {}
       invariants:
         I6: OS Windows 11
@@ -101,26 +119,31 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I10
-        text: Приложение поддерживает встроенную панель Codex.
+        text: Приложение поддерживает интеграцию с Codex.
       - module_id: architecture-change-view
         section: invariants
         id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
       - module_id: architecture-change-view
         section: invariants
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
+      - module_id: archiview-bridges
+        section: invariants
+        id: I1
+        text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+          Desktop и DeepSeek Harness.
     children: []
-  self_digest: sha256:4d6995978bcae0e88d0f1e3d76088984e79719b5cc767b518a9c8259fc613079
+  self_digest: sha256:2fd560547a78d60f01946d0ecafa5c002e192d203b58c198e5798e5cc7229260
   subtree:
-    self: sha256:6f6d17ed30f87c7a0f465098526fb1bc31dea48bdcb6c540be504581d1cfa101
+    self: sha256:61c6c7a6ed59165a0f69e434209aa8a10aff5f539d5a5cf800d6cc9981525e78
     children: []
-  subtree_digest: sha256:cf990d6d14f4a033fc7da2ae1fdfd3182a2549aa9640c3e2c7175b8e348bf506
+  subtree_digest: sha256:18c1721c89408c54e762776beff7a73983923cb5df2cce893a6f5c18250e5cf8
   semantic_subtree:
-    self: sha256:4d6995978bcae0e88d0f1e3d76088984e79719b5cc767b518a9c8259fc613079
+    self: sha256:2fd560547a78d60f01946d0ecafa5c002e192d203b58c198e5798e5cc7229260
     children: []
-  semantic_subtree_digest: sha256:ac236e230f4c06651e7dec9d9361e4488e2a1ca024a5cdf810ad9ea6c40de739
+  semantic_subtree_digest: sha256:5b8ba1ec6d219e1adbc84e7ac7978c3fc883350a9e3c4d50addba3142de2dca5
 current:
   module_id: dsh-adapter
   directory: bridges/dsh
@@ -138,7 +161,10 @@ current:
         digest: sha256:3d4f01ff25e7c1984390011c69312335adbcdca3c4232a60fd308278fe7ba85b
         normalization: text-lf/v1
       - path: bridges/dsh/package.json
-        digest: sha256:a1d11e01db3ba27634da85b42d58eabf8b68522d62cb04a99a3a997bd6fa1453
+        digest: sha256:024c666a5e31e54cac7b804d90466fc62d0e2b5fd5d45f3a1f0fb49e84b243bd
+        normalization: text-lf/v1
+      - path: bridges/dsh/session-hooks.ts
+        digest: sha256:e3f31050aba834f44aeff098fda8d5270698e87d8deb67f7538823a78787f596
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -148,8 +174,10 @@ current:
       extensions:
         archiview.roles:
           - plugin
-      purpose: Создавать новый чат DeepSeek Harness в соответствующем проекте или
-        каталоге репозитория и передавать поручение анализа.
+      purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+        время активности плагина, создавать новый чат в соответствующем проекте
+        или каталоге репозитория, передавать в него поручение и запускать
+        проверку изменений по событиям хода с правами текущей сессии.
       boundaries: {}
       invariants:
         I6: OS Windows 11
@@ -174,7 +202,12 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-  technical_digest: sha256:b1952da40366869d0599f1a4d5e30630f63be542ab66bc1b986a62ca4ef09a85
+      - module_id: archiview-bridges
+        section: invariants
+        id: I1
+        text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+          Desktop и DeepSeek Harness.
+  technical_digest: sha256:0b82d0bb1d61bca2b57494aad653f7cd062761577d088e844093f111922e5b4a
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -188,13 +221,18 @@ current:
         digest: sha256:3d4f01ff25e7c1984390011c69312335adbcdca3c4232a60fd308278fe7ba85b
         normalization: text-lf/v1
       - path: bridges/dsh/package.json
-        digest: sha256:a1d11e01db3ba27634da85b42d58eabf8b68522d62cb04a99a3a997bd6fa1453
+        digest: sha256:024c666a5e31e54cac7b804d90466fc62d0e2b5fd5d45f3a1f0fb49e84b243bd
+        normalization: text-lf/v1
+      - path: bridges/dsh/session-hooks.ts
+        digest: sha256:e3f31050aba834f44aeff098fda8d5270698e87d8deb67f7538823a78787f596
         normalization: text-lf/v1
     contract:
       id: dsh-adapter
       kind: module
-      purpose: Создавать новый чат DeepSeek Harness в соответствующем проекте или
-        каталоге репозитория и передавать поручение анализа.
+      purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+        время активности плагина, создавать новый чат в соответствующем проекте
+        или каталоге репозитория, передавать в него поручение и запускать
+        проверку изменений по событиям хода с правами текущей сессии.
       boundaries: {}
       invariants:
         I6: OS Windows 11
@@ -218,22 +256,27 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
+      - module_id: archiview-bridges
+        section: invariants
+        id: I1
+        text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+          Desktop и DeepSeek Harness.
     children: []
-  self_digest: sha256:ec372160fe887f9564ef9141509a772ce8558599310801208604771c7d09b42c
+  self_digest: sha256:e8936a058d9c384c6ecd17df1962ff06a901e564f2a23c75c80eb8a29a68b36c
   subtree:
-    self: sha256:b1952da40366869d0599f1a4d5e30630f63be542ab66bc1b986a62ca4ef09a85
+    self: sha256:0b82d0bb1d61bca2b57494aad653f7cd062761577d088e844093f111922e5b4a
     children: []
-  subtree_digest: sha256:8aab3ba3930573f5f37baf7a5be12d11380c9ec0a367ab373dfb85aff1f52279
+  subtree_digest: sha256:fabcddcfc372e2404c6601b58ece007395c3157e1f4a0ba27f1f91d1d197a635
   semantic_subtree:
-    self: sha256:ec372160fe887f9564ef9141509a772ce8558599310801208604771c7d09b42c
+    self: sha256:e8936a058d9c384c6ecd17df1962ff06a901e564f2a23c75c80eb8a29a68b36c
     children: []
-  semantic_subtree_digest: sha256:ae0a2161c1dae94bdfbe0ee4c0e8a69e8020ab6c14de27eb60e30c7bf4507d51
+  semantic_subtree_digest: sha256:408b6361d9a0dd09f03fdd9fc3550b8f55f3d7f175906ee1186c8c5b703efbda
 change:
   existence: retained
   own: true
   own_code: true
   own_contract: true
-  inherited_constraints: true
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -242,24 +285,24 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 251
-  comparison_key: sha256:279dc9637de4616f30531ddeb5a9d4c92487e10157d20831403a768cf3e1eb0e
+  generation: 254
+  comparison_key: sha256:89819d7fd0e86afcd1899944a76691772ff6b2fd320f3a434974e8ecf2c3be6f
   baseline:
     metadata:
-      id: git-d9ef55c491050e3727283582fcc1018d200da614
-      digest: sha256:d38f9e4f50fa68a2feb9b2fad555727b5fd5eff723b87d9a15508a042bcafdff
+      id: git-8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      digest: sha256:536e150cce8ea9fc1bc8badae375532e3de349fb5b6a3d58b541e4d4a2f21f87
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-24T18:52:06.357Z
+      capturedAt: 2026-11-26T09:44:39.155Z
       kind: git
-      revision: d9ef55c491050e3727283582fcc1018d200da614
+      revision: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
       label: HEAD
-      fingerprint: 5af38f4a54f8fb05c018260b03da31860566581b87b5ba5c8af950f0a6636c3f
+      fingerprint: 2dee2965eb997121b14a6fd797be0b773eca592bd578ce0553474b2e511dd5df
       complete: true
       diagnostics: []
       evidenceLimitations: []
       isHead: true
-    module_index: 8
+    module_index: 11
     module:
       directory: bridges/dsh
       document:
@@ -275,9 +318,10 @@ publication:
 
           extensions:
             archiview.roles: [plugin]
-            archiview.prototype: true
-          purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с
-          текущей сессией DSH.
+          purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+          ArchiView на время активности плагина, создавать новый чат в
+          соответствующем проекте или каталоге репозитория и передавать
+          поручение анализа.
 
           boundaries: {}
 
@@ -294,9 +338,9 @@ publication:
           extensions:
             archiview.roles:
               - plugin
-            archiview.prototype: true
-          purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с текущей сессией
-            DSH.
+          purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+            время активности плагина, создавать новый чат в соответствующем
+            проекте или каталоге репозитория и передавать поручение анализа.
           boundaries: {}
           invariants:
             I6: OS Windows 11
@@ -305,331 +349,7 @@ publication:
       documentPath: .archiview/modules/dsh-adapter.yaml
       files:
         - path: .archiview/modules/dsh-adapter.yaml
-          hash: f4aa95de0b541b38751691c88472a8905635e05f
-          mode: "100644"
-        - path: bridges/dsh/.gitkeep
-          hash: e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-          mode: "100644"
-      sourceFiles: 0
-      fingerprint: 1199413b61c60a38729bc96a23d1e7e143ece82e5cd168fa59bb23ee87f72356
-    facts:
-      - index: 37
-        fact:
-          id: sha256:7bfdc2d5a4a62f53ad63114b15b5be0be482d64ef343965c8603e69c9cde4c7b
-          kind: file
-          path: .archiview/modules/dsh-adapter.yaml
-          start_line: 1
-          end_line: 14
-          text: >
-            schema_version: 1
-
-            id: dsh-adapter
-
-            title: dsh
-
-            kind: module
-
-            extensions:
-              archiview.roles: [plugin]
-              archiview.prototype: true
-            purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с
-            текущей сессией DSH.
-
-            boundaries: {}
-
-            invariants:
-              I6: OS Windows 11
-              I7: OS Linux
-              I8: OS Mac
-      - index: 82
-        fact:
-          id: sha256:693b8a032fd3e01758cfd6f15de8ffb5dfc98d6d923d0fa30b3edc7da03f9bef
-          kind: file
-          path: bridges/dsh/.gitkeep
-          start_line: 1
-          end_line: 1
-          text: ""
-      - index: 204
-        fact:
-          id: sha256:7d9e3bfd2e99b741c6acfb60f7f937ebde77246e73e820202389f405e3c8598d
-          kind: module
-          path: bridges/dsh
-          text: '{"contract":"documented","format":"yaml","sources":[]}'
-  current:
-    metadata:
-      id: launch-0285bb58b3be6e60f81cc6d866233a1193642f6598e4c3a1cd3d672468209736
-      digest: sha256:dbf5da7c05ec42e1778e8479c1cafcaa95b2abfb25ef79df2ceabccd5bc8ecb7
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-24T18:52:11.909Z
-      kind: launch
-      label: Начальное состояние
-      fingerprint: 0285bb58b3be6e60f81cc6d866233a1193642f6598e4c3a1cd3d672468209736
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-      observations:
-        architecture-change-view:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 651
-        archiview-distribution:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 214
-        archiview-skills:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 200
-        archiview-module-boundaries-skill:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 207
-        architecture-core:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 17
-        archiview-application:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 260
-        archiview-http:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 219
-        archiview-codex:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 231
-        archiview-contracts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 209
-        dsh-adapter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 224
-        dsh-client-panel:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 10
-        archiview-mcp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        archiview-project-location:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 211
-        archiview-reports:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 208
-        archiview-reviews:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 203
-        archiview-node-runtime:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 205
-        archiview-serialization:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 203
-        archiview-snapshots:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 213
-        archiview-storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        architecture-tests:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 270
-        architecture-web:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 210
-        archiview-client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 238
-        prototype-smoke-1674b57d:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        prototype-smoke-9a3440c6:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        directory:.:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        directory:scripts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-        directory:skills:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:skills/module-boundaries:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-        directory:src:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 8
-        directory:src/application:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 11
-        directory:src/archiview:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/codex:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-        directory:src/contracts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        directory:src/dsh:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/dsh/client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/mcp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/project:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/reports:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 10
-        directory:src/reviews:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 8
-        directory:src/runtime:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/serialization:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/snapshots:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-        directory:src/storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:test:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        directory:web:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:web/archiview:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 13
-        archiview-analyse:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 201
-        archiview-analyse-type:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-report-store:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-project-files:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-bridges:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 216
-        archiview-cli:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 202
-        archiview-cli-operation:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-framework:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 209
-        archiview-project-types:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 194
-        archiview-tools:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 194
-        archiview-analysis-service:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 207
-        archiview-file-service:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-host-bridge:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 200
-        archiview-web-api-client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 198
-        archiview-module-presenter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 204
-        archiview-views:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 202
-        archiview-workspace-presenter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 196
-        archiview-file-watcher:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 201
-        archiview-git-changes:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 207
-        archiview-git-changes-report:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-module-operations:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 220
-        archiview-project-context:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 199
-        archiview-module-access:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-module-review:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 195
-        archiview-module-relations:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 199
-        archiview-relation-model:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 193
-    module_index: 8
-    module:
-      directory: bridges/dsh
-      document:
-        state: documented
-        text: >
-          schema_version: 1
-
-          id: dsh-adapter
-
-          title: dsh
-
-          kind: module
-
-          extensions:
-            archiview.roles: [plugin]
-          purpose: Создавать новый чат DeepSeek Harness в соответствующем
-          проекте или каталоге репозитория и передавать поручение анализа.
-
-          boundaries: {}
-
-          invariants:
-            I6: OS Windows 11
-            I7: OS Linux
-            I8: OS Mac
-        format: yaml
-        contract:
-          schema_version: 1
-          id: dsh-adapter
-          title: dsh
-          kind: module
-          extensions:
-            archiview.roles:
-              - plugin
-          purpose: Создавать новый чат DeepSeek Harness в соответствующем проекте или
-            каталоге репозитория и передавать поручение анализа.
-          boundaries: {}
-          invariants:
-            I6: OS Windows 11
-            I7: OS Linux
-            I8: OS Mac
-      documentPath: .archiview/modules/dsh-adapter.yaml
-      files:
-        - path: .archiview/modules/dsh-adapter.yaml
-          hash: 000ed66698320d104164d9a156388a7652bcfe5b
+          hash: 5d6379aaaef33f9fe8a7a45e305449322f279089
           mode: "100644"
         - path: bridges/dsh/cordis.patch.yml
           hash: a16b4b6e64753685b9b6efb1c9c641ac6a2f34e9
@@ -641,11 +361,11 @@ publication:
           hash: acdde8ce2616a9d0f731b9e1f875c25fc5a2c0ec
           mode: "100644"
       sourceFiles: 1
-      fingerprint: 56edde1df927cb27b1442ebfdaf1f750e7152665debc585d7436ac549daf4a4b
+      fingerprint: 20a9fa40ab6a5f5ff19daecbb7aa564f21fe13a31cc4e06dc56b2eeee23e55b0
     facts:
-      - index: 37
+      - index: 41
         fact:
-          id: sha256:dec4709004eca66671746d8461f7d9dcf2324a77fcf8f8ff26e8698f99eb2076
+          id: sha256:e41dc6a333e7961230558a950bdcddd703ada0e0a76cb7a936eadec2814d4a97
           kind: file
           path: .archiview/modules/dsh-adapter.yaml
           start_line: 1
@@ -661,8 +381,10 @@ publication:
 
             extensions:
               archiview.roles: [plugin]
-            purpose: Создавать новый чат DeepSeek Harness в соответствующем
-            проекте или каталоге репозитория и передавать поручение анализа.
+            purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+            ArchiView на время активности плагина, создавать новый чат в
+            соответствующем проекте или каталоге репозитория и передавать
+            поручение анализа.
 
             boundaries: {}
 
@@ -670,7 +392,7 @@ publication:
               I6: OS Windows 11
               I7: OS Linux
               I8: OS Mac
-      - index: 86
+      - index: 89
         fact:
           id: sha256:bbbc214d06c20bfcfc1f99295dbb3931f90b407f0522efd6ab6c3cdfb99ef83f
           kind: file
@@ -681,7 +403,7 @@ publication:
             - insert:
                 - id: archiview-harness-bridge
                   name: archiview-harness-bridge
-      - index: 87
+      - index: 90
         fact:
           id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
           kind: file
@@ -744,7 +466,7 @@ publication:
                 return () => { void registration.then(close => close()).catch(error => ctx.logger?.warn(String(error))); };
               }, "archiview-harness");
             }
-      - index: 88
+      - index: 91
         fact:
           id: sha256:57f1647b89d8e2d61efa6f0a426cbabd341c9038eabd8c72e65d3539824a0213
           kind: file
@@ -760,12 +482,702 @@ publication:
               "files": ["host.mjs", "cordis.patch.yml"],
               "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
             }
-      - index: 215
+      - index: 230
         fact:
           id: sha256:e06635a98994f16065f49af0e6f2415f537fa6ffed3a7a8c256ce03b6d0b85a5
           kind: module
           path: bridges/dsh
           text: '{"contract":"documented","format":"yaml","sources":["bridges/dsh/host.ts"]}'
+  current:
+    metadata:
+      id: launch-79c5c319ff4856a430dc67e2014806a8767b305f5c1a1605e266e957ffcb98c9
+      digest: sha256:37a05bd036aac1c7ed49910180164901d7b9415d2a7cab0a8ef16e597010fef5
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-26T09:44:43.720Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 79c5c319ff4856a430dc67e2014806a8767b305f5c1a1605e266e957ffcb98c9
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+      baseRevision: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      observations:
+        architecture-change-view:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 853
+          grasp: 5
+          implementation: 1
+        archiview-distribution:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 392
+          grasp: 1
+          implementation: 3
+        archiview-skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 377
+          grasp: 2
+          implementation: 1
+        archiview-module-boundaries-skill:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 386
+          grasp: 2
+          implementation: 17
+          skillHistory:
+            since: 383
+            uncertainAt: 385
+            changedAt: 386
+        architecture-core:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 17
+          grasp: 1
+          implementation: 1
+        archiview-application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 465
+          grasp: 4
+          implementation: 21
+        archiview-http:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 400
+          grasp: 1
+          implementation: 4
+        archiview-codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 408
+          grasp: 2
+          implementation: 2
+        archiview-contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 1
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 405
+          grasp: 6
+          implementation: 6
+        dsh-client-panel:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 10
+          grasp: 1
+          implementation: 1
+        archiview-mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        archiview-project-location:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 395
+          grasp: 1
+          implementation: 9
+        archiview-reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 386
+          grasp: 1
+          implementation: 1
+        archiview-reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 3
+        archiview-node-runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 382
+          grasp: 1
+          implementation: 2
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 1
+          implementation: 12
+        archiview-snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 392
+          grasp: 1
+          implementation: 3
+        archiview-storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 15
+          grasp: 2
+          implementation: 4
+        architecture-tests:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 501
+          grasp: 1
+          implementation: 43
+        architecture-web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 388
+          grasp: 3
+          implementation: 1
+        archiview-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 418
+          grasp: 3
+          implementation: 2
+        prototype-smoke-1674b57d:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        prototype-smoke-9a3440c6:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        directory:.:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:scripts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:skills/module-boundaries:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+          grasp: 1
+          implementation: 1
+        directory:src/application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 11
+          grasp: 1
+          implementation: 1
+        directory:src/archiview:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src/contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:src/dsh:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/dsh/client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/project:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 10
+          grasp: 1
+          implementation: 1
+        directory:src/reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+          grasp: 1
+          implementation: 1
+        directory:src/runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src/storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:test:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:web/archiview:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 13
+          grasp: 1
+          implementation: 1
+        archiview-analyse:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 381
+          grasp: 4
+          implementation: 1
+        archiview-analyse-type:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-report-store:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-project-files:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-bridges:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 398
+          grasp: 7
+          implementation: 3
+        archiview-cli:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 391
+          grasp: 1
+          implementation: 13
+        archiview-cli-operation:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-framework:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 1
+        archiview-project-types:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 370
+          grasp: 1
+          implementation: 1
+        archiview-tools:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 371
+          grasp: 1
+          implementation: 2
+        archiview-analysis-service:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 406
+          grasp: 3
+          implementation: 20
+        archiview-file-service:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-host-bridge:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 378
+          grasp: 1
+          implementation: 3
+        archiview-web-api-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 377
+          grasp: 2
+          implementation: 3
+        archiview-module-presenter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 391
+          grasp: 2
+          implementation: 9
+        archiview-views:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 389
+          grasp: 2
+          implementation: 8
+        archiview-workspace-presenter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 379
+          grasp: 3
+          implementation: 7
+        archiview-file-watcher:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 377
+          grasp: 1
+          implementation: 1
+        archiview-git-changes:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 1
+          implementation: 7
+        archiview-git-changes-report:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-module-operations:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 416
+          grasp: 1
+          implementation: 10
+        archiview-project-context:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 376
+          grasp: 1
+          implementation: 2
+        archiview-module-access:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-module-review:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 394
+          grasp: 1
+          implementation: 13
+        archiview-module-relations:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 388
+          grasp: 2
+          implementation: 14
+        archiview-relation-model:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 372
+          grasp: 1
+          implementation: 4
+        archiview-grasp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-implementation:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 4
+          grasp: 1
+          implementation: 3
+        directory:storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 2
+          implementation: 2
+        directory:analyse/project-sources:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 2
+          implementation: 2
+        archiview-project-sources:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 1
+          grasp: 1
+          implementation: 1
+    module_index: 11
+    module:
+      directory: bridges/dsh
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: dsh-adapter
+
+          title: dsh
+
+          kind: module
+
+          extensions:
+            archiview.roles: [plugin]
+          purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+          ArchiView на время активности плагина, создавать новый чат в
+          соответствующем проекте или каталоге репозитория, передавать в него
+          поручение и запускать проверку изменений по событиям хода с правами
+          текущей сессии.
+
+          boundaries: {}
+
+          invariants:
+            I6: OS Windows 11
+            I7: OS Linux
+            I8: OS Mac
+        format: yaml
+        contract:
+          schema_version: 1
+          id: dsh-adapter
+          title: dsh
+          kind: module
+          extensions:
+            archiview.roles:
+              - plugin
+          purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+            время активности плагина, создавать новый чат в соответствующем
+            проекте или каталоге репозитория, передавать в него поручение и
+            запускать проверку изменений по событиям хода с правами текущей
+            сессии.
+          boundaries: {}
+          invariants:
+            I6: OS Windows 11
+            I7: OS Linux
+            I8: OS Mac
+      documentPath: .archiview/modules/dsh-adapter.yaml
+      files:
+        - path: .archiview/modules/dsh-adapter.yaml
+          hash: b899695aa5ae71de9c354a2b3cdfa83b4f213634
+          mode: "100644"
+        - path: bridges/dsh/cordis.patch.yml
+          hash: a16b4b6e64753685b9b6efb1c9c641ac6a2f34e9
+          mode: "100644"
+        - path: bridges/dsh/host.ts
+          hash: 707a9f7ebb718b4263ecd590f35b52f5187915e1
+          mode: "100644"
+        - path: bridges/dsh/package.json
+          hash: bcae6d85e8c1e6d452c15fa33a8a387d89b5d68e
+          mode: "100644"
+        - path: bridges/dsh/session-hooks.ts
+          hash: b3f2293b80a961e41a79a5642ed9041e4c0e513a
+          mode: "100644"
+      sourceFiles: 2
+      fingerprint: e5402567708ceae617c061508ce98390ff329397876ace435364a2c90d88ffe9
+    facts:
+      - index: 41
+        fact:
+          id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+          kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+            ArchiView на время активности плагина, создавать новый чат в
+            соответствующем проекте или каталоге репозитория, передавать в него
+            поручение и запускать проверку изменений по событиям хода с правами
+            текущей сессии.
+
+            boundaries: {}
+
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+      - index: 89
+        fact:
+          id: sha256:bbbc214d06c20bfcfc1f99295dbb3931f90b407f0522efd6ab6c3cdfb99ef83f
+          kind: file
+          path: bridges/dsh/cordis.patch.yml
+          start_line: 1
+          end_line: 4
+          text: |
+            - insert:
+                - id: archiview-harness-bridge
+                  name: archiview-harness-bridge
+      - index: 90
+        fact:
+          id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+          kind: file
+          path: bridges/dsh/host.ts
+          start_line: 1
+          end_line: 46
+          text: >
+            import path from "node:path";
+
+            import { registerHarness, type Adapter, type ProjectTarget } from
+            "../../web/web-backend/host-bridge/channel.js";
+
+
+            interface Workspace { id: string; path: string }
+
+            interface Services {
+              workspaceRegistry: { list(): Workspace[] };
+              sessionController: {
+                create(request: { sessionId: string; workspaceId?: string; cwd?: string }): Promise<{ sessionId: string }>;
+                prompt(request: { requestId: string; sessionId: string; mode: "queue"; content: { type: "text"; text: string }[] },
+                  signal: AbortSignal): Promise<{ accepted: boolean }>;
+              };
+            }
+
+
+            export function dshAdapter(ctx: Services): Adapter {
+              function workspace(target: ProjectTarget) {
+                const projects = ctx.workspaceRegistry.list();
+                for (const root of [target.repositoryRoot, target.workspaceRoot]) {
+                  const found = projects.find(project => path.relative(project.path, root) === "");
+                  if (found) return found;
+                }
+              }
+              return {
+                kind: "dsh", instance: String(process.pid),
+                async available() { return undefined; },
+                async start(job) {
+                  const project = workspace(job);
+                  const { sessionId } = await ctx.sessionController.create({ sessionId: "session-" + job.requestId,
+                    ...(project ? { workspaceId: project.id } : { cwd: job.repositoryRoot }) });
+                  const receipt = await ctx.sessionController.prompt({ requestId: job.requestId, sessionId, mode: "queue",
+                    content: [{ type: "text", text: job.prompt }] }, AbortSignal.timeout(45000));
+                  if (!receipt.accepted) throw new Error("DeepSeek Harness отклонил поручение");
+                  return sessionId;
+                },
+              };
+            }
+
+
+            export const name = "archiview-harness";
+
+            export const inject = ["workspaceRegistry", "sessionController"];
+
+            export function apply(ctx: Services & { effect(setup: () => () =>
+            void, label: string): unknown; logger?: {warn(message: string):
+            void} }) {
+              ctx.effect(() => {
+                const registration = registerHarness(dshAdapter(ctx));
+                void registration.catch(error => ctx.logger?.warn(String(error)));
+                return () => { void registration.then(close => close()).catch(error => ctx.logger?.warn(String(error))); };
+              }, "archiview-harness");
+            }
+      - index: 91
+        fact:
+          id: sha256:bb11e21fc99ebdaecbae6fef3187758beab84c3bfa44fbdbc1bbf14fde50f96d
+          kind: file
+          path: bridges/dsh/package.json
+          start_line: 1
+          end_line: 9
+          text: |
+            {
+              "name": "archiview-harness-bridge",
+              "version": "0.1.0",
+              "type": "module",
+              "main": "./host.mjs",
+              "files": ["host.mjs", "session-hooks.mjs", "cordis.patch.yml"],
+              "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+            }
+      - index: 92
+        fact:
+          id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+          kind: file
+          path: bridges/dsh/session-hooks.ts
+          start_line: 1
+          end_line: 71
+          text: >
+            import { randomUUID } from "node:crypto";
+
+            import path from "node:path";
+
+            import { within } from "../../framework/project/paths.js";
+
+
+            interface Session {
+              header: { id: string };
+              append(type: string, data: Record<string, unknown>): void;
+            }
+
+            interface Message { content: { type: string; text?: string }[] }
+
+            interface Turn { agent: { session: Session }; turn: number; signal:
+            AbortSignal }
+
+            interface Decision { kind: string; messages: Message[] }
+
+            interface Services {
+              workingDirectory: { ensure(agent: Turn["agent"], signal: AbortSignal): Promise<string> };
+              sandboxPolicy: { resolve(request: { session: Session }): unknown };
+              shell: {
+                resolve(request: {command: string; stdin: string; workdir: string; sandboxPolicy: unknown; signal: AbortSignal; timeoutMs: number}): unknown;
+                execute(spec: unknown): Promise<{ result(): Promise<{ exitCode: number | null; stdout: {text: string}; stderr: {text: string} }> }>;
+              };
+              logger: { warn(message: string): void };
+              on(point: "agent/pre-step", listener: (event: Turn & {messages: Message[]}, next: () => Promise<Decision>) => Promise<Decision>): void;
+              on(point: "agent/turn-stopping", listener: (event: Turn) => Promise<void>): void;
+            }
+
+
+            export const name = "archiview-session-hooks";
+
+            export const inject = ["shell", "workingDirectory",
+            "sandboxPolicy"];
+
+
+            /** The trusted profile supplies the command. DSH resolves its
+            permissions for each session. */
+
+            export function apply(ctx: Services, config: { repository: string;
+            command: string }) {
+              if (!path.isAbsolute(config.repository) || !config.command?.trim()) throw new Error("Укажите абсолютный путь repository и команду ArchiView");
+              async function run(point: "UserPromptSubmit" | "Stop", {agent, turn, signal}: Turn, prompt?: string) {
+                const cwd = await ctx.workingDirectory.ensure(agent, signal);
+                if (!within(config.repository, cwd)) return;
+                const session = agent.session;
+                const handlerId = "archiview:" + point;
+                session.append("hook/invoked", {turn, point, dialect:"codex", handlerId});
+                const start = performance.now();
+                let exitCode: number | null = null;
+                let diagnostic: string | undefined;
+                try {
+                  const spec = ctx.shell.resolve({command:config.command, workdir:cwd, signal, timeoutMs:600_000,
+                    sandboxPolicy:ctx.sandboxPolicy.resolve({session}),
+                    stdin:JSON.stringify({hook_event_name:point, session_id:session.header.id, turn_id:String(turn), cwd, prompt})});
+                  const result = await (await ctx.shell.execute(spec)).result();
+                  exitCode = result.exitCode;
+                  if (exitCode !== 0) throw new Error(result.stderr.text.trim() || "Код завершения " + exitCode);
+                  const output = JSON.parse(result.stdout.text);
+                  if (typeof output.systemMessage === "string") ctx.logger.warn(output.systemMessage);
+                  if (point === "UserPromptSubmit" && output.hookSpecificOutput?.hookEventName === point &&
+                      typeof output.hookSpecificOutput.additionalContext === "string") return output.hookSpecificOutput.additionalContext as string;
+                } catch (error) {
+                  diagnostic = "ArchiView: " + (error instanceof Error ? error.message : String(error));
+                  ctx.logger.warn(diagnostic);
+                  return diagnostic;
+                } finally {
+                  session.append("hook/result", {turn, point, handlerId, decision:"pass", durationMs:performance.now() - start,
+                    ...(exitCode !== null && {exitCode}), ...(diagnostic && {stderrSummary:diagnostic.slice(0, 1000)})});
+                }
+              }
+
+              ctx.on("agent/pre-step", async (event, next) => {
+                const decision = await next();
+                if (decision.kind !== "enter" || !event.messages.length) return decision;
+                const prompt = event.messages.flatMap(m => m.content).filter(b => b.type === "text").map(b => b.text).join("");
+                const text = await run("UserPromptSubmit", event, prompt);
+                if (!text) return decision;
+                const context = {id:randomUUID(), role:"user", source:{kind:"archiview"}, content:[{type:"text", text}]};
+                return {...decision, messages:[...decision.messages, context]};
+              });
+              ctx.on("agent/turn-stopping", async event => { await run("Stop", event); });
+            }
+      - index: 238
+        fact:
+          id: sha256:4c6e26c423324ec91a143aa43900f16c61a6135a94e93443bf61804b40814b35
+          kind: module
+          path: bridges/dsh
+          text: '{"contract":"documented","format":"yaml","sources":["bridges/dsh/host.ts","bridges/dsh/session-hooks.ts"]}'
 review_status:
   self:
     current:

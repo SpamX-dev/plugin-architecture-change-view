@@ -21,14 +21,16 @@ import { resolveWorkspaceRepository } from "../analyse/project/workspace.js";
 import { createScaffold } from "../module-operations/prototypes.js";
 import { listModuleFiles, getModuleContract, saveModuleContract, saveGitComparison } from "../module-operations/module-access.js";
 import { errorDetails } from "../node-errors.js";
+import { turnHook } from "./turn-hook.js";
 
 async function serve(workspace: SessionOperations & { root: string }, port: number, prepareWeb?: () => Promise<void>, history?: Awaited<ReturnType<typeof openProjectHistory>>) {
   await prepareWeb?.();
   const { createArchiViewHttpServer } = await import("../web/web-backend/web-service/http.js");
   const server = createArchiViewHttpServer(workspace);
   server.on("error", (error) => { process.stderr.write("ArchiView: " + error.message + "\n"); process.exitCode = 1; });
-  server.listen(port, "127.0.0.1", () => {
-    process.stdout.write("ArchiView Local: http://127.0.0.1:" + (server.address() as import("node:net").AddressInfo).port +
+  server.listenLocal(port, () => {
+    const address = server.address() as import("node:net").AddressInfo;
+    process.stdout.write("ArchiView Local: http://" + address.address + ":" + address.port +
       "\nProject: " + workspace.root + "\n");
     if (history) process.stdout.write("State: " + history.store.directory + "\n");
     if (history?.migration) process.stdout.write("History copied: " + history.migration.snapshots +
@@ -52,6 +54,8 @@ async function execute(prepareWeb?: () => Promise<void>) {
     "import-review": { type: "string" }, "build-report": { type: "boolean" },
     "save-comparison": { type: "boolean" }, "read-comparison": { type: "string" }, baseline: { type: "string" },
     "complete-analysis": { type: "string" },
+    "analysis-limitation": { type: "string" }, reason: { type: "string" },
+    "turn-hook": { type: "string" }, "review-turn": { type: "string" }, "dispatch-turn": { type: "string" }, wait: { type: "string" },
     "prepare-analysis": { type: "string" },
     "check-index": { type: "boolean" }, "export-review-input": { type: "string" }, "analysis-type": {type:"string"},
     output: { type: "string" }, dependencies: { type: "string" },
@@ -63,10 +67,35 @@ async function execute(prepareWeb?: () => Promise<void>) {
     "module-context": { type: "string" }, scaffold: { type: "string" },
   } });
   const root = values.root ?? process.cwd();
+  if (values.reason !== undefined && !values["analysis-limitation"]) throw new Error("--reason используется с --analysis-limitation");
+  if (values.wait !== undefined && values["review-turn"] === undefined) throw new Error("--wait используется с --review-turn");
+  const mode = (["turn-hook", "review-turn", "dispatch-turn"] as const).find(key => values[key] !== undefined);
+  if (mode && !values.help) {
+    const allowed = new Set(["root", "state-dir", mode, "port", ...(mode === "turn-hook" ? [] : ["repository", "wait"])]);
+    if (Object.keys(values).some(key => !allowed.has(key))) throw new Error("Выберите одну операцию анализа хода");
+    if (values["turn-hook"] !== undefined) {
+      let input = "";
+      process.stdin.setEncoding("utf8");
+      for await (const chunk of process.stdin) input += chunk;
+      const response = await turnHook(values["turn-hook"], JSON.parse(input), values.root, values["state-dir"]);
+      process.stdout.write(JSON.stringify(response) + "\n");
+    } else {
+      const wait = Number(values.wait ?? 0);
+      if (!Number.isSafeInteger(wait) || wait < 0 || wait > 3600) throw new Error("--wait принимает от 0 до 3600 секунд");
+      const workspace = await createWorkspaceSession({root, stateDirectory:values["state-dir"], initialRepository:values.repository});
+      try {
+        const session = await workspace.session(values.repository ?? ".", true);
+        const result = mode === "dispatch-turn" ? await session.turns.dispatchBatch(values[mode]!) :
+          await session.turns.review(values["review-turn"]!, wait);
+        process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+      } finally { await workspace.close(); }
+    }
+    return;
+  }
   const selection = { repository: values.repository, target: values.target };
   const moduleCommands = (["list-modules", "module-files", "module-relations", "build-relations", "get-contract", "write-contract", "inventory", "module-context", "scaffold", "save-comparison", "read-comparison"] as const)
     .filter(name => values[name] !== undefined);
-  const reportCommands = (["import-review", "build-report", "export-review-input", "complete-analysis", "prepare-analysis"] as const)
+  const reportCommands = (["import-review", "build-report", "export-review-input", "complete-analysis", "prepare-analysis", "analysis-limitation"] as const)
     .filter(name => values[name] !== undefined);
   if (!values.help && moduleCommands.length && (moduleCommands.length > 1 || values["check-index"] || reportCommands.length))
     throw new Error("Выберите одну операцию с модулем");
@@ -91,6 +120,9 @@ async function execute(prepareWeb?: () => Promise<void>) {
       "  --read-comparison ID                 Прочитать сохранённый отчёт об изменениях (JSON)\n" +
       "  --import-review FILE_OR_BUNDLE       Импортировать YAML review или прежний пакет\n" +
       "  --complete-analysis REQUEST_ID       Проверить и импортировать result.yaml запроса панели\n" +
+      "  --analysis-limitation ID --reason TEXT  Сохранить причину незавершённой проверки\n" +
+      "  --turn-hook codex|dsh                Обработать событие UserPromptSubmit или Stop из stdin\n" +
+      "  --review-turn ID [--wait SECONDS]    Запустить недостающие проверки хода и вернуть отчёты (JSON)\n" +
       "  --prepare-analysis REQUEST_ID        Повторить экспорт исходного снимка без зависимостей\n" +
       "  --export-review-input MODULE_ID --output FILE [--analysis-type grasp|implementation]\n" +
       "  --list-modules                       Проекты и модули выбранной рабочей папки (JSON)\n" +
@@ -167,7 +199,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
     const result = await checkPreparedIndex(await resolveWorkspaceRepository(root, values.repository ?? "."));
     process.stdout.write("Index verified: " + result.modules + " modules, " + result.reviews + " reviews\n");
   } else {
-    const batch = values["build-report"] || values["export-review-input"] || values["complete-analysis"] || values["prepare-analysis"];
+    const batch = values["build-report"] || values["export-review-input"] || values["complete-analysis"] || values["prepare-analysis"] || values["analysis-limitation"];
     const port = Number(values.port);
     if (!batch && (!Number.isInteger(port) || port < 0 || port > 65535)) throw new Error("--port must be between 0 and 65535");
     const workspace = await createWorkspaceSession({
@@ -177,6 +209,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
     // Batch commands operate on their explicit --root. A workspace container has no shared history.
     const session = await workspace.session(values.repository ?? ".", !(values["build-report"] || values["export-review-input"]));
     const { store, reports, analysis } = session;
+    if (values["analysis-limitation"]) await analysis.reportLimitation(values["analysis-limitation"], values.reason ?? "");
     if (values["build-report"] && session.startupComparison) {
       const saved = await store.saveComparison(session.startupComparison);
       process.stdout.write("Git comparison saved: " + saved.id + "\n");

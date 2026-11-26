@@ -23,6 +23,12 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
     throw new ApplicationError("INVALID_ARGUMENT", "Некорректный идентификатор репозитория");
   const selector = args.repository === undefined ? {} : { repository: args.repository };
   switch (method) {
+    case "getReviewSettings": return session.getReviewSettings(selector);
+    case "setReviewSetting":
+      if ((args.setting !== "autoAnalysis" && args.setting !== "codexHooks") || typeof args.enabled !== "boolean" ||
+          Object.keys(args).some(key => !["setting", "enabled", "repository"].includes(key)))
+        throw new ApplicationError("INVALID_ARGUMENT", "Укажите настройку и её новое значение");
+      return session.setReviewSetting({...selector, setting:args.setting, enabled:args.enabled});
     case "waitForChanges":
       if (typeof args.cursor !== "string" || !/^[a-f0-9-]{36}\.\d+\.\d+$/.test(args.cursor)) throw new ApplicationError("INVALID_ARGUMENT", "Некорректная версия наблюдения");
       return session.waitForChanges({ ...selector, cursor: args.cursor }, signal);

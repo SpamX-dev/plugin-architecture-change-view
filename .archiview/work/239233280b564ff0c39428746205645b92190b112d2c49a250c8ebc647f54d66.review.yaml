@@ -7433,3 +7433,1001 @@ entries:
     result_digest: sha256:0423fec343ecfb3279b440f7fd5c38cf398a4dfa59a50226ca25527cf8a7f8f7
     content_digest: sha256:b0c48a66faacc25488021d57f1423915465e9e3abacbf65721d0cb23f6c51cad
     registration_order: 878
+  - schema_version: 2
+    kind: review
+    module_id: archiview-bridges
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-70ed202d-bf16-43b1-968f-6b5aa7aecf40
+    check_hash: 0f72f67ce4a351a9e5d4278f2e41d9192bbbfa0d3d41c1f5143227c9474c0359
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-bridges
+      baseline: null
+      current:
+        exists: true
+        directory: bridges
+        self_digest: sha256:a78e9df6f57293ab2f0c09d66e0d372ba105cbd33de389b29d14b0755c5f181a
+        subtree_digest: sha256:89a0df190255624b214c77cbc94d0950eedabcb1d63bf2f5303677790d1bc766
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-bridges
+          directory: bridges
+          own_files: []
+          contract:
+            id: archiview-bridges
+            kind: group
+            purpose: Регистрировать работающие harness и создавать в выбранном хосте чат для
+              поручения ArchiView.
+            boundaries: {}
+            invariants:
+              I1: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex Desktop
+                и DeepSeek Harness.
+          children:
+            - module_id: archiview-codex
+              directory: bridges/codex
+              contract:
+                id: archiview-codex
+                kind: module
+                purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+                  подключения моста, создавать новый чат в проекте выбранного
+                  репозитория или рабочей папки и передавать поручение анализа.
+                boundaries: {}
+                invariants:
+                  I8: OS Windows 11
+                  I9: OS Linux
+                  I10: OS Mac
+              document_state: documented
+            - module_id: dsh-adapter
+              directory: bridges/dsh
+              contract:
+                id: dsh-adapter
+                kind: module
+                purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать поручения
+                  анализа в проект и запускать проверку изменений по событиям
+                  хода с правами текущей сессии.
+                boundaries: {}
+                invariants:
+                  I6: OS Windows 11
+                  I7: OS Linux
+                  I8: OS Mac
+              document_state: documented
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:cbc90ca4e33468849203687017fad666764458bd4290e8b1a5b84fe180d9ddbc
+      change_digest: sha256:34294cb0a3cb59fd4cc6dd8f2d0dfd4cbc2fc5aa0acf614619e5c18e954d2cd1
+    report:
+      schema_version: 1
+      id: review-70ed202d-bf16-43b1-968f-6b5aa7aecf40
+      module:
+        id: archiview-bridges
+        baseline_path: null
+        current_path: bridges
+      comparison:
+        baseline: null
+        current:
+          id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+          digest: sha256:39a4a7bdf6146072be5fc035f5d454ba93837241dc9d664a68f01e6ef79bf0c9
+      analysis:
+        created_at: 2026-11-26T08:58:45.099Z
+        analyzer:
+          name: archiview-grasp
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:7c176eacb351a62549698d1e19ade4b6bcdd7e98eb451d622495715c52f59423
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:b0d1465f81163c95f1e7ac1f2d49df8b5dc7b674237335edf230d9832bee75bb
+      observed:
+        baseline: null
+        current:
+          summary: Объединение включает два хостовых адаптера. В контракте DSH отсутствуют
+            гарантии регистрации работающего хоста и создания чата для
+            поручения.
+          responsibilities:
+            - text: Два непосредственных адаптера обслуживают разные хосты. Только контракт
+                Codex прямо обещает регистрацию и создание чата.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:652e3adc6f691d1aa4523c2ae7ac3fdebc7774595b78f764e8cf27384da67dc4
+                - snapshot: current
+                  fact_id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+                - snapshot: current
+                  fact_id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-bridges
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: violation
+          explanation: Codex обещает регистрацию и создание нового чата. Обещанную связь с
+            чатами DSH можно выполнить отправкой задания в существующий чат без
+            регистрации хоста.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:652e3adc6f691d1aa4523c2ae7ac3fdebc7774595b78f764e8cf27384da67dc4
+            - snapshot: current
+              fact_id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+            - snapshot: current
+              fact_id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-bridges
+            section: invariants
+            id: I1
+          subject: current
+          verdict: violation
+          explanation: Оба хоста представлены, доставка указана обоими. Для DSH контракт
+            не закрепляет регистрацию, которую I1 требует для обоих хостов.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:652e3adc6f691d1aa4523c2ae7ac3fdebc7774595b78f764e8cf27384da67dc4
+            - snapshot: current
+              fact_id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+            - snapshot: current
+              fact_id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+      findings:
+        - id: finding-1
+          kind: responsibility_gap
+          certainty: confirmed
+          severity: warning
+          lifecycle: unknown
+          summary: Регистрация DSH и создание его чата не закреплены за исполнителем
+          details: Контракт Codex охватывает обе операции для своего хоста. У dsh-adapter
+            заявлены связь с чатами, передача в проект и проверка хода.
+            Выполнение этих обещаний само по себе не обеспечивает регистрацию
+            работающего DSH и создание чата по поручению.
+          recommendation: Закрепить регистрацию DSH и создание нового проектного чата у
+            адаптера, сохранив его поручения и хуки.
+          clauses:
+            - snapshot: current
+              module_id: archiview-bridges
+              section: purpose
+              id: purpose
+            - snapshot: current
+              module_id: archiview-bridges
+              section: invariants
+              id: I1
+          evidence:
+            - snapshot: current
+              fact_id: sha256:652e3adc6f691d1aa4523c2ae7ac3fdebc7774595b78f764e8cf27384da67dc4
+            - snapshot: current
+              fact_id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+            - snapshot: current
+              fact_id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+      assessment:
+        current:
+          verdict: violation
+          summary: Объединение включает два хостовых адаптера. В контракте DSH отсутствуют
+            гарантии регистрации работающего хоста и создания чата для
+            поручения.
+        change:
+          verdict: not_applicable
+          summary: В экспорте зафиксирована только текущая сторона.
+      extensions:
+        archiview.grasp:
+          - moduleId: archiview-codex
+            role: executor
+            task: Зарегистрировать Codex Desktop и передать задание новому проектному чату.
+            assessment: Обе операции и время регистрации явно заданы.
+          - moduleId: dsh-adapter
+            role: executor
+            task: Связать DeepSeek Harness с ArchiView и передать задание в проект.
+            assessment: Передача поручения и хуки заявлены. Обещания зарегистрировать хост и
+              создать чат для задания не зафиксированы.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+          digest: sha256:39a4a7bdf6146072be5fc035f5d454ba93837241dc9d664a68f01e6ef79bf0c9
+      module:
+        id: archiview-bridges
+        baseline_path: null
+        current_path: bridges
+      analyzer:
+        name: archiview-grasp
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-bridges
+              section: purpose
+              id: purpose
+            text: Регистрировать работающие harness и создавать в выбранном хосте чат для
+              поручения ArchiView.
+          - reference:
+              snapshot: current
+              module_id: archiview-bridges
+              section: invariants
+              id: I1
+            text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+              Desktop и DeepSeek Harness.
+      instructions: 'Проверь композицию по собственному контракту и контрактам
+        непосредственных детей. Разбери детей по их роли относительно обещания
+        родителя. Для непосредственных исполнителей проверь совместимость их
+        контрактов между собой и способность вместе выполнить обещание родителя.
+        Для утилит (Pure Fabrication) укажи потребителя и задачу, проверь
+        достаточность и границы обязанностей. Для листа объясни неприменимость
+        композиции. Выводы и замечания обоснуй сохранёнными контрактами. Заполни
+        report.extensions["archiview.grasp"] для каждого непосредственного
+        ребёнка из экспорта: moduleId, role (executor или utility), task
+        (задача), assessment (результат сравнения). Для утилиты добавь consumers
+        со списком потребителей; если по контрактам потребитель не установлен,
+        укажи это в assessment и оставь пустой список. Для листа используй
+        пустой массив. Код, контракты предков и более глубоких потомков в эту
+        проверку не входят.'
+      context: {}
+      analysis_type: grasp
+      source_snapshot:
+        id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+        digest: sha256:fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T08:58:39.944Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:b0d1465f81163c95f1e7ac1f2d49df8b5dc7b674237335edf230d9832bee75bb
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+      digest: sha256:39a4a7bdf6146072be5fc035f5d454ba93837241dc9d664a68f01e6ef79bf0c9
+      kind: working
+      complete: true
+      modules:
+        - directory: bridges
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-bridges
+
+              title: Bridges
+
+              kind: group
+
+              extensions:
+                archiview.roles: [domain]
+              purpose: Регистрировать работающие harness и создавать в выбранном
+              хосте чат для поручения ArchiView.
+
+              boundaries: {}
+
+              invariants:
+                I1: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex Desktop и DeepSeek Harness.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-bridges
+              title: Bridges
+              kind: group
+              extensions:
+                archiview.roles:
+                  - domain
+              purpose: Регистрировать работающие harness и создавать в выбранном хосте чат для
+                поручения ArchiView.
+              boundaries: {}
+              invariants:
+                I1: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex Desktop
+                  и DeepSeek Harness.
+          documentPath: .archiview/modules/archiview-bridges.yaml
+          files:
+            - path: .archiview/modules/archiview-bridges.yaml
+              hash: decebbfc4b831133443cf266266d266bc1ad5888
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:3628b0691bf71e4588d9ab1d6ef2ef0ba3667d452d1d7c6fe1b54e8b62f46848
+        - directory: bridges/codex
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-codex
+
+              title: Codex
+
+              kind: module
+
+              extensions:
+                archiview.roles: [plugin]
+              purpose: Регистрировать работающий экземпляр Codex Desktop в
+              ArchiView на время подключения моста, создавать новый чат в
+              проекте выбранного репозитория или рабочей папки и передавать
+              поручение анализа.
+
+              boundaries: {}
+
+              invariants:
+                I8: OS Windows 11
+                I9: OS Linux
+                I10: OS Mac
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-codex
+              title: Codex
+              kind: module
+              extensions:
+                archiview.roles:
+                  - plugin
+              purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+                подключения моста, создавать новый чат в проекте выбранного
+                репозитория или рабочей папки и передавать поручение анализа.
+              boundaries: {}
+              invariants:
+                I8: OS Windows 11
+                I9: OS Linux
+                I10: OS Mac
+          documentPath: .archiview/modules/archiview-codex.yaml
+          files:
+            - path: .archiview/modules/archiview-codex.yaml
+              hash: 860025a26a7c43e0692a3514aec755c787bde833
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:82a2cc8a5befa47914151305b5a272483e1909967a10dde3824cf5e3eaddf9c3
+        - directory: bridges/dsh
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-adapter
+
+              title: dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [plugin]
+              purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать
+              поручения анализа в проект и запускать проверку изменений по
+              событиям хода с правами текущей сессии.
+
+              boundaries: {}
+
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-adapter
+              title: dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - plugin
+              purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать поручения
+                анализа в проект и запускать проверку изменений по событиям хода
+                с правами текущей сессии.
+              boundaries: {}
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+          documentPath: .archiview/modules/dsh-adapter.yaml
+          files:
+            - path: .archiview/modules/dsh-adapter.yaml
+              hash: 771a2f62831e9c8800a59ab59d4afffe67877252
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:9ff9b4a64a914e2c084d026511d9622845c3897062884e688383a34e8948436c
+      facts:
+        - kind: file
+          path: .archiview/modules/archiview-bridges.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-bridges
+
+            title: Bridges
+
+            kind: group
+
+            extensions:
+              archiview.roles: [domain]
+            purpose: Регистрировать работающие harness и создавать в выбранном
+            хосте чат для поручения ArchiView.
+
+            boundaries: {}
+
+            invariants:
+              I1: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex Desktop и DeepSeek Harness.
+          id: sha256:652e3adc6f691d1aa4523c2ae7ac3fdebc7774595b78f764e8cf27384da67dc4
+        - kind: file
+          path: .archiview/modules/archiview-codex.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: archiview-codex
+
+            title: Codex
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Регистрировать работающий экземпляр Codex Desktop в
+            ArchiView на время подключения моста, создавать новый чат в проекте
+            выбранного репозитория или рабочей папки и передавать поручение
+            анализа.
+
+            boundaries: {}
+
+            invariants:
+              I8: OS Windows 11
+              I9: OS Linux
+              I10: OS Mac
+          id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+        - kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать
+            поручения анализа в проект и запускать проверку изменений по
+            событиям хода с правами текущей сессии.
+
+            boundaries: {}
+
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+          id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-bridges:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 395
+          grasp: 4
+          implementation: 3
+      scope_digest: sha256:7f33bd45c64092bfc33f5a829ddfd6219cd5ae2e5978b0e59d3afbd5c3363fa6
+    input_digest: sha256:0b1f43c933b0ba2176c363823730af369aeae51b46fb987f063beb2e350fb20c
+    result_digest: sha256:7daf0d42b67cfa45bb0e88511e5d227ff68f65a3c4c5b4364973656dbc63018d
+    content_digest: sha256:4f1e182023e1eb8c681a55e3398cd64b08ca3ae4b8dd635de9cab9edffff26bb
+    registration_order: 952
+  - schema_version: 2
+    kind: review
+    module_id: archiview-bridges
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-8971bfb1-2e91-46dc-8e1e-72ae349b64d0
+    check_hash: 77f1649c66f06c03e84839bdbcff66ce17d8a38cc32bd959dda49a947347c29b
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-bridges
+      baseline: null
+      current:
+        exists: true
+        directory: bridges
+        self_digest: sha256:a78e9df6f57293ab2f0c09d66e0d372ba105cbd33de389b29d14b0755c5f181a
+        subtree_digest: sha256:5b1e6ecdefa6efd65ff8a743b6f76f91403a6798728905edc4e463f3f8201680
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-bridges
+          directory: bridges
+          own_files: []
+          contract:
+            id: archiview-bridges
+            kind: group
+            purpose: Регистрировать работающие harness и создавать в выбранном хосте чат для
+              поручения ArchiView.
+            boundaries: {}
+            invariants:
+              I1: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex Desktop
+                и DeepSeek Harness.
+          children:
+            - module_id: archiview-codex
+              directory: bridges/codex
+              contract:
+                id: archiview-codex
+                kind: module
+                purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+                  подключения моста, создавать новый чат в проекте выбранного
+                  репозитория или рабочей папки и передавать поручение анализа.
+                boundaries: {}
+                invariants:
+                  I8: OS Windows 11
+                  I9: OS Linux
+                  I10: OS Mac
+              document_state: documented
+            - module_id: dsh-adapter
+              directory: bridges/dsh
+              contract:
+                id: dsh-adapter
+                kind: module
+                purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+                  время активности плагина, создавать новый чат в
+                  соответствующем проекте или каталоге репозитория, передавать в
+                  него поручение и запускать проверку изменений по событиям хода
+                  с правами текущей сессии.
+                boundaries: {}
+                invariants:
+                  I6: OS Windows 11
+                  I7: OS Linux
+                  I8: OS Mac
+              document_state: documented
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:6e8b98446f7ee52509b92a29b4665a3284a41c93e4266edb323b53a75336d842
+      change_digest: sha256:30b841583fcbfcf6b6cb45478d7e359185262c43ae6db583585c0f02e54f6f85
+    report:
+      schema_version: 1
+      id: review-8971bfb1-2e91-46dc-8e1e-72ae349b64d0
+      module:
+        id: archiview-bridges
+        baseline_path: null
+        current_path: bridges
+      comparison:
+        baseline: null
+        current:
+          id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+          digest: sha256:d23a69ed37314d558d303b9938d1ca0724fcb0aedfcebc715162577171fcf85a
+      analysis:
+        created_at: 2026-11-26T09:12:57.974Z
+        analyzer:
+          name: archiview-grasp
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:f51008f9d463c5a90a1495efafe10e015eb1a210acf07a6573e9999c0a1a9c0e
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:f59fbbb3dc4c57a2f9641d77ae032e19c8c9b76bc71571b651b2326bc6a3ec23
+      observed:
+        baseline: null
+        current:
+          summary: Два непосредственных модуля распределяют регистрацию хоста, открытие
+            чата и отправку поручения по целевым средам.
+          responsibilities:
+            - text: Объединяет адаптеры Codex Desktop и DeepSeek Harness для регистрации и
+                доставки поручений в новые чаты.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:652e3adc6f691d1aa4523c2ae7ac3fdebc7774595b78f764e8cf27384da67dc4
+                - snapshot: current
+                  fact_id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+                - snapshot: current
+                  fact_id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-bridges
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Оба непосредственных ребёнка явно обещают регистрировать работающий
+            экземпляр своей среды, открывать новый чат в соответствующем проекте
+            или каталоге и передавать поручение.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:652e3adc6f691d1aa4523c2ae7ac3fdebc7774595b78f764e8cf27384da67dc4
+            - snapshot: current
+              fact_id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+            - snapshot: current
+              fact_id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-bridges
+            section: invariants
+            id: I1
+          subject: current
+          verdict: consistent
+          explanation: Контракты называют оба обязательных хоста. Регистрация и доставка в
+            новый чат закреплены за адаптером каждой соответствующей среды.
+            Обработка событий хода в DSH совместима с этими обязательствами.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:652e3adc6f691d1aa4523c2ae7ac3fdebc7774595b78f764e8cf27384da67dc4
+            - snapshot: current
+              fact_id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+            - snapshot: current
+              fact_id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Композиция покрывает родительские purpose и I1. У каждого адаптера
+            указан свой хост и полный набор требуемых для него операций.
+        change:
+          verdict: not_applicable
+          summary: Экспорт содержит текущий срез. Базового снимка для оценки изменения
+            нет.
+      extensions:
+        archiview.grasp:
+          - moduleId: archiview-codex
+            role: executor
+            task: Регистрировать Codex Desktop и передавать поручение в новый проектный чат.
+            assessment: Объявлены регистрация на время подключения, создание нового чата и
+              передача в него поручения.
+          - moduleId: dsh-adapter
+            role: executor
+            task: Регистрировать DeepSeek Harness и передавать поручение в чат выбранного
+              проекта.
+            assessment: Объявлены регистрация на время активности, создание нового чата,
+              передача поручения и отдельная обработка событий хода.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+          digest: sha256:d23a69ed37314d558d303b9938d1ca0724fcb0aedfcebc715162577171fcf85a
+      module:
+        id: archiview-bridges
+        baseline_path: null
+        current_path: bridges
+      analyzer:
+        name: archiview-grasp
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-bridges
+              section: purpose
+              id: purpose
+            text: Регистрировать работающие harness и создавать в выбранном хосте чат для
+              поручения ArchiView.
+          - reference:
+              snapshot: current
+              module_id: archiview-bridges
+              section: invariants
+              id: I1
+            text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+              Desktop и DeepSeek Harness.
+      instructions: 'Проверь композицию по собственному контракту и контрактам
+        непосредственных детей. Разбери детей по их роли относительно обещания
+        родителя. Для непосредственных исполнителей проверь совместимость их
+        контрактов между собой и способность вместе выполнить обещание родителя.
+        Для утилит (Pure Fabrication) укажи потребителя и задачу, проверь
+        достаточность и границы обязанностей. Для листа объясни неприменимость
+        композиции. Выводы и замечания обоснуй сохранёнными контрактами. Заполни
+        report.extensions["archiview.grasp"] для каждого непосредственного
+        ребёнка из экспорта: moduleId, role (executor или utility), task
+        (задача), assessment (результат сравнения). Для утилиты добавь consumers
+        со списком потребителей; если по контрактам потребитель не установлен,
+        укажи это в assessment и оставь пустой список. Для листа используй
+        пустой массив. Код, контракты предков и более глубоких потомков в эту
+        проверку не входят.'
+      context: {}
+      analysis_type: grasp
+      source_snapshot:
+        id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+        digest: sha256:c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T09:12:57.840Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:f59fbbb3dc4c57a2f9641d77ae032e19c8c9b76bc71571b651b2326bc6a3ec23
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+      digest: sha256:d23a69ed37314d558d303b9938d1ca0724fcb0aedfcebc715162577171fcf85a
+      kind: working
+      complete: true
+      modules:
+        - directory: bridges
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-bridges
+
+              title: Bridges
+
+              kind: group
+
+              extensions:
+                archiview.roles: [domain]
+              purpose: Регистрировать работающие harness и создавать в выбранном
+              хосте чат для поручения ArchiView.
+
+              boundaries: {}
+
+              invariants:
+                I1: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex Desktop и DeepSeek Harness.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-bridges
+              title: Bridges
+              kind: group
+              extensions:
+                archiview.roles:
+                  - domain
+              purpose: Регистрировать работающие harness и создавать в выбранном хосте чат для
+                поручения ArchiView.
+              boundaries: {}
+              invariants:
+                I1: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex Desktop
+                  и DeepSeek Harness.
+          documentPath: .archiview/modules/archiview-bridges.yaml
+          files:
+            - path: .archiview/modules/archiview-bridges.yaml
+              hash: decebbfc4b831133443cf266266d266bc1ad5888
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:3628b0691bf71e4588d9ab1d6ef2ef0ba3667d452d1d7c6fe1b54e8b62f46848
+        - directory: bridges/codex
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-codex
+
+              title: Codex
+
+              kind: module
+
+              extensions:
+                archiview.roles: [plugin]
+              purpose: Регистрировать работающий экземпляр Codex Desktop в
+              ArchiView на время подключения моста, создавать новый чат в
+              проекте выбранного репозитория или рабочей папки и передавать
+              поручение анализа.
+
+              boundaries: {}
+
+              invariants:
+                I8: OS Windows 11
+                I9: OS Linux
+                I10: OS Mac
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-codex
+              title: Codex
+              kind: module
+              extensions:
+                archiview.roles:
+                  - plugin
+              purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+                подключения моста, создавать новый чат в проекте выбранного
+                репозитория или рабочей папки и передавать поручение анализа.
+              boundaries: {}
+              invariants:
+                I8: OS Windows 11
+                I9: OS Linux
+                I10: OS Mac
+          documentPath: .archiview/modules/archiview-codex.yaml
+          files:
+            - path: .archiview/modules/archiview-codex.yaml
+              hash: 860025a26a7c43e0692a3514aec755c787bde833
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:82a2cc8a5befa47914151305b5a272483e1909967a10dde3824cf5e3eaddf9c3
+        - directory: bridges/dsh
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-adapter
+
+              title: dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [plugin]
+              purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+              ArchiView на время активности плагина, создавать новый чат в
+              соответствующем проекте или каталоге репозитория, передавать в
+              него поручение и запускать проверку изменений по событиям хода с
+              правами текущей сессии.
+
+              boundaries: {}
+
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-adapter
+              title: dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - plugin
+              purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+                время активности плагина, создавать новый чат в соответствующем
+                проекте или каталоге репозитория, передавать в него поручение и
+                запускать проверку изменений по событиям хода с правами текущей
+                сессии.
+              boundaries: {}
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+          documentPath: .archiview/modules/dsh-adapter.yaml
+          files:
+            - path: .archiview/modules/dsh-adapter.yaml
+              hash: b899695aa5ae71de9c354a2b3cdfa83b4f213634
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:8a38951741364b56ed0fd123571a2521b64cab8ff716064c7029e14e933fd106
+      facts:
+        - kind: file
+          path: .archiview/modules/archiview-bridges.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-bridges
+
+            title: Bridges
+
+            kind: group
+
+            extensions:
+              archiview.roles: [domain]
+            purpose: Регистрировать работающие harness и создавать в выбранном
+            хосте чат для поручения ArchiView.
+
+            boundaries: {}
+
+            invariants:
+              I1: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex Desktop и DeepSeek Harness.
+          id: sha256:652e3adc6f691d1aa4523c2ae7ac3fdebc7774595b78f764e8cf27384da67dc4
+        - kind: file
+          path: .archiview/modules/archiview-codex.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: archiview-codex
+
+            title: Codex
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Регистрировать работающий экземпляр Codex Desktop в
+            ArchiView на время подключения моста, создавать новый чат в проекте
+            выбранного репозитория или рабочей папки и передавать поручение
+            анализа.
+
+            boundaries: {}
+
+            invariants:
+              I8: OS Windows 11
+              I9: OS Linux
+              I10: OS Mac
+          id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+        - kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+            ArchiView на время активности плагина, создавать новый чат в
+            соответствующем проекте или каталоге репозитория, передавать в него
+            поручение и запускать проверку изменений по событиям хода с правами
+            текущей сессии.
+
+            boundaries: {}
+
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+          id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-bridges:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 398
+          grasp: 7
+          implementation: 3
+      scope_digest: sha256:bcc67b15e170ea14dccd522c51da5f00d3c791f4ae49a257a254691b38d14dd9
+    input_digest: sha256:76f069a640c66d883e7a5cf513cfe04bfe79ce67ac24b944b50fedcc3765c26d
+    result_digest: sha256:7b0e8d6726d2947a508e55e949f832a272a65cd8bddf50c1d0f41c0bc0036829
+    content_digest: sha256:5d16df65e665f73ddac1ee9c8546170ab449611dd7dd0efca90bd42ba0f93951
+    registration_order: 980

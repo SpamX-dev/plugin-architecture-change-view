@@ -1,6 +1,6 @@
 import type { ComparisonView, ModuleSummary } from "../types.js";
-import { moduleFindingCount, treeFindingCounts } from "../module-presenter/findings.js";
-import { treeParents } from "../module-presenter/module-path.js";
+import { moduleFindingCount, treeFindingCounts } from "./tree-findings.js";
+import { treeParents } from "./tree-paths.js";
 import { moduleAnalysisStatus } from "../views/review-status.js";
 import { createTreeView, type Filter, type ModuleRow, type TreeSection } from "../views/module-tree.js";
 

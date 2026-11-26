@@ -4,6 +4,7 @@ import type { ClauseNavigation, ModulePresenter } from "../module-presenter/modu
 import { byId, el, icon, renderFailure } from "../views/dom.js";
 import { createModuleTree } from "./module-tree.js";
 import { renderTimeline, timelineDate } from "./timeline.js";
+import { openReviewSettings } from "./review-settings.js";
 
 interface Selection {
   target?: string;
@@ -84,6 +85,7 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
     const sameRepository = current?.root === view.root;
     card.setRepository(view.root, sameRepository);
     current = view;
+    byId("project-settings").disabled = false;
     statusLoaded = false; reviewError = undefined;
     currentTarget = view.target.id;
     byId("new-prototype").hidden = Boolean(view.published) || currentTarget !== "current";
@@ -154,6 +156,7 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
     refreshing = true;
     card.invalidate();
     const button = byId("refresh");
+    byId("project-settings").disabled = true;
     button.disabled = true;
     byId("timeline").disabled = true;
     if (switching) {
@@ -190,6 +193,7 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
         refreshing = false;
         card.renderAnalysisControls();
         button.disabled = false; button.classList.remove("is-loading");
+        byId("project-settings").disabled = !current || Boolean(switching && current.workspace?.repository !== repository);
         byId("timeline").value = currentTarget;
         byId("timeline").disabled = !current || Boolean(current.published);
       }
@@ -197,6 +201,7 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
   }
 
   byId("refresh").prepend(icon("refresh"));
+  byId("project-settings").onclick = () => { if (current) openReviewSettings(client, current); };
   byId("refresh").addEventListener("click", () => refresh());
   byId("timeline").addEventListener("change", (event) => {
     if ((event.target as HTMLInputElement | HTMLSelectElement).value === "load-earlier") {

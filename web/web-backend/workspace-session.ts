@@ -100,6 +100,8 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
     return published;
   }
   const operations: SessionOperations = {
+    async getReviewSettings(args) { return (await open(selection(args.repository))).getReviewSettings(args); },
+    async setReviewSetting(args) { return (await open(selection(args.repository))).setReviewSetting(args); },
     async getComparison(args = {}) {
       const selected = args.repository ?? initialRepository;
       if (!repositories.includes(".") || (selected !== undefined && !repositories.includes(selected))) {

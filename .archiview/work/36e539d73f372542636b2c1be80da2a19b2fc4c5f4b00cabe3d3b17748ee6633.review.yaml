@@ -47327,3 +47327,1682 @@ entries:
     result_digest: sha256:74dcb16ee29bd8743b5ac1d5192d401ce65050c102f9fa74d0cbf577bc7f2285
     content_digest: sha256:54e0130d3499cccf9183089f32d842109c5897d849a385cfbf8f5c81ec80aea6
     registration_order: 882
+  - schema_version: 2
+    kind: review
+    module_id: dsh-adapter
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-23ec59b0-327f-4da0-b691-b1e58425a851
+    check_hash: 7032b0f462360370fb1d7aad4e82fc2140c447e8d85057250ad8f46ad2e246e6
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: dsh-adapter
+      baseline: null
+      current:
+        exists: true
+        directory: bridges/dsh
+        self_digest: sha256:8fcd90b38323c98ed84292963eb45b8c88f75e4c19eb07380dd19a49dd7228fc
+        subtree_digest: sha256:d67ff582e072c4be16340eae5b1a1cd8e0da6e98b3e4328b797aa5fcfd82f6d1
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: dsh-adapter
+          directory: bridges/dsh
+          own_files:
+            - path: bridges/dsh/host.ts
+              digest: sha256:3d4f01ff25e7c1984390011c69312335adbcdca3c4232a60fd308278fe7ba85b
+              normalization: text-lf/v1
+            - path: bridges/dsh/session-hooks.ts
+              digest: sha256:e3f31050aba834f44aeff098fda8d5270698e87d8deb67f7538823a78787f596
+              normalization: text-lf/v1
+          contract:
+            id: dsh-adapter
+            kind: module
+            purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать поручения
+              анализа в проект и запускать проверку изменений по событиям хода с
+              правами текущей сессии.
+            boundaries: {}
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:7108d76177f73705b89921937f297b94aa68e0c5bfb011a8aa9ea158f69e4d3d
+      change_digest: sha256:0b38ba6dd579b6c482a568c7ec818a9b44a1b8dee0c06afbe26bef446eff0aa0
+    report:
+      schema_version: 1
+      id: review-23ec59b0-327f-4da0-b691-b1e58425a851
+      module:
+        id: dsh-adapter
+        baseline_path: null
+        current_path: bridges/dsh
+      comparison:
+        baseline: null
+        current:
+          id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+          digest: sha256:b6756b7cbf4694fd008e0b0a852166a5b72d3a3a6612f964c80d60117f6084c4
+      analysis:
+        created_at: 2026-11-26T08:58:50.104Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:305e6853c0b389caa85d8867243f3ce4bb331fc041b9d97ccbf384f9a09d5663
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:30a263e6663984f1e831baf42855232b3b43ed12df442876f680d437cb650e5d
+      observed:
+        baseline: null
+        current:
+          summary: Адаптер регистрирует экземпляр DSH, создаёт сессию в проекте, передаёт
+            поручение и выполняет проектную проверку от имени текущей сессии.
+            Совместимость трёх ОС оценена статически.
+          responsibilities:
+            - text: host.ts выбирает рабочее пространство, передаёт текст в очередь новой
+                сессии и снимает регистрацию при остановке.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - text: session-hooks.ts переводит pre-step и turn-stopping в события CLI,
+                передаёт cwd, идентификаторы и политику текущей сессии,
+                сохраняет диагностику.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: host.ts регистрирует адаптер, выбирает проект по
+            repositoryRoot/workspaceRoot и через create/prompt получает
+            подтверждение. session-hooks.ts фильтрует cwd и вызывает
+            shell.resolve с sandboxPolicy.resolve({session}) для обоих событий.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - snapshot: current
+              fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I6
+          subject: current
+          verdict: consistent
+          explanation: На Windows адаптер делегирует обработку путей node:path и
+            исполнение команды сервису DSH с workdir и sandboxPolicy.
+            Регистрация использует PID процесса и API хоста.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - snapshot: current
+              fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I7
+          subject: current
+          verdict: consistent
+          explanation: Для Linux те же операции опираются на node:path, сигналы отмены и
+            сервисы DSH. Жёстко заданных команд Windows и букв дисков в
+            исходниках нет.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - snapshot: current
+              fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+        - id: check-4
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I8
+          subject: current
+          verdict: consistent
+          explanation: Для macOS разрешение абсолютного пути, выбор проекта, запуск shell
+            и получение результата выполняют Node и интерфейсы DSH. Обе точки
+            входа используют общий путь исполнения.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - snapshot: current
+              fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Адаптер регистрирует экземпляр DSH, создаёт сессию в проекте, передаёт
+            поручение и выполняет проектную проверку от имени текущей сессии.
+            Совместимость трёх ОС оценена статически.
+        change:
+          verdict: not_applicable
+          summary: В экспорте зафиксирована только текущая сторона.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+          digest: sha256:b6756b7cbf4694fd008e0b0a852166a5b72d3a3a6612f964c80d60117f6084c4
+      module:
+        id: dsh-adapter
+        baseline_path: null
+        current_path: bridges/dsh
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: purpose
+              id: purpose
+            text: Связывать ArchiView с чатами DeepSeek Harness, передавать поручения
+              анализа в проект и запускать проверку изменений по событиям хода с
+              правами текущей сессии.
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I6
+            text: OS Windows 11
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I7
+            text: OS Linux
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I8
+            text: OS Mac
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+        digest: sha256:fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T08:58:50.026Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:30a263e6663984f1e831baf42855232b3b43ed12df442876f680d437cb650e5d
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+      digest: sha256:b6756b7cbf4694fd008e0b0a852166a5b72d3a3a6612f964c80d60117f6084c4
+      kind: working
+      complete: true
+      modules:
+        - directory: bridges/dsh
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-adapter
+
+              title: dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [plugin]
+              purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать
+              поручения анализа в проект и запускать проверку изменений по
+              событиям хода с правами текущей сессии.
+
+              boundaries: {}
+
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-adapter
+              title: dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - plugin
+              purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать поручения
+                анализа в проект и запускать проверку изменений по событиям хода
+                с правами текущей сессии.
+              boundaries: {}
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+          documentPath: .archiview/modules/dsh-adapter.yaml
+          files:
+            - path: .archiview/modules/dsh-adapter.yaml
+              hash: 771a2f62831e9c8800a59ab59d4afffe67877252
+              mode: "100644"
+            - path: bridges/dsh/host.ts
+              hash: 707a9f7ebb718b4263ecd590f35b52f5187915e1
+              mode: "100644"
+            - path: bridges/dsh/session-hooks.ts
+              hash: b3f2293b80a961e41a79a5642ed9041e4c0e513a
+              mode: "100644"
+          sourceFiles: 2
+          fingerprint: sha256:24a6957070ac3f349390552dab32c52ba86b470ead0f7fb8f1638e3190aabbb6
+      facts:
+        - id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+          kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать
+            поручения анализа в проект и запускать проверку изменений по
+            событиям хода с правами текущей сессии.
+
+            boundaries: {}
+
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+        - id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+          kind: file
+          path: bridges/dsh/host.ts
+          start_line: 1
+          end_line: 46
+          text: >
+            import path from "node:path";
+
+            import { registerHarness, type Adapter, type ProjectTarget } from
+            "../../web/web-backend/host-bridge/channel.js";
+
+
+            interface Workspace { id: string; path: string }
+
+            interface Services {
+              workspaceRegistry: { list(): Workspace[] };
+              sessionController: {
+                create(request: { sessionId: string; workspaceId?: string; cwd?: string }): Promise<{ sessionId: string }>;
+                prompt(request: { requestId: string; sessionId: string; mode: "queue"; content: { type: "text"; text: string }[] },
+                  signal: AbortSignal): Promise<{ accepted: boolean }>;
+              };
+            }
+
+
+            export function dshAdapter(ctx: Services): Adapter {
+              function workspace(target: ProjectTarget) {
+                const projects = ctx.workspaceRegistry.list();
+                for (const root of [target.repositoryRoot, target.workspaceRoot]) {
+                  const found = projects.find(project => path.relative(project.path, root) === "");
+                  if (found) return found;
+                }
+              }
+              return {
+                kind: "dsh", instance: String(process.pid),
+                async available() { return undefined; },
+                async start(job) {
+                  const project = workspace(job);
+                  const { sessionId } = await ctx.sessionController.create({ sessionId: "session-" + job.requestId,
+                    ...(project ? { workspaceId: project.id } : { cwd: job.repositoryRoot }) });
+                  const receipt = await ctx.sessionController.prompt({ requestId: job.requestId, sessionId, mode: "queue",
+                    content: [{ type: "text", text: job.prompt }] }, AbortSignal.timeout(45000));
+                  if (!receipt.accepted) throw new Error("DeepSeek Harness отклонил поручение");
+                  return sessionId;
+                },
+              };
+            }
+
+
+            export const name = "archiview-harness";
+
+            export const inject = ["workspaceRegistry", "sessionController"];
+
+            export function apply(ctx: Services & { effect(setup: () => () =>
+            void, label: string): unknown; logger?: {warn(message: string):
+            void} }) {
+              ctx.effect(() => {
+                const registration = registerHarness(dshAdapter(ctx));
+                void registration.catch(error => ctx.logger?.warn(String(error)));
+                return () => { void registration.then(close => close()).catch(error => ctx.logger?.warn(String(error))); };
+              }, "archiview-harness");
+            }
+        - id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+          kind: file
+          path: bridges/dsh/session-hooks.ts
+          start_line: 1
+          end_line: 71
+          text: >
+            import { randomUUID } from "node:crypto";
+
+            import path from "node:path";
+
+            import { within } from "../../framework/project/paths.js";
+
+
+            interface Session {
+              header: { id: string };
+              append(type: string, data: Record<string, unknown>): void;
+            }
+
+            interface Message { content: { type: string; text?: string }[] }
+
+            interface Turn { agent: { session: Session }; turn: number; signal:
+            AbortSignal }
+
+            interface Decision { kind: string; messages: Message[] }
+
+            interface Services {
+              workingDirectory: { ensure(agent: Turn["agent"], signal: AbortSignal): Promise<string> };
+              sandboxPolicy: { resolve(request: { session: Session }): unknown };
+              shell: {
+                resolve(request: {command: string; stdin: string; workdir: string; sandboxPolicy: unknown; signal: AbortSignal; timeoutMs: number}): unknown;
+                execute(spec: unknown): Promise<{ result(): Promise<{ exitCode: number | null; stdout: {text: string}; stderr: {text: string} }> }>;
+              };
+              logger: { warn(message: string): void };
+              on(point: "agent/pre-step", listener: (event: Turn & {messages: Message[]}, next: () => Promise<Decision>) => Promise<Decision>): void;
+              on(point: "agent/turn-stopping", listener: (event: Turn) => Promise<void>): void;
+            }
+
+
+            export const name = "archiview-session-hooks";
+
+            export const inject = ["shell", "workingDirectory",
+            "sandboxPolicy"];
+
+
+            /** The trusted profile supplies the command. DSH resolves its
+            permissions for each session. */
+
+            export function apply(ctx: Services, config: { repository: string;
+            command: string }) {
+              if (!path.isAbsolute(config.repository) || !config.command?.trim()) throw new Error("Укажите абсолютный путь repository и команду ArchiView");
+              async function run(point: "UserPromptSubmit" | "Stop", {agent, turn, signal}: Turn, prompt?: string) {
+                const cwd = await ctx.workingDirectory.ensure(agent, signal);
+                if (!within(config.repository, cwd)) return;
+                const session = agent.session;
+                const handlerId = "archiview:" + point;
+                session.append("hook/invoked", {turn, point, dialect:"codex", handlerId});
+                const start = performance.now();
+                let exitCode: number | null = null;
+                let diagnostic: string | undefined;
+                try {
+                  const spec = ctx.shell.resolve({command:config.command, workdir:cwd, signal, timeoutMs:600_000,
+                    sandboxPolicy:ctx.sandboxPolicy.resolve({session}),
+                    stdin:JSON.stringify({hook_event_name:point, session_id:session.header.id, turn_id:String(turn), cwd, prompt})});
+                  const result = await (await ctx.shell.execute(spec)).result();
+                  exitCode = result.exitCode;
+                  if (exitCode !== 0) throw new Error(result.stderr.text.trim() || "Код завершения " + exitCode);
+                  const output = JSON.parse(result.stdout.text);
+                  if (typeof output.systemMessage === "string") ctx.logger.warn(output.systemMessage);
+                  if (point === "UserPromptSubmit" && output.hookSpecificOutput?.hookEventName === point &&
+                      typeof output.hookSpecificOutput.additionalContext === "string") return output.hookSpecificOutput.additionalContext as string;
+                } catch (error) {
+                  diagnostic = "ArchiView: " + (error instanceof Error ? error.message : String(error));
+                  ctx.logger.warn(diagnostic);
+                  return diagnostic;
+                } finally {
+                  session.append("hook/result", {turn, point, handlerId, decision:"pass", durationMs:performance.now() - start,
+                    ...(exitCode !== null && {exitCode}), ...(diagnostic && {stderrSummary:diagnostic.slice(0, 1000)})});
+                }
+              }
+
+              ctx.on("agent/pre-step", async (event, next) => {
+                const decision = await next();
+                if (decision.kind !== "enter" || !event.messages.length) return decision;
+                const prompt = event.messages.flatMap(m => m.content).filter(b => b.type === "text").map(b => b.text).join("");
+                const text = await run("UserPromptSubmit", event, prompt);
+                if (!text) return decision;
+                const context = {id:randomUUID(), role:"user", source:{kind:"archiview"}, content:[{type:"text", text}]};
+                return {...decision, messages:[...decision.messages, context]};
+              });
+              ctx.on("agent/turn-stopping", async event => { await run("Stop", event); });
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 402
+          grasp: 3
+          implementation: 3
+      scope_digest: sha256:cd6cb980de32fd73694201bcba34b5d5ca7884b2f0b4bef74aa91327b5fb17c1
+    input_digest: sha256:17fc40f00e809701464d08bcc2bbaff94abcb37b9b06eed2a7fbd4adfc47c72f
+    result_digest: sha256:2e89bbdc6d00cdcec31bc2bf9d85a80cb7fa994086ef1a276354ffd3edb2f356
+    content_digest: sha256:99ca4605b5c5bd8b502b23b9606845a80e591ee6e10cc25cb26b07afe6083bf1
+    registration_order: 953
+  - schema_version: 2
+    kind: review
+    module_id: dsh-adapter
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-462d38a0-3088-4703-a8ba-acb5d00aab6d
+    check_hash: fcf546db4a2091e8e1a01e4328325f9c5cbf193ff70d1f5c8d8e259c7922e4e1
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: dsh-adapter
+      baseline: null
+      current:
+        exists: true
+        directory: bridges/dsh
+        self_digest: sha256:ff72e1510b55c5a2c0cca653d4dfa9319e5477dfda3520a25d387d2aa1259cad
+        subtree_digest: sha256:b3e0124d662d3016f33157ca357e7d014c99304514f25475ba1563e36767270e
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: dsh-adapter
+          directory: bridges/dsh
+          own_files: []
+          contract:
+            id: dsh-adapter
+            kind: module
+            purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать поручения
+              анализа в проект и запускать проверку изменений по событиям хода с
+              правами текущей сессии.
+            boundaries: {}
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:f86f45289515e04c3dfce468d601ad5d4fd0e132f835589874d8d72ff001ebf7
+      change_digest: sha256:0205557a8955f6eac109cd43ff7ac9a17090fe3981448818eaef0b5f87c8739d
+    report:
+      schema_version: 1
+      id: review-462d38a0-3088-4703-a8ba-acb5d00aab6d
+      module:
+        id: dsh-adapter
+        baseline_path: null
+        current_path: bridges/dsh
+      comparison:
+        baseline: null
+        current:
+          id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+          digest: sha256:df3f43199e774720093c7baf3925f0a72bbacefca77cf8c3a5c911cf3eae04f1
+      analysis:
+        created_at: 2026-11-26T08:58:50.194Z
+        analyzer:
+          name: archiview-grasp
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:0f5bb55542784f30b5d0b1694cc526cc6c59cbde68edb2bf199e91f9e6d9a1c2
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:aa530359d065970b9ba51d89a5c26e88da52ca72db39041625c8ef1db936a86b
+      observed:
+        baseline: null
+        current:
+          summary: DSH является листом карты. Назначение и три платформенных инварианта
+            относятся к самому адаптеру. Распределение обязанностей между детьми
+            неприменимо.
+          responsibilities:
+            - text: Контракт объявляет доставку поручений и проверку хода в DSH в составе
+                одного модуля.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: not_applicable
+          explanation: В сохранённом составе нет непосредственных детей. Пункт относится к
+            самому адаптеру и не требует координации исполнителей внутри него.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I6
+          subject: current
+          verdict: not_applicable
+          explanation: В сохранённом составе нет непосредственных детей. Пункт относится к
+            самому адаптеру и не требует координации исполнителей внутри него.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I7
+          subject: current
+          verdict: not_applicable
+          explanation: В сохранённом составе нет непосредственных детей. Пункт относится к
+            самому адаптеру и не требует координации исполнителей внутри него.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+        - id: check-4
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I8
+          subject: current
+          verdict: not_applicable
+          explanation: В сохранённом составе нет непосредственных детей. Пункт относится к
+            самому адаптеру и не требует координации исполнителей внутри него.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+      findings: []
+      assessment:
+        current:
+          verdict: not_applicable
+          summary: DSH является листом карты. Назначение и три платформенных инварианта
+            относятся к самому адаптеру. Распределение обязанностей между детьми
+            неприменимо.
+        change:
+          verdict: not_applicable
+          summary: В экспорте зафиксирована только текущая сторона.
+      extensions:
+        archiview.grasp: []
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+          digest: sha256:df3f43199e774720093c7baf3925f0a72bbacefca77cf8c3a5c911cf3eae04f1
+      module:
+        id: dsh-adapter
+        baseline_path: null
+        current_path: bridges/dsh
+      analyzer:
+        name: archiview-grasp
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: purpose
+              id: purpose
+            text: Связывать ArchiView с чатами DeepSeek Harness, передавать поручения
+              анализа в проект и запускать проверку изменений по событиям хода с
+              правами текущей сессии.
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I6
+            text: OS Windows 11
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I7
+            text: OS Linux
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I8
+            text: OS Mac
+      instructions: 'Проверь композицию по собственному контракту и контрактам
+        непосредственных детей. Разбери детей по их роли относительно обещания
+        родителя. Для непосредственных исполнителей проверь совместимость их
+        контрактов между собой и способность вместе выполнить обещание родителя.
+        Для утилит (Pure Fabrication) укажи потребителя и задачу, проверь
+        достаточность и границы обязанностей. Для листа объясни неприменимость
+        композиции. Выводы и замечания обоснуй сохранёнными контрактами. Заполни
+        report.extensions["archiview.grasp"] для каждого непосредственного
+        ребёнка из экспорта: moduleId, role (executor или utility), task
+        (задача), assessment (результат сравнения). Для утилиты добавь consumers
+        со списком потребителей; если по контрактам потребитель не установлен,
+        укажи это в assessment и оставь пустой список. Для листа используй
+        пустой массив. Код, контракты предков и более глубоких потомков в эту
+        проверку не входят.'
+      context: {}
+      analysis_type: grasp
+      source_snapshot:
+        id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+        digest: sha256:fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T08:58:39.944Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:aa530359d065970b9ba51d89a5c26e88da52ca72db39041625c8ef1db936a86b
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+      digest: sha256:df3f43199e774720093c7baf3925f0a72bbacefca77cf8c3a5c911cf3eae04f1
+      kind: working
+      complete: true
+      modules:
+        - directory: bridges/dsh
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-adapter
+
+              title: dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [plugin]
+              purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать
+              поручения анализа в проект и запускать проверку изменений по
+              событиям хода с правами текущей сессии.
+
+              boundaries: {}
+
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-adapter
+              title: dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - plugin
+              purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать поручения
+                анализа в проект и запускать проверку изменений по событиям хода
+                с правами текущей сессии.
+              boundaries: {}
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+          documentPath: .archiview/modules/dsh-adapter.yaml
+          files:
+            - path: .archiview/modules/dsh-adapter.yaml
+              hash: 771a2f62831e9c8800a59ab59d4afffe67877252
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:9ff9b4a64a914e2c084d026511d9622845c3897062884e688383a34e8948436c
+      facts:
+        - kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Связывать ArchiView с чатами DeepSeek Harness, передавать
+            поручения анализа в проект и запускать проверку изменений по
+            событиям хода с правами текущей сессии.
+
+            boundaries: {}
+
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+          id: sha256:2a18f427ecc5b2e4cbd38de96e6346b1f3cda08e9be62fe6001c87dcaa9cdad4
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 402
+          grasp: 3
+          implementation: 3
+      scope_digest: sha256:23ed1cd6770de0df14fe406152ea78cbb60ee8958fb2601b64607862e53077ac
+    input_digest: sha256:536219c31358e61946e096d6648410bcbdc2a8aad791693f1147faefa6824a32
+    result_digest: sha256:56d904aceaa213a2817608757ac462095f4b1edfdd217a7cd06367836e11df3e
+    content_digest: sha256:c0124acc01b94dd43d5c30cefb08aa8d8051104a6ef9eb3e2bd5591c68dc0f54
+    registration_order: 954
+  - schema_version: 2
+    kind: review
+    module_id: dsh-adapter
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-06110250-1841-418a-9feb-85a6c8ad0c01
+    check_hash: ddbfaec4a89bc8ba2385b891b7fd29246e5140eb8265d2a72778d66d3ce8a8ee
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: dsh-adapter
+      baseline: null
+      current:
+        exists: true
+        directory: bridges/dsh
+        self_digest: sha256:9dcfd503abe239e17f512a8490dd3ec3b580876e9cb0de758be736d06a57213d
+        subtree_digest: sha256:1d2aaebe834b5ff647ca36d1ebd148e8aef5d35934f1c4f12987af7f0f39b7ad
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: dsh-adapter
+          directory: bridges/dsh
+          own_files:
+            - path: bridges/dsh/host.ts
+              digest: sha256:3d4f01ff25e7c1984390011c69312335adbcdca3c4232a60fd308278fe7ba85b
+              normalization: text-lf/v1
+            - path: bridges/dsh/session-hooks.ts
+              digest: sha256:e3f31050aba834f44aeff098fda8d5270698e87d8deb67f7538823a78787f596
+              normalization: text-lf/v1
+          contract:
+            id: dsh-adapter
+            kind: module
+            purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+              время активности плагина, создавать новый чат в соответствующем
+              проекте или каталоге репозитория, передавать в него поручение и
+              запускать проверку изменений по событиям хода с правами текущей
+              сессии.
+            boundaries: {}
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:bef003177550b1f1f9a00b28fa8bafa4a3f2ee0ca8a8720f2dcd3bfd5d62af9b
+      change_digest: sha256:1df75d027bf474b68d542f823f1922fd723abd524eea47c92a3f1924bcf100a3
+    report:
+      schema_version: 1
+      id: review-06110250-1841-418a-9feb-85a6c8ad0c01
+      module:
+        id: dsh-adapter
+        baseline_path: null
+        current_path: bridges/dsh
+      comparison:
+        baseline: null
+        current:
+          id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+          digest: sha256:04ddb888d9f966e4f535a48afa7b21b25d82925b63574abd4bbc9a653e625b59
+      analysis:
+        created_at: 2026-11-26T09:13:02.521Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:ba1e632a24004e814e5d6acb234b4db579c7257e991ee7725a2f5370a62599d3
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:59d128a90a060441195c5151dbd1f176ba1cf7dc3e5a1202123e71cfeafcbcde
+      observed:
+        baseline: null
+        current:
+          summary: DSH-адаптер регистрируется на время активности плагина, направляет
+            поручение в созданную сессию и обрабатывает события хода с политикой
+            доступа сессии.
+          responsibilities:
+            - text: Регистрирует процесс DSH, выбирает рабочий проект, создаёт сессию, ставит
+                текст поручения в очередь и проверяет подтверждение хоста.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - text: Выполняет настроенную команду для событий начала и завершения хода в
+                рабочем каталоге с sandboxPolicy текущей сессии и регистрирует
+                исход вызова.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Эффект плагина регистрирует адаптер и при завершении закрывает
+            регистрацию. start выбирает workspaceId либо каталог репозитория,
+            создаёт сессию, вызывает sessionController.prompt и проверяет
+            accepted. Для событий хода shell.resolve получает sandboxPolicy,
+            разрешённую для текущей сессии.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - snapshot: current
+              fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I6
+          subject: current
+          verdict: consistent
+          explanation: Windows 11 поддерживается на уровне исходников адаптера.
+            Сопоставление каталогов использует платформенный node:path, а
+            создание сессии и выполнение профильной команды делегированы
+            сервисам DSH. Оценка статическая.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - snapshot: current
+              fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I7
+          subject: current
+          verdict: consistent
+          explanation: Адаптер использует стандартные интерфейсы Node и DSH. Сопоставление
+            абсолютных POSIX-путей и передача рабочего каталога не требуют
+            оболочки Windows. Оценка совместимости с Linux выполнена по
+            исходному коду.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - snapshot: current
+              fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+        - id: check-4
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I8
+          subject: current
+          verdict: consistent
+          explanation: Создание чата использует реестр проектов DSH и node:path. Хук
+            получает рабочий каталог от хоста и исполняет настроенную
+            пользователем команду через сервис оболочки. Специальной привязки к
+            другой ОС в собственном коде нет. Оценка для macOS статическая.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+            - snapshot: current
+              fact_id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Регистрация хоста, создание и наполнение нового чата, обработка событий
+            хода и соблюдение политики сессии подтверждены. Совместимость с
+            перечисленными ОС оценена по собственному исходному коду адаптера.
+        change:
+          verdict: not_applicable
+          summary: Экспорт содержит текущий срез. Базового снимка для оценки изменения
+            нет.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+          digest: sha256:04ddb888d9f966e4f535a48afa7b21b25d82925b63574abd4bbc9a653e625b59
+      module:
+        id: dsh-adapter
+        baseline_path: null
+        current_path: bridges/dsh
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: purpose
+              id: purpose
+            text: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на время
+              активности плагина, создавать новый чат в соответствующем проекте
+              или каталоге репозитория, передавать в него поручение и запускать
+              проверку изменений по событиям хода с правами текущей сессии.
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I6
+            text: OS Windows 11
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I7
+            text: OS Linux
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I8
+            text: OS Mac
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+        digest: sha256:c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T09:13:02.440Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:59d128a90a060441195c5151dbd1f176ba1cf7dc3e5a1202123e71cfeafcbcde
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+      digest: sha256:04ddb888d9f966e4f535a48afa7b21b25d82925b63574abd4bbc9a653e625b59
+      kind: working
+      complete: true
+      modules:
+        - directory: bridges/dsh
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-adapter
+
+              title: dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [plugin]
+              purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+              ArchiView на время активности плагина, создавать новый чат в
+              соответствующем проекте или каталоге репозитория, передавать в
+              него поручение и запускать проверку изменений по событиям хода с
+              правами текущей сессии.
+
+              boundaries: {}
+
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-adapter
+              title: dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - plugin
+              purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+                время активности плагина, создавать новый чат в соответствующем
+                проекте или каталоге репозитория, передавать в него поручение и
+                запускать проверку изменений по событиям хода с правами текущей
+                сессии.
+              boundaries: {}
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+          documentPath: .archiview/modules/dsh-adapter.yaml
+          files:
+            - path: .archiview/modules/dsh-adapter.yaml
+              hash: b899695aa5ae71de9c354a2b3cdfa83b4f213634
+              mode: "100644"
+            - path: bridges/dsh/host.ts
+              hash: 707a9f7ebb718b4263ecd590f35b52f5187915e1
+              mode: "100644"
+            - path: bridges/dsh/session-hooks.ts
+              hash: b3f2293b80a961e41a79a5642ed9041e4c0e513a
+              mode: "100644"
+          sourceFiles: 2
+          fingerprint: sha256:afe86fcbdb9f47983598158a424890338cbc8a082cb82bb599f6c7a1eb123052
+      facts:
+        - id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+          kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+            ArchiView на время активности плагина, создавать новый чат в
+            соответствующем проекте или каталоге репозитория, передавать в него
+            поручение и запускать проверку изменений по событиям хода с правами
+            текущей сессии.
+
+            boundaries: {}
+
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+        - id: sha256:03cdb4754d5aafdfffb38feaaa5352063b098c57cac20de1936c1512f6fbe7de
+          kind: file
+          path: bridges/dsh/host.ts
+          start_line: 1
+          end_line: 46
+          text: >
+            import path from "node:path";
+
+            import { registerHarness, type Adapter, type ProjectTarget } from
+            "../../web/web-backend/host-bridge/channel.js";
+
+
+            interface Workspace { id: string; path: string }
+
+            interface Services {
+              workspaceRegistry: { list(): Workspace[] };
+              sessionController: {
+                create(request: { sessionId: string; workspaceId?: string; cwd?: string }): Promise<{ sessionId: string }>;
+                prompt(request: { requestId: string; sessionId: string; mode: "queue"; content: { type: "text"; text: string }[] },
+                  signal: AbortSignal): Promise<{ accepted: boolean }>;
+              };
+            }
+
+
+            export function dshAdapter(ctx: Services): Adapter {
+              function workspace(target: ProjectTarget) {
+                const projects = ctx.workspaceRegistry.list();
+                for (const root of [target.repositoryRoot, target.workspaceRoot]) {
+                  const found = projects.find(project => path.relative(project.path, root) === "");
+                  if (found) return found;
+                }
+              }
+              return {
+                kind: "dsh", instance: String(process.pid),
+                async available() { return undefined; },
+                async start(job) {
+                  const project = workspace(job);
+                  const { sessionId } = await ctx.sessionController.create({ sessionId: "session-" + job.requestId,
+                    ...(project ? { workspaceId: project.id } : { cwd: job.repositoryRoot }) });
+                  const receipt = await ctx.sessionController.prompt({ requestId: job.requestId, sessionId, mode: "queue",
+                    content: [{ type: "text", text: job.prompt }] }, AbortSignal.timeout(45000));
+                  if (!receipt.accepted) throw new Error("DeepSeek Harness отклонил поручение");
+                  return sessionId;
+                },
+              };
+            }
+
+
+            export const name = "archiview-harness";
+
+            export const inject = ["workspaceRegistry", "sessionController"];
+
+            export function apply(ctx: Services & { effect(setup: () => () =>
+            void, label: string): unknown; logger?: {warn(message: string):
+            void} }) {
+              ctx.effect(() => {
+                const registration = registerHarness(dshAdapter(ctx));
+                void registration.catch(error => ctx.logger?.warn(String(error)));
+                return () => { void registration.then(close => close()).catch(error => ctx.logger?.warn(String(error))); };
+              }, "archiview-harness");
+            }
+        - id: sha256:c706a74851dde873759ff2f9138eb2a3c413b0eed360f0ec23ceec2dc9921f38
+          kind: file
+          path: bridges/dsh/session-hooks.ts
+          start_line: 1
+          end_line: 71
+          text: >
+            import { randomUUID } from "node:crypto";
+
+            import path from "node:path";
+
+            import { within } from "../../framework/project/paths.js";
+
+
+            interface Session {
+              header: { id: string };
+              append(type: string, data: Record<string, unknown>): void;
+            }
+
+            interface Message { content: { type: string; text?: string }[] }
+
+            interface Turn { agent: { session: Session }; turn: number; signal:
+            AbortSignal }
+
+            interface Decision { kind: string; messages: Message[] }
+
+            interface Services {
+              workingDirectory: { ensure(agent: Turn["agent"], signal: AbortSignal): Promise<string> };
+              sandboxPolicy: { resolve(request: { session: Session }): unknown };
+              shell: {
+                resolve(request: {command: string; stdin: string; workdir: string; sandboxPolicy: unknown; signal: AbortSignal; timeoutMs: number}): unknown;
+                execute(spec: unknown): Promise<{ result(): Promise<{ exitCode: number | null; stdout: {text: string}; stderr: {text: string} }> }>;
+              };
+              logger: { warn(message: string): void };
+              on(point: "agent/pre-step", listener: (event: Turn & {messages: Message[]}, next: () => Promise<Decision>) => Promise<Decision>): void;
+              on(point: "agent/turn-stopping", listener: (event: Turn) => Promise<void>): void;
+            }
+
+
+            export const name = "archiview-session-hooks";
+
+            export const inject = ["shell", "workingDirectory",
+            "sandboxPolicy"];
+
+
+            /** The trusted profile supplies the command. DSH resolves its
+            permissions for each session. */
+
+            export function apply(ctx: Services, config: { repository: string;
+            command: string }) {
+              if (!path.isAbsolute(config.repository) || !config.command?.trim()) throw new Error("Укажите абсолютный путь repository и команду ArchiView");
+              async function run(point: "UserPromptSubmit" | "Stop", {agent, turn, signal}: Turn, prompt?: string) {
+                const cwd = await ctx.workingDirectory.ensure(agent, signal);
+                if (!within(config.repository, cwd)) return;
+                const session = agent.session;
+                const handlerId = "archiview:" + point;
+                session.append("hook/invoked", {turn, point, dialect:"codex", handlerId});
+                const start = performance.now();
+                let exitCode: number | null = null;
+                let diagnostic: string | undefined;
+                try {
+                  const spec = ctx.shell.resolve({command:config.command, workdir:cwd, signal, timeoutMs:600_000,
+                    sandboxPolicy:ctx.sandboxPolicy.resolve({session}),
+                    stdin:JSON.stringify({hook_event_name:point, session_id:session.header.id, turn_id:String(turn), cwd, prompt})});
+                  const result = await (await ctx.shell.execute(spec)).result();
+                  exitCode = result.exitCode;
+                  if (exitCode !== 0) throw new Error(result.stderr.text.trim() || "Код завершения " + exitCode);
+                  const output = JSON.parse(result.stdout.text);
+                  if (typeof output.systemMessage === "string") ctx.logger.warn(output.systemMessage);
+                  if (point === "UserPromptSubmit" && output.hookSpecificOutput?.hookEventName === point &&
+                      typeof output.hookSpecificOutput.additionalContext === "string") return output.hookSpecificOutput.additionalContext as string;
+                } catch (error) {
+                  diagnostic = "ArchiView: " + (error instanceof Error ? error.message : String(error));
+                  ctx.logger.warn(diagnostic);
+                  return diagnostic;
+                } finally {
+                  session.append("hook/result", {turn, point, handlerId, decision:"pass", durationMs:performance.now() - start,
+                    ...(exitCode !== null && {exitCode}), ...(diagnostic && {stderrSummary:diagnostic.slice(0, 1000)})});
+                }
+              }
+
+              ctx.on("agent/pre-step", async (event, next) => {
+                const decision = await next();
+                if (decision.kind !== "enter" || !event.messages.length) return decision;
+                const prompt = event.messages.flatMap(m => m.content).filter(b => b.type === "text").map(b => b.text).join("");
+                const text = await run("UserPromptSubmit", event, prompt);
+                if (!text) return decision;
+                const context = {id:randomUUID(), role:"user", source:{kind:"archiview"}, content:[{type:"text", text}]};
+                return {...decision, messages:[...decision.messages, context]};
+              });
+              ctx.on("agent/turn-stopping", async event => { await run("Stop", event); });
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 405
+          grasp: 6
+          implementation: 6
+      scope_digest: sha256:836f88e8fe59274277ad7dad7e5bbeb23799417afca4bee16ac0b35370cd6e9d
+    input_digest: sha256:9eec548f0407323aab4a79e28dd7c12bb92d00fa1fec791acad562f415880d97
+    result_digest: sha256:939b21015bcfe412d577079c2d6db1f47b81f58fac9f955601589e4b77c60ab7
+    content_digest: sha256:d0cab5d9046338277430ff80a8756632ef8075f619cef1c81b1270eee05e8650
+    registration_order: 981
+  - schema_version: 2
+    kind: review
+    module_id: dsh-adapter
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-d1e18677-76a6-4c1c-81fa-14e267b8e820
+    check_hash: 9dc69e6c4244b8f3a3439da54426411da28741021dc98e1a1bebc093a7804558
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: dsh-adapter
+      baseline: null
+      current:
+        exists: true
+        directory: bridges/dsh
+        self_digest: sha256:99cc261a3d2adf1def2e5034c41da956dd16c56279781cc12307c8db4c20bdd7
+        subtree_digest: sha256:c604384e590e68531fb641d7e94d1937925c9e822e408f2a3f3f570bb7caeae0
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: dsh-adapter
+          directory: bridges/dsh
+          own_files: []
+          contract:
+            id: dsh-adapter
+            kind: module
+            purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+              время активности плагина, создавать новый чат в соответствующем
+              проекте или каталоге репозитория, передавать в него поручение и
+              запускать проверку изменений по событиям хода с правами текущей
+              сессии.
+            boundaries: {}
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:51809d3e45133fd9ba8274127402f997f5a8489e8036ebac02713387b04339dd
+      change_digest: sha256:c9e19c74d7e28e3fd99d92c9b95d028007e20776de528829da6c830c6c8c4267
+    report:
+      schema_version: 1
+      id: review-d1e18677-76a6-4c1c-81fa-14e267b8e820
+      module:
+        id: dsh-adapter
+        baseline_path: null
+        current_path: bridges/dsh
+      comparison:
+        baseline: null
+        current:
+          id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+          digest: sha256:ce059921140c41eb9b6eec2e430bbb565f1940bd60855cf6b260cefbc631aa67
+      analysis:
+        created_at: 2026-11-26T09:13:03.171Z
+        analyzer:
+          name: archiview-grasp
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:9a8c0958b445adec3b3fd07340277ad3e07756754dde12b8a6a58f410abbb652
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:15f9b47cadf79ace6d8f1c6cb5cb8953060a3afc908d748f032a62f84370ebf5
+      observed:
+        baseline: null
+        current:
+          summary: Адаптер DeepSeek Harness является листовым модулем. Обещания адресованы
+            самому адаптеру.
+          responsibilities:
+            - text: Объявляет регистрацию, создание чата, доставку поручения и обработку
+                событий в DeepSeek Harness.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: not_applicable
+          explanation: Непосредственные дочерние модули отсутствуют. Распределение
+            собственной работы адаптера между детьми неприменимо.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I6
+          subject: current
+          verdict: not_applicable
+          explanation: Гарантия платформы принадлежит листовому адаптеру. Сопоставлять её
+            с объявлениями дочерних модулей в этом снимке не требуется.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I7
+          subject: current
+          verdict: not_applicable
+          explanation: Гарантия платформы принадлежит листовому адаптеру. Сопоставлять её
+            с объявлениями дочерних модулей в этом снимке не требуется.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+        - id: check-4
+          contract:
+            snapshot: current
+            module_id: dsh-adapter
+            section: invariants
+            id: I8
+          subject: current
+          verdict: not_applicable
+          explanation: Гарантия платформы принадлежит листовому адаптеру. Сопоставлять её
+            с объявлениями дочерних модулей в этом снимке не требуется.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+      findings: []
+      assessment:
+        current:
+          verdict: not_applicable
+          summary: GRASP-проверка распределения обязанностей неприменима к листовому
+            DSH-адаптеру. Собственный контракт не объявляет дочерних
+            исполнителей.
+        change:
+          verdict: not_applicable
+          summary: Экспорт содержит текущий срез. Базового снимка для оценки изменения
+            нет.
+      extensions:
+        archiview.grasp: []
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+          digest: sha256:ce059921140c41eb9b6eec2e430bbb565f1940bd60855cf6b260cefbc631aa67
+      module:
+        id: dsh-adapter
+        baseline_path: null
+        current_path: bridges/dsh
+      analyzer:
+        name: archiview-grasp
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: purpose
+              id: purpose
+            text: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на время
+              активности плагина, создавать новый чат в соответствующем проекте
+              или каталоге репозитория, передавать в него поручение и запускать
+              проверку изменений по событиям хода с правами текущей сессии.
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I6
+            text: OS Windows 11
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I7
+            text: OS Linux
+          - reference:
+              snapshot: current
+              module_id: dsh-adapter
+              section: invariants
+              id: I8
+            text: OS Mac
+      instructions: 'Проверь композицию по собственному контракту и контрактам
+        непосредственных детей. Разбери детей по их роли относительно обещания
+        родителя. Для непосредственных исполнителей проверь совместимость их
+        контрактов между собой и способность вместе выполнить обещание родителя.
+        Для утилит (Pure Fabrication) укажи потребителя и задачу, проверь
+        достаточность и границы обязанностей. Для листа объясни неприменимость
+        композиции. Выводы и замечания обоснуй сохранёнными контрактами. Заполни
+        report.extensions["archiview.grasp"] для каждого непосредственного
+        ребёнка из экспорта: moduleId, role (executor или utility), task
+        (задача), assessment (результат сравнения). Для утилиты добавь consumers
+        со списком потребителей; если по контрактам потребитель не установлен,
+        укажи это в assessment и оставь пустой список. Для листа используй
+        пустой массив. Код, контракты предков и более глубоких потомков в эту
+        проверку не входят.'
+      context: {}
+      analysis_type: grasp
+      source_snapshot:
+        id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+        digest: sha256:c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T09:13:03.103Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:15f9b47cadf79ace6d8f1c6cb5cb8953060a3afc908d748f032a62f84370ebf5
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-c57da515bcca7dae94f2cf7ec3091b6d4736a46ad0c3a2566c6d8e5ffa10c09a
+      digest: sha256:ce059921140c41eb9b6eec2e430bbb565f1940bd60855cf6b260cefbc631aa67
+      kind: working
+      complete: true
+      modules:
+        - directory: bridges/dsh
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: dsh-adapter
+
+              title: dsh
+
+              kind: module
+
+              extensions:
+                archiview.roles: [plugin]
+              purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+              ArchiView на время активности плагина, создавать новый чат в
+              соответствующем проекте или каталоге репозитория, передавать в
+              него поручение и запускать проверку изменений по событиям хода с
+              правами текущей сессии.
+
+              boundaries: {}
+
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+            format: yaml
+            contract:
+              schema_version: 1
+              id: dsh-adapter
+              title: dsh
+              kind: module
+              extensions:
+                archiview.roles:
+                  - plugin
+              purpose: Регистрировать работающий экземпляр DeepSeek Harness в ArchiView на
+                время активности плагина, создавать новый чат в соответствующем
+                проекте или каталоге репозитория, передавать в него поручение и
+                запускать проверку изменений по событиям хода с правами текущей
+                сессии.
+              boundaries: {}
+              invariants:
+                I6: OS Windows 11
+                I7: OS Linux
+                I8: OS Mac
+          documentPath: .archiview/modules/dsh-adapter.yaml
+          files:
+            - path: .archiview/modules/dsh-adapter.yaml
+              hash: b899695aa5ae71de9c354a2b3cdfa83b4f213634
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:8a38951741364b56ed0fd123571a2521b64cab8ff716064c7029e14e933fd106
+      facts:
+        - kind: file
+          path: .archiview/modules/dsh-adapter.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: dsh-adapter
+
+            title: dsh
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Регистрировать работающий экземпляр DeepSeek Harness в
+            ArchiView на время активности плагина, создавать новый чат в
+            соответствующем проекте или каталоге репозитория, передавать в него
+            поручение и запускать проверку изменений по событиям хода с правами
+            текущей сессии.
+
+            boundaries: {}
+
+            invariants:
+              I6: OS Windows 11
+              I7: OS Linux
+              I8: OS Mac
+          id: sha256:b3309f1cbf6d095b80a3f4b9735db99a7a9966ce5c3ea00dab31fc0ad637c113
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 405
+          grasp: 6
+          implementation: 6
+      scope_digest: sha256:b2ec1a0e6851000999116fcfa7b582dbe4850192e5fab1bd8c0de7204f8eeecf
+    input_digest: sha256:9956cfa139a7dabdba68fcdf3a09249e4ef0e1fdaeafbb94ebe8c6a255158502
+    result_digest: sha256:3e887d781a50255336dfb232b5e1c3cab15bce7615dc458044e957e7d05ef2d0
+    content_digest: sha256:46ac789363a9239041fbfa34e5c858acd7d109228864be1dd3ccf27b887037dc
+    registration_order: 982

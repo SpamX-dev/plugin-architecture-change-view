@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { fork } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { once } from "node:events";
+import { EventEmitter, once } from "node:events";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -10,11 +10,60 @@ import test from "node:test";
 import { codexAdapter } from "../bridges/codex/host.js";
 import { callerThread, desktopBinding } from "../bridges/codex/context.js";
 import { apply, dshAdapter } from "../bridges/dsh/host.js";
+import { apply as installSessionHooks } from "../bridges/dsh/session-hooks.js";
 import { connectHarness, harnessInstanceId, listHarnesses } from "../web/web-backend/host-bridge/channel.js";
 
 const workspaceRoot = path.resolve("workspace");
 const repositoryRoot = path.join(workspaceRoot, "repository");
 const job = { workspaceRoot, repositoryRoot, moduleId: "test-module", requestId: "0c7c8927-540a-45b8-9474-13dd0f908c5d", prompt: "Test assignment" };
+
+test("DSH runs both hooks with the current session policy and skips other projects", async () => {
+  const events = new EventEmitter();
+  const hooks: string[] = [];
+  const audit: string[] = [];
+  const session = { header: { id: "author" }, append(type: string) { audit.push(type); } };
+  const policy = { mode: "read-only" };
+  const content = [{ type: "text", text: "Change a module" }];
+  const messages = [{ content }];
+  const signal = new AbortController().signal;
+  const event = { agent: { session }, turn: 17, messages, signal };
+  const decision = { kind: "enter", messages };
+  let cwd = path.join(repositoryRoot, "module");
+  installSessionHooks({
+    on: events.on.bind(events),
+    logger: { warn: message => assert.fail(message) },
+    workingDirectory: { ensure: async () => cwd },
+    sandboxPolicy: { resolve(request) { assert.equal(request.session, session); return policy; } },
+    shell: {
+      resolve(request) {
+        assert.equal(request.workdir, cwd);
+        assert.equal(request.sandboxPolicy, policy);
+        assert.equal(request.signal, signal);
+        const payload = JSON.parse(request.stdin);
+        assert.equal(payload.session_id, "author");
+        assert.equal(payload.turn_id, "17");
+        hooks.push(payload.hook_event_name);
+        return payload.hook_event_name;
+      },
+      async execute(point) {
+        const response = point === "UserPromptSubmit" ? { hookSpecificOutput: { hookEventName: point, additionalContext: "review command" } } : {};
+        return { result: async () => ({ exitCode: 0, stdout: { text: JSON.stringify(response) }, stderr: { text: "" } }) };
+      },
+    },
+  }, { repository: repositoryRoot, command: "archiview --turn-hook dsh" });
+  const [submit] = events.listeners("agent/pre-step");
+  const [stop] = events.listeners("agent/turn-stopping");
+  const response = await submit(event, async () => decision);
+  assert.partialDeepStrictEqual(response, {
+    kind: "enter", messages: [messages[0], { role: "user", content: [{ type: "text", text: "review command" }] }],
+  });
+  await stop(event);
+  cwd = repositoryRoot + "-other";
+  assert.equal(await submit(event, async () => decision), decision);
+  await stop(event);
+  assert.deepEqual(hooks, ["UserPromptSubmit", "Stop"]);
+  assert.deepEqual(audit, ["hook/invoked", "hook/result", "hook/invoked", "hook/result"]);
+});
 
 test("Codex discovers the exact local project, falls back to the workspace and preserves model defaults", async () => {
   const projects = [

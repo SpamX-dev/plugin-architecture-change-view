@@ -5,15 +5,16 @@ import type { TestContext } from "node:test";
 /** Проверяет, что некорректная цель запроса становится ответом транспорта, а не падением сервера. */
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { execFileSync, spawn } from "node:child_process";
+import { execFileSync, execSync, spawn } from "node:child_process";
 import { createInterface } from "node:readline";
-import { cp, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { parse, stringify } from "yaml";
 import { createArchiView } from "../web/web-backend/web-service/http.js";
+import { projectReviewSettings } from "../web/web-backend/project-review-settings.js";
 import type { ComparisonView } from "../module-operations/api.js";
 
 test("standalone CLI serves its startup UI even after a rebuild, before opening a project session", { timeout: 15000 }, async () => {
@@ -59,6 +60,64 @@ async function serve(t: TestContext) {
   t.after(() => new Promise<void>((resolve) => { app.server.closeAllConnections(); app.server.close(() => resolve()); }));
   return { ...app, root, url: "http://127.0.0.1:" + (app.server.address() as AddressInfo).port };
 }
+
+test("review settings repair partial hooks, preserve other handlers and reject redirected files", async t => {
+  const app = await serve(t);
+  const url = app.url + "/api/review-settings";
+  const set = (enabled: boolean) => fetch(url, {method:"POST", headers:{"content-type":"application/json"},
+    body:JSON.stringify({setting:"codexHooks", enabled})});
+  assert.deepEqual(await (await fetch(url)).json(), {autoAnalysis:false, codexHooks:"off"});
+  const folder = path.join(app.root, ".codex");
+  const file = path.join(folder, "hooks.json");
+  await mkdir(folder);
+  const custom = {type:"command", command:"echo existing", statusMessage:"ArchiView · проверка изменённых модулей"};
+  const foreign = {description:"User settings", hooks:{Stop:[{hooks:[custom]}], SessionStart:[{hooks:[custom]}]}};
+  await writeFile(file, JSON.stringify(foreign));
+  assert.equal((await (await set(true)).json()).codexHooks, "on");
+  const installed = JSON.parse(await readFile(file, "utf8"));
+  const managed = installed.hooks.Stop[1].hooks[0];
+  assert.match(managed.command, /--turn-hook codex$/);
+  installed.hooks.Stop = [{hooks:[custom, managed]}];
+  delete installed.hooks.UserPromptSubmit;
+  await writeFile(file, JSON.stringify(installed));
+  assert.equal((await (await fetch(url)).json()).codexHooks, "partial");
+  assert.equal((await (await set(true)).json()).codexHooks, "on");
+  const repaired = await readFile(file, "utf8");
+  await set(true);
+  assert.equal(await readFile(file, "utf8"), repaired);
+  assert.equal((await (await set(false)).json()).codexHooks, "off");
+  assert.deepEqual(JSON.parse(await readFile(file, "utf8")), foreign);
+  const oldHook = {type:"command", command:'node "/old/installation/dist/cli.mjs" --turn-hook codex'};
+  await writeFile(file, JSON.stringify({description:"Проверка изменённых модулей ArchiView",
+    hooks:{UserPromptSubmit:[{hooks:[oldHook]}], Stop:[{hooks:[custom, oldHook]}]}}));
+  assert.equal((await (await fetch(url)).json()).codexHooks, "partial");
+  assert.equal((await (await set(true)).json()).codexHooks, "on");
+  const migrated = JSON.parse(await readFile(file, "utf8"));
+  assert.deepEqual(migrated.hooks.Stop.flatMap((group: {hooks: unknown[]}) => group.hooks), [custom, managed]);
+  await writeFile(file, "broken JSON");
+  assert.equal((await set(true)).ok, false);
+  assert.equal(await readFile(file, "utf8"), "broken JSON");
+  await rm(folder, {recursive:true});
+  const other = await mkdtemp(path.join(os.tmpdir(),"archiview-foreign-hooks-"));
+  t.after(() => rm(other, {recursive:true, force:true}));
+  await symlink(other, folder, process.platform === "win32" ? "junction" : "dir");
+  assert.equal((await set(true)).ok, false);
+  await assert.rejects(stat(path.join(other, "hooks.json")), {code:"ENOENT"});
+});
+
+test("a generated Codex hook passes shell-sensitive external storage paths intact", async t => {
+  const app = await serve(t);
+  const external = await mkdtemp(path.join(os.tmpdir(), "ArchiView & ' %PATH% "));
+  t.after(() => rm(external, {recursive:true, force:true}));
+  const settings = projectReviewSettings(app.root, external);
+  await settings.set({setting:"autoAnalysis", enabled:true});
+  await settings.set({setting:"codexHooks", enabled:true});
+  const hooks = JSON.parse(await readFile(path.join(app.root, ".codex", "hooks.json"), "utf8")).hooks;
+  const event = {hook_event_name:"UserPromptSubmit", session_id:"author", turn_id:"1", cwd:app.root};
+  const json = execSync(hooks.UserPromptSubmit[0].hooks[0].command, {cwd:app.root, input:JSON.stringify(event), encoding:"utf8", windowsHide:true});
+  const context = JSON.parse(json).hookSpecificOutput.additionalContext;
+  assert.ok(context.includes(JSON.stringify(external)));
+});
 
 test("automatic clause IDs follow each section's Git, staged and uncommitted numbering across sessions", async t => {
   const app = await serve(t);

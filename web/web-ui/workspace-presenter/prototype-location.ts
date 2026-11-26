@@ -1,5 +1,5 @@
 import { el, icon } from "../views/dom.js";
-import { ancestors, treeParents } from "../module-presenter/module-path.js";
+import { ancestors, treeParents } from "./tree-paths.js";
 import type { ModuleSummary } from "../types.js";
 
 /** Select a parent from the current side of this repository's comparison. */

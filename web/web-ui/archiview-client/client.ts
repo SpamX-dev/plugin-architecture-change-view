@@ -22,6 +22,8 @@ export function createArchiViewClient({ fetcher = globalThis.fetch, base = "" }:
     return decode ? decode(result) : result as T;
   }
   return {
+    getReviewSettings: args => request("GET", "/api/review-settings", args),
+    setReviewSetting: args => request("POST", "/api/review-settings", args),
     getComparison: (args = {}) => request("GET", "/api/comparison", args),
     waitForChanges: (args, signal) => request("GET", "/api/changes", args, true, undefined, signal),
     getReviewStatuses: args => request("GET", "/api/review-statuses", args),

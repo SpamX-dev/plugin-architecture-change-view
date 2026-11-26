@@ -15,6 +15,7 @@ function packageDirectory(moduleUrl: string): URL {
 export const packageUrl = packageDirectory(import.meta.url);
 const sourceCli = new URL("cli/cli.ts", packageUrl);
 const sourceCheckout = existsSync(sourceCli);
+export const bundledCli = fileURLToPath(new URL(sourceCheckout ? "dist/cli.mjs" : "cli.mjs", packageUrl));
 const webAssetUrl = new URL(sourceCheckout ? "dist/web/archiview/" : "web/archiview/", packageUrl);
 
 export function readWebAsset(name: string): Buffer {

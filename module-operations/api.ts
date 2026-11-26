@@ -11,6 +11,12 @@ import type { ModuleRelations } from "../framework/module-relations/types.js";
 
 import type { FindingDisposition } from "../framework/ai-report/types.js";
 export interface RepositoryArgs { repository?: string }
+export type ReviewSetting = "autoAnalysis" | "codexHooks";
+export interface ReviewSettings {
+  autoAnalysis: boolean;
+  codexHooks: "on" | "off" | "partial";
+  codexStatus?: "trusted" | "needsTrust" | "disabled" | "unknown";
+}
 export type FindingFixArgs = RepositoryArgs & { id: string; harnessId: string; reviewId: string; findingId: string };
 export type ComparisonArgs = RepositoryArgs & { target?: string; baseline?: string; historyLimit?: number; published?: boolean; watch?: boolean };
 export type ModuleArgs = RepositoryArgs & { view: string; path: string; analysis?: boolean; currentOnly?: boolean; analysisType?: AnalysisType };
@@ -105,6 +111,8 @@ export interface ModuleDetail extends ComparisonModule, ModuleReviewState {
   contractDiff: ReturnType<typeof compareContracts>;
 }
 export interface SessionOperations {
+  getReviewSettings(args: RepositoryArgs): Promise<ReviewSettings>;
+  setReviewSetting(args: RepositoryArgs & {setting: ReviewSetting; enabled: boolean}): Promise<ReviewSettings>;
   waitForChanges(args: RepositoryArgs & { cursor: string }, signal?: AbortSignal): Promise<{ cursor: string; reviewsChanged: boolean }>;
   getComparison(args?: ComparisonArgs): Promise<ComparisonView>;
   getReviewStatuses(args: RepositoryArgs & {view: string}): Promise<{modules: (ModuleReviewState & {key: string})[]; diagnostics: string[]}>;

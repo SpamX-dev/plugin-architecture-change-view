@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-codex
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: ce7d68f9beba687d2b6a77e0424db231f6c22d2afee23514da004b5f1c243a75
+check_hash: aecb78c9fcac11604be59fb23fae9055d3e9f01710a9a728c795aba37b2ef199
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,17 +10,17 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: d9ef55c491050e3727283582fcc1018d200da614
+      id: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
     state:
       exists: true
       directory: bridges/codex
-      self_digest: sha256:b036bf1e9cd488b1eb9bdeef8570c57459829754977947832548c4367b5d6dfb
-      subtree_digest: sha256:aeef1719569c76d9a8184471810408a57980af3e95b71ebb390c14e922a5725b
+      self_digest: sha256:2c1fc620940aaced839deb29af4ee9ca2e896e638af79f28a1d818832679eec2
+      subtree_digest: sha256:5f1f776a50bc2bdf248048c115ac26bf4946eecd77f1161a3532542bf089b672
   current:
     exists: true
     directory: bridges/codex
-    self_digest: sha256:6248f6ea93e5a66739eebb596ef19e7a1c70b2d8983768536144fe2ce07e493d
-    subtree_digest: sha256:6807472ce6ce6db3adfb52755bdd19a30bf7faed472c1a3402793d039b248b89
+    self_digest: sha256:2c1fc620940aaced839deb29af4ee9ca2e896e638af79f28a1d818832679eec2
+    subtree_digest: sha256:5f1f776a50bc2bdf248048c115ac26bf4946eecd77f1161a3532542bf089b672
   analyzer:
     name: archiview-structure
     version: 1.1.0
@@ -35,8 +35,14 @@ baseline:
     module_id: archiview-codex
     directory: bridges/codex
     own_files:
-      - path: bridges/codex/.gitkeep
-        digest: sha256:63be7e41e020bc00ee1c7926929730c6f0a0b9c0c3d83427c76eb5acfba8dc67
+      - path: bridges/codex/context.ts
+        digest: sha256:d1d457847d67a73ebc2f8d8969567f59d9dc4eaea1a7b4d8415f1d38c6def34a
+        normalization: text-lf/v1
+      - path: bridges/codex/host.ts
+        digest: sha256:9bc7954b2cde7648e16952462847aa11f26b16d48462531297cf151318b98f5a
+        normalization: text-lf/v1
+      - path: bridges/codex/server.ts
+        digest: sha256:162d5ba771780d02a3c1d20e90973e105c3c970c07729051d0fb2f40877e10fe
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -46,9 +52,9 @@ baseline:
       extensions:
         archiview.roles:
           - plugin
-        archiview.prototype: true
-      purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с текущей сессией
-        Codex.
+      purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+        подключения моста, создавать новый чат в проекте выбранного репозитория
+        или рабочей папки и передавать поручение анализа.
       boundaries: {}
       invariants:
         I8: OS Windows 11
@@ -63,31 +69,43 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I10
-        text: Приложение поддерживает встроенную панель Codex.
+        text: Приложение поддерживает интеграцию с Codex.
       - module_id: architecture-change-view
         section: invariants
         id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
       - module_id: architecture-change-view
         section: invariants
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-  technical_digest: sha256:b036bf1e9cd488b1eb9bdeef8570c57459829754977947832548c4367b5d6dfb
+      - module_id: archiview-bridges
+        section: invariants
+        id: I1
+        text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+          Desktop и DeepSeek Harness.
+  technical_digest: sha256:2c1fc620940aaced839deb29af4ee9ca2e896e638af79f28a1d818832679eec2
   complete: true
   self:
     normalization: archiview/module-state/v1
     module_id: archiview-codex
     directory: bridges/codex
     own_files:
-      - path: bridges/codex/.gitkeep
-        digest: sha256:63be7e41e020bc00ee1c7926929730c6f0a0b9c0c3d83427c76eb5acfba8dc67
+      - path: bridges/codex/context.ts
+        digest: sha256:d1d457847d67a73ebc2f8d8969567f59d9dc4eaea1a7b4d8415f1d38c6def34a
+        normalization: text-lf/v1
+      - path: bridges/codex/host.ts
+        digest: sha256:9bc7954b2cde7648e16952462847aa11f26b16d48462531297cf151318b98f5a
+        normalization: text-lf/v1
+      - path: bridges/codex/server.ts
+        digest: sha256:162d5ba771780d02a3c1d20e90973e105c3c970c07729051d0fb2f40877e10fe
         normalization: text-lf/v1
     contract:
       id: archiview-codex
       kind: module
-      purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с текущей сессией
-        Codex.
+      purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+        подключения моста, создавать новый чат в проекте выбранного репозитория
+        или рабочей папки и передавать поручение анализа.
       boundaries: {}
       invariants:
         I8: OS Windows 11
@@ -101,26 +119,31 @@ baseline:
       - module_id: architecture-change-view
         section: invariants
         id: I10
-        text: Приложение поддерживает встроенную панель Codex.
+        text: Приложение поддерживает интеграцию с Codex.
       - module_id: architecture-change-view
         section: invariants
         id: I11
-        text: Приложение поддерживает встроенную панель DeepSeek Harness.
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
       - module_id: architecture-change-view
         section: invariants
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
+      - module_id: archiview-bridges
+        section: invariants
+        id: I1
+        text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+          Desktop и DeepSeek Harness.
     children: []
-  self_digest: sha256:8337437b50d2d5fa7ed9eadcc75fc381c25cec92e88ad15d65b861c7c05f82c3
+  self_digest: sha256:084e2fc102363a7101574654abdb488154d287de59bcbb65cb3c9acfdce207ce
   subtree:
-    self: sha256:b036bf1e9cd488b1eb9bdeef8570c57459829754977947832548c4367b5d6dfb
+    self: sha256:2c1fc620940aaced839deb29af4ee9ca2e896e638af79f28a1d818832679eec2
     children: []
-  subtree_digest: sha256:aeef1719569c76d9a8184471810408a57980af3e95b71ebb390c14e922a5725b
+  subtree_digest: sha256:5f1f776a50bc2bdf248048c115ac26bf4946eecd77f1161a3532542bf089b672
   semantic_subtree:
-    self: sha256:8337437b50d2d5fa7ed9eadcc75fc381c25cec92e88ad15d65b861c7c05f82c3
+    self: sha256:084e2fc102363a7101574654abdb488154d287de59bcbb65cb3c9acfdce207ce
     children: []
-  semantic_subtree_digest: sha256:3c6b9fab033735953766c14b475e52ef5833bccd284982f9af808d219715ede7
+  semantic_subtree_digest: sha256:33ca88c95d9f7f1141bf6164d06e8f442f8e1288aba33955797acba5948cb1bc
 current:
   module_id: archiview-codex
   directory: bridges/codex
@@ -135,10 +158,10 @@ current:
         digest: sha256:d1d457847d67a73ebc2f8d8969567f59d9dc4eaea1a7b4d8415f1d38c6def34a
         normalization: text-lf/v1
       - path: bridges/codex/host.ts
-        digest: sha256:feab68b3d8c06b1bd5331d2af61fce40280df08a7e8dc23285d6cd31563c8ade
+        digest: sha256:9bc7954b2cde7648e16952462847aa11f26b16d48462531297cf151318b98f5a
         normalization: text-lf/v1
       - path: bridges/codex/server.ts
-        digest: sha256:54663598745813dcdd6df4e0e8de3656a9a5d225d73088a2f628ba28dd5ca88b
+        digest: sha256:162d5ba771780d02a3c1d20e90973e105c3c970c07729051d0fb2f40877e10fe
         normalization: text-lf/v1
     contract:
       schema_version: 1
@@ -148,8 +171,9 @@ current:
       extensions:
         archiview.roles:
           - plugin
-      purpose: Создавать новый чат Codex Desktop в проекте выбранного репозитория или
-        рабочей папки и передавать поручение анализа.
+      purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+        подключения моста, создавать новый чат в проекте выбранного репозитория
+        или рабочей папки и передавать поручение анализа.
       boundaries: {}
       invariants:
         I8: OS Windows 11
@@ -174,7 +198,12 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
-  technical_digest: sha256:6248f6ea93e5a66739eebb596ef19e7a1c70b2d8983768536144fe2ce07e493d
+      - module_id: archiview-bridges
+        section: invariants
+        id: I1
+        text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+          Desktop и DeepSeek Harness.
+  technical_digest: sha256:2c1fc620940aaced839deb29af4ee9ca2e896e638af79f28a1d818832679eec2
   complete: true
   self:
     normalization: archiview/module-state/v1
@@ -185,16 +214,17 @@ current:
         digest: sha256:d1d457847d67a73ebc2f8d8969567f59d9dc4eaea1a7b4d8415f1d38c6def34a
         normalization: text-lf/v1
       - path: bridges/codex/host.ts
-        digest: sha256:feab68b3d8c06b1bd5331d2af61fce40280df08a7e8dc23285d6cd31563c8ade
+        digest: sha256:9bc7954b2cde7648e16952462847aa11f26b16d48462531297cf151318b98f5a
         normalization: text-lf/v1
       - path: bridges/codex/server.ts
-        digest: sha256:54663598745813dcdd6df4e0e8de3656a9a5d225d73088a2f628ba28dd5ca88b
+        digest: sha256:162d5ba771780d02a3c1d20e90973e105c3c970c07729051d0fb2f40877e10fe
         normalization: text-lf/v1
     contract:
       id: archiview-codex
       kind: module
-      purpose: Создавать новый чат Codex Desktop в проекте выбранного репозитория или
-        рабочей папки и передавать поручение анализа.
+      purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+        подключения моста, создавать новый чат в проекте выбранного репозитория
+        или рабочей папки и передавать поручение анализа.
       boundaries: {}
       invariants:
         I8: OS Windows 11
@@ -218,22 +248,27 @@ current:
         id: I9
         text: Локальный запуск в браузере входит в обязательные варианты поставки
           приложения.
+      - module_id: archiview-bridges
+        section: invariants
+        id: I1
+        text: Мосты обеспечивают регистрацию хоста и доставку поручений для Codex
+          Desktop и DeepSeek Harness.
     children: []
-  self_digest: sha256:3d8907787ec2fc36f8000d777ce099d832c1f42da4f71c87a707a25e99ec7f2a
+  self_digest: sha256:084e2fc102363a7101574654abdb488154d287de59bcbb65cb3c9acfdce207ce
   subtree:
-    self: sha256:6248f6ea93e5a66739eebb596ef19e7a1c70b2d8983768536144fe2ce07e493d
+    self: sha256:2c1fc620940aaced839deb29af4ee9ca2e896e638af79f28a1d818832679eec2
     children: []
-  subtree_digest: sha256:6807472ce6ce6db3adfb52755bdd19a30bf7faed472c1a3402793d039b248b89
+  subtree_digest: sha256:5f1f776a50bc2bdf248048c115ac26bf4946eecd77f1161a3532542bf089b672
   semantic_subtree:
-    self: sha256:3d8907787ec2fc36f8000d777ce099d832c1f42da4f71c87a707a25e99ec7f2a
+    self: sha256:084e2fc102363a7101574654abdb488154d287de59bcbb65cb3c9acfdce207ce
     children: []
-  semantic_subtree_digest: sha256:b43067c5a142add8a0b4d14b9fdaec7b86088b3eb32c24c8ecdaf8e4de221c83
+  semantic_subtree_digest: sha256:33ca88c95d9f7f1141bf6164d06e8f442f8e1288aba33955797acba5948cb1bc
 change:
   existence: retained
-  own: true
-  own_code: true
-  own_contract: true
-  inherited_constraints: true
+  own: false
+  own_code: false
+  own_contract: false
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -242,24 +277,24 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 251
-  comparison_key: sha256:279dc9637de4616f30531ddeb5a9d4c92487e10157d20831403a768cf3e1eb0e
+  generation: 254
+  comparison_key: sha256:89819d7fd0e86afcd1899944a76691772ff6b2fd320f3a434974e8ecf2c3be6f
   baseline:
     metadata:
-      id: git-d9ef55c491050e3727283582fcc1018d200da614
-      digest: sha256:d38f9e4f50fa68a2feb9b2fad555727b5fd5eff723b87d9a15508a042bcafdff
+      id: git-8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      digest: sha256:536e150cce8ea9fc1bc8badae375532e3de349fb5b6a3d58b541e4d4a2f21f87
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-24T18:52:06.357Z
+      capturedAt: 2026-11-26T09:44:39.155Z
       kind: git
-      revision: d9ef55c491050e3727283582fcc1018d200da614
+      revision: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
       label: HEAD
-      fingerprint: 5af38f4a54f8fb05c018260b03da31860566581b87b5ba5c8af950f0a6636c3f
+      fingerprint: 2dee2965eb997121b14a6fd797be0b773eca592bd578ce0553474b2e511dd5df
       complete: true
       diagnostics: []
       evidenceLimitations: []
       isHead: true
-    module_index: 7
+    module_index: 10
     module:
       directory: bridges/codex
       document:
@@ -275,333 +310,8 @@ publication:
 
           extensions:
             archiview.roles: [plugin]
-            archiview.prototype: true
-          purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с
-          текущей сессией Codex.
-
-          boundaries: {}
-
-          invariants:
-            I8: OS Windows 11
-            I9: OS Linux
-            I10: OS Mac
-        format: yaml
-        contract:
-          schema_version: 1
-          id: archiview-codex
-          title: Codex
-          kind: module
-          extensions:
-            archiview.roles:
-              - plugin
-            archiview.prototype: true
-          purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с текущей сессией
-            Codex.
-          boundaries: {}
-          invariants:
-            I8: OS Windows 11
-            I9: OS Linux
-            I10: OS Mac
-      documentPath: .archiview/modules/archiview-codex.yaml
-      files:
-        - path: .archiview/modules/archiview-codex.yaml
-          hash: 601bfe1b8d9284a7bfc26f8da02629d9b6050606
-          mode: "100644"
-        - path: bridges/codex/.gitkeep
-          hash: e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-          mode: "100644"
-      sourceFiles: 0
-      fingerprint: e9de4d414b0d4eca6a56bcabe9f6e7196674243ce147de87572a2a84e6420971
-    facts:
-      - index: 10
-        fact:
-          id: sha256:e6d00f753841a44ce1d84f76a36c8e695945d954c7b1a510004b3bc946a74634
-          kind: file
-          path: .archiview/modules/archiview-codex.yaml
-          start_line: 1
-          end_line: 14
-          text: >
-            schema_version: 1
-
-            id: archiview-codex
-
-            title: Codex
-
-            kind: module
-
-            extensions:
-              archiview.roles: [plugin]
-              archiview.prototype: true
-            purpose: Предоставлять веб-интерфейсу канал обмена сообщениями с
-            текущей сессией Codex.
-
-            boundaries: {}
-
-            invariants:
-              I8: OS Windows 11
-              I9: OS Linux
-              I10: OS Mac
-      - index: 81
-        fact:
-          id: sha256:1c3141bc882a7a3be6a788510f84f114451b49e89035b0984e4496e19d7858e5
-          kind: file
-          path: bridges/codex/.gitkeep
-          start_line: 1
-          end_line: 1
-          text: ""
-      - index: 203
-        fact:
-          id: sha256:421068d5dec1caa9f389e14cd23a04ff06cfc712db4e3d91e27211fe6af1f733
-          kind: module
-          path: bridges/codex
-          text: '{"contract":"documented","format":"yaml","sources":[]}'
-  current:
-    metadata:
-      id: launch-0285bb58b3be6e60f81cc6d866233a1193642f6598e4c3a1cd3d672468209736
-      digest: sha256:dbf5da7c05ec42e1778e8479c1cafcaa95b2abfb25ef79df2ceabccd5bc8ecb7
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-24T18:52:11.909Z
-      kind: launch
-      label: Начальное состояние
-      fingerprint: 0285bb58b3be6e60f81cc6d866233a1193642f6598e4c3a1cd3d672468209736
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-      observations:
-        architecture-change-view:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 651
-        archiview-distribution:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 214
-        archiview-skills:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 200
-        archiview-module-boundaries-skill:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 207
-        architecture-core:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 17
-        archiview-application:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 260
-        archiview-http:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 219
-        archiview-codex:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 231
-        archiview-contracts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 209
-        dsh-adapter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 224
-        dsh-client-panel:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 10
-        archiview-mcp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        archiview-project-location:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 211
-        archiview-reports:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 208
-        archiview-reviews:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 203
-        archiview-node-runtime:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 205
-        archiview-serialization:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 203
-        archiview-snapshots:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 213
-        archiview-storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        architecture-tests:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 270
-        architecture-web:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 210
-        archiview-client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 238
-        prototype-smoke-1674b57d:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        prototype-smoke-9a3440c6:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        directory:.:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        directory:scripts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-        directory:skills:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:skills/module-boundaries:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-        directory:src:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 8
-        directory:src/application:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 11
-        directory:src/archiview:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/codex:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-        directory:src/contracts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        directory:src/dsh:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/dsh/client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/mcp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/project:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/reports:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 10
-        directory:src/reviews:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 8
-        directory:src/runtime:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/serialization:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:src/snapshots:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-        directory:src/storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:test:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-        directory:web:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-        directory:web/archiview:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 13
-        archiview-analyse:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 201
-        archiview-analyse-type:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-report-store:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-project-files:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-bridges:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 216
-        archiview-cli:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 202
-        archiview-cli-operation:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-framework:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 209
-        archiview-project-types:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 194
-        archiview-tools:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 194
-        archiview-analysis-service:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 207
-        archiview-file-service:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-host-bridge:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 200
-        archiview-web-api-client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 198
-        archiview-module-presenter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 204
-        archiview-views:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 202
-        archiview-workspace-presenter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 196
-        archiview-file-watcher:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 201
-        archiview-git-changes:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 207
-        archiview-git-changes-report:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-module-operations:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 220
-        archiview-project-context:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 199
-        archiview-module-access:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-        archiview-module-review:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 195
-        archiview-module-relations:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 199
-        archiview-relation-model:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 193
-    module_index: 7
-    module:
-      directory: bridges/codex
-      document:
-        state: documented
-        text: >
-          schema_version: 1
-
-          id: archiview-codex
-
-          title: Codex
-
-          kind: module
-
-          extensions:
-            archiview.roles: [plugin]
-          purpose: Создавать новый чат Codex Desktop в проекте выбранного
+          purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView
+          на время подключения моста, создавать новый чат в проекте выбранного
           репозитория или рабочей папки и передавать поручение анализа.
 
           boundaries: {}
@@ -619,8 +329,9 @@ publication:
           extensions:
             archiview.roles:
               - plugin
-          purpose: Создавать новый чат Codex Desktop в проекте выбранного репозитория или
-            рабочей папки и передавать поручение анализа.
+          purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+            подключения моста, создавать новый чат в проекте выбранного
+            репозитория или рабочей папки и передавать поручение анализа.
           boundaries: {}
           invariants:
             I8: OS Windows 11
@@ -629,23 +340,23 @@ publication:
       documentPath: .archiview/modules/archiview-codex.yaml
       files:
         - path: .archiview/modules/archiview-codex.yaml
-          hash: 703311c2d7ff15ca6c17e0c08b76f5d99d0d7edf
+          hash: 860025a26a7c43e0692a3514aec755c787bde833
           mode: "100644"
         - path: bridges/codex/context.ts
           hash: 5f8ae04642c115bf86573c5e038d89026a547577
           mode: "100644"
         - path: bridges/codex/host.ts
-          hash: e40a6b645e0fc01ad9c919c92ceadacdbd54a74b
+          hash: b9e1d7ec5415c098db0c914188cc6bdb0a06b58e
           mode: "100644"
         - path: bridges/codex/server.ts
-          hash: 28a5a814098e0f639623901451f7e679283f07a7
+          hash: 7fea489170ace860342cdef940cbfd4bba386475
           mode: "100644"
       sourceFiles: 3
-      fingerprint: 338b7ecd8fd22fcc95a4f0406db5781d512d23f2d79742283729d39a8700314f
+      fingerprint: b32acc4d3103af8ad01088b69500f21831182070e03f28a236859c92f56f94bd
     facts:
       - index: 10
         fact:
-          id: sha256:9e534de725dd142c89bd43ae880f4b702e3bddd8c664b62705b0f18eac78824e
+          id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
           kind: file
           path: .archiview/modules/archiview-codex.yaml
           start_line: 1
@@ -661,8 +372,10 @@ publication:
 
             extensions:
               archiview.roles: [plugin]
-            purpose: Создавать новый чат Codex Desktop в проекте выбранного
-            репозитория или рабочей папки и передавать поручение анализа.
+            purpose: Регистрировать работающий экземпляр Codex Desktop в
+            ArchiView на время подключения моста, создавать новый чат в проекте
+            выбранного репозитория или рабочей папки и передавать поручение
+            анализа.
 
             boundaries: {}
 
@@ -670,7 +383,7 @@ publication:
               I8: OS Windows 11
               I9: OS Linux
               I10: OS Mac
-      - index: 83
+      - index: 86
         fact:
           id: sha256:8e92cab1cbcd462441fb56111cea3460c7bd33a14f810b9cded85d5fa5d5d2e2
           kind: file
@@ -735,13 +448,13 @@ publication:
               const thread = meta.thread;
               if (thread && typeof thread === "object" && "id" in thread && typeof thread.id === "string") return thread.id;
             }
-      - index: 84
+      - index: 87
         fact:
-          id: sha256:53c1d9286f17cd15c4363f9373009b1fad1a0fd10f331210978574a647e2f716
+          id: sha256:88a8559fe711e6176ce022b3ebf1fa5c4d52bef3ec9d2b18575c97c8763e1c7b
           kind: file
           path: bridges/codex/host.ts
           start_line: 1
-          end_line: 85
+          end_line: 90
           text: >
             import net from "node:net";
 
@@ -793,9 +506,15 @@ publication:
             }
 
 
-            export async function desktopIsRunning(pipe: string) {
-              try { await rpc(pipe, "tools/list", { threadStartKind: "all" }); return true; }
-              catch { return false; }
+            export async function desktopStatus(pipe: string): Promise<"ready" |
+            "unresponsive" | "disconnected"> {
+              try {
+                await rpc(pipe, "tools/list", { threadStartKind: "all" });
+                return "ready";
+              } catch (error) {
+                const code = (error as NodeJS.ErrnoException).code;
+                return code === "ENOENT" || code === "ECONNREFUSED" ? "disconnected" : "unresponsive";
+              }
             }
 
 
@@ -840,13 +559,13 @@ publication:
                 },
               };
             }
-      - index: 85
+      - index: 88
         fact:
-          id: sha256:390df36c161ef9c4c515fc379d59f645dcc55844667bb74655d63e5859a3e4e5
+          id: sha256:71617a144447ff7ca35ea0568827c6beefb84449c6bf38e7d053759b65c52311
           kind: file
           path: bridges/codex/server.ts
           start_line: 1
-          end_line: 86
+          end_line: 89
           text: >
             import { fork } from "node:child_process";
 
@@ -854,10 +573,12 @@ publication:
 
             import { createInterface } from "node:readline";
 
+            import { setTimeout as delay } from "node:timers/promises";
+
             import { harnessInstanceId, listHarnesses, registerHarness } from
             "../../web/web-backend/host-bridge/channel.js";
 
-            import { codexAdapter, desktopIsRunning } from "./host.js";
+            import { codexAdapter, desktopStatus } from "./host.js";
 
             import { callerThread, desktopBinding } from "./context.js";
 
@@ -874,7 +595,7 @@ publication:
 
             if (process.argv.includes("--connect")) {
               if (!binding || !environment.threadId) throw new Error("Выполните --connect из локального чата Codex Desktop");
-              if (!await desktopIsRunning(pipe!)) throw new Error("Codex Desktop недоступен");
+              if (await desktopStatus(pipe!) !== "ready") throw new Error("Codex Desktop недоступен");
               await binding.connect(environment.threadId);
               const target = { workspaceRoot: process.cwd(), repositoryRoot: process.cwd() };
               if (!(await listHarnesses(target)).harnesses.some(host => host.id === harnessInstanceId("codex", pipe!))) {
@@ -901,10 +622,12 @@ publication:
               if (!pipe || !binding) throw new Error("Нет канала Codex Desktop");
               const close = await registerHarness(codexAdapter(pipe, binding.read));
               process.send?.("ready");
-              const timer = setInterval(async () => {
-                if (!await desktopIsRunning(pipe)) { clearInterval(timer); await close(); }
-              }, 15000);
-              timer.unref();
+              let missingProbes = 0;
+              while (missingProbes < 2) {
+                await delay(15000, undefined, { ref: false });
+                missingProbes = await desktopStatus(pipe) === "disconnected" ? missingProbes + 1 : 0;
+              }
+              await close();
             } else await serveMcp();
 
 
@@ -948,7 +671,794 @@ publication:
               }
               await (await registration)?.();
             }
-      - index: 214
+      - index: 229
+        fact:
+          id: sha256:f254b104564a4a5fcc46bdbeb2135057a84731a533f09106f0e1a25bf936c522
+          kind: module
+          path: bridges/codex
+          text: '{"contract":"documented","format":"yaml","sources":["bridges/codex/context.ts","bridges/codex/host.ts","bridges/codex/server.ts"]}'
+  current:
+    metadata:
+      id: launch-79c5c319ff4856a430dc67e2014806a8767b305f5c1a1605e266e957ffcb98c9
+      digest: sha256:37a05bd036aac1c7ed49910180164901d7b9415d2a7cab0a8ef16e597010fef5
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-26T09:44:43.720Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 79c5c319ff4856a430dc67e2014806a8767b305f5c1a1605e266e957ffcb98c9
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+      baseRevision: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      observations:
+        architecture-change-view:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 853
+          grasp: 5
+          implementation: 1
+        archiview-distribution:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 392
+          grasp: 1
+          implementation: 3
+        archiview-skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 377
+          grasp: 2
+          implementation: 1
+        archiview-module-boundaries-skill:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 386
+          grasp: 2
+          implementation: 17
+          skillHistory:
+            since: 383
+            uncertainAt: 385
+            changedAt: 386
+        architecture-core:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 17
+          grasp: 1
+          implementation: 1
+        archiview-application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 465
+          grasp: 4
+          implementation: 21
+        archiview-http:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 400
+          grasp: 1
+          implementation: 4
+        archiview-codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 408
+          grasp: 2
+          implementation: 2
+        archiview-contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 1
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 405
+          grasp: 6
+          implementation: 6
+        dsh-client-panel:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 10
+          grasp: 1
+          implementation: 1
+        archiview-mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        archiview-project-location:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 395
+          grasp: 1
+          implementation: 9
+        archiview-reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 386
+          grasp: 1
+          implementation: 1
+        archiview-reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 3
+        archiview-node-runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 382
+          grasp: 1
+          implementation: 2
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 1
+          implementation: 12
+        archiview-snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 392
+          grasp: 1
+          implementation: 3
+        archiview-storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 15
+          grasp: 2
+          implementation: 4
+        architecture-tests:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 501
+          grasp: 1
+          implementation: 43
+        architecture-web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 388
+          grasp: 3
+          implementation: 1
+        archiview-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 418
+          grasp: 3
+          implementation: 2
+        prototype-smoke-1674b57d:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        prototype-smoke-9a3440c6:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        directory:.:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:scripts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:skills/module-boundaries:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+          grasp: 1
+          implementation: 1
+        directory:src/application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 11
+          grasp: 1
+          implementation: 1
+        directory:src/archiview:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src/contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:src/dsh:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/dsh/client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/project:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 10
+          grasp: 1
+          implementation: 1
+        directory:src/reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+          grasp: 1
+          implementation: 1
+        directory:src/runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src/storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:test:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:web/archiview:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 13
+          grasp: 1
+          implementation: 1
+        archiview-analyse:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 381
+          grasp: 4
+          implementation: 1
+        archiview-analyse-type:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-report-store:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-project-files:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-bridges:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 398
+          grasp: 7
+          implementation: 3
+        archiview-cli:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 391
+          grasp: 1
+          implementation: 13
+        archiview-cli-operation:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-framework:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 1
+        archiview-project-types:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 370
+          grasp: 1
+          implementation: 1
+        archiview-tools:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 371
+          grasp: 1
+          implementation: 2
+        archiview-analysis-service:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 406
+          grasp: 3
+          implementation: 20
+        archiview-file-service:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-host-bridge:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 378
+          grasp: 1
+          implementation: 3
+        archiview-web-api-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 377
+          grasp: 2
+          implementation: 3
+        archiview-module-presenter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 391
+          grasp: 2
+          implementation: 9
+        archiview-views:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 389
+          grasp: 2
+          implementation: 8
+        archiview-workspace-presenter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 379
+          grasp: 3
+          implementation: 7
+        archiview-file-watcher:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 377
+          grasp: 1
+          implementation: 1
+        archiview-git-changes:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 1
+          implementation: 7
+        archiview-git-changes-report:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-module-operations:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 416
+          grasp: 1
+          implementation: 10
+        archiview-project-context:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 376
+          grasp: 1
+          implementation: 2
+        archiview-module-access:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-module-review:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 394
+          grasp: 1
+          implementation: 13
+        archiview-module-relations:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 388
+          grasp: 2
+          implementation: 14
+        archiview-relation-model:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 372
+          grasp: 1
+          implementation: 4
+        archiview-grasp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-implementation:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 4
+          grasp: 1
+          implementation: 3
+        directory:storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 2
+          implementation: 2
+        directory:analyse/project-sources:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 2
+          implementation: 2
+        archiview-project-sources:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 1
+          grasp: 1
+          implementation: 1
+    module_index: 10
+    module:
+      directory: bridges/codex
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-codex
+
+          title: Codex
+
+          kind: module
+
+          extensions:
+            archiview.roles: [plugin]
+          purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView
+          на время подключения моста, создавать новый чат в проекте выбранного
+          репозитория или рабочей папки и передавать поручение анализа.
+
+          boundaries: {}
+
+          invariants:
+            I8: OS Windows 11
+            I9: OS Linux
+            I10: OS Mac
+        format: yaml
+        contract:
+          schema_version: 1
+          id: archiview-codex
+          title: Codex
+          kind: module
+          extensions:
+            archiview.roles:
+              - plugin
+          purpose: Регистрировать работающий экземпляр Codex Desktop в ArchiView на время
+            подключения моста, создавать новый чат в проекте выбранного
+            репозитория или рабочей папки и передавать поручение анализа.
+          boundaries: {}
+          invariants:
+            I8: OS Windows 11
+            I9: OS Linux
+            I10: OS Mac
+      documentPath: .archiview/modules/archiview-codex.yaml
+      files:
+        - path: .archiview/modules/archiview-codex.yaml
+          hash: 860025a26a7c43e0692a3514aec755c787bde833
+          mode: "100644"
+        - path: bridges/codex/context.ts
+          hash: 5f8ae04642c115bf86573c5e038d89026a547577
+          mode: "100644"
+        - path: bridges/codex/host.ts
+          hash: b9e1d7ec5415c098db0c914188cc6bdb0a06b58e
+          mode: "100644"
+        - path: bridges/codex/server.ts
+          hash: 7fea489170ace860342cdef940cbfd4bba386475
+          mode: "100644"
+      sourceFiles: 3
+      fingerprint: b32acc4d3103af8ad01088b69500f21831182070e03f28a236859c92f56f94bd
+    facts:
+      - index: 10
+        fact:
+          id: sha256:d66ecc5a8f800e75f8ee3575e18843b362d30205192c27726bbb092ca9a2991f
+          kind: file
+          path: .archiview/modules/archiview-codex.yaml
+          start_line: 1
+          end_line: 13
+          text: >
+            schema_version: 1
+
+            id: archiview-codex
+
+            title: Codex
+
+            kind: module
+
+            extensions:
+              archiview.roles: [plugin]
+            purpose: Регистрировать работающий экземпляр Codex Desktop в
+            ArchiView на время подключения моста, создавать новый чат в проекте
+            выбранного репозитория или рабочей папки и передавать поручение
+            анализа.
+
+            boundaries: {}
+
+            invariants:
+              I8: OS Windows 11
+              I9: OS Linux
+              I10: OS Mac
+      - index: 86
+        fact:
+          id: sha256:8e92cab1cbcd462441fb56111cea3460c7bd33a14f810b9cded85d5fa5d5d2e2
+          kind: file
+          path: bridges/codex/context.ts
+          start_line: 1
+          end_line: 47
+          text: >
+            import { createHash, randomUUID } from "node:crypto";
+
+            import { mkdir, readFile, rename, rm, writeFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { bridgeDirectory } from
+            "../../web/web-backend/host-bridge/channel.js";
+
+
+            type Caller = { threadId?: string; hostId?: string };
+
+
+            /** All MCP children of the same running Desktop share the context
+            explicitly connected by a user. */
+
+            export function desktopBinding(pipe: string, environment: Caller) {
+              const dir = bridgeDirectory();
+              const file = path.join(dir, "codex-" + createHash("sha256").update(pipe).digest("hex") + ".context");
+              return {
+                async read(): Promise<Caller> {
+                  if (environment.threadId) return environment;
+                  try {
+                    const data = JSON.parse(await readFile(file, "utf8"));
+                    return typeof data?.threadId === "string" ? { threadId: data.threadId, hostId: environment.hostId } : environment;
+                  } catch (error) {
+                    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+                    return environment;
+                  }
+                },
+                async connect(threadId: string) {
+                  if (!threadId.trim()) throw new Error("Codex не передал ID текущего чата");
+                  await mkdir(dir, { recursive: true, mode: 0o700 });
+                  const temp = file + "." + randomUUID();
+                  try {
+                    await writeFile(temp, JSON.stringify({ threadId }), { mode: 0o600, flag: "wx" });
+                    await rename(temp, file);
+                  } finally { await rm(temp, { force: true }); }
+                },
+              };
+            }
+
+
+            export function callerThread(meta: Record<string, unknown> = {}):
+            string | undefined {
+              for (const key of ["openai/threadId", "openai/thread_id", "codexThreadId", "codex_thread_id", "threadId", "thread_id"]) {
+                if (typeof meta[key] === "string" && meta[key]) return meta[key];
+              }
+              const turn = meta["x-codex-turn-metadata"];
+              try {
+                const info = typeof turn === "string" ? JSON.parse(turn) : turn;
+                if (typeof info?.thread_id === "string") return info.thread_id;
+              } catch { /* Other host metadata can still identify the thread. */ }
+              const thread = meta.thread;
+              if (thread && typeof thread === "object" && "id" in thread && typeof thread.id === "string") return thread.id;
+            }
+      - index: 87
+        fact:
+          id: sha256:88a8559fe711e6176ce022b3ebf1fa5c4d52bef3ec9d2b18575c97c8763e1c7b
+          kind: file
+          path: bridges/codex/host.ts
+          start_line: 1
+          end_line: 90
+          text: >
+            import net from "node:net";
+
+            import { randomUUID } from "node:crypto";
+
+            import path from "node:path";
+
+            import type { Adapter, ProjectTarget } from
+            "../../web/web-backend/host-bridge/channel.js";
+
+
+            type Data = Record<string, unknown>;
+
+            function object(value: unknown): Data {
+              if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Некорректный ответ Codex Desktop");
+              return value as Data;
+            }
+
+
+            /** Codex Desktop's local App Tools transport uses length-prefixed
+            JSON-RPC frames. */
+
+            async function rpc(pipe: string, method: string, params: Data) {
+              const payload = Buffer.from(JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }));
+              const prefix = Buffer.alloc(4);
+              prefix.writeUInt32LE(payload.length);
+              const socket = net.createConnection(pipe);
+              try {
+                return await new Promise<Data>((resolve, reject) => {
+                  socket.setTimeout(method === "tools/list" ? 2500 : 45000, () => socket.destroy(new Error("Codex Desktop не ответил")));
+                  socket.once("connect", () => socket.write(Buffer.concat([prefix, payload])));
+                  socket.once("error", reject);
+                  socket.once("close", () => reject(new Error("Соединение с Codex Desktop закрыто")));
+                  let buffer = Buffer.alloc(0);
+                  socket.on("data", chunk => {
+                    try {
+                      buffer = Buffer.concat([buffer, typeof chunk === "string" ? Buffer.from(chunk) : chunk]);
+                      if (buffer.length < 4) return;
+                      const size = buffer.readUInt32LE();
+                      if (size > 8 * 1024 * 1024) throw new Error("Слишком большой ответ Codex Desktop");
+                      if (buffer.length < 4 + size) return;
+                      const response = object(JSON.parse(buffer.toString("utf8", 4, 4 + size)));
+                      if (response.error) throw new Error(String(object(response.error).message));
+                      resolve(object(response.result));
+                    } catch (error) { reject(error); }
+                  });
+                });
+              } finally { socket.destroy(); }
+            }
+
+
+            export async function desktopStatus(pipe: string): Promise<"ready" |
+            "unresponsive" | "disconnected"> {
+              try {
+                await rpc(pipe, "tools/list", { threadStartKind: "all" });
+                return "ready";
+              } catch (error) {
+                const code = (error as NodeJS.ErrnoException).code;
+                return code === "ENOENT" || code === "ECONNREFUSED" ? "disconnected" : "unresponsive";
+              }
+            }
+
+
+            export function codexAdapter(pipe: string, context: () => {
+            threadId?: string; hostId?: string } | Promise<{ threadId?: string;
+            hostId?: string }>, transport = rpc): Adapter {
+              async function tool(name: "list_projects" | "create_thread", args: Data) {
+                const result = await transport(pipe, "tools/call", { ...await context(), tool: name, arguments: args,
+                  namespace: "codex_app", callerSource: "codex", callId: randomUUID(), turnId: "archiview-" + randomUUID() });
+                const items = Array.isArray(result.contentItems) ? result.contentItems.map(object) : [];
+                const text = items.find(item => item.type === "inputText")?.text;
+                if (result.success !== true || typeof text !== "string") throw new Error(typeof text === "string" ? text : "Codex отклонил " + name);
+                return object(JSON.parse(text));
+              }
+              async function project(target: ProjectTarget) {
+                const result = await tool("list_projects", {});
+                const hostId = (await context()).hostId || "local";
+                const projects = Array.isArray(result.projects) ? result.projects.map(object) : [];
+                for (const root of [target.repositoryRoot, target.workspaceRoot]) {
+                  const found = projects.find(p => p.projectKind === "local" && p.hostId === hostId &&
+                    typeof p.path === "string" && path.relative(p.path, root) === "");
+                  if (typeof found?.projectId === "string") return found.projectId;
+                }
+              }
+              const missingProject = "Добавьте репозиторий или рабочую папку ArchiView в проекты Codex";
+              return {
+                kind: "codex", instance: pipe,
+                async available(target) {
+                  const catalogue = await transport(pipe, "tools/list", { threadStartKind: "all" });
+                  const tools = Array.isArray(catalogue.tools) ? catalogue.tools.map(object) : [];
+                  if (!tools.some(t => t.namespace === "codex_app" && t.name === "create_thread")) throw new Error("Создание чатов недоступно");
+                  if (!(await context()).threadId) return "В чате Codex вызовите archiview_connect";
+                  return (await project(target)) ? undefined : missingProject;
+                },
+                async start(job) {
+                  const projectId = await project(job);
+                  if (!projectId) throw new Error(missingProject);
+                  const value = await tool("create_thread", { target: { type: "project", projectId, environment: { type: "local" } },
+                    title: "ArchiView · " + job.moduleId, prompt: job.prompt });
+                  if (typeof value.threadId !== "string") throw new Error("Codex не подтвердил идентификатор созданного чата");
+                  return value.threadId;
+                },
+              };
+            }
+      - index: 88
+        fact:
+          id: sha256:71617a144447ff7ca35ea0568827c6beefb84449c6bf38e7d053759b65c52311
+          kind: file
+          path: bridges/codex/server.ts
+          start_line: 1
+          end_line: 89
+          text: >
+            import { fork } from "node:child_process";
+
+            import { fileURLToPath } from "node:url";
+
+            import { createInterface } from "node:readline";
+
+            import { setTimeout as delay } from "node:timers/promises";
+
+            import { harnessInstanceId, listHarnesses, registerHarness } from
+            "../../web/web-backend/host-bridge/channel.js";
+
+            import { codexAdapter, desktopStatus } from "./host.js";
+
+            import { callerThread, desktopBinding } from "./context.js";
+
+
+            /** The host owns this MCP process. Registration ends when its stdio
+            transport closes. */
+
+            const pipe = process.env.CODEX_APP_TOOLS_PIPE_PATH;
+
+            const environment = { threadId: process.env.CODEX_THREAD_ID, hostId:
+            process.env.CODEX_APP_TOOLS_CALLER_HOST_ID };
+
+            const binding = pipe && desktopBinding(pipe, environment);
+
+            if (process.argv.includes("--connect")) {
+              if (!binding || !environment.threadId) throw new Error("Выполните --connect из локального чата Codex Desktop");
+              if (await desktopStatus(pipe!) !== "ready") throw new Error("Codex Desktop недоступен");
+              await binding.connect(environment.threadId);
+              const target = { workspaceRoot: process.cwd(), repositoryRoot: process.cwd() };
+              if (!(await listHarnesses(target)).harnesses.some(host => host.id === harnessInstanceId("codex", pipe!))) {
+                // An already open chat can still have its previous MCP catalogue after installation.
+                const child = fork(fileURLToPath(import.meta.url), ["--desktop-worker"], {
+                  detached: true, windowsHide: true, stdio: ["ignore", "ignore", "ignore", "ipc"],
+                });
+                try {
+                  await new Promise<void>((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error("Истекло время подключения ArchiView")), 10000);
+                    child.once("message", () => { clearTimeout(timeout); resolve(); });
+                    child.once("error", error => { clearTimeout(timeout); reject(error); });
+                    child.once("exit", () => { clearTimeout(timeout); reject(new Error("Мост Codex завершился при запуске")); });
+                  });
+                } catch (error) { child.kill(); throw error; }
+                if (child.connected) child.disconnect();
+                child.unref();
+              }
+              process.stdout.write("ArchiView подключён к Codex Desktop.\n");
+              process.exit(0);
+            }
+
+            if (process.argv.includes("--desktop-worker")) {
+              if (!pipe || !binding) throw new Error("Нет канала Codex Desktop");
+              const close = await registerHarness(codexAdapter(pipe, binding.read));
+              process.send?.("ready");
+              let missingProbes = 0;
+              while (missingProbes < 2) {
+                await delay(15000, undefined, { ref: false });
+                missingProbes = await desktopStatus(pipe) === "disconnected" ? missingProbes + 1 : 0;
+              }
+              await close();
+            } else await serveMcp();
+
+
+            async function serveMcp() {
+              let registration: ReturnType<typeof registerHarness> | undefined;
+              function register() {
+                if (!pipe || !binding) throw new Error("Требуется локальный Codex Desktop");
+                registration ??= registerHarness(codexAdapter(pipe, binding.read)).catch(error => {
+                  registration = undefined;
+                  throw error;
+                });
+                return registration;
+              }
+              const lines = createInterface({ input: process.stdin });
+              function send(id: unknown, value: object) {
+                process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id, ...value }) + "\n");
+              }
+              for await (const line of lines) {
+                let message;
+                try { message = JSON.parse(line); } catch { send(null, { error: { code: -32700, message: "Invalid JSON" } }); continue; }
+                if (!message || typeof message !== "object" || message.id === undefined) continue;
+                if (message.method === "initialize") {
+                  if (pipe && binding) void register().catch(error => process.stderr.write(String(error) + "\n"));
+                  send(message.id, { result: { protocolVersion: message.params?.protocolVersion ?? "2025-11-25",
+                    capabilities: { tools: {} }, serverInfo: { name: "archiview-bridge", version: "1.0.0" } } });
+                } else if (message.method === "tools/list") send(message.id, { result: { tools: [{ name: "archiview_connect",
+                  description: "Зарегистрировать текущий Codex Desktop в локальном ArchiView по запросу пользователя.",
+                  inputSchema: { type: "object", properties: {}, additionalProperties: false } }] } });
+                else if (message.method === "tools/call" && message.params?.name === "archiview_connect") {
+                  try {
+                    const id = callerThread(message.params._meta) ?? environment.threadId;
+                    if (!binding || !id) throw new Error("Требуется контекст локального чата Codex Desktop");
+                    await binding.connect(id);
+                    await register();
+                    send(message.id, { result: { content: [{ type: "text", text: "Codex Desktop зарегистрирован в ArchiView." }] } });
+                  } catch (error) {
+                    send(message.id, { result: { isError: true, content: [{ type: "text", text: String(error) }] } });
+                  }
+                } else if (message.method === "ping") send(message.id, { result: {} });
+                else send(message.id, { error: { code: -32601, message: "Method not found" } });
+              }
+              await (await registration)?.();
+            }
+      - index: 237
         fact:
           id: sha256:f254b104564a4a5fcc46bdbeb2135057a84731a533f09106f0e1a25bf936c522
           kind: module
@@ -1068,12 +1578,28 @@ review_status:
           side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
         - code: module_changed_since_analysis
         - code: baseline_identity
+        - code: own_code
+          side: baseline
+        - code: own_contract
+          side: baseline
       verdict: null
       verdicts: []
       review_ids:

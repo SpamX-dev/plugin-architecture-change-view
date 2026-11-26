@@ -110,6 +110,36 @@ async function cliOrigin(defer: DeferCleanup, project: string) {
   throw new Error("Built CLI exited before listening. " + diagnostics);
 }
 
+test("project settings persist both switches and retain the project's harness choice", browserOptions, async t => {
+  const defer = await fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const config = path.join(root, ".archiview", "agent-review.json");
+  const other = {dsh:"dsh-000000000000000000000001"};
+  await writeFile(config, JSON.stringify(other));
+  const origin = await cliOrigin(defer, root);
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(origin);
+  const open = page.getByRole("button", {name:"Настройки", exact:true});
+  await open.click();
+  const dialog = page.getByRole("dialog", {name:"Настройки проекта"});
+  const auto = dialog.getByRole("checkbox", {name:"Автоанализ изменений"});
+  const codex = dialog.getByRole("checkbox", {name:"Подключить хуки Codex"});
+  await auto.check();
+  await codex.check();
+  await dialog.getByRole("status").getByText("Сохранено").waitFor();
+  assert.deepEqual(JSON.parse(await readFile(config, "utf8")), {...other, enabled:true});
+  await page.reload();
+  await open.click();
+  await page.waitForFunction(() => document.querySelector<HTMLFieldSetElement>(".project-settings fieldset")?.disabled === false);
+  assert.equal(await auto.isChecked(), true);
+  assert.equal(await codex.isChecked(), true);
+  await auto.uncheck();
+  await codex.uncheck();
+  await dialog.getByRole("status").getByText("Сохранено").waitFor();
+  assert.deepEqual(JSON.parse(await readFile(config, "utf8")), {...other, enabled:false});
+  assert.deepEqual(JSON.parse(await readFile(path.join(root, ".codex", "hooks.json"), "utf8")).hooks, {});
+});
+
 test("module relations build the project, reveal source lines and navigate to the consumer", browserOptions, async t => {
   const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);

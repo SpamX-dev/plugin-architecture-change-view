@@ -17,6 +17,8 @@ for (const [host, entry] of [["codex", "server"], ["dsh", "host"]]) {
 for (const file of ["package.json", "cordis.patch.yml"]) {
   await copyFile(new URL("bridges/dsh/" + file, root), new URL("bridges/dsh/" + file, output));
 }
+await build({entryPoints:[fileURLToPath(new URL("bridges/dsh/session-hooks.ts", root))],
+  outfile:fileURLToPath(new URL("bridges/dsh/session-hooks.mjs", output)), platform:"node", format:"esm", target:"node22", bundle:true});
 await build({
   absWorkingDir: fileURLToPath(root),
   entryPoints: ["cli/packaged-cli.ts"],

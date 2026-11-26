@@ -2,10 +2,9 @@ import { bindHarnessMenu } from "./harness-menu.js";
 import { findingFixPrompt } from "../../../module-operations/finding-fix.js";
 export { findingFixPrompt };
 import { clauseEntries } from "../../../framework/contracts/types.js";
-import type { ReviewBundle, Finding, ClauseReference, Contract, ModuleSummary, FixRecord, ReviewRenderOptions } from "../types.js";
+import type { ReviewBundle, Finding, ClauseReference, Contract, FixRecord, ReviewRenderOptions } from "../types.js";
 import { errorMessage } from "../types.js";
 import { el } from "../views/dom.js";
-import { treeParents } from "./module-path.js";
 
 /** Дата обозначает выполнение анализа; время сохранения исходников не выдумывается. */
 export function reviewDate(bundle: ReviewBundle) {
@@ -43,36 +42,6 @@ export function clauseFindingTargets(bundle: ReviewBundle | null | undefined, co
     label: finding.summary + " · анализ от " + reviewDate(bundle) +
       (saved.text !== clauseEntries(contract, section)[id] ? " · текст пункта изменён после анализа" : "") +
       (bundle.freshness?.current?.status !== "fresh" ? " · нужна перепроверка" : "") }));
-}
-
-type CountedModule = Pick<ModuleSummary, "key" | "directory" | "status" | "analyses"> & {
-  review?: { activeFindings?: number; findings?: number; assessment?: { current?: { verdict: string } } } | null;
-};
-
-/** Older summaries may only carry the assessment or the total number of findings. */
-export function moduleFindingCount(module: Pick<CountedModule, "review" | "analyses">) {
-  if (module.analyses) return Object.values(module.analyses).reduce((sum, value) => sum + value.openFindings, 0);
-  return module.review?.activeFindings ?? (module.review?.findings ||
-    Number(module.review?.assessment?.current?.verdict === "violation"));
-}
-
-/**
- * Счётчики жуков для строк дерева: свои замечания видны всегда, вложенные —
- * только на свёрнутом родителе своей стороны сравнения. Поиск передаёт
- * фактически раскрытые строки и видимые модули.
- */
-export function treeFindingCounts(modules: CountedModule[], expanded: Set<string>, parents = treeParents(modules)) {
-  const counts = new Map(modules.map((module) => [module.key, moduleFindingCount(module)]));
-  for (const module of modules) {
-    const count = moduleFindingCount(module);
-    if (!count || module.directory === ".") continue;
-    let parent = parents.get(module.key);
-    while (parent) {
-      if (!expanded.has(parent.key)) counts.set(parent.key, (counts.get(parent.key) ?? 0) + count);
-      parent = parents.get(parent.key);
-    }
-  }
-  return counts;
 }
 
 export { findingBug } from "../views/dom.js";

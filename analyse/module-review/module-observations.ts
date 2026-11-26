@@ -3,9 +3,9 @@ import { readFile, writeFile, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { digest } from "../../framework/serialization/digest.js";
 import { errorDetails } from "../../node-errors.js";
-import { analysisFingerprint } from "./analysis-scope.js";
+import { analysisFingerprint, projectAnalysisScopes } from "./analysis-scope.js";
 import type { AnalysisType } from "../../framework/ai-report/types.js";
-import { directChildContracts, moduleId } from "./module-state.js";
+import { moduleId } from "./module-state.js";
 import type { SkillObservationHistory, Snapshot, SnapshotModule } from "../../framework/snapshots/types.js";
 import type { SnapshotStore } from "../git-changes/snapshot-store.js";
 
@@ -40,8 +40,7 @@ function advance(hash: string | null, ...versions: (Version | undefined)[]): Ver
   return {hash, revision:unchanged ? highest : highest + 1};
 }
 
-function implementationHashes(module: SnapshotModule) {
-  const current = analysisFingerprint("implementation", [module]);
+function implementationHashes(module: SnapshotModule, current: string) {
   const withoutSkills = module.files.filter(file => path.posix.basename(file.path) !== "SKILL.md");
   const legacy = withoutSkills.length === module.files.length ? current :
     analysisFingerprint("implementation", [{...module, files:withoutSkills}]);
@@ -73,13 +72,11 @@ export async function observeModules(store: SnapshotStore, current: Snapshot) {
   const currentById = new Map(Object.entries(compatible?.modules ?? {}));
   const commonModules = new Map<string, ModuleCursor>();
   const currentModules = new Map<string, ModuleCursor>();
-  const children = directChildContracts(current.modules);
-  const byDirectory = new Map(current.modules.map(module => [module.directory, module]));
-  const fingerprints = new Map(current.modules.map(module => [moduleId(module), {
+  const fingerprints = new Map(projectAnalysisScopes(current).map(({module, composition, hashes}) => [moduleId(module), {
     fingerprint: digest([module.directory, module.files, module.document]),
-    composition: digest(children.get(module.directory) ?? []),
-    grasp: analysisFingerprint("grasp", [module, ...(children.get(module.directory) ?? []).map(child => byDirectory.get(child.directory)!)]),
-    implementation: implementationHashes(module),
+    composition: digest(composition),
+    grasp: hashes.grasp,
+    implementation: implementationHashes(module, hashes.implementation),
   }]));
   for (const id of new Set([...sharedById.keys(), ...currentById.keys(), ...fingerprints.keys()])) {
     const shared = sharedById.get(id);

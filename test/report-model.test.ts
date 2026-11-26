@@ -15,6 +15,7 @@ import { parseYaml } from "../framework/serialization/yaml.js";
 import { snapshotDigest } from "../framework/snapshots/identity.js";
 import { compareSnapshots } from "../analyse/git-changes/comparison.js";
 import { createStructuralReview } from "../analyse/module-review/bundle.js";
+import { analysisSnapshot } from "../analyse/module-review/analysis-scope.js";
 import { aggregateReviewStatus } from "../analyse/module-review/tree-status.js";
 import { aggregateTreeStatuses, createTechnicalReport, reviewFreshness } from "../analyse/module-review/model.js";
 import { buildModuleStates } from "../analyse/module-review/module-state.js";
@@ -385,6 +386,25 @@ test("legacy effective checks must refer to a clause selected by the manifest", 
   extra.contract.module_id = "provider";
   bundle.report.checks.push(extra);
   assert.throws(() => createReviewEntry(bundle), /clause outside the manifest/);
+});
+
+test("typed legacy bundles accept the projected evidence and reject facts outside it", () => {
+  const source = snapshot();
+  const external = source.facts.find(fact => fact.path === "provider/provider.js")!;
+  for (const analysisType of ["grasp", "implementation"] as const) {
+    const { report, manifest } = reviewed(null, source, "grand", { analysisType, draft: true });
+    const current = analysisSnapshot(analysisType, source, "grand");
+    const bundle = { report, manifest, current, baseline: null };
+    assert.equal(createReviewEntry(bundle).format, "legacy-v1");
+
+    current.facts.push(external);
+    current.digest = snapshotDigest(current);
+    manifest.comparison.current!.digest = current.digest;
+    report.comparison.current!.digest = current.digest;
+    report.analysis.input_digest = digest(manifest);
+    report.checks[0].evidence = [{ snapshot: "current", fact_id: external.id }];
+    assert.throws(() => createReviewEntry(bundle), /Evidence outside analysis scope/);
+  }
 });
 
 test("unknown dependency coverage is separate from matching and changed checked inputs", () => {

@@ -24,15 +24,16 @@ export interface Delivery {
 
 export function readDelivery(value: unknown): Delivery {
   if (!isRecord(value) || typeof value.harnessId !== "string" || typeof value.name !== "string" ||
-      !["pending", "sent", "unknown"].includes(String(value.state)) ||
+      (value.state !== "pending" && value.state !== "sent" && value.state !== "unknown") ||
       (value.state === "sent" && (typeof value.chatId !== "string" || !value.chatId)) ||
       (value.message !== undefined && typeof value.message !== "string")) throw new Error("Некорректные данные доставки");
-  return { harnessId: value.harnessId, name: value.name, state: value.state as Delivery["state"],
+  return { harnessId: value.harnessId, name: value.name, state: value.state,
     chatId: typeof value.chatId === "string" ? value.chatId : undefined, message: value.message };
 }
 
 export interface AnalysisStatus extends AnalysisRequest {
   delivery?: Delivery;
+  limitation?: string;
   status: "prepared" | "completed";
 }
 export interface PreparedAnalysis extends AnalysisStatus {
@@ -59,7 +60,8 @@ export function readAnalysisRequest(value: unknown): AnalysisRequest {
 export function readAnalysisStatus(value: Record<string, unknown>): AnalysisStatus {
   const status = value.status;
   if (status !== "prepared" && status !== "completed") throw new Error("Некорректный статус запроса анализа");
-  return { ...readAnalysisRequest(value), status, ...(value.delivery ? { delivery: readDelivery(value.delivery) } : {}) };
+  return { ...readAnalysisRequest(value), status, ...(value.delivery ? { delivery: readDelivery(value.delivery) } : {}),
+    ...(typeof value.limitation === "string" ? {limitation:value.limitation} : {}) };
 }
 
 export function readPreparedAnalysis(value: Record<string, unknown>): PreparedAnalysis {

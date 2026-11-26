@@ -144,6 +144,14 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
           await refresh();
           return;
         }
+        if (status.limitation) {
+          pending.delete(id);
+          item.poll = undefined;
+          record.status = "error";
+          record.message = status.limitation;
+          renderAnalysisControls();
+          return;
+        }
       } catch (error) {
         if (item.poll !== observer) return;
         record.message = "Не удалось обновить статус: " + errorMessage(error);

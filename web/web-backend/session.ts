@@ -13,6 +13,7 @@ import { observeModules } from "../../analyse/module-review/module-observations.
 import { RepositoryWatch } from "./repository-watch.js";
 import { repositoryStateDirectory } from "./state-directory.js";
 import { GitTreeReader } from "../../analyse/git-changes/git-tree.js";
+import { projectReviewSettings } from "./project-review-settings.js";
 import { realpath } from "node:fs/promises";
 import { ApplicationError } from "../../module-operations/errors.js";
 import { captureGitHead, captureWorkingTree, listGitRevisions, readGitHeadRevision } from "../../analyse/git-changes/capture.js";
@@ -25,6 +26,7 @@ import { createReportModel } from "../../analyse/module-review/model.js";
 import { ChangeHistory } from "../../analyse/git-changes/change-history.js";
 import { digest } from "../../framework/serialization/digest.js";
 import { AnalysisRequests } from "./analysis-service/analysis.js";
+import { AgentTurns } from "./analysis-service/turns.js";
 import { metadata, moduleDetail, moduleSummary, reviewSummary } from "../../module-operations/module-view.js";
 import { createContractEditor } from "../../module-operations/contract-editor.js";
 import { changeExistingPrototype, createPrototypes } from "../../module-operations/prototypes.js";
@@ -38,6 +40,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   const changes = new ChangeHistory(store);
   const decisions = new FindingDecisions(root, store.directory);
   const analysis = new AnalysisRequests(store, reports, workspaceRoot ?? root);
+  const settings = projectReviewSettings(root, store.directory);
   const reader = new GitTreeReader(root, store.snapshotRoot);
   const watcher = new RepositoryWatch(root, store.directory);
   const editor = createContractEditor(root);
@@ -528,8 +531,13 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   };
   const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, updateFinding, getRelations, buildRelations, getRelationSource,
     changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot,
+    getReviewSettings: (_args: {repository?: string}) => settings.read(),
+    setReviewSetting: settings.set,
     listHarnesses: (_args: {repository?: string}) => analysis.harnesses(),
     deliverFindingFix: (args: FindingFixArgs) => analysis.deliverFix(args),
     deliverAnalysis: (args: {id: string; harnessId: string}) => analysis.deliver(args.id, args.harnessId) } satisfies SessionOperations;
-  return { root, store, migration, reviews, reports, changes, analysis, startupComparison, ...operations, close: () => watcher.close() };
+  const turns = new AgentTurns(analysis, decisions,
+    async () => findView((await getComparison({historyLimit:1})).id),
+    view => reports.withLivePublication(() => evidenceView(view)), selectedAnalyses);
+  return { root, store, migration, reviews, reports, changes, analysis, turns, startupComparison, ...operations, close: () => watcher.close() };
 }

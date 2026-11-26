@@ -9,8 +9,10 @@ import test, { type TestContext } from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { parse, stringify } from "yaml";
-import { registerHarness } from "../web/web-backend/host-bridge/channel.js";
+import { harnessInstanceId, registerHarness, type Assignment } from "../web/web-backend/host-bridge/channel.js";
 import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
+import { createArchiViewSession } from "../web/web-backend/session.js";
+import { turnHook } from "../cli/turn-hook.js";
 import { createArchiView } from "../web/web-backend/web-service/http.js";
 import { digest } from "../framework/serialization/digest.js";
 import { captureWorkingTree } from "../analyse/git-changes/capture.js";
@@ -23,7 +25,8 @@ import { reviewFreshness } from "../analyse/module-review/model.js";
 import type { Fact } from "../framework/snapshots/types.js";
 import type { ReviewInput } from "../framework/static-report/types.js";
 import type { ComparisonView } from "../module-operations/api.js";
-import { commitTestFiles, initTestRepository, writeModuleTree, type ComparisonResponse } from "./support.js";
+import { readDelivery } from "../module-operations/analysis-record.js";
+import { commitTestFiles, contractYaml, initTestRepository, writeModuleTree, type ComparisonResponse } from "./support.js";
 
 async function repositoryFixture(t: TestContext) {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-analysis-"));
@@ -53,6 +56,201 @@ function completedFixture(input: ReviewInput) {
   result.report.assessment.current = { verdict: "needs_review", summary: "Protocol fixture only." };
   return result;
 }
+
+test("delivery states are literal strings and sent receipts identify the chat", () => {
+  const receipt = { harnessId: "local", name: "Local" };
+  for (const state of ["pending", "sent", "unknown"]) {
+    assert.throws(() => readDelivery({ ...receipt, state: [state], chatId: "chat" }));
+    assert.equal(readDelivery({ ...receipt, state, chatId: "chat" }).state, state);
+  }
+  assert.throws(() => readDelivery({ ...receipt, state: "sent" }));
+  assert.throws(() => readDelivery({ ...receipt, state: "sent", chatId: "" }));
+});
+
+test("contract changes, reparenting and deletion select the affected final modules", async t => {
+  const root = await repositoryFixture(t);
+  const registry = await mkdtemp(path.join(os.tmpdir(), "archiview-offline-bridges-"));
+  const previous = process.env.ARCHIVIEW_BRIDGE_DIR;
+  process.env.ARCHIVIEW_BRIDGE_DIR = registry;
+  t.after(async () => {
+    if (previous === undefined) delete process.env.ARCHIVIEW_BRIDGE_DIR;
+    else process.env.ARCHIVIEW_BRIDGE_DIR = previous;
+    await rm(registry, { recursive: true, force: true });
+  });
+  await mkdir(path.join(root, "other"));
+  await writeFile(path.join(root, "other/index.js"), "export {};");
+  await writeFile(path.join(root, ".archiview/modules/other.yaml"), contractYaml("other"));
+  const tree = {root:".", other:"other", child:"child"};
+  await writeModuleTree(root, tree);
+  const offline = harnessInstanceId("codex","offline-test-" + root);
+  await writeFile(path.join(root, ".archiview/agent-review.json"), JSON.stringify({enabled:true, codex:offline}));
+  const event = {hook_event_name:"UserPromptSubmit", session_id:"author", turn_id:"codex-turn", cwd:root};
+  const context = await turnHook("codex", event);
+  const id = context.hookSpecificOutput!.additionalContext.match(/"--review-turn","([a-f0-9]{64})"/)![1];
+  const app = await createArchiViewSession({root});
+  t.after(() => app.close());
+  const selected = async () => {
+    const {checks} = (await app.turns.review(id, 0))!;
+    assert.ok(checks.every(check => check.status === "unavailable" && check.requestId && check.message));
+    return checks.map(check => check.moduleId + "/" + check.type).sort();
+  };
+  await writeFile(path.join(root,".archiview/modules/child.yaml"),contractYaml("child","Changed contract"));
+  assert.deepEqual(await selected(), ["child/grasp", "child/implementation", "root/grasp"]);
+  await rename(path.join(root,"child"),path.join(root,"other/child"));
+  await writeModuleTree(root, {...tree, child:"other/child"});
+  assert.deepEqual(await selected(), ["child/grasp", "child/implementation", "other/grasp", "root/grasp"]);
+  await rm(path.join(root,"other/child"),{recursive:true});
+  await rm(path.join(root,".archiview/modules/child.yaml"));
+  await writeModuleTree(root, {root:".",other:"other"});
+  assert.deepEqual(await selected(), ["root/grasp"]);
+  await mkdir(path.join(root,"new"));
+  await writeFile(path.join(root,"new/a.js"), "export {};");
+  await writeFile(path.join(root,".archiview/modules/new.yaml"), contractYaml("new"));
+  await writeModuleTree(root, {root:".",other:"other",new:"new"});
+  assert.deepEqual(await selected(), ["new/grasp","new/implementation","root/grasp"]);
+});
+
+test("turn hooks and the agent CLI share pinned reviews, findings and fallback dispatch", async t => {
+  const root = await repositoryFixture(t);
+  const bridgeDir = await mkdtemp(path.join(os.tmpdir(), "archiview-turn-bridges-"));
+  const previous = process.env.ARCHIVIEW_BRIDGE_DIR;
+  process.env.ARCHIVIEW_BRIDGE_DIR = bridgeDir;
+  const jobs: Assignment[] = [];
+  const close = await registerHarness({kind:"dsh", instance:"turn-test", async available() {}, async start(job) {
+    jobs.push(job);
+    return "review-" + job.requestId;
+  }});
+  t.after(async () => {
+    await close();
+    if (previous === undefined) delete process.env.ARCHIVIEW_BRIDGE_DIR;
+    else process.env.ARCHIVIEW_BRIDGE_DIR = previous;
+    await rm(bridgeDir, {recursive:true,force:true});
+  });
+  const cli = fileURLToPath(new URL("../dist/cli.mjs", import.meta.url));
+  const run = (...args: string[]) => promisify(execFile)(process.execPath, [cli, "--root",root,...args], {windowsHide:true});
+  async function hook(event: string, sessionId = "author", prompt = "Change the child", kind = "dsh") {
+    const child = spawn(process.execPath, [cli, "--turn-hook", kind], {windowsHide:true});
+    const output: Buffer[] = [], errors: Buffer[] = [];
+    child.stdout.on("data", data => output.push(data));
+    child.stderr.on("data", data => errors.push(data));
+    child.stdin.end(JSON.stringify({hook_event_name:event, cwd:path.join(root,"child"), session_id:sessionId, turn_id:"1", prompt}));
+    assert.deepEqual(await once(child,"close"), [0,null], Buffer.concat(errors).toString());
+    return JSON.parse(Buffer.concat(output).toString());
+  }
+  assert.deepEqual(await hook("UserPromptSubmit"), {});
+  const config = path.join(root, ".archiview/agent-review.json");
+  await writeFile(config, JSON.stringify({enabled:true,dsh:harnessInstanceId("dsh","turn-test")}));
+  commitTestFiles(root);
+  await writeFile(path.join(root, "predates.js"), "export const original = true;");
+  const start = await hook("UserPromptSubmit");
+  const turnId = start.hookSpecificOutput.additionalContext.match(/"--review-turn","([a-f0-9]{64})"/)[1];
+  const check = async (wait = 0) => JSON.parse((await run("--review-turn", turnId, "--wait", String(wait))).stdout).checks;
+  assert.deepEqual(await check(), []);
+  const code = path.join(root, "child/code.js");
+  await writeFile(code, "export const value = 2;");
+  assert.deepEqual(await hook("UserPromptSubmit"), start, "duplicate starts preserve the original dirty baseline");
+  const [a,b] = await Promise.all([check(),check()]);
+  assert.equal(a.length,1);
+  assert.equal(b[0].requestId,a[0].requestId);
+  assert.equal(a[0].moduleId,"child");
+  assert.equal(a[0].type,"implementation");
+  commitTestFiles(root);
+  assert.equal((await check())[0].requestId, a[0].requestId, "committing checked inputs reuses the in-flight request");
+  assert.equal(jobs.length,1);
+  const folder = path.join(root,".archiview/snapshots/analysis",jobs[0].requestId);
+  const input: ReviewInput = parse(await readFile(path.join(folder,"input.yaml"),"utf8"));
+  const result = completedFixture(input);
+  result.report.analysis.coverage = {status:"complete", limitations:[]};
+  const evidence = [{snapshot:"current" as const, fact_id:input.current.facts.find(f => f.path === "child/code.js")!.id}];
+  for (const clause of result.report.checks) Object.assign(clause,{verdict:"consistent",explanation:"Fixture",evidence});
+  result.report.findings = [{id:"finding",kind:"contract_conflict",lifecycle:"introduced",certainty:"confirmed",severity:"warning",
+    summary:"Review fixture",clauses:[result.report.checks[0].contract],evidence}];
+  const waiting = check(10);
+  await writeFile(path.join(folder,"result.yaml"), stringify(result,{aliasDuplicateObjects:false}));
+  await run("--complete-analysis", jobs[0].requestId);
+  const [review] = await waiting;
+  assert.equal(review.status,"reviewed");
+  assert.equal(review.result.findings[0].summary,"Review fixture");
+  assert.deepEqual(await hook("Stop"), {});
+  assert.equal(jobs.length,1);
+  assert.deepEqual(await hook("UserPromptSubmit","reviewer",jobs[0].prompt,"codex"), {});
+  assert.deepEqual(await hook("UserPromptSubmit","reviewer","Continue the review","codex"), {});
+  await writeFile(code, "export const value = 3;");
+  assert.deepEqual(await hook("Stop","reviewer","","codex"), {});
+  assert.deepEqual(await hook("Stop"), {});
+  // The detached sender starts after Stop. Its input must remain the captured value even after a further edit.
+  await writeFile(code, "export const value = 4;");
+  for (let i=0; jobs.length === 1 && i<100; i++) await new Promise(resolve => setTimeout(resolve,100));
+  assert.equal(jobs.length,2);
+  const fallback: ReviewInput = parse(await readFile(path.join(root,".archiview/snapshots/analysis",jobs[1].requestId,"input.yaml"),"utf8"));
+  assert.equal(fallback.current.facts.find(f => f.path === "child/code.js")?.text,"export const value = 3;");
+  const [last] = await check();
+  assert.equal(jobs.length,3);
+  await run("--analysis-limitation",last.requestId,"--reason","Fixture limitation");
+  const [limited] = await check(10);
+  assert.equal(limited.status,"unavailable");
+  assert.equal(limited.message,"Fixture limitation");
+  assert.match((await hook("Stop")).systemMessage,/Fixture limitation/);
+  assert.equal(jobs.length,3);
+});
+
+test("turn requests reuse the selected bridge instance, including a receipt from manual delivery", async t => {
+  const root = await repositoryFixture(t);
+  const registry = await mkdtemp(path.join(os.tmpdir(), "archiview-turn-hosts-"));
+  const priorRegistry = process.env.ARCHIVIEW_BRIDGE_DIR;
+  process.env.ARCHIVIEW_BRIDGE_DIR = registry;
+  const app = await createArchiViewSession({root});
+  const sent: string[] = [];
+  const register = (instance: string) => registerHarness({
+    kind: "dsh", instance, async available() {},
+    async start(job) {
+      sent.push(instance);
+      if (instance === "first") throw new Error("Acknowledgement lost");
+      return job.requestId;
+    },
+  });
+  let close: (() => Promise<void>) | undefined;
+  try {
+    const turns = ["a", "b", "a-again", "offline", "manual-again"].map(name => digest(name).slice(7));
+    for (const id of turns) await app.turns.begin(id, {kind:"dsh"});
+    await writeFile(path.join(root, "child/code.js"), "export const value = 2;");
+    const review = async (id: string) => {
+      const {checks} = (await app.turns.review(id, 0))!;
+      assert.equal(checks.length, 1);
+      return checks[0];
+    };
+    close = await register("first");
+    const first = await review(turns[0]);
+    assert.equal(first.status, "unconfirmed");
+    await close();
+    close = await register("second");
+    const second = await review(turns[1]);
+    assert.notEqual(first.requestId, second.requestId);
+    assert.equal(second.delivery?.harnessId, harnessInstanceId("dsh", "second"));
+    const retry = await review(turns[0]);
+    assert.equal(retry.requestId, first.requestId);
+    assert.equal(retry.status, "unconfirmed");
+    await close();
+    close = await register("first");
+    assert.equal((await review(turns[2])).requestId, first.requestId);
+    await close();
+    close = undefined;
+    const offline = await review(turns[3]);
+    assert.equal(offline.status, "unavailable");
+    assert.ok(offline.requestId);
+    assert.equal((await review(turns[3])).requestId, offline.requestId);
+    close = await register("manual");
+    await app.analysis.deliver(offline.requestId, harnessInstanceId("dsh", "manual"));
+    assert.equal((await review(turns[4])).requestId, offline.requestId);
+    assert.deepEqual(sent, ["first", "second", "manual"]);
+  } finally {
+    await close?.();
+    app.close();
+    if (priorRegistry === undefined) delete process.env.ARCHIVIEW_BRIDGE_DIR;
+    else process.env.ARCHIVIEW_BRIDGE_DIR = priorRegistry;
+    await rm(registry, {recursive:true, force:true});
+  }
+});
 
 test("skill instructions supply implementation evidence and invalidate the previous typed analysis after editing", async t => {
   const root = await repositoryFixture(t);
@@ -314,6 +512,15 @@ test("typed analyses track only their own inputs and keep decisions outside the 
     for (const check of result.report.checks) Object.assign(check, {verdict:"consistent", explanation:"Fixture", evidence});
     result.report.findings = [{id:"finding", summary:"Исходный заголовок", severity:"warning", certainty:"confirmed",
       kind:"contract_conflict", lifecycle:"unknown", clauses:[result.report.checks[0].contract], evidence}];
+    // Direct imports verify the stored evidence against the typed file inventory too.
+    const outside = structuredClone(result);
+    const content = { kind: "file", path: type === "grasp" ? "child/code.js" : "child/extra.js", text: "Fixture" };
+    const fact = { ...content, id: digest(content) };
+    outside.current.facts.push(fact);
+    outside.report.checks[0].evidence = [{ snapshot: "current", fact_id: fact.id }];
+    delete outside.current.scope_digest;
+    outside.current.scope_digest = digest(outside.current);
+    await assert.rejects(app.reports.saveReview(outside), /outside analysis scope/);
     await save();
     await app.analysis.complete(request.id);
     entries.set(directory + type, result);

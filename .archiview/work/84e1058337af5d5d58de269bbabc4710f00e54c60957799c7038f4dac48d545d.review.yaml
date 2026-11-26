@@ -33980,3 +33980,3585 @@ entries:
     result_digest: sha256:41c13bc8a27acc0d10a3d3a0492a811cf019cb9dffbf529228a1041fb7918187
     content_digest: sha256:6b4cb4509130f6d6dff7f67bc63f7bbba9dfbef8b591fce4dbd8909312eb8dc9
     registration_order: 900
+  - schema_version: 2
+    kind: review
+    module_id: archiview-serialization
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-f9c1c469-090d-4517-b5f8-444927010d21
+    check_hash: b41583303f440f13c7f77b4783449e5febb7d18c2dc0689a78ed5611c205581b
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-serialization
+      baseline: null
+      current:
+        exists: true
+        directory: framework/serialization
+        self_digest: sha256:a7d10e932d968a0a5b0eff385d03fdaa9ba1bdb4b4ea515977c9b7200fbc5021
+        subtree_digest: sha256:2b4136043d9e51e192ca1e06dfe8946b899254b54bdc74087b28fc711952cd34
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-serialization
+          directory: framework/serialization
+          own_files:
+            - path: framework/serialization/digest.ts
+              digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
+              normalization: text-lf/v1
+            - path: framework/serialization/schema.ts
+              digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
+              normalization: text-lf/v1
+            - path: framework/serialization/turn-check-dsh.ts
+              digest: sha256:f39e9562688c6eccff49ee2ee5c2e22bb23dbfad71e261b249444c7c561e8832
+              normalization: text-lf/v1
+            - path: framework/serialization/yaml.ts
+              digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
+              normalization: text-lf/v1
+          contract:
+            id: archiview-serialization
+            kind: module
+            purpose: Регламентировать представление доменных данных ArchiView при
+              сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок
+                ключей словаря произволен.
+            invariants: {}
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:b07afd9261fb03c425e916ade440702ecb6411e1c3a05564bf18e7ba023e248c
+      change_digest: sha256:8af4d32ede7bbc157d14b42fc4effa0c840998f6c1e2bc8e8dbcbc66784b567d
+    report:
+      schema_version: 1
+      id: review-f9c1c469-090d-4517-b5f8-444927010d21
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      comparison:
+        baseline: null
+        current:
+          id: working-0c88b5de4c85e7922d45aa41e0693ad0af6a1945bb6407ad09751fbc95880ea3
+          digest: sha256:37f79ec46d8f4bc9613a9da58ef19c7af6e293d3768093c17bdb8fbd8ea8c88b
+      analysis:
+        created_at: 2026-11-26T07:05:46.694Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:440c2a289b09d09e239b7afc5fce93a6f5417a8636a1b82711fa0c1f99283f34
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: DeepSeek
+          id: deepseek-flash
+        prompt_digest: sha256:efa7eef5ed678fb2d39c77d3c03701cbc615a3124837354721037cbf98307c0e
+      observed:
+        baseline: null
+        current:
+          summary: Модуль задаёт каноническую форму доменных значений и разбор YAML в
+            обычные типы. Он сортирует ключи словарей, сохраняет порядок
+            массивов, ограничивает YAML поддерживаемыми типами и запрещает
+            ссылки, а также предоставляет валидаторы доменных форм.
+            Вспомогательная функция канонизирует строковую последовательность с
+            сортировкой, из-за чего порядок массива в ней незначим.
+          responsibilities:
+            - text: "Строит каноническую строку доменного значения: элементы массива обходит в
+                исходном порядке, ключи словаря сортирует, поля со значением
+                undefined опускает. Отпечаток вычисляет как SHA-256 от UTF-8
+                байтов канонической строки с префиксом алгоритма sha256:."
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - text: "Разбирает YAML в обычные значения и отклоняет неоднозначный ввод:
+                дубликаты ключей, YAML-ссылки, пользовательские теги,
+                нестроковые ключи отображений, несколько документов, неточно
+                представимые целые и нефинитные числа. Проверенное значение
+                передаёт валидатору."
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - text: "Предоставляет набор валидаторов с точным путём поля: непустая строка,
+                словарь, перечисление, nullable, массив с минимальной длиной,
+                форма с обязательными и необязательными полями. Отдельно
+                проверяет списки строк, ссылки и расширения с пространством
+                имён."
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - text: Канонизирует последовательность строк, сортируя копию массива перед
+                вызовом canonical, поэтому отпечаток не зависит от исходного
+                порядка элементов.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:ff82b770edfda506d2ac8ecba9d0e2f187ce76a9d685fa7edb8314f16265765a
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Назначение требует регламентировать представление доменных данных
+            при сериализации и каноническую запись для воспроизводимого
+            отпечатка. digest.ts задаёт каноническую строку и единый SHA-256 с
+            префиксом алгоритма (строки 4–14). yaml.ts ограничивает принимаемое
+            YAML-представление обычными типами (строки 4–31). schema.ts задаёт
+            валидаторы доменных форм (строки 2–26). Вместе эти обязанности
+            покрывают назначение модуля; расхождение отдельной функции с B3
+            отмечено в finding-1.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - snapshot: current
+              fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: "parseYaml вызывает parseDocument с uniqueKeys: true, strict: true
+            и version 1.2 (yaml.ts, строка 5); ошибки и предупреждения разбора
+            прерывают чтение (строка 6). Дубликаты ключей и второй документ дают
+            ошибку разбора. Обход узлов отклоняет alias (строка 14),
+            пользовательские и не входящие в обычный набор теги (строки 11–13),
+            нестроковые ключи отображения (строка 17). Целые переводятся в
+            number только при точной представимости (строки 22–25), нефинитные
+            числа и прочие значения отклоняются (строки 26–27). Поэтому
+            YAML-представление допускает только поддерживаемые типы с
+            уникальными строковыми ключами и не содержит YAML-ссылок. Якорь без
+            alias ссылки не создаёт и потому представление не расширяет."
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: violation
+          explanation: "canonical в digest.ts обходит массивы в исходном порядке и
+            сортирует только ключи словарей (строки 4–9), поэтому сама
+            каноническая запись соответствует B3. Но serializeSequence в
+            turn-check-dsh.ts (строка 2) сортирует копию массива строк до вызова
+            canonical: отпечатки ['b', 'a'] и ['a', 'b'] получают один и тот же
+            канонический текст, и порядок элементов перестаёт быть значимым.
+            Исключения для неупорядоченных строковых списков контракт не
+            содержит, поэтому порядок массива в этой функции не соответствует
+            B3. В собственных файлах модуля вызовов serializeSequence нет."
+          evidence:
+            - snapshot: current
+              fact_id: sha256:ff82b770edfda506d2ac8ecba9d0e2f187ce76a9d685fa7edb8314f16265765a
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+      findings:
+        - id: finding-1
+          kind: boundary_violation
+          certainty: confirmed
+          severity: warning
+          lifecycle: unknown
+          summary: serializeSequence сортирует элементы массива перед канонической записью
+            и делает порядок массива незначимым
+          details: "turn-check-dsh.ts, строка 2: canonical([...items].sort()). Функция
+            canonical из digest.ts (строки 4–9) сохраняет порядок массивов и
+            сортирует только ключи словарей. Предварительная сортировка приводит
+            разные порядки одной последовательности к одному каноническому
+            тексту и отпечатку, тогда как B3 требует значимости порядка
+            элементов массива в канонической записи и не делает исключения для
+            строковых списков. В сохранённых собственных файлах модуля
+            вызывающего кода для serializeSequence нет, поэтому расхождение
+            ограничено этой функцией. Если коллекция по смыслу является
+            множеством, её следует выразить отдельным типом или явно объявить
+            исключение в контракте."
+          clauses:
+            - snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+          evidence:
+            - snapshot: current
+              fact_id: sha256:ff82b770edfda506d2ac8ecba9d0e2f187ce76a9d685fa7edb8314f16265765a
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          recommendation: Убрать сортировку и сериализовать массив в исходном порядке либо
+            объявить отдельный канонизатор неупорядоченного множества в
+            контракте модуля.
+      assessment:
+        current:
+          verdict: violation
+          summary: Назначение модуля выполняется, YAML-разбор ограничивает поддерживаемые
+            типы и запрещает ссылки (B2). Каноническая запись сохраняет порядок
+            массивов и сортирует ключи словарей, но вспомогательная функция
+            serializeSequence сортирует элементы перед записью, поэтому порядок
+            массива в ней незначим — расхождение с B3.
+        change:
+          verdict: not_applicable
+          summary: Экспорт содержит только текущий срез; базовый снимок отсутствует,
+            оценка изменения неприменима.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-0c88b5de4c85e7922d45aa41e0693ad0af6a1945bb6407ad09751fbc95880ea3
+          digest: sha256:37f79ec46d8f4bc9613a9da58ef19c7af6e293d3768093c17bdb8fbd8ea8c88b
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: purpose
+              id: purpose
+            text: Регламентировать представление доменных данных ArchiView при сериализации
+              и их каноническую запись для воспроизводимого отпечатка.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B2
+            text: YAML-представление допускает значения поддерживаемых типов с уникальными
+              ключами словарей и без YAML-ссылок.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+            text: В канонической записи порядок элементов массива значим, исходный порядок
+              ключей словаря произволен.
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-0c88b5de4c85e7922d45aa41e0693ad0af6a1945bb6407ad09751fbc95880ea3
+        digest: sha256:0c88b5de4c85e7922d45aa41e0693ad0af6a1945bb6407ad09751fbc95880ea3
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T07:00:42.322Z
+      review_scope: self
+      model:
+        provider: DeepSeek
+        id: deepseek-flash
+      prompt_digest: sha256:efa7eef5ed678fb2d39c77d3c03701cbc615a3124837354721037cbf98307c0e
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-0c88b5de4c85e7922d45aa41e0693ad0af6a1945bb6407ad09751fbc95880ea3
+      digest: sha256:37f79ec46d8f4bc9613a9da58ef19c7af6e293d3768093c17bdb8fbd8ea8c88b
+      kind: working
+      complete: true
+      modules:
+        - directory: framework/serialization
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-serialization
+
+              title: Serialization
+
+              kind: module
+
+              extensions:
+                archiview.roles: [serialization]
+              purpose: Регламентировать представление доменных данных ArchiView
+              при сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-serialization
+              title: Serialization
+              kind: module
+              extensions:
+                archiview.roles:
+                  - serialization
+              purpose: Регламентировать представление доменных данных ArchiView при
+                сериализации и их каноническую запись для воспроизводимого
+                отпечатка.
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                  ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок
+                  ключей словаря произволен.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-serialization.yaml
+          files:
+            - path: .archiview/modules/archiview-serialization.yaml
+              hash: 43bdd3095bf57ca01b78188b59335d031f19fa0c
+              mode: "100644"
+            - path: framework/serialization/digest.ts
+              hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+              mode: "100644"
+            - path: framework/serialization/schema.ts
+              hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+              mode: "100644"
+            - path: framework/serialization/turn-check-dsh.ts
+              hash: 5e345c1157b6cbedd22c4a8ef88bf92e2b32e933
+              mode: "100644"
+            - path: framework/serialization/yaml.ts
+              hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
+              mode: "100644"
+          sourceFiles: 4
+          fingerprint: sha256:4352686bbcfeba4bf255b0bf49633f33bdbd5e9443ad357be5bf501287720522
+      facts:
+        - id: sha256:36e8c9099d0711ca21a60527a4fe4047c91b3c0179875bffdbd98d9aba25bdf3
+          kind: file
+          path: .archiview/modules/archiview-serialization.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-serialization
+
+            title: Serialization
+
+            kind: module
+
+            extensions:
+              archiview.roles: [serialization]
+            purpose: Регламентировать представление доменных данных ArchiView
+            при сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
+
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+            invariants: {}
+        - id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          kind: file
+          path: framework/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+        - id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+          kind: file
+          path: framework/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+        - id: sha256:ff82b770edfda506d2ac8ecba9d0e2f187ce76a9d685fa7edb8314f16265765a
+          kind: file
+          path: framework/serialization/turn-check-dsh.ts
+          start_line: 1
+          end_line: 3
+          text: >
+            import { canonical } from "./digest.js";
+
+            export const serializeSequence = (items: readonly string[]) =>
+            canonical([...items].sort());
+        - id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+          kind: file
+          path: framework/serialization/yaml.ts
+          start_line: 1
+          end_line: 37
+          text: >
+            import { parseDocument, isAlias, isMap, isScalar, isSeq } from
+            "yaml";
+
+
+            /** Парсер запрещает дубликаты, aliases, нестандартные теги и
+            несколько документов. */
+
+            export function parseYaml<T>(text: string, validate: (value:
+            unknown) => T): T {
+              const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
+              if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
+              // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
+              // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
+              const inspect = (node: unknown): void => {
+                if (node == null) return;
+                if (typeof node === "object" && "tag" in node && node.tag &&
+                    !["str", "int", "float", "bool", "null", "map", "seq"].some((name) => node.tag === "tag:yaml.org,2002:" + name))
+                  throw new Error("Custom YAML tag");
+                if (isAlias(node)) throw new Error("YAML aliases are not allowed");
+                if (isMap(node)) {
+                  for (const pair of node.items) {
+                    if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
+                    inspect(pair.key);
+                    inspect(pair.value);
+                  }
+                } else if (isSeq(node)) node.items.forEach(inspect);
+                else if (isScalar(node) && typeof node.value === "bigint") {
+                  const number = Number(node.value);
+                  if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
+                  node.value = number;
+                } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+                  typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
+              };
+              inspect(doc.contents);
+              return validate(doc.toJS({ maxAliasCount: 0 }));
+            }
+
+
+            /** Decodes persisted records before format-specific integrity
+            checks. */
+
+            export function parseReportYaml<T = unknown>(text: string): T {
+              return parseYaml(text, (value) => value as T);
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 380
+          grasp: 1
+          implementation: 2
+      scope_digest: sha256:3c88a40a4788ebc30fbddb4e189e78908929015aa57d39ea2f9d8fdca40ff20f
+    input_digest: sha256:55c241be8c310aa01c9c0d992b6ffc43e03659883d3bce0a9bb188979b63a98c
+    result_digest: sha256:644065a080f5eaead8e48d0282be6a341fdc347a3ece68568d29bd5e8e1fc61d
+    content_digest: sha256:8f07a362b3363230e8df77862b349a6d12977dd5577ebd2c6d92fbc97ae887f4
+    registration_order: 941
+  - schema_version: 2
+    kind: review
+    module_id: archiview-serialization
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-0807dd89-7191-4215-9d85-27fc0057997a
+    check_hash: 3bc3d83f1c400cdc909ad487e48cc5ab382ae8a069795da547e7de9574430409
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-serialization
+      baseline: null
+      current:
+        exists: true
+        directory: framework/serialization
+        self_digest: sha256:8bc19742e9c8ad4f1a3c893adbf76665d040c0a70a1339908e52866e5350ee46
+        subtree_digest: sha256:26f0ab84662533e2c073df7eef53e7f5723bbc562de4e264d359fafbd82999c3
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-serialization
+          directory: framework/serialization
+          own_files:
+            - path: framework/serialization/digest.ts
+              digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
+              normalization: text-lf/v1
+            - path: framework/serialization/schema.ts
+              digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
+              normalization: text-lf/v1
+            - path: framework/serialization/turn-check-dsh.ts
+              digest: sha256:d905c93e1664df071d85f285d2e8a2a2ca206ebe0af24facbf0255ee1ccb8161
+              normalization: text-lf/v1
+            - path: framework/serialization/yaml.ts
+              digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
+              normalization: text-lf/v1
+          contract:
+            id: archiview-serialization
+            kind: module
+            purpose: Регламентировать представление доменных данных ArchiView при
+              сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок
+                ключей словаря произволен.
+            invariants: {}
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:fbf5e6ed3fa2e0c8af23e47bdee107a880f3c1e01a4ebc5b08f370e4b370dfc5
+      change_digest: sha256:7f924178dd32b94cbb749855bdc1a63de7491a80e4c56b0611d4980a2dd18f69
+    report:
+      schema_version: 1
+      id: review-0807dd89-7191-4215-9d85-27fc0057997a
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      comparison:
+        baseline: null
+        current:
+          id: working-d5180b5ac26f268f8e768cd942d6e2cdf1b3181eb59ee7f1eb388a50f322122b
+          digest: sha256:f889edfd5633a61ca105e8ffb66ced7a7b6585ebd891b64dec81a6ae7ce2c87e
+      analysis:
+        created_at: 2026-11-26T07:07:45.635Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:2ad71ef04011996dc8acd35e86ae8dba957fb29c06e494468dbee612482908f7
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: DeepSeek
+          id: deepseek-flash
+        prompt_digest: sha256:efa7eef5ed678fb2d39c77d3c03701cbc615a3124837354721037cbf98307c0e
+      observed:
+        baseline: null
+        current:
+          summary: "Модуль задаёт каноническую форму доменных значений и разбор YAML в
+            обычные типы: сортирует ключи словарей, сохраняя порядок массивов,
+            вычисляет SHA-256 от канонической строки, отклоняет неоднозначный
+            YAML и предоставляет валидаторы доменных форм. Все четыре
+            собственных файла служат представлению данных и их канонической
+            записи."
+          responsibilities:
+            - text: "Строит каноническую строку доменного значения: элементы массива обходит в
+                исходном порядке, ключи словаря сортирует, поля со значением
+                undefined опускает; отпечаток вычисляет как SHA-256 от UTF-8
+                байтов канонической строки с префиксом алгоритма sha256:."
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - text: "Разбирает YAML в обычные значения и отклоняет неоднозначный ввод:
+                дубликаты ключей, YAML-ссылки, пользовательские теги,
+                нестроковые ключи отображений, несколько документов, неточно
+                представимые целые и нефинитные числа; проверенное значение
+                передаёт валидатору."
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - text: "Предоставляет валидаторы с точным путём поля: непустая строка, словарь,
+                перечисление, nullable, массив с минимальной длиной, форма с
+                обязательными и необязательными полями; отдельно проверяет
+                списки строк, ссылки и расширения с пространством имён."
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - text: "Канонизирует последовательность строк без изменения порядка элементов:
+                serializeSequence передаёт массив в canonical, поэтому разные
+                порядки дают разные канонические строки и разные отпечатки."
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:92439b2ac88c38ac80aa88bbd532c00ef02e6ac6cf324eae49c513adb4df2953
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Назначение требует регламентировать представление доменных данных
+            ArchiView при сериализации и их каноническую запись для
+            воспроизводимого отпечатка. digest.ts задаёт каноническую строку и
+            единый SHA-256 с префиксом алгоритма (строки 4–14). yaml.ts
+            ограничивает принимаемое YAML-представление обычными типами (строки
+            4–31). schema.ts задаёт валидаторы доменных форм (строки 2–26).
+            turn-check-dsh.ts канонизирует последовательность строк (строка 2).
+            Вместе эти обязанности покрывают назначение модуля.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - snapshot: current
+              fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - snapshot: current
+              fact_id: sha256:92439b2ac88c38ac80aa88bbd532c00ef02e6ac6cf324eae49c513adb4df2953
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: "parseYaml вызывает parseDocument с uniqueKeys: true, strict: true
+            и version 1.2 (yaml.ts, строка 5); ошибки и предупреждения разбора
+            прерывают чтение (строка 6). Дубликаты ключей и второй документ дают
+            ошибку разбора. Обход узлов отклоняет alias (строка 14),
+            пользовательские и не входящие в обычный набор теги (строки 11–13),
+            нестроковые ключи отображения (строка 17). Целые переводятся в
+            number только при точной представимости (строки 22–25), нефинитные
+            числа и прочие значения отклоняются (строки 26–27). Поэтому
+            YAML-представление допускает только поддерживаемые типы с
+            уникальными строковыми ключами и без YAML-ссылок. Якорь без alias
+            ссылки не создаёт и потому представление не расширяет."
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: consistent
+          explanation: "canonical в digest.ts обходит массивы в исходном порядке и
+            сортирует только ключи словарей (строки 4–9), поэтому каноническая
+            запись сохраняет значимость порядка элементов массива.
+            serializeSequence в turn-check-dsh.ts (строка 2) передаёт items в
+            canonical без сортировки: порядок элементов в каноническом тексте
+            сохраняется, и последовательности ['b', 'a'] и ['a', 'b'] получают
+            разные отпечатки. Других мест, меняющих порядок массива, в
+            собственных файлах модуля нет."
+          evidence:
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:92439b2ac88c38ac80aa88bbd532c00ef02e6ac6cf324eae49c513adb4df2953
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Собственный код соответствует назначению и обеим границам. Каноническая
+            запись сортирует ключи словарей и сохраняет порядок элементов
+            массива (B3); YAML-разбор допускает только поддерживаемые типы с
+            уникальными строковыми ключами и запрещает ссылки (B2). Замечаний не
+            выявлено.
+        change:
+          verdict: not_applicable
+          summary: Экспорт содержит только текущий срез; базовый снимок отсутствует,
+            оценка изменения неприменима.
+    manifest:
+      model:
+        provider: DeepSeek
+        id: deepseek-flash
+      prompt_digest: sha256:efa7eef5ed678fb2d39c77d3c03701cbc615a3124837354721037cbf98307c0e
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-d5180b5ac26f268f8e768cd942d6e2cdf1b3181eb59ee7f1eb388a50f322122b
+          digest: sha256:f889edfd5633a61ca105e8ffb66ced7a7b6585ebd891b64dec81a6ae7ce2c87e
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: purpose
+              id: purpose
+            text: Регламентировать представление доменных данных ArchiView при сериализации
+              и их каноническую запись для воспроизводимого отпечатка.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B2
+            text: YAML-представление допускает значения поддерживаемых типов с уникальными
+              ключами словарей и без YAML-ссылок.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+            text: В канонической записи порядок элементов массива значим, исходный порядок
+              ключей словаря произволен.
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-d5180b5ac26f268f8e768cd942d6e2cdf1b3181eb59ee7f1eb388a50f322122b
+        digest: sha256:d5180b5ac26f268f8e768cd942d6e2cdf1b3181eb59ee7f1eb388a50f322122b
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T07:07:45.560Z
+      review_scope: self
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-d5180b5ac26f268f8e768cd942d6e2cdf1b3181eb59ee7f1eb388a50f322122b
+      digest: sha256:f889edfd5633a61ca105e8ffb66ced7a7b6585ebd891b64dec81a6ae7ce2c87e
+      kind: working
+      complete: true
+      modules:
+        - directory: framework/serialization
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-serialization
+
+              title: Serialization
+
+              kind: module
+
+              extensions:
+                archiview.roles: [serialization]
+              purpose: Регламентировать представление доменных данных ArchiView
+              при сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-serialization
+              title: Serialization
+              kind: module
+              extensions:
+                archiview.roles:
+                  - serialization
+              purpose: Регламентировать представление доменных данных ArchiView при
+                сериализации и их каноническую запись для воспроизводимого
+                отпечатка.
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                  ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок
+                  ключей словаря произволен.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-serialization.yaml
+          files:
+            - path: .archiview/modules/archiview-serialization.yaml
+              hash: 43bdd3095bf57ca01b78188b59335d031f19fa0c
+              mode: "100644"
+            - path: framework/serialization/digest.ts
+              hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+              mode: "100644"
+            - path: framework/serialization/schema.ts
+              hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+              mode: "100644"
+            - path: framework/serialization/turn-check-dsh.ts
+              hash: 171ac90103286b570a8ba179fabb998fb35691dc
+              mode: "100644"
+            - path: framework/serialization/yaml.ts
+              hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
+              mode: "100644"
+          sourceFiles: 4
+          fingerprint: sha256:9608251de26ba4b11f8dcf19eb53054703cc4a9516f44b01d36271e1dfe48184
+      facts:
+        - id: sha256:36e8c9099d0711ca21a60527a4fe4047c91b3c0179875bffdbd98d9aba25bdf3
+          kind: file
+          path: .archiview/modules/archiview-serialization.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-serialization
+
+            title: Serialization
+
+            kind: module
+
+            extensions:
+              archiview.roles: [serialization]
+            purpose: Регламентировать представление доменных данных ArchiView
+            при сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
+
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+            invariants: {}
+        - id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          kind: file
+          path: framework/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+        - id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+          kind: file
+          path: framework/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+        - id: sha256:92439b2ac88c38ac80aa88bbd532c00ef02e6ac6cf324eae49c513adb4df2953
+          kind: file
+          path: framework/serialization/turn-check-dsh.ts
+          start_line: 1
+          end_line: 3
+          text: >
+            import { canonical } from "./digest.js";
+
+            export const serializeSequence = (items: readonly string[]) =>
+            canonical(items);
+        - id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+          kind: file
+          path: framework/serialization/yaml.ts
+          start_line: 1
+          end_line: 37
+          text: >
+            import { parseDocument, isAlias, isMap, isScalar, isSeq } from
+            "yaml";
+
+
+            /** Парсер запрещает дубликаты, aliases, нестандартные теги и
+            несколько документов. */
+
+            export function parseYaml<T>(text: string, validate: (value:
+            unknown) => T): T {
+              const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
+              if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
+              // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
+              // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
+              const inspect = (node: unknown): void => {
+                if (node == null) return;
+                if (typeof node === "object" && "tag" in node && node.tag &&
+                    !["str", "int", "float", "bool", "null", "map", "seq"].some((name) => node.tag === "tag:yaml.org,2002:" + name))
+                  throw new Error("Custom YAML tag");
+                if (isAlias(node)) throw new Error("YAML aliases are not allowed");
+                if (isMap(node)) {
+                  for (const pair of node.items) {
+                    if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
+                    inspect(pair.key);
+                    inspect(pair.value);
+                  }
+                } else if (isSeq(node)) node.items.forEach(inspect);
+                else if (isScalar(node) && typeof node.value === "bigint") {
+                  const number = Number(node.value);
+                  if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
+                  node.value = number;
+                } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+                  typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
+              };
+              inspect(doc.contents);
+              return validate(doc.toJS({ maxAliasCount: 0 }));
+            }
+
+
+            /** Decodes persisted records before format-specific integrity
+            checks. */
+
+            export function parseReportYaml<T = unknown>(text: string): T {
+              return parseYaml(text, (value) => value as T);
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 381
+          grasp: 1
+          implementation: 3
+      scope_digest: sha256:ab20d7b493930cf164bd02e62d26eb1baeb91b55f6d7063bae83faa63031bdb6
+    input_digest: sha256:f7025bc04614f8a8ac5b0c520054ee890d3ab52d08c43d0242250998e3fa682b
+    result_digest: sha256:448b7c4cc93c61ec08fcb827697d5ceed98fe629c40833e1f73dbaf68d7b7ddd
+    content_digest: sha256:15124d3b11b50ac051660de6333e6caed6c858c37b006bcc29065baccbf1b84d
+    registration_order: 942
+  - schema_version: 2
+    kind: review
+    module_id: archiview-serialization
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-e277641c-b23c-439b-b61b-f0c03ce100ca
+    check_hash: 03aedb9a9a0f8738ff9573af322e47d9380edb14ffaae63c1962e0d402deb710
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-serialization
+      baseline: null
+      current:
+        exists: true
+        directory: framework/serialization
+        self_digest: sha256:7638d9c73b9e63c5f8434839adaae897192e8a8a8a8b27a0a724f009a43ff6d3
+        subtree_digest: sha256:c83d6b72a59f92d27b086f75f6eab4c1a39d9cbdf5dfc5dd4e13badeccca78e9
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-serialization
+          directory: framework/serialization
+          own_files:
+            - path: framework/serialization/digest.ts
+              digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
+              normalization: text-lf/v1
+            - path: framework/serialization/schema.ts
+              digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
+              normalization: text-lf/v1
+            - path: framework/serialization/turn-check-codex.ts
+              digest: sha256:f39e9562688c6eccff49ee2ee5c2e22bb23dbfad71e261b249444c7c561e8832
+              normalization: text-lf/v1
+            - path: framework/serialization/yaml.ts
+              digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
+              normalization: text-lf/v1
+          contract:
+            id: archiview-serialization
+            kind: module
+            purpose: Регламентировать представление доменных данных ArchiView при
+              сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок
+                ключей словаря произволен.
+            invariants: {}
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:f2c9a68220f46f845c1842bfeabc2f3bf46af03b23fc802934a8daf0dd6e399a
+      change_digest: sha256:2197dc7b9fb68af1d8cdf9299e533423e039faa631a9c9a03ebb6718c17c3c75
+    report:
+      schema_version: 1
+      id: review-e277641c-b23c-439b-b61b-f0c03ce100ca
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      comparison:
+        baseline: null
+        current:
+          id: working-c501bb8319cfbae5f394b0d5eb93b6b848ff46bc1a1d2966209cfd0d219c4a6d
+          digest: sha256:609737bc5317c935692b0bc73bd5d202a610cdbebd6abb258a1e2e6eedaf70c3
+      analysis:
+        created_at: 2026-11-26T08:25:52.653Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:c2cd0d7c689eb9d05cfb5b19a378de12b5841146e6b8302ad68f0661fe0a686d
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:1d4509bd1f8b7d02ae924d9faacb82254c7f5ca357d57e997559873a17dac93d
+      observed:
+        baseline: null
+        current:
+          summary: Модуль разбирает YAML, проверяет структуру доменных данных и вычисляет
+            SHA-256 их канонической записи. Отдельная функция сериализует
+            последовательности строк с предварительной сортировкой.
+          responsibilities:
+            - text: parseYaml проверяет узлы YAML перед преобразованием в JavaScript и
+                передаёт результат валидатору вызывающей стороны.
+                parseReportYaml использует тот же разбор.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - text: Валидаторы проверяют строки, перечисления, массивы и поля словарей. shape
+                применяет проверки обязательных и необязательных полей,
+                отклоняет неизвестные поля и указывает путь в ошибке.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - text: canonical строит каноническую запись рекурсивно, а digest вычисляет по
+                этой строке SHA-256 и возвращает шестнадцатеричный результат с
+                префиксом sha256:.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - text: serializeSequence копирует массив строк, сортирует копию и передаёт её в
+                canonical.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:f10d0e88157704bf3aeb4e669015256a5ee4c6c4fbe8c677f199977251e80e51
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: parseYaml определяет допустимое представление входных данных,
+            валидаторы описывают их структуру, а digest вычисляет
+            воспроизводимый SHA-256 канонической строки. serializeSequence также
+            выполняет сериализацию. Сохранение порядка в этой функции оценено
+            отдельно по B3.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - snapshot: current
+              fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:f10d0e88157704bf3aeb4e669015256a5ee4c6c4fbe8c677f199977251e80e51
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: parseYaml включает uniqueKeys и отклоняет диагностику парсера.
+            Перед toJS обход проверяет строковые ключи, значения словарей и
+            элементы последовательностей, отклоняет alias-узлы и посторонние
+            теги. Для скаляров разрешены строки, логические значения, null и
+            конечные числа. Целые bigint допускаются при точном преобразовании в
+            number.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: violation
+          explanation: canonical обходит массив через map в исходном порядке и сортирует
+            ключи словарей на каждом уровне. Однако экспортируемая
+            serializeSequence сортирует копию входного массива до канонизации. В
+            результате последовательности ["b","a"] и ["a","b"] обе
+            сериализуются как ["a","b"].
+          evidence:
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:f10d0e88157704bf3aeb4e669015256a5ee4c6c4fbe8c677f199977251e80e51
+      findings:
+        - id: finding-1
+          kind: boundary_violation
+          certainty: confirmed
+          severity: error
+          lifecycle: unknown
+          summary: serializeSequence теряет исходный порядок строк при сериализации.
+          details: В turn-check-codex.ts вызов canonical([...items].sort()) делает
+            перестановки элементов неразличимыми в выходной строке. Например,
+            ["b","a"] и ["a","b"] дают одну запись ["a","b"]. Сам canonical
+            сохраняет порядок массива.
+          clauses:
+            - snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+          evidence:
+            - snapshot: current
+              fact_id: sha256:f10d0e88157704bf3aeb4e669015256a5ee4c6c4fbe8c677f199977251e80e51
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          recommendation: Передавать items напрямую в canonical. Проверить, что
+            перестановка двух разных строк меняет каноническую запись.
+      assessment:
+        current:
+          verdict: violation
+          summary: Назначение модуля и граница B2 подтверждены. Граница B3 нарушена в
+            serializeSequence из-за сортировки массива перед канонизацией.
+            Собственные инварианты в контракте отсутствуют.
+        change:
+          verdict: not_applicable
+          summary: В экспорте есть только текущий снимок. Базовая версия для оценки
+            изменения отсутствует.
+    manifest:
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:1d4509bd1f8b7d02ae924d9faacb82254c7f5ca357d57e997559873a17dac93d
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-c501bb8319cfbae5f394b0d5eb93b6b848ff46bc1a1d2966209cfd0d219c4a6d
+          digest: sha256:609737bc5317c935692b0bc73bd5d202a610cdbebd6abb258a1e2e6eedaf70c3
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: purpose
+              id: purpose
+            text: Регламентировать представление доменных данных ArchiView при сериализации
+              и их каноническую запись для воспроизводимого отпечатка.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B2
+            text: YAML-представление допускает значения поддерживаемых типов с уникальными
+              ключами словарей и без YAML-ссылок.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+            text: В канонической записи порядок элементов массива значим, исходный порядок
+              ключей словаря произволен.
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-c501bb8319cfbae5f394b0d5eb93b6b848ff46bc1a1d2966209cfd0d219c4a6d
+        digest: sha256:c501bb8319cfbae5f394b0d5eb93b6b848ff46bc1a1d2966209cfd0d219c4a6d
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T08:25:52.580Z
+      review_scope: self
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-c501bb8319cfbae5f394b0d5eb93b6b848ff46bc1a1d2966209cfd0d219c4a6d
+      digest: sha256:609737bc5317c935692b0bc73bd5d202a610cdbebd6abb258a1e2e6eedaf70c3
+      kind: working
+      complete: true
+      modules:
+        - directory: framework/serialization
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-serialization
+
+              title: Serialization
+
+              kind: module
+
+              extensions:
+                archiview.roles: [serialization]
+              purpose: Регламентировать представление доменных данных ArchiView
+              при сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-serialization
+              title: Serialization
+              kind: module
+              extensions:
+                archiview.roles:
+                  - serialization
+              purpose: Регламентировать представление доменных данных ArchiView при
+                сериализации и их каноническую запись для воспроизводимого
+                отпечатка.
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                  ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок
+                  ключей словаря произволен.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-serialization.yaml
+          files:
+            - path: .archiview/modules/archiview-serialization.yaml
+              hash: 43bdd3095bf57ca01b78188b59335d031f19fa0c
+              mode: "100644"
+            - path: framework/serialization/digest.ts
+              hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+              mode: "100644"
+            - path: framework/serialization/schema.ts
+              hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+              mode: "100644"
+            - path: framework/serialization/turn-check-codex.ts
+              hash: 5e345c1157b6cbedd22c4a8ef88bf92e2b32e933
+              mode: "100644"
+            - path: framework/serialization/yaml.ts
+              hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
+              mode: "100644"
+          sourceFiles: 4
+          fingerprint: sha256:a77116082dfad0208b6422192fe9b930a1415aa2d0582da9e6387747cd8ae28a
+      facts:
+        - id: sha256:36e8c9099d0711ca21a60527a4fe4047c91b3c0179875bffdbd98d9aba25bdf3
+          kind: file
+          path: .archiview/modules/archiview-serialization.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-serialization
+
+            title: Serialization
+
+            kind: module
+
+            extensions:
+              archiview.roles: [serialization]
+            purpose: Регламентировать представление доменных данных ArchiView
+            при сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
+
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+            invariants: {}
+        - id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          kind: file
+          path: framework/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+        - id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+          kind: file
+          path: framework/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+        - id: sha256:f10d0e88157704bf3aeb4e669015256a5ee4c6c4fbe8c677f199977251e80e51
+          kind: file
+          path: framework/serialization/turn-check-codex.ts
+          start_line: 1
+          end_line: 3
+          text: >
+            import { canonical } from "./digest.js";
+
+            export const serializeSequence = (items: readonly string[]) =>
+            canonical([...items].sort());
+        - id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+          kind: file
+          path: framework/serialization/yaml.ts
+          start_line: 1
+          end_line: 37
+          text: >
+            import { parseDocument, isAlias, isMap, isScalar, isSeq } from
+            "yaml";
+
+
+            /** Парсер запрещает дубликаты, aliases, нестандартные теги и
+            несколько документов. */
+
+            export function parseYaml<T>(text: string, validate: (value:
+            unknown) => T): T {
+              const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
+              if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
+              // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
+              // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
+              const inspect = (node: unknown): void => {
+                if (node == null) return;
+                if (typeof node === "object" && "tag" in node && node.tag &&
+                    !["str", "int", "float", "bool", "null", "map", "seq"].some((name) => node.tag === "tag:yaml.org,2002:" + name))
+                  throw new Error("Custom YAML tag");
+                if (isAlias(node)) throw new Error("YAML aliases are not allowed");
+                if (isMap(node)) {
+                  for (const pair of node.items) {
+                    if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
+                    inspect(pair.key);
+                    inspect(pair.value);
+                  }
+                } else if (isSeq(node)) node.items.forEach(inspect);
+                else if (isScalar(node) && typeof node.value === "bigint") {
+                  const number = Number(node.value);
+                  if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
+                  node.value = number;
+                } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+                  typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
+              };
+              inspect(doc.contents);
+              return validate(doc.toJS({ maxAliasCount: 0 }));
+            }
+
+
+            /** Decodes persisted records before format-specific integrity
+            checks. */
+
+            export function parseReportYaml<T = unknown>(text: string): T {
+              return parseYaml(text, (value) => value as T);
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 7
+      scope_digest: sha256:190ab4d1ff919fd54b7130749fd34b02c569f42152d8fa3c5d401beec9bf0403
+    input_digest: sha256:6e4e327e651a43fc6981b70c3fa4b80541610694eb9ca782665d4303e8a17390
+    result_digest: sha256:318b489d89bda0bd652c5e4e45d4a675388a67be54392ce19097b1999d169569
+    content_digest: sha256:8a0bb5c43b6f49aa861de8c728ca04914332030c784057daeeec6735e8d9a357
+    registration_order: 944
+  - schema_version: 2
+    kind: review
+    module_id: archiview-serialization
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-90c52e94-6087-41ed-8537-b5366e2f9c0c
+    check_hash: 7077c24c25286cafe534e1197f87304d253101d325aad7a233b505ce12cb308f
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-serialization
+      baseline: null
+      current:
+        exists: true
+        directory: framework/serialization
+        self_digest: sha256:8597f9e40af4131d153101fd40652da20a6d6f127539a1ac84e94252c1e7ea9c
+        subtree_digest: sha256:6b5776d100e0120a495bc7d69d4ef8bfb2cc0bd2ff9bc981837a702a7a69e67c
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-serialization
+          directory: framework/serialization
+          own_files:
+            - path: framework/serialization/digest.ts
+              digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
+              normalization: text-lf/v1
+            - path: framework/serialization/schema.ts
+              digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
+              normalization: text-lf/v1
+            - path: framework/serialization/turn-check-codex.ts
+              digest: sha256:d905c93e1664df071d85f285d2e8a2a2ca206ebe0af24facbf0255ee1ccb8161
+              normalization: text-lf/v1
+            - path: framework/serialization/yaml.ts
+              digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
+              normalization: text-lf/v1
+          contract:
+            id: archiview-serialization
+            kind: module
+            purpose: Регламентировать представление доменных данных ArchiView при
+              сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок
+                ключей словаря произволен.
+            invariants: {}
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:ee3b5cd82adf0f362fc1b3b08b81cbf1e4b98956e63dacd523277c649fd14511
+      change_digest: sha256:1d4d709d27346c572bae23bf5839f787cfe1383d870dece065b5a8f753fe1366
+    report:
+      schema_version: 1
+      id: review-90c52e94-6087-41ed-8537-b5366e2f9c0c
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      comparison:
+        baseline: null
+        current:
+          id: working-46e3b2c09894f6aab75635768295ee5bdb862e234b6a3a37e4bbb82734d38227
+          digest: sha256:53297266ffa44fb37a010e384cbe1d8d64bab793aaae3014bcd2f78a4407ef2f
+      analysis:
+        created_at: 2026-11-26T08:32:27.144Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:6d3a75520f6a05b94b8cb831448a26d0996a1bbfa91ee69d14498cff81c78bbd
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: openai
+          id: gpt-6
+        prompt_digest: sha256:b401a636fb60113364bede77a0007044fb53d6d2edf69af121d6b8787729eea2
+      observed:
+        baseline: null
+        current:
+          summary: Модуль читает ограниченное подмножество YAML, предоставляет валидаторы
+            формы доменных записей и вычисляет SHA-256 по канонической строке.
+          responsibilities:
+            - text: parseYaml проверяет дерево YAML до преобразования в JavaScript и передаёт
+                результат валидатору вызывающей стороны. parseReportYaml
+                использует тот же разбор и возвращает декодированную запись для
+                последующей проверки формата.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - text: Валидаторы проверяют строки, перечисления, массивы, обязательные и
+                необязательные поля. При ошибке передают путь поля или индекс
+                элемента. Для ссылок задана пара полей title и uri, для
+                расширений проверяются имена ключей.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - text: canonical рекурсивно записывает массивы и словари, а digest вычисляет
+                SHA-256 по полученной строке и добавляет префикс алгоритма.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - text: serializeSequence предоставляет каноническую запись последовательности
+                строк, передавая исходный массив в canonical.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:409b2f9a32851abfc81a380779ab8b88bf4f6ad9ecf58b2e4ea1a94f91672d69
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: parseYaml ограничивает представимые значения, а schema.ts задаёт
+            проверки формы доменных записей. canonical строит однозначно
+            упорядоченную запись словарей и сохраняет последовательности. digest
+            хеширует эту строку алгоритмом SHA-256. Для массива строк
+            serializeSequence использует ту же запись.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - snapshot: current
+              fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:409b2f9a32851abfc81a380779ab8b88bf4f6ad9ecf58b2e4ea1a94f91672d69
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: parseDocument вызывается с uniqueKeys и strict. Ошибки и
+            предупреждения прекращают разбор. До вызова toJS функция inspect
+            рекурсивно обходит ключи и значения словарей и элементы массивов.
+            Она отклоняет YAML-псевдонимы, нестроковые ключи и теги вне
+            разрешённого списка. Из скаляров допускаются строки, логические
+            значения, null и конечные числа. Для bigint преобразование в Number
+            должно сохранять целое при обратной проверке. parseReportYaml
+            проходит тот же контроль.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: consistent
+          explanation: В canonical ветвь массива обходит элементы через map и соединяет их
+            через join в исходном порядке. Ветвь словаря сортирует ключи перед
+            рекурсивной записью значений. Поэтому перестановка разных строк в
+            массиве меняет запись, а перестановка полей словаря с теми же
+            значениями сохраняет её, в том числе для вложенных словарей.
+            serializeSequence передаёт массив в canonical без перестановки
+            элементов.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:409b2f9a32851abfc81a380779ab8b88bf4f6ad9ecf58b2e4ea1a94f91672d69
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Назначение и обе границы B2 и B3 подтверждены собственными исходниками.
+            Контракт не объявляет инвариантов. Замечаний по проверенным пунктам
+            нет.
+        change:
+          verdict: not_applicable
+          summary: Базовый снимок отсутствует. Оценка изменения реализации неприменима.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-46e3b2c09894f6aab75635768295ee5bdb862e234b6a3a37e4bbb82734d38227
+          digest: sha256:53297266ffa44fb37a010e384cbe1d8d64bab793aaae3014bcd2f78a4407ef2f
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: purpose
+              id: purpose
+            text: Регламентировать представление доменных данных ArchiView при сериализации
+              и их каноническую запись для воспроизводимого отпечатка.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B2
+            text: YAML-представление допускает значения поддерживаемых типов с уникальными
+              ключами словарей и без YAML-ссылок.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+            text: В канонической записи порядок элементов массива значим, исходный порядок
+              ключей словаря произволен.
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-46e3b2c09894f6aab75635768295ee5bdb862e234b6a3a37e4bbb82734d38227
+        digest: sha256:46e3b2c09894f6aab75635768295ee5bdb862e234b6a3a37e4bbb82734d38227
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T08:32:27.073Z
+      review_scope: self
+      model:
+        provider: openai
+        id: gpt-6
+      prompt_digest: sha256:b401a636fb60113364bede77a0007044fb53d6d2edf69af121d6b8787729eea2
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-46e3b2c09894f6aab75635768295ee5bdb862e234b6a3a37e4bbb82734d38227
+      digest: sha256:53297266ffa44fb37a010e384cbe1d8d64bab793aaae3014bcd2f78a4407ef2f
+      kind: working
+      complete: true
+      modules:
+        - directory: framework/serialization
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-serialization
+
+              title: Serialization
+
+              kind: module
+
+              extensions:
+                archiview.roles: [serialization]
+              purpose: Регламентировать представление доменных данных ArchiView
+              при сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-serialization
+              title: Serialization
+              kind: module
+              extensions:
+                archiview.roles:
+                  - serialization
+              purpose: Регламентировать представление доменных данных ArchiView при
+                сериализации и их каноническую запись для воспроизводимого
+                отпечатка.
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                  ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок
+                  ключей словаря произволен.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-serialization.yaml
+          files:
+            - path: .archiview/modules/archiview-serialization.yaml
+              hash: 43bdd3095bf57ca01b78188b59335d031f19fa0c
+              mode: "100644"
+            - path: framework/serialization/digest.ts
+              hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+              mode: "100644"
+            - path: framework/serialization/schema.ts
+              hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+              mode: "100644"
+            - path: framework/serialization/turn-check-codex.ts
+              hash: 171ac90103286b570a8ba179fabb998fb35691dc
+              mode: "100644"
+            - path: framework/serialization/yaml.ts
+              hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
+              mode: "100644"
+          sourceFiles: 4
+          fingerprint: sha256:ac011e65fbb5caf94d3cdfeca273e84a270883933c01a3ee26c4f6c71bf64c3a
+      facts:
+        - id: sha256:36e8c9099d0711ca21a60527a4fe4047c91b3c0179875bffdbd98d9aba25bdf3
+          kind: file
+          path: .archiview/modules/archiview-serialization.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-serialization
+
+            title: Serialization
+
+            kind: module
+
+            extensions:
+              archiview.roles: [serialization]
+            purpose: Регламентировать представление доменных данных ArchiView
+            при сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
+
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+            invariants: {}
+        - id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          kind: file
+          path: framework/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+        - id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+          kind: file
+          path: framework/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+        - id: sha256:409b2f9a32851abfc81a380779ab8b88bf4f6ad9ecf58b2e4ea1a94f91672d69
+          kind: file
+          path: framework/serialization/turn-check-codex.ts
+          start_line: 1
+          end_line: 3
+          text: >
+            import { canonical } from "./digest.js";
+
+            export const serializeSequence = (items: readonly string[]) =>
+            canonical(items);
+        - id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+          kind: file
+          path: framework/serialization/yaml.ts
+          start_line: 1
+          end_line: 37
+          text: >
+            import { parseDocument, isAlias, isMap, isScalar, isSeq } from
+            "yaml";
+
+
+            /** Парсер запрещает дубликаты, aliases, нестандартные теги и
+            несколько документов. */
+
+            export function parseYaml<T>(text: string, validate: (value:
+            unknown) => T): T {
+              const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
+              if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
+              // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
+              // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
+              const inspect = (node: unknown): void => {
+                if (node == null) return;
+                if (typeof node === "object" && "tag" in node && node.tag &&
+                    !["str", "int", "float", "bool", "null", "map", "seq"].some((name) => node.tag === "tag:yaml.org,2002:" + name))
+                  throw new Error("Custom YAML tag");
+                if (isAlias(node)) throw new Error("YAML aliases are not allowed");
+                if (isMap(node)) {
+                  for (const pair of node.items) {
+                    if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
+                    inspect(pair.key);
+                    inspect(pair.value);
+                  }
+                } else if (isSeq(node)) node.items.forEach(inspect);
+                else if (isScalar(node) && typeof node.value === "bigint") {
+                  const number = Number(node.value);
+                  if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
+                  node.value = number;
+                } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+                  typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
+              };
+              inspect(doc.contents);
+              return validate(doc.toJS({ maxAliasCount: 0 }));
+            }
+
+
+            /** Decodes persisted records before format-specific integrity
+            checks. */
+
+            export function parseReportYaml<T = unknown>(text: string): T {
+              return parseYaml(text, (value) => value as T);
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 386
+          grasp: 1
+          implementation: 8
+      scope_digest: sha256:6710b83400d5b9b35ca0f0790e95c1bd36aa319d9ca00579e09e21f1f8fb8e21
+    input_digest: sha256:4621fe9d2b3b5926ede4ee8f1edd4dfc74a246f9ca1f9477e229727308794ff9
+    result_digest: sha256:9139f8f381a4283ab5afcfa507eeda266fd3cc7502ed30b1e1771ad880716492
+    content_digest: sha256:44e8e31ab4734390938c98de8fdd90b87f2ecc222a9ac3f58c4861eb3683b63b
+    registration_order: 945
+  - schema_version: 2
+    kind: review
+    module_id: archiview-serialization
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-57d866d6-3e58-4358-9376-29dc7756ca3e
+    check_hash: b98bc5cbb3e99931eff431a4d6b8442c2e9d65efd0d7c78904bb417d16b870eb
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-serialization
+      baseline: null
+      current:
+        exists: true
+        directory: framework/serialization
+        self_digest: sha256:f4952a61c04d3c5f18f64ea2c14090125f4386115ededcba889efc5cb5e666e6
+        subtree_digest: sha256:1f35d3e4f8d310ec9f3c02c902ac035a8090c203f6c48ca2d2ac0528276859f2
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-serialization
+          directory: framework/serialization
+          own_files:
+            - path: framework/serialization/digest.ts
+              digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
+              normalization: text-lf/v1
+            - path: framework/serialization/schema.ts
+              digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
+              normalization: text-lf/v1
+            - path: framework/serialization/turn-check-codex.ts
+              digest: sha256:c24ef4388b23e959a5bdee13e2b859e5dde3cffa3a6826ed363fe862de40cbe9
+              normalization: text-lf/v1
+            - path: framework/serialization/yaml.ts
+              digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
+              normalization: text-lf/v1
+          contract:
+            id: archiview-serialization
+            kind: module
+            purpose: Регламентировать представление доменных данных ArchiView при
+              сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок
+                ключей словаря произволен.
+            invariants: {}
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:294eead10f6d679d941ec1202ae7614556ee325b70c291f22902e44305ace790
+      change_digest: sha256:867b1cbe35f21cdf8de1b8cc74a21d4d015f89bc473bcd92afea55e5f61aad06
+    report:
+      schema_version: 1
+      id: review-57d866d6-3e58-4358-9376-29dc7756ca3e
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      comparison:
+        baseline: null
+        current:
+          id: working-17efb5eac4f0c045b525aa9b08d811333c08c1d06b6ca8c347bf368d585603b2
+          digest: sha256:1d0df713317c84b31fe33ef572d230f814fb35af7bcc8af368f0b206f5cb2d5e
+      analysis:
+        created_at: 2026-11-26T08:40:27.993Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:796334a80cbfc5e8a27aeccd006abc329346b748e98004a8757c2a426fdab445
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:1d4509bd1f8b7d02ae924d9faacb82254c7f5ca357d57e997559873a17dac93d
+      observed:
+        baseline: null
+        current:
+          summary: Модуль разбирает YAML, проверяет структуру данных и создаёт
+            каноническую запись для SHA-256. Для массивов строк он также
+            экспортирует функцию с предварительной сортировкой.
+          responsibilities:
+            - text: parseYaml разбирает YAML 1.2, проверяет узлы документа и передаёт
+                полученное значение валидатору вызывающей стороны.
+                parseReportYaml использует тот же разбор для сохранённых
+                записей.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - text: Валидаторы описывают допустимые значения, элементы массива, обязательные и
+                необязательные поля словаря. shape отклоняет неизвестные поля,
+                extensions проверяет пространство имён ключей. Ошибка содержит
+                путь проверяемого значения.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - text: canonical строит каноническую строку с сортировкой ключей словаря и
+                последовательным обходом массива. digest вычисляет SHA-256 этой
+                строки и добавляет префикс sha256:.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - text: encodeOrderedStrings копирует и сортирует переданный массив строк перед
+                вызовом canonical. Результат зависит от состава строк и теряет
+                их исходный порядок.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:b2a7b1613e9bd1481ede46dfb368e37468ff53080d911b7537858e8e8118355f
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Разбор и проверка представления реализованы в parseYaml и
+            валидаторах схемы. canonical задаёт воспроизводимую запись, а digest
+            вычисляет по ней SHA-256. Все четыре собственных файла решают задачи
+            представления данных. Ошибка при кодировании упорядоченного массива
+            относится к правилу B3.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - snapshot: current
+              fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:b2a7b1613e9bd1481ede46dfb368e37468ff53080d911b7537858e8e8118355f
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: parseYaml включает uniqueKeys и отклоняет документ при ошибке или
+            предупреждении парсера. До преобразования в JavaScript функция
+            рекурсивно проверяет ключи и значения словарей и элементы
+            последовательностей. Ключом может быть только строка, YAML-ссылки и
+            посторонние теги отклоняются. Для чисел проверяется конечность, а
+            для целых bigint также точность преобразования. parseReportYaml
+            проходит те же проверки.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: violation
+          explanation: В digest.ts функция canonical обходит массив через map и сортирует
+            ключи словаря перед записью. Однако encodeOrderedStrings в
+            turn-check-codex.ts передаёт в canonical уже отсортированную копию
+            массива. Для ["b","a"] и ["a","b"] эта функция возвращает одну и ту
+            же строку ["a","b"].
+          evidence:
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:b2a7b1613e9bd1481ede46dfb368e37468ff53080d911b7537858e8e8118355f
+      findings:
+        - id: finding-1
+          kind: boundary_violation
+          certainty: confirmed
+          severity: error
+          lifecycle: unknown
+          summary: encodeOrderedStrings теряет порядок элементов массива строк.
+          clauses:
+            - snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+          evidence:
+            - snapshot: current
+              fact_id: sha256:b2a7b1613e9bd1481ede46dfb368e37468ff53080d911b7537858e8e8118355f
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          details: В turn-check-codex.ts на строке 2 вызов sort() предшествует canonical.
+            Перестановка двух разных строк даёт ту же запись, поэтому
+            восстановить их исходный порядок или различить эти
+            последовательности по записи невозможно. В digest.ts на строках 4–7
+            canonical уже сохраняет порядок массива и сортирует только ключи
+            словаря.
+          recommendation: Передавать items напрямую в canonical. Закрепить поведение
+            проверкой, в которой перестановка двух разных строк меняет результат
+            encodeOrderedStrings.
+      assessment:
+        current:
+          verdict: violation
+          summary: Назначение модуля и граница B2 подтверждены. B3 нарушена в
+            encodeOrderedStrings из-за сортировки массива перед кодированием.
+            Контракт не объявляет инвариантов.
+        change:
+          verdict: not_applicable
+          summary: Экспорт содержит только текущий снимок. База для сравнения изменений
+            отсутствует.
+    manifest:
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:1d4509bd1f8b7d02ae924d9faacb82254c7f5ca357d57e997559873a17dac93d
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-17efb5eac4f0c045b525aa9b08d811333c08c1d06b6ca8c347bf368d585603b2
+          digest: sha256:1d0df713317c84b31fe33ef572d230f814fb35af7bcc8af368f0b206f5cb2d5e
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: purpose
+              id: purpose
+            text: Регламентировать представление доменных данных ArchiView при сериализации
+              и их каноническую запись для воспроизводимого отпечатка.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B2
+            text: YAML-представление допускает значения поддерживаемых типов с уникальными
+              ключами словарей и без YAML-ссылок.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+            text: В канонической записи порядок элементов массива значим, исходный порядок
+              ключей словаря произволен.
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-17efb5eac4f0c045b525aa9b08d811333c08c1d06b6ca8c347bf368d585603b2
+        digest: sha256:17efb5eac4f0c045b525aa9b08d811333c08c1d06b6ca8c347bf368d585603b2
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T08:40:27.923Z
+      review_scope: self
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-17efb5eac4f0c045b525aa9b08d811333c08c1d06b6ca8c347bf368d585603b2
+      digest: sha256:1d0df713317c84b31fe33ef572d230f814fb35af7bcc8af368f0b206f5cb2d5e
+      kind: working
+      complete: true
+      modules:
+        - directory: framework/serialization
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-serialization
+
+              title: Serialization
+
+              kind: module
+
+              extensions:
+                archiview.roles: [serialization]
+              purpose: Регламентировать представление доменных данных ArchiView
+              при сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-serialization
+              title: Serialization
+              kind: module
+              extensions:
+                archiview.roles:
+                  - serialization
+              purpose: Регламентировать представление доменных данных ArchiView при
+                сериализации и их каноническую запись для воспроизводимого
+                отпечатка.
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                  ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок
+                  ключей словаря произволен.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-serialization.yaml
+          files:
+            - path: .archiview/modules/archiview-serialization.yaml
+              hash: 43bdd3095bf57ca01b78188b59335d031f19fa0c
+              mode: "100644"
+            - path: framework/serialization/digest.ts
+              hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+              mode: "100644"
+            - path: framework/serialization/schema.ts
+              hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+              mode: "100644"
+            - path: framework/serialization/turn-check-codex.ts
+              hash: 1894944b72183fb2cdb5d74065d552925aac1c5d
+              mode: "100644"
+            - path: framework/serialization/yaml.ts
+              hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
+              mode: "100644"
+          sourceFiles: 4
+          fingerprint: sha256:49af0b408d2d3493279c43767a40bda9372fadd19b8ee9363243c30fc6600338
+      facts:
+        - id: sha256:36e8c9099d0711ca21a60527a4fe4047c91b3c0179875bffdbd98d9aba25bdf3
+          kind: file
+          path: .archiview/modules/archiview-serialization.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-serialization
+
+            title: Serialization
+
+            kind: module
+
+            extensions:
+              archiview.roles: [serialization]
+            purpose: Регламентировать представление доменных данных ArchiView
+            при сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
+
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+            invariants: {}
+        - id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          kind: file
+          path: framework/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+        - id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+          kind: file
+          path: framework/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+        - id: sha256:b2a7b1613e9bd1481ede46dfb368e37468ff53080d911b7537858e8e8118355f
+          kind: file
+          path: framework/serialization/turn-check-codex.ts
+          start_line: 1
+          end_line: 3
+          text: >
+            import { canonical } from "./digest.js";
+
+            export const encodeOrderedStrings = (items: readonly string[]) =>
+            canonical([...items].sort());
+        - id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+          kind: file
+          path: framework/serialization/yaml.ts
+          start_line: 1
+          end_line: 37
+          text: >
+            import { parseDocument, isAlias, isMap, isScalar, isSeq } from
+            "yaml";
+
+
+            /** Парсер запрещает дубликаты, aliases, нестандартные теги и
+            несколько документов. */
+
+            export function parseYaml<T>(text: string, validate: (value:
+            unknown) => T): T {
+              const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
+              if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
+              // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
+              // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
+              const inspect = (node: unknown): void => {
+                if (node == null) return;
+                if (typeof node === "object" && "tag" in node && node.tag &&
+                    !["str", "int", "float", "bool", "null", "map", "seq"].some((name) => node.tag === "tag:yaml.org,2002:" + name))
+                  throw new Error("Custom YAML tag");
+                if (isAlias(node)) throw new Error("YAML aliases are not allowed");
+                if (isMap(node)) {
+                  for (const pair of node.items) {
+                    if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
+                    inspect(pair.key);
+                    inspect(pair.value);
+                  }
+                } else if (isSeq(node)) node.items.forEach(inspect);
+                else if (isScalar(node) && typeof node.value === "bigint") {
+                  const number = Number(node.value);
+                  if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
+                  node.value = number;
+                } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+                  typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
+              };
+              inspect(doc.contents);
+              return validate(doc.toJS({ maxAliasCount: 0 }));
+            }
+
+
+            /** Decodes persisted records before format-specific integrity
+            checks. */
+
+            export function parseReportYaml<T = unknown>(text: string): T {
+              return parseYaml(text, (value) => value as T);
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 388
+          grasp: 1
+          implementation: 10
+      scope_digest: sha256:9f60bba3e60829bbea05154a9f62fb5a2d5297ed704929a6f821f6e2e8facad8
+    input_digest: sha256:ac51a8e2ec051efb4eee03e0b519fb374366c2e881c2e0eca5669467d6ca8193
+    result_digest: sha256:2e004c2d079ce47a94db48aeccdd46cb335dda8b3dac41e3d6ee290309386794
+    content_digest: sha256:c9aeac9522d0ca4b827c569f2203251adc8058207848c6492909c71a43e99b9a
+    registration_order: 946
+  - schema_version: 2
+    kind: review
+    module_id: archiview-serialization
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-dd02f6fd-48e8-4108-a81d-0b6a6d796499
+    check_hash: 76b848d9eeffa04a6999781a5238a13e76e53431fb2be49540153f73d9ae52ca
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-serialization
+      baseline: null
+      current:
+        exists: true
+        directory: framework/serialization
+        self_digest: sha256:30ac7c69c0137a5749e5804b463fbc757e4a7f85d9e96590f3ab8cb74250a7b6
+        subtree_digest: sha256:70960c44b628615e1b2a41aabaf60ddde13402bcc88c3c791b04b62e8c42b6b9
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-serialization
+          directory: framework/serialization
+          own_files:
+            - path: framework/serialization/digest.ts
+              digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
+              normalization: text-lf/v1
+            - path: framework/serialization/schema.ts
+              digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
+              normalization: text-lf/v1
+            - path: framework/serialization/turn-check-codex.ts
+              digest: sha256:dd9d3ddf4950a32cb3cd054715deb9d6dccc131fc865cb6eef448b2dcda57333
+              normalization: text-lf/v1
+            - path: framework/serialization/yaml.ts
+              digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
+              normalization: text-lf/v1
+          contract:
+            id: archiview-serialization
+            kind: module
+            purpose: Регламентировать представление доменных данных ArchiView при
+              сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок
+                ключей словаря произволен.
+            invariants: {}
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:3c8b788bc4232fabed3f980207523a47fe5b544b7691bcbbab55db65e67ad891
+      change_digest: sha256:1a09d66a505da0d5f489f1a34f459101e4869307445b0c7b26a087d423d5fa42
+    report:
+      schema_version: 1
+      id: review-dd02f6fd-48e8-4108-a81d-0b6a6d796499
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      comparison:
+        baseline: null
+        current:
+          id: working-b93dfcfb95a6893d6c5da0ec801caab5c8c240c719561ead2266e532962c14c7
+          digest: sha256:93c7d0c70f43d4ce2818a13f6228bff0e3bda42d4d1441745ade5bb3f215695e
+      analysis:
+        created_at: 2026-11-26T08:46:35.020Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:4a51a15e44914df63aa78b42ef24b23d1c529c29bff5c7461f7b93b1238c45fb
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:1d4509bd1f8b7d02ae924d9faacb82254c7f5ca357d57e997559873a17dac93d
+      observed:
+        baseline: null
+        current:
+          summary: Модуль читает доменные данные из YAML, предоставляет функции для
+            проверки их структуры и вычисляет SHA-256 по канонической записи.
+          responsibilities:
+            - text: Разбирает YAML, проверяет узлы документа и передаёт преобразованное
+                значение валидатору вызывающей стороны. Для сохранённых отчётов
+                parseReportYaml применяет общие проверки YAML. Параметр T в этой
+                функции задаёт тип результата во время компиляции.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - text: Позволяет собирать валидаторы строк, перечислений, массивов и словарей с
+                обязательными и необязательными полями. При ошибке указывает
+                путь поля или индекс элемента. Предоставляет проверки структуры
+                ссылок и ключей расширений.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - text: Строит каноническую запись рекурсивно и вычисляет по ней шестнадцатеричный
+                отпечаток с префиксом sha256. Для упорядоченного списка строк
+                encodeOrderedStrings вызывает ту же функцию canonical.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+                - snapshot: current
+                  fact_id: sha256:822dd3d5a1797b035e2d8b5880ff85d3f11f4f4e96d6324a4ac045a4c432144f
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: parseYaml проверяет представление данных при чтении (yaml.ts,
+            строки 4–30), а schema.ts задаёт правила проверки полей и элементов
+            (строки 2–26). digest получает на вход результат canonical и
+            вычисляет SHA-256 (digest.ts, строки 4–13). encodeOrderedStrings
+            использует эту же запись для массивов строк (turn-check-codex.ts,
+            строки 1–2). Все четыре файла выполняют задачи в пределах назначения
+            модуля.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - snapshot: current
+              fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:822dd3d5a1797b035e2d8b5880ff85d3f11f4f4e96d6324a4ac045a4c432144f
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: "В yaml.ts, строки 4–6, parseDocument получает uniqueKeys: true, и
+            любая диагностика парсера прерывает чтение. Рекурсивный обход
+            проверяет строковые ключи, допустимые теги, типы скаляров и
+            конечность чисел. Для целых проверяется точность преобразования в
+            number. Узел alias вызывает ошибку до преобразования документа в JS
+            (строки 9–30). parseReportYaml проходит через тот же обход (строки
+            34–35)."
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: consistent
+          explanation: В digest.ts, строка 5, canonical обходит массив методом map и
+            соединяет записи в исходном порядке. Для каждого словаря функция
+            сортирует ключи перед записью пар ключ–значение и рекурсивно
+            обрабатывает вложенные значения (строки 6–7). Поэтому перестановка
+            различных строк в массиве меняет запись, а перестановка ключей
+            словаря сохраняет её. Это правило действует и для
+            encodeOrderedStrings (turn-check-codex.ts, строки 1–2).
+          evidence:
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+            - snapshot: current
+              fact_id: sha256:822dd3d5a1797b035e2d8b5880ff85d3f11f4f4e96d6324a4ac045a4c432144f
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Собственная реализация соответствует назначению и границам B2 и B3.
+            Проверены все четыре исходных файла. Отдельных инвариантов контракт
+            не задаёт.
+        change:
+          verdict: not_applicable
+          summary: Экспорт содержит только текущий снимок. Базовая версия для оценки
+            изменений отсутствует.
+    manifest:
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:1d4509bd1f8b7d02ae924d9faacb82254c7f5ca357d57e997559873a17dac93d
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-b93dfcfb95a6893d6c5da0ec801caab5c8c240c719561ead2266e532962c14c7
+          digest: sha256:93c7d0c70f43d4ce2818a13f6228bff0e3bda42d4d1441745ade5bb3f215695e
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: purpose
+              id: purpose
+            text: Регламентировать представление доменных данных ArchiView при сериализации
+              и их каноническую запись для воспроизводимого отпечатка.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B2
+            text: YAML-представление допускает значения поддерживаемых типов с уникальными
+              ключами словарей и без YAML-ссылок.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+            text: В канонической записи порядок элементов массива значим, исходный порядок
+              ключей словаря произволен.
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-b93dfcfb95a6893d6c5da0ec801caab5c8c240c719561ead2266e532962c14c7
+        digest: sha256:b93dfcfb95a6893d6c5da0ec801caab5c8c240c719561ead2266e532962c14c7
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T08:46:34.950Z
+      review_scope: self
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-b93dfcfb95a6893d6c5da0ec801caab5c8c240c719561ead2266e532962c14c7
+      digest: sha256:93c7d0c70f43d4ce2818a13f6228bff0e3bda42d4d1441745ade5bb3f215695e
+      kind: working
+      complete: true
+      modules:
+        - directory: framework/serialization
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-serialization
+
+              title: Serialization
+
+              kind: module
+
+              extensions:
+                archiview.roles: [serialization]
+              purpose: Регламентировать представление доменных данных ArchiView
+              при сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-serialization
+              title: Serialization
+              kind: module
+              extensions:
+                archiview.roles:
+                  - serialization
+              purpose: Регламентировать представление доменных данных ArchiView при
+                сериализации и их каноническую запись для воспроизводимого
+                отпечатка.
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                  ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок
+                  ключей словаря произволен.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-serialization.yaml
+          files:
+            - path: .archiview/modules/archiview-serialization.yaml
+              hash: 43bdd3095bf57ca01b78188b59335d031f19fa0c
+              mode: "100644"
+            - path: framework/serialization/digest.ts
+              hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+              mode: "100644"
+            - path: framework/serialization/schema.ts
+              hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+              mode: "100644"
+            - path: framework/serialization/turn-check-codex.ts
+              hash: 279e2ebb8cea79909518d19894cfc1f2e23ff525
+              mode: "100644"
+            - path: framework/serialization/yaml.ts
+              hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
+              mode: "100644"
+          sourceFiles: 4
+          fingerprint: sha256:e7a1bf90f11f8d9fa01f76554a937775a216c31899e48183e5ca010ca5264ee5
+      facts:
+        - id: sha256:36e8c9099d0711ca21a60527a4fe4047c91b3c0179875bffdbd98d9aba25bdf3
+          kind: file
+          path: .archiview/modules/archiview-serialization.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-serialization
+
+            title: Serialization
+
+            kind: module
+
+            extensions:
+              archiview.roles: [serialization]
+            purpose: Регламентировать представление доменных данных ArchiView
+            при сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
+
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+            invariants: {}
+        - id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          kind: file
+          path: framework/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+        - id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+          kind: file
+          path: framework/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+        - id: sha256:822dd3d5a1797b035e2d8b5880ff85d3f11f4f4e96d6324a4ac045a4c432144f
+          kind: file
+          path: framework/serialization/turn-check-codex.ts
+          start_line: 1
+          end_line: 3
+          text: >
+            import { canonical } from "./digest.js";
+
+            export const encodeOrderedStrings = (items: readonly string[]) =>
+            canonical(items);
+        - id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+          kind: file
+          path: framework/serialization/yaml.ts
+          start_line: 1
+          end_line: 37
+          text: >
+            import { parseDocument, isAlias, isMap, isScalar, isSeq } from
+            "yaml";
+
+
+            /** Парсер запрещает дубликаты, aliases, нестандартные теги и
+            несколько документов. */
+
+            export function parseYaml<T>(text: string, validate: (value:
+            unknown) => T): T {
+              const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
+              if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
+              // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
+              // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
+              const inspect = (node: unknown): void => {
+                if (node == null) return;
+                if (typeof node === "object" && "tag" in node && node.tag &&
+                    !["str", "int", "float", "bool", "null", "map", "seq"].some((name) => node.tag === "tag:yaml.org,2002:" + name))
+                  throw new Error("Custom YAML tag");
+                if (isAlias(node)) throw new Error("YAML aliases are not allowed");
+                if (isMap(node)) {
+                  for (const pair of node.items) {
+                    if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
+                    inspect(pair.key);
+                    inspect(pair.value);
+                  }
+                } else if (isSeq(node)) node.items.forEach(inspect);
+                else if (isScalar(node) && typeof node.value === "bigint") {
+                  const number = Number(node.value);
+                  if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
+                  node.value = number;
+                } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+                  typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
+              };
+              inspect(doc.contents);
+              return validate(doc.toJS({ maxAliasCount: 0 }));
+            }
+
+
+            /** Decodes persisted records before format-specific integrity
+            checks. */
+
+            export function parseReportYaml<T = unknown>(text: string): T {
+              return parseYaml(text, (value) => value as T);
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 389
+          grasp: 1
+          implementation: 11
+      scope_digest: sha256:7eec476c77a5ad46d8808c053c6cb633a2cc3ae4487cbf41200dae446c321b39
+    input_digest: sha256:20de503844bcec2e4e9706c38726037df3cf7e7091a458391161885ae7ab4596
+    result_digest: sha256:ba22800fccc6a22a6a7d6680114ad777ea30375d057a9191d4c6703c44c26e91
+    content_digest: sha256:736ecc5a1cc617b60e600c2685bfd974749d962d3dcb0dc755dcc9eb6efe9e70
+    registration_order: 947
+  - schema_version: 2
+    kind: review
+    module_id: archiview-serialization
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-2088e296-6c8c-4ba5-b746-966c17fb2647
+    check_hash: 0fc05d4cb37516f2f1172e7757a8aae50150ebca3fd6fce6990f9175d60a5afc
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-serialization
+      baseline: null
+      current:
+        exists: true
+        directory: framework/serialization
+        self_digest: sha256:f3d9b95a7e2c215d8ed42faf2d46a9f262223d3b36b72d356642d10bd3f3eaac
+        subtree_digest: sha256:4eb355cd02bfaa826c80c70ecb448ee8d207ce7de658bf59f27ad6f0eda6e333
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-serialization
+          directory: framework/serialization
+          own_files:
+            - path: framework/serialization/digest.ts
+              digest: sha256:3cfb6a70683727f81fb6c5d3e975f8e130618f8b163d7c710714c3ed4a2d381f
+              normalization: text-lf/v1
+            - path: framework/serialization/schema.ts
+              digest: sha256:a239469fc2d72dfcd84c76b101f35d11cf7d672bd5165eede5fae058767eba0c
+              normalization: text-lf/v1
+            - path: framework/serialization/yaml.ts
+              digest: sha256:280b4b638e95da5bfb1a1abbf5cabfc47e75d9f70c26e69a9607c16de1589ec7
+              normalization: text-lf/v1
+          contract:
+            id: archiview-serialization
+            kind: module
+            purpose: Регламентировать представление доменных данных ArchiView при
+              сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок
+                ключей словаря произволен.
+            invariants: {}
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:1016d4e9e2594332b731289ce4f3387958fbfa46a86be05480c16e2164e33a89
+      change_digest: sha256:5336d605fec6c916ffb8e52bc5110eae3b99b0afd95cb443c0d436deac0e948f
+    report:
+      schema_version: 1
+      id: review-2088e296-6c8c-4ba5-b746-966c17fb2647
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      comparison:
+        baseline: null
+        current:
+          id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+          digest: sha256:a505fb48acd032d23c17ef7ec9c0756c142ce4647977c6ecceec501afed375e6
+      analysis:
+        created_at: 2026-11-26T08:59:04.473Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:c243668d147287d6673002899965b3571ad8c96543bafa6645abe7c0be8f422c
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:cc5b22c90d84c1ec3e2479e1b9ce4dc2494d02f50df579ef5c23e7c4eecd8f01
+      observed:
+        baseline: null
+        current:
+          summary: Модуль разбирает и проверяет YAML, предоставляет валидаторы доменных
+            структур и вычисляет SHA-256 по канонической записи.
+          responsibilities:
+            - text: parseYaml обходит дерево YAML до преобразования в JS и передаёт результат
+                внешнему валидатору. Валидаторы shape и array сохраняют путь
+                поля в сообщении об ошибке.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+                - snapshot: current
+                  fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - text: canonical сериализует массивы и словари рекурсивно. digest вычисляет
+                SHA-256 из этой записи.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Публичные функции чтения, структурной проверки, канонической записи
+            и вычисления отпечатка покрывают объявленное назначение.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+            - snapshot: current
+              fact_id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: Строгий разбор с uniqueKeys предшествует рекурсивной проверке.
+            Парсер отклоняет ссылки, нестандартные теги, нестроковые ключи,
+            нечисловые и бесконечные числовые значения. Целые проходят отдельную
+            проверку представимости.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: archiview-serialization
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: consistent
+          explanation: Элементы массива сохраняют последовательность при map. Ключи
+            объекта сначала сортируются, затем каждый ключ и его значение
+            рекурсивно записываются в результат.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Модуль разбирает и проверяет YAML, предоставляет валидаторы доменных
+            структур и вычисляет SHA-256 по канонической записи.
+        change:
+          verdict: not_applicable
+          summary: Первый анализ без базового снимка.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+          digest: sha256:a505fb48acd032d23c17ef7ec9c0756c142ce4647977c6ecceec501afed375e6
+      module:
+        id: archiview-serialization
+        baseline_path: null
+        current_path: framework/serialization
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: purpose
+              id: purpose
+            text: Регламентировать представление доменных данных ArchiView при сериализации
+              и их каноническую запись для воспроизводимого отпечатка.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B2
+            text: YAML-представление допускает значения поддерживаемых типов с уникальными
+              ключами словарей и без YAML-ссылок.
+          - reference:
+              snapshot: current
+              module_id: archiview-serialization
+              section: boundaries
+              id: B3
+            text: В канонической записи порядок элементов массива значим, исходный порядок
+              ключей словаря произволен.
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+        digest: sha256:fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+      source_head: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      source_captured_at: 2026-11-26T08:59:04.394Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:cc5b22c90d84c1ec3e2479e1b9ce4dc2494d02f50df579ef5c23e7c4eecd8f01
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-fc8cba7b5128c63e5326966af7d8da11411c3fd497cddc90860707b54f297643
+      digest: sha256:a505fb48acd032d23c17ef7ec9c0756c142ce4647977c6ecceec501afed375e6
+      kind: working
+      complete: true
+      modules:
+        - directory: framework/serialization
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-serialization
+
+              title: Serialization
+
+              kind: module
+
+              extensions:
+                archiview.roles: [serialization]
+              purpose: Регламентировать представление доменных данных ArchiView
+              при сериализации и их каноническую запись для воспроизводимого
+              отпечатка.
+
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-serialization
+              title: Serialization
+              kind: module
+              extensions:
+                archiview.roles:
+                  - serialization
+              purpose: Регламентировать представление доменных данных ArchiView при
+                сериализации и их каноническую запись для воспроизводимого
+                отпечатка.
+              boundaries:
+                B2: YAML-представление допускает значения поддерживаемых типов с уникальными
+                  ключами словарей и без YAML-ссылок.
+                B3: В канонической записи порядок элементов массива значим, исходный порядок
+                  ключей словаря произволен.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-serialization.yaml
+          files:
+            - path: .archiview/modules/archiview-serialization.yaml
+              hash: 43bdd3095bf57ca01b78188b59335d031f19fa0c
+              mode: "100644"
+            - path: framework/serialization/digest.ts
+              hash: 23f9388f3f60946d72acb5be89a68aac7aeebfaf
+              mode: "100644"
+            - path: framework/serialization/schema.ts
+              hash: e76d0b2f04cdc4d4ae3fafd6591f156c014814cc
+              mode: "100644"
+            - path: framework/serialization/yaml.ts
+              hash: ee39c76f2a0b6c1f8560dd88414d99c9314425cb
+              mode: "100644"
+          sourceFiles: 3
+          fingerprint: sha256:ecc174625847eb6de5693804ced0f00fad9a528c64df399f834dde6863d521a4
+      facts:
+        - id: sha256:36e8c9099d0711ca21a60527a4fe4047c91b3c0179875bffdbd98d9aba25bdf3
+          kind: file
+          path: .archiview/modules/archiview-serialization.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-serialization
+
+            title: Serialization
+
+            kind: module
+
+            extensions:
+              archiview.roles: [serialization]
+            purpose: Регламентировать представление доменных данных ArchiView
+            при сериализации и их каноническую запись для воспроизводимого
+            отпечатка.
+
+            boundaries:
+              B2: YAML-представление допускает значения поддерживаемых типов с уникальными ключами словарей и без YAML-ссылок.
+              B3: В канонической записи порядок элементов массива значим, исходный порядок ключей словаря произволен.
+            invariants: {}
+        - id: sha256:a178df2765b18019fd1e6c4fce323bd16f82e35aba501a3e92de202dbd0292d0
+          kind: file
+          path: framework/serialization/digest.ts
+          start_line: 1
+          end_line: 15
+          text: >
+            import { createHash } from "node:crypto";
+
+
+            /** Канонический JSON сортирует ключи словарей, сохраняя порядок
+            массивов. */
+
+            export function canonical(value: unknown): string {
+              if (Array.isArray(value)) return "[" + value.map((v) => canonical(v ?? null)).join(",") + "]";
+              if (value && typeof value === "object") return "{" + Object.keys(value).filter((key) => (value as Record<string, unknown>)[key] !== undefined).sort()
+                .map((key) => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}";
+              return JSON.stringify(value ?? null);
+            }
+
+
+            /** Все внешние отпечатки используют одинаковые байты UTF-8 и
+            префикс алгоритма. */
+
+            export function digest(value: unknown) {
+              return "sha256:" + createHash("sha256").update(canonical(value)).digest("hex");
+            }
+        - id: sha256:4c70472ec807c7e1283003aa835e8f59a2db71123f0b53da08465977df2ef1b2
+          kind: file
+          path: framework/serialization/schema.ts
+          start_line: 1
+          end_line: 27
+          text: >
+            /** Минимальный словарь валидаторов: каждая ошибка содержит точный
+            путь поля. */
+
+            export const fail = (at: string, message: string): never => { throw
+            new Error(at + ": " + message); };
+
+            export type Validator = (v: unknown, at: string) => void;
+
+            export const string: Validator = (v, at) => typeof v === "string" &&
+            v.trim() ? undefined : fail(at, "ожидается непустая строка");
+
+            export const object: Validator = (v, at) => v && typeof v ===
+            "object" && !Array.isArray(v) ? undefined : fail(at, "ожидается
+            словарь");
+
+            export const enumeration = (...values: unknown[]): Validator => (v,
+            at) => values.includes(v) ? undefined : fail(at, "допустимо: " +
+            values.join(", "));
+
+            export const nullable = (check: Validator): Validator => (v, at) =>
+            v === null ? undefined : check(v, at);
+
+            export const array = (check: Validator, min = 0): Validator => (v,
+            at) => {
+              if (!Array.isArray(v) || v.length < min) fail(at, "ожидается массив, минимум " + min);
+              (v as unknown[]).forEach((item, i) => check(item, at + "[" + i + "]"));
+            };
+
+            export const shape = (required: Record<string, Validator>, optional:
+            Record<string, Validator> = {}): Validator => (v, at) => {
+              object(v, at);
+              for (const [key, check] of Object.entries(required)) check((v as Record<string, unknown>)[key], at + "." + key);
+              for (const key of Object.keys(v as object)) {
+                if (Object.hasOwn(required, key)) continue;
+                if (!Object.hasOwn(optional, key)) fail(at + "." + key, "неизвестное поле");
+                optional[key]((v as Record<string, unknown>)[key], at + "." + key);
+              }
+            };
+
+            export const strings = array(string);
+
+            export const references = array(shape({ title: string, uri: string
+            }));
+
+            export const extensions: Validator = (v, at) => {
+              object(v, at);
+              for (const key of Object.keys(v as object)) if (!/^[^.\s]+\.[^\s]+$/.test(key)) fail(at, "расширению нужно пространство имён");
+            };
+        - id: sha256:7a488f3a324ad51e64b60b9892e77c4bbe279bc3dcedda814dec0357c1145ffe
+          kind: file
+          path: framework/serialization/yaml.ts
+          start_line: 1
+          end_line: 37
+          text: >
+            import { parseDocument, isAlias, isMap, isScalar, isSeq } from
+            "yaml";
+
+
+            /** Парсер запрещает дубликаты, aliases, нестандартные теги и
+            несколько документов. */
+
+            export function parseYaml<T>(text: string, validate: (value:
+            unknown) => T): T {
+              const doc = parseDocument(text, { uniqueKeys: true, strict: true, version: "1.2", intAsBigInt: true });
+              if (doc.errors.length || doc.warnings.length) throw new Error([...doc.errors, ...doc.warnings].map((e) => e.message).join("; "));
+              // Ограничиваем YAML обычными типами данных до преобразования: иначе ключ 1
+              // превратится в строку, а .nan потеряет смысл при каноническом JSON-хешировании.
+              const inspect = (node: unknown): void => {
+                if (node == null) return;
+                if (typeof node === "object" && "tag" in node && node.tag &&
+                    !["str", "int", "float", "bool", "null", "map", "seq"].some((name) => node.tag === "tag:yaml.org,2002:" + name))
+                  throw new Error("Custom YAML tag");
+                if (isAlias(node)) throw new Error("YAML aliases are not allowed");
+                if (isMap(node)) {
+                  for (const pair of node.items) {
+                    if (!isScalar(pair.key) || typeof pair.key.value !== "string") throw new Error("YAML mapping keys must be strings");
+                    inspect(pair.key);
+                    inspect(pair.value);
+                  }
+                } else if (isSeq(node)) node.items.forEach(inspect);
+                else if (isScalar(node) && typeof node.value === "bigint") {
+                  const number = Number(node.value);
+                  if (!Number.isFinite(number) || BigInt(number) !== node.value) throw new Error("YAML integer cannot be represented exactly");
+                  node.value = number;
+                } else if (!isScalar(node) || !["string", "boolean", "number"].includes(typeof node.value) && node.value !== null ||
+                  typeof node.value === "number" && !Number.isFinite(node.value)) throw new Error("Unsupported YAML value");
+              };
+              inspect(doc.contents);
+              return validate(doc.toJS({ maxAliasCount: 0 }));
+            }
+
+
+            /** Decodes persisted records before format-specific integrity
+            checks. */
+
+            export function parseReportYaml<T = unknown>(text: string): T {
+              return parseYaml(text, (value) => value as T);
+            }
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 1
+          implementation: 12
+      scope_digest: sha256:8197438a17bfd08f13a3c1488d5620d8e7481bfa9bfddb913ae9cc78d02c542b
+    input_digest: sha256:e2a85e814ce9642aefd77add48795347206704a39be8989f23c253730a8324f4
+    result_digest: sha256:8710d1ce3751e89452f049be1e788954c5073c432fb96507aaf99d4dea835669
+    content_digest: sha256:2d2a86a1d046110150e955cb0d47ec8297ae7564a3e54d38b0afa4c35ca7b9e9
+    registration_order: 948
