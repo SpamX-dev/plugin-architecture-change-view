@@ -1,6 +1,6 @@
 import type { ChangeStatus, ModuleSummary } from "../view-model/types.js";
 import { byId, el, findingMarker, icon } from "./dom.js";
-import { badge, labels } from "./change-status.js";
+import { createTreeChangeTooltip, labels, treeChangeBadges } from "./change-status.js";
 import { roleBadge } from "./role-badge.js";
 import { initializeTreeWidth } from "./tree-layout.js";
 
@@ -32,6 +32,7 @@ interface TreeActions {
 
 export function createTreeView(actions: TreeActions) {
   const tree = byId("tree");
+  const hideChangeTooltip = createTreeChangeTooltip(tree);
   const search = byId("search");
   initializeTreeWidth();
   search.addEventListener("input", () => actions.search(search.value));
@@ -145,7 +146,9 @@ export function createTreeView(actions: TreeActions) {
       marker.setAttribute("aria-label", analysis);
       row.append(marker);
     }
-    row.append(badge(module.status, true, module.descendantChanges));
+    const { markers, description } = treeChangeBadges(module);
+    row.setAttribute("aria-description", description);
+    row.append(markers);
     row.addEventListener("click", event => {
       if (children.length && event.target instanceof Element && event.target.closest("[data-toggle]")) {
         actions.expandModule(module.key, repository);
@@ -175,6 +178,7 @@ export function createTreeView(actions: TreeActions) {
   }
 
   function renderTree(sections: TreeSection[]) {
+    hideChangeTooltip();
     tree.replaceChildren();
     for (const {repository, rows} of sections) {
       if (!repository) { tree.append(moduleList(rows)); continue; }

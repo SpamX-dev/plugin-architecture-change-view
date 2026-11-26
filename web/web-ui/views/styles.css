@@ -93,7 +93,7 @@ svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.6; flex: 
 .tree-roles .role-badge { flex: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .role-badge[data-change-status="added"] { border-color: #589873; color: #22623e; background: #eaf6ee; }
 .role-badge[data-change-status="removed"] { border-color: #c78074; color: #90463c; background: #fcefed; text-decoration: line-through; }
-.tree-row > .status-badge, .tree-row > .review-marker, .tree-row > .descendant-count, .tree-row > .missing-marker { flex-shrink: 0; }
+.tree-row > .tree-change-badges, .tree-row > .review-marker, .tree-row > .descendant-count, .tree-row > .missing-marker { flex-shrink: 0; }
 .tree-caret { width: 8px; flex: 0 0 auto; font-size: 18px; line-height: 13px; color: #98a69d; transform-origin: center; text-align: center; }
 .tree-caret.expanded { transform: rotate(90deg); }
 .tree-row.context-row:not(.selected) { opacity: .7; }
@@ -104,8 +104,22 @@ svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.6; flex: 
 .status-badge.new { color: #28754e; background: #eaf6ee; border-color: #d5eadd; }
 .status-badge.changed { color: #8b641f; background: #fff8e8; border-color: #f0e5c8; }
 .status-badge.removed { color: #98574f; background: #fcefed; border-color: #f0d9d6; }
-.status-badge.unchanged { color: var(--muted); background: #f0f4f1; border-color: #e2e9e3; }
+.status-badge.initial { color: #526a93; background: #eef2fb; border-color: #dbe3f2; }
+.status-badge.unchanged, .status-badge.unavailable { color: var(--muted); background: #f0f4f1; border-color: #e2e9e3; }
 .status-badge.small { font-size: 9px; padding: 3px 5px; border-radius: 4px; }
+.tree-change-badges { display: inline-flex; gap: 4px; }
+.tree-change-badge { width: 22px; height: 22px; padding: 0; border-radius: 4px; font: 700 12px/1 var(--mono); }
+.tree-change-badge.new { color: #185936; background: #d1edda; border-color: #517b61; }
+.tree-change-badge.changed { color: #613e09; background: #ffe2a4; border-color: #88632c; }
+.tree-change-badge.removed { color: #752c27; background: #fbd5cf; border-color: #9e514a; }
+.tree-change-badge.initial { color: #304979; background: #dce6fc; border-color: #5973a1; }
+.tree-change-badge.unchanged, .tree-change-badge.unavailable { color: #37483e; background: #e2e9e4; border-color: #65786b; }
+.tree-change-badge:hover { border-color: currentColor; }
+.status-badge.tree-change-tooltip {
+  position: fixed; z-index: 15; width: max-content; white-space: normal; overflow-wrap: anywhere;
+  padding: 4px 7px; border-color: currentColor; border-radius: 4px;
+  box-shadow: 0 2px 6px #244e3625; font: 550 11px/1.4 system-ui, sans-serif; pointer-events: none;
+}
 .sidebar-footer { min-height: 45px; border-top: 1px solid var(--border); color: var(--muted); padding: 14px 22px; font-size: 9px; display: flex; gap: 8px; align-items: center; }
 .content { padding: 0 38px; min-width: 0; overflow-y: auto; background: #fff; }
 /* Действия страницы стоят в строке пути, заголовок занимает всю ширину. */
@@ -243,8 +257,6 @@ dialog p { font-size: 12px; color: #8a9f91; line-height: 1.8; margin-bottom: 25p
 /* Структурированные контракты и независимые результаты анализа. */
 .tabs { gap: 22px; flex-wrap: wrap; }
 .tabs-row { flex-wrap: wrap; gap: 10px; }
-.status-badge.initial { background: #eef2fb; color: #526a93; border-color: #dbe3f2; }
-.tree-row .status-badge.unchanged { font-size: 8px; }
 .review-marker { color: #aa7b31; font-size: 13px; }
 .contract-paper { border: 1px solid var(--border); background: #fff; border-radius: 9px; overflow: hidden; }
 .contract-header { padding: 27px 30px; background: #f7faf8; border-bottom: 1px solid var(--border); }

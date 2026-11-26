@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, rmdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -14,7 +14,7 @@ import type { Snapshot } from "../framework/snapshots/types.js";
 import { fileDiff } from "../module-operations/file-diff.js";
 import { listModuleFiles } from "../module-operations/module-access.js";
 import { moduleDetail, moduleSummary } from "../module-operations/module-view.js";
-import { commitTestFiles, initTestRepository } from "./support.js";
+import { commitTestFiles, contractYaml, initTestRepository, writeModuleTree } from "./support.js";
 
 test("the repository map is a root file in full, published and fast Git views", async t => {
   const root = await mkdtemp(path.join(os.tmpdir(), "archiview-map-changes-"));
@@ -43,7 +43,10 @@ test("the repository map is a root file in full, published and fast Git views", 
       const expected = state === "new" ? [{ path: MODULE_TREE_FILE, status: state }, { path: "new.ts", status: "new" }]
         : [{ path: MODULE_TREE_FILE, status: state }];
       assert.deepEqual(owner.files, expected);
-      assert.equal(moduleSummary(owner).filesChanged, expected.length);
+      const summary = moduleSummary(owner);
+      assert.equal(summary.filesChanged, expected.length);
+      assert.equal(summary.filesStatus, state);
+      assert.equal(summary.contractStatus, "unchanged");
       assert.deepEqual(moduleDetail(owner, [], undefined, modules, root, root).files, expected);
       const diff = await fileDiff(owner, before, after, MODULE_TREE_FILE, liveRoot);
       assert.deepEqual(diff.hunks.flatMap(h => h.lines), expectedLines);
@@ -111,4 +114,37 @@ test("old archives resolve the map from their exact Git revision or expose missi
   assert.deepEqual(unknown.modules[0].files, []);
   assert.match(unknown.diagnostics.join("\n"), /modules\.tree/);
   assert.deepEqual(archived, original);
+});
+
+test("module summaries distinguish an unavailable contract from a deleted contract", async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "archiview-contract-status-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  initTestRepository(root);
+  const map = path.join(root, MODULE_TREE_FILE);
+  const source = path.join(root, "src", "feature.ts");
+  const contract = path.join(root, ".archiview", "modules", "feature.yaml");
+  await mkdir(path.dirname(source));
+  await writeModuleTree(root, { feature: "src" });
+  await writeFile(source, "export const feature = 1;\n");
+  await writeFile(contract, contractYaml("feature"));
+  commitTestFiles(root);
+  const baseline = await captureGitHead(root);
+  assert.ok(baseline);
+
+  async function status() {
+    const snapshot = await captureWorkingTree(root);
+    const module = compareSnapshots(baseline, snapshot).modules.find(entry => entry.directory === "src");
+    assert.ok(module?.after, "the module stays visible despite the error or deletion");
+    return moduleSummary(module).contractStatus;
+  }
+
+  await writeFile(map, "feature: [\n");
+  assert.equal(await status(), "unavailable", "a broken registry does not prove that YAML was deleted");
+  await writeModuleTree(root, { feature: "src" });
+  await writeFile(contract, Buffer.from([0xff]));
+  assert.equal(await status(), "unavailable", "existing YAML with unreadable text has no known status");
+  await rm(contract);
+  await rm(source);
+  await rmdir(path.dirname(source));
+  assert.equal(await status(), "removed", "a retained registry entry does not prove that YAML exists");
 });

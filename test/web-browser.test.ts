@@ -309,6 +309,44 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   await feature.waitFor();
   const rootItem = page.locator('.tree-row[data-key="."]');
   await rootItem.locator(".review-marker").waitFor();
+  const featureStatuses = feature.locator(".tree-change-badge");
+  const tooltip = page.locator("#tree-change-tooltip");
+  assert.deepEqual(await featureStatuses.allInnerTexts(), ["F", "C"]);
+  assert.equal(await feature.getAttribute("aria-description"), "Файлы изменены. Контракт без изменений.");
+  assert.equal(await feature.locator(".tree-change-badge.changed").count(), 1);
+  await tooltip.waitFor({ state: "hidden" });
+  await featureStatuses.nth(0).hover();
+  await tooltip.filter({ hasText: /^Файлы изменены$/ }).waitFor();
+
+  const tree = page.locator("#tree");
+  await featureStatuses.nth(1).evaluate(badge => {
+    const scrollport = badge.closest<HTMLElement>("#tree")!;
+    const height = Math.ceil(badge.getBoundingClientRect().bottom - scrollport.getBoundingClientRect().top) + 1;
+    scrollport.style.flex = "0 0 " + height + "px";
+  });
+  await featureStatuses.nth(1).hover();
+  await tooltip.filter({ hasText: /^Контракт без изменений$/ }).waitFor();
+  const edge = await featureStatuses.nth(1).evaluate(badge => {
+    const scrollport = badge.closest<HTMLElement>("#tree")!;
+    const gap = scrollport.getBoundingClientRect().bottom - badge.getBoundingClientRect().bottom;
+    return { gap, scrollable: scrollport.scrollHeight > scrollport.clientHeight };
+  });
+  assert.ok(edge.scrollable && edge.gap >= 0 && edge.gap <= 2, "the entire badge is at the bottom edge of the scrollport");
+  // Playwright visibility alone does not account for clipping by a scroll container.
+  const visibleFraction = await tooltip.evaluate(marker => new Promise<number>(resolve => {
+    const observer = new IntersectionObserver(([entry]) => {
+      observer.disconnect();
+      resolve(entry.intersectionRatio);
+    });
+    observer.observe(marker);
+  }));
+  assert.ok(visibleFraction > 0.99, "the scrollport does not clip the tooltip");
+  const tooltipBox = await tooltip.boundingBox();
+  const badgesBox = await feature.locator(".tree-change-badges").boundingBox();
+  assert.ok(tooltipBox && badgesBox && tooltipBox.x + tooltipBox.width <= badgesBox.x, "the tooltip leaves both badges exposed");
+  await rootItem.locator(".tree-name").hover();
+  await tooltip.waitFor({ state: "hidden" });
+  await tree.evaluate(scrollport => scrollport.style.removeProperty("flex"));
   await rootItem.press("ArrowLeft");
   assert.equal(await rootItem.getAttribute("aria-expanded"), "false");
   assert.equal(await rootItem.evaluate(row => row === document.activeElement), true);
@@ -334,10 +372,13 @@ test("standalone browser loads modules, navigates history, copies analysis and f
   assert.match(prompt, /browser-feature/);
   assert.match(prompt, /--complete-analysis/);
   const timeline = page.locator("#timeline");
-  const revision = await timeline.locator("option").evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value).find((value) => value.startsWith("git-")));
-  assert.ok(revision);
+  const revision = await timeline.locator("option").filter({ hasText: /^HEAD$/ }).getAttribute("value");
+  assert.ok(revision?.startsWith("git-"));
   await timeline.selectOption(revision);
   await page.waitForFunction((id) => (document.querySelector("#timeline") as HTMLSelectElement).value === id && !(document.querySelector("#timeline") as HTMLSelectElement).disabled, revision);
+  assert.equal(await rootItem.getAttribute("aria-description"), "Файлы без изменений. Контракт изменён.");
+  await rootItem.locator(".tree-change-badge.changed").hover();
+  await tooltip.filter({ hasText: /^Контракт изменён$/ }).waitFor();
   await timeline.selectOption("current");
   await page.waitForFunction(() => document.querySelector<HTMLSelectElement>("#timeline")?.value === "current"
     && !document.querySelector<HTMLSelectElement>("#timeline")?.disabled);

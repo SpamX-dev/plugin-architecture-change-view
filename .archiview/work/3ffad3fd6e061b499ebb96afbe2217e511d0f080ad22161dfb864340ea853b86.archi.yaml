@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-view-model
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: 7986674d77f0b1466289a1869b063825c7b73c9f96da7e1d2a9d66c8dba6bc70
+check_hash: 1f6a0c379bf78e02c66fca308cbc70a5621f8baa2b4a1243e4c9b47d743cd2b9
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,9 +10,12 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: d8304bd7550f4527428f2a07736bc14f45427e6a
+      id: 83ff62688c450024102aac06fd190e0fd831c5ad
     state:
-      exists: false
+      exists: true
+      directory: web/web-ui/view-model
+      self_digest: sha256:4eea1f677b89df960a7d3829a9d2eee3b5a0417037c0bb298d440d809e89cb93
+      subtree_digest: sha256:a1c07b558237052bb29ea28e853da4d3951fe88458af16bbef341d6213e84f00
   current:
     exists: true
     directory: web/web-ui/view-model
@@ -22,7 +25,230 @@ input_manifest:
     name: archiview-structure
     version: 1.1.0
     config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
-baseline: null
+baseline:
+  module_id: archiview-view-model
+  directory: web/web-ui/view-model
+  parent_id: archiview-client
+  children: []
+  technical:
+    normalization: archiview/module-state/v1
+    module_id: archiview-view-model
+    directory: web/web-ui/view-model
+    own_files:
+      - path: web/web-ui/view-model/tree-paths.ts
+        digest: sha256:4fb022cc0cc6f636cd479b10a29c2b014251d00b5cc545972cc817a03c437fc8
+        normalization: text-lf/v1
+      - path: web/web-ui/view-model/types.ts
+        digest: sha256:912ab0852ff7a38647e29ce6ce4a6417735502ebed05a5be3304ae285da89f84
+        normalization: text-lf/v1
+    contract:
+      schema_version: 1
+      id: archiview-view-model
+      title: Модель представления
+      kind: module
+      purpose: Предоставлять общие данные веб-интерфейса, контракты действий и
+        навигацию по сторонам сравнения.
+      boundaries:
+        B1: Сопоставлять удалённые модули с путями и предками базовой стороны сравнения.
+      invariants: {}
+    document_state: documented
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает интеграцию с Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-web
+        section: boundaries
+        id: B2
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-client
+        section: boundaries
+        id: B1
+        text: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов
+          сам по себе не определяет качество архитектуры.
+      - module_id: archiview-client
+        section: boundaries
+        id: B10
+        text: После копирования промпта исправления сохранять текущий статус замечания.
+      - module_id: archiview-client
+        section: boundaries
+        id: B11
+        text: Сохранять доступ к удалённым модулям и доказательствам выбранного
+          исторического состояния.
+      - module_id: archiview-client
+        section: boundaries
+        id: B12
+        text: Содержимое полученных документов и исходных файлов отображать только как
+          данные.
+      - module_id: archiview-client
+        section: boundaries
+        id: B2
+        text: Копировать промпт анализа или исправления по явному действию пользователя.
+      - module_id: archiview-client
+        section: boundaries
+        id: B3
+        text: В основном чеклисте показывать только собственные пункты модуля для
+          выбранного состояния.
+      - module_id: archiview-client
+        section: boundaries
+        id: B4
+        text: В счётчики замечаний и действия исправления включать только содержательные
+          замечания. Изменения текста пунктов показывать в контракте.
+      - module_id: archiview-client
+        section: boundaries
+        id: B5
+        text: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а
+          раскрытая строка показывает собственный статус модуля.
+      - module_id: archiview-client
+        section: boundaries
+        id: B6
+        text: В карточке текущего состояния показывать полноту проверки зависимостей без
+          перечня зависимостей из прежнего отчёта.
+      - module_id: archiview-client
+        section: boundaries
+        id: B7
+        text: Устаревание одной лишь оценки перехода не требует повторного анализа
+          текущего состояния.
+      - module_id: archiview-client
+        section: boundaries
+        id: B8
+        text: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+      - module_id: archiview-client
+        section: boundaries
+        id: B9
+        text: Подтверждать завершение анализа по импорту результата.
+  technical_digest: sha256:4eea1f677b89df960a7d3829a9d2eee3b5a0417037c0bb298d440d809e89cb93
+  complete: true
+  self:
+    normalization: archiview/module-state/v1
+    module_id: archiview-view-model
+    directory: web/web-ui/view-model
+    own_files:
+      - path: web/web-ui/view-model/tree-paths.ts
+        digest: sha256:4fb022cc0cc6f636cd479b10a29c2b014251d00b5cc545972cc817a03c437fc8
+        normalization: text-lf/v1
+      - path: web/web-ui/view-model/types.ts
+        digest: sha256:912ab0852ff7a38647e29ce6ce4a6417735502ebed05a5be3304ae285da89f84
+        normalization: text-lf/v1
+    contract:
+      id: archiview-view-model
+      kind: module
+      purpose: Предоставлять общие данные веб-интерфейса, контракты действий и
+        навигацию по сторонам сравнения.
+      boundaries:
+        B1: Сопоставлять удалённые модули с путями и предками базовой стороны сравнения.
+      invariants: {}
+    inherited:
+      - module_id: architecture-change-view
+        section: boundaries
+        id: B6
+        text: Не является IDE и не стремится заменить функционал IDE
+      - module_id: architecture-change-view
+        section: invariants
+        id: I10
+        text: Приложение поддерживает интеграцию с Codex.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I11
+        text: Приложение поддерживает интеграцию с DeepSeek Harness.
+      - module_id: architecture-change-view
+        section: invariants
+        id: I9
+        text: Локальный запуск в браузере входит в обязательные варианты поставки
+          приложения.
+      - module_id: architecture-web
+        section: boundaries
+        id: B2
+        text: Действия просмотра оставляют исходники и согласованные контракты без
+          изменений.
+      - module_id: architecture-web
+        section: boundaries
+        id: B3
+        text: Интерфейс отображает полученные документы и исходники только как данные.
+      - module_id: archiview-client
+        section: boundaries
+        id: B1
+        text: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов
+          сам по себе не определяет качество архитектуры.
+      - module_id: archiview-client
+        section: boundaries
+        id: B10
+        text: После копирования промпта исправления сохранять текущий статус замечания.
+      - module_id: archiview-client
+        section: boundaries
+        id: B11
+        text: Сохранять доступ к удалённым модулям и доказательствам выбранного
+          исторического состояния.
+      - module_id: archiview-client
+        section: boundaries
+        id: B12
+        text: Содержимое полученных документов и исходных файлов отображать только как
+          данные.
+      - module_id: archiview-client
+        section: boundaries
+        id: B2
+        text: Копировать промпт анализа или исправления по явному действию пользователя.
+      - module_id: archiview-client
+        section: boundaries
+        id: B3
+        text: В основном чеклисте показывать только собственные пункты модуля для
+          выбранного состояния.
+      - module_id: archiview-client
+        section: boundaries
+        id: B4
+        text: В счётчики замечаний и действия исправления включать только содержательные
+          замечания. Изменения текста пунктов показывать в контракте.
+      - module_id: archiview-client
+        section: boundaries
+        id: B5
+        text: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а
+          раскрытая строка показывает собственный статус модуля.
+      - module_id: archiview-client
+        section: boundaries
+        id: B6
+        text: В карточке текущего состояния показывать полноту проверки зависимостей без
+          перечня зависимостей из прежнего отчёта.
+      - module_id: archiview-client
+        section: boundaries
+        id: B7
+        text: Устаревание одной лишь оценки перехода не требует повторного анализа
+          текущего состояния.
+      - module_id: archiview-client
+        section: boundaries
+        id: B8
+        text: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+      - module_id: archiview-client
+        section: boundaries
+        id: B9
+        text: Подтверждать завершение анализа по импорту результата.
+    children: []
+  self_digest: sha256:bd05d42b157fc867803be90e68e9ddeb947b0e79ed1d4cd91ea1d5d8c8dcb447
+  subtree:
+    self: sha256:4eea1f677b89df960a7d3829a9d2eee3b5a0417037c0bb298d440d809e89cb93
+    children: []
+  subtree_digest: sha256:a1c07b558237052bb29ea28e853da4d3951fe88458af16bbef341d6213e84f00
+  semantic_subtree:
+    self: sha256:bd05d42b157fc867803be90e68e9ddeb947b0e79ed1d4cd91ea1d5d8c8dcb447
+    children: []
+  semantic_subtree_digest: sha256:329ebd229d3e896a6dceaf69bc0efd99fce84796f0cd761a04d71377660cf160
 current:
   module_id: archiview-view-model
   directory: web/web-ui/view-model
@@ -248,11 +474,11 @@ current:
     children: []
   semantic_subtree_digest: sha256:329ebd229d3e896a6dceaf69bc0efd99fce84796f0cd761a04d71377660cf160
 change:
-  existence: added
-  own: true
-  own_code: true
-  own_contract: true
-  inherited_constraints: true
+  existence: retained
+  own: false
+  own_code: false
+  own_contract: false
+  inherited_constraints: false
   descendants: false
   child_composition: false
   moved: false
@@ -261,27 +487,324 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 257
-  comparison_key: sha256:e7c151c3b5db230453e71ff528f130e7dc0f0cb9586f7b36e6f563ef9355d70f
-  baseline: null
-  current:
+  generation: 258
+  comparison_key: sha256:6b3197ed9b6b37d1cd1df2d22022e831071ab72a2e6e9c6340e7ebd2c0914ce8
+  baseline:
     metadata:
-      id: launch-29b179cf9bdced55db433435f43143c445f0d58e5c6fa5bd43ea874debbd20da
-      digest: sha256:e2ea79360ab25055ba78abacf627b50d7ef80fbed0ce6d1cdc0c2b577cb9252c
+      id: git-83ff62688c450024102aac06fd190e0fd831c5ad
+      digest: sha256:f83cb754eb38ca7d8912435fca9e01ed3066c0701e2ced556ef179e89c30b8be
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-26T13:22:57.501Z
-      kind: launch
-      label: Начальное состояние
+      capturedAt: 2026-11-26T19:08:29.617Z
+      kind: git
+      revision: 83ff62688c450024102aac06fd190e0fd831c5ad
+      label: HEAD
       fingerprint: 29b179cf9bdced55db433435f43143c445f0d58e5c6fa5bd43ea874debbd20da
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      baseRevision: d8304bd7550f4527428f2a07736bc14f45427e6a
+      isHead: true
+    module_index: 39
+    module:
+      directory: web/web-ui/view-model
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-view-model
+
+          title: Модель представления
+
+          kind: module
+
+          purpose: Предоставлять общие данные веб-интерфейса, контракты действий
+          и навигацию по сторонам сравнения.
+
+          boundaries:
+            B1: Сопоставлять удалённые модули с путями и предками базовой стороны сравнения.
+          invariants: {}
+        format: yaml
+        contract:
+          schema_version: 1
+          id: archiview-view-model
+          title: Модель представления
+          kind: module
+          purpose: Предоставлять общие данные веб-интерфейса, контракты действий и
+            навигацию по сторонам сравнения.
+          boundaries:
+            B1: Сопоставлять удалённые модули с путями и предками базовой стороны сравнения.
+          invariants: {}
+      documentPath: .archiview/modules/archiview-view-model.yaml
+      files:
+        - path: .archiview/modules/archiview-view-model.yaml
+          hash: 7b18ba2b7d292db99f26054aec6ba418ab45161f
+          mode: "100644"
+        - path: web/web-ui/view-model/tree-paths.ts
+          hash: 0e7081f2143fd9630e18d375bb2edb95a7d6fae2
+          mode: "100644"
+        - path: web/web-ui/view-model/types.ts
+          hash: 59c975fe31ef9e53c8adc138dd63c9f6f35422d8
+          mode: "100644"
+      sourceFiles: 2
+      fingerprint: 50b4f11626899fd78197321054fb7a2396b2a85c4a5cd34a9142234d1130354c
+    facts:
+      - index: 38
+        fact:
+          id: sha256:ab0751cb1ddfc01306121c4a745f721e786b63598ad651f05ebd481f823bd44e
+          kind: file
+          path: .archiview/modules/archiview-view-model.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-view-model
+
+            title: Модель представления
+
+            kind: module
+
+            purpose: Предоставлять общие данные веб-интерфейса, контракты
+            действий и навигацию по сторонам сравнения.
+
+            boundaries:
+              B1: Сопоставлять удалённые модули с путями и предками базовой стороны сравнения.
+            invariants: {}
+      - index: 202
+        fact:
+          id: sha256:4c7d4cfda017561dee8ead59f3c88519e0231d5e9562d6069b66dd988460f871
+          kind: file
+          path: web/web-ui/view-model/tree-paths.ts
+          start_line: 1
+          end_line: 43
+          text: >
+            /** Возвращает цепочку каталогов выбранного модуля от корня проекта.
+            */
+
+            export function ancestors(directory: string) {
+              if (directory === ".") return ["."];
+              const parts = directory.split("/");
+              return [".", ...parts.map((_, index) => parts.slice(0, index + 1).join("/"))];
+            }
+
+
+            export type ModulePath = { key: string; directory: string; status:
+            string; baselinePath?: string | null; currentPath?: string | null };
+
+
+            export function indexPaths<T extends ModulePath>(modules: T[]) {
+              const before = new Map<string, T>();
+              const after = new Map<string, T>();
+              for (const module of modules) {
+                if (module.status !== "new" && module.status !== "initial") before.set(module.baselinePath ?? module.directory, module);
+                if (module.status !== "removed") after.set(module.currentPath ?? module.directory, module);
+              }
+              return { before, after };
+            }
+
+
+            /** Each navigation link keeps the identity from the selected side
+            of the comparison. */
+
+            export function moduleTrail<T extends ModulePath>(modules: T[],
+            selected: ModulePath) {
+              const { before, after } = indexPaths(modules);
+              const paths = selected.status === "removed" ? before : after;
+              return ancestors(selected.directory).flatMap(directory => {
+                const module = paths.get(directory);
+                return module ? [{ directory, module }] : [];
+              });
+            }
+
+
+            /** A removed row belongs to its baseline parent, even when a new
+            module uses that path. */
+
+            export function treeParents<T extends ModulePath>(modules: T[]) {
+              const { before, after } = indexPaths(modules);
+              const parents = new Map<string, T>();
+              for (const module of modules) {
+                if (module.directory === ".") continue;
+                const index = module.directory.lastIndexOf("/");
+                const directory = index < 0 ? "." : module.directory.slice(0, index);
+                const parent = (module.status === "removed" ? before : after).get(directory);
+                if (parent) parents.set(module.key, parent);
+              }
+              return parents;
+            }
+      - index: 203
+        fact:
+          id: sha256:6a215d032fbaa350ef3e7f8016f2c48a7690489ce2b55f5d87539f06dede868f
+          kind: file
+          path: web/web-ui/view-model/types.ts
+          start_line: 1
+          end_line: 82
+          text: >
+            import type { Delivery } from
+            "../../../module-operations/analysis-record.js";
+
+            import type { ComparisonView, ModuleDetail, ModuleReview,
+            ModuleSummary, SessionOperations, FindingFixArgs } from
+            "../../../module-operations/api.js";
+
+            import type { ClauseReference, Finding as SavedFinding,
+            FindingDisposition, FreshnessReason, ReviewReport, Side, Coverage }
+            from "../../../framework/ai-report/types.js";
+
+            import type { Contract, Section } from
+            "../../../framework/contracts/types.js";
+
+            import type { SnapshotReference, Fact } from
+            "../../../framework/snapshots/types.js";
+
+            import type { AggregateAssessment } from
+            "../../../framework/static-report/types.js";
+
+            import type { ContractFieldChange } from
+            "../../../analyse/git-changes/contract-diff.js";
+
+
+            export type { ComparisonArgs, ComparisonView, ModuleDetail,
+            ModuleSummary, TimelineEntry } from
+            "../../../module-operations/api.js";
+
+            export type { Assessment, ClauseCheck as Check, ClauseReference,
+            Coverage, EvidenceReference, Observation, Side } from
+            "../../../framework/ai-report/types.js";
+
+            export type { Contract, ContractDocument, Section } from
+            "../../../framework/contracts/types.js";
+
+            export type { ChangeStatus, Fact } from
+            "../../../framework/snapshots/types.js";
+
+
+            /** Older saved reviews can omit details shown by current producers.
+            */
+
+            export type Reason = string | (FreshnessReason & { message?: string;
+            description?: string });
+
+            export type Freshness = Pick<AggregateAssessment, "status"> & {
+              conflict?: boolean; current_violation?: boolean; coverage?: Coverage; reasons?: Reason[];
+            };
+
+            export type Finding = Pick<SavedFinding, "id" | "severity" |
+            "summary" | "clauses" | "evidence"> & Partial<SavedFinding> & {
+            assessmentOnly?: boolean };
+
+            export type ReviewBundle = Pick<ModuleReview, "contracts"> &
+            Partial<Pick<ModuleReview, "analysisType" | "dispositions" |
+            "reviewFile" | "stale" | "dependencies" | "referencedContracts">> &
+            {
+              freshness?: Partial<Record<"current" | "change", Freshness>>;
+              facts: Record<Side, (Pick<Fact, "id" | "path"> & Partial<Fact>)[]>;
+              report: Pick<ReviewReport, "id" | "module" | "assessment" | "observed" | "checks" | "extensions"> & {
+                comparison: Partial<Record<Side, SnapshotReference | null>>;
+                analysis: Pick<ReviewReport["analysis"], "created_at" | "coverage">;
+                findings: Finding[];
+              };
+            };
+
+
+            export interface AnalysisRecord {
+              delivery?: Delivery;
+              request?: Awaited<ReturnType<SessionOperations["prepareAnalysis"]>>;
+              status: "preparing" | "ready" | "prepared" | "completed" | "error";
+              message: string;
+            }
+
+            export interface FixRecord { status: string; message: string;
+            attempt?: { id: string; harnessId: string } }
+
+            export interface FindingTarget { reviewId: string; findingId:
+            string; severity?: string; summary?: string; label?: string }
+
+            export interface ClientOptions { fetcher?: typeof fetch; base?:
+            string }
+
+            export type ArchiViewClient = SessionOperations;
+
+            export interface ClauseNavigation {
+              reference: ClauseReference;
+              review: ReviewBundle;
+            }
+
+            export interface WorkspaceSelection {
+              target?: string;
+              historyLimit?: number;
+              clause?: ClauseNavigation;
+              repository?: string;
+              key?: string;
+            }
+
+            export interface WorkspaceContext {
+              readonly view: ComparisonView | null;
+              readonly refreshing: boolean;
+              readonly reviewError?: string;
+              readonly statusLoaded: boolean;
+              refresh(selection?: WorkspaceSelection): Promise<void>;
+              loadStatuses(view: ComparisonView): Promise<void>;
+              reveal(module: ModuleSummary): void;
+            }
+
+            export interface ClauseItem { id: string; change:
+            ContractFieldChange }
+
+            export interface ClauseControls {
+              open(section: Section, title: string, item?: ClauseItem): void;
+            }
+
+            export interface ContractRenderOptions {
+              clauseControls?: ClauseControls;
+              contractDiff: ModuleDetail["contractDiff"]; previousReferences?: Contract["references"]; titleElement?: HTMLElement; groupElement?: HTMLElement;
+              hideHeading?: boolean; rawChanged?: boolean; showRawDiff?: () => void; reviews?: ReviewBundle[]; review?: ReviewBundle; openFinding?: (target: FindingTarget) => void;
+            }
+
+            export interface ReviewRenderOptions {
+              reviewId?: string; findingId?: string; projectRoot?: string; fixStates?: Map<string, FixRecord>;
+              listFixHarnesses?: () => ReturnType<SessionOperations["listHarnesses"]>;
+              deliverFix?: (args: Omit<FindingFixArgs, "repository">) => Promise<Delivery>;
+              copyFixPrompt?: (prompt: string) => Promise<void>; fixChanged?: (reviewId: string) => void;
+              saveDecision?: (reviewId: string, findingId: string, next: FindingDisposition, previous: FindingDisposition) => Promise<void>;
+              openClause?: (reference: ClauseReference, review: ReviewBundle) => void;
+            }
+
+            export function errorMessage(error: unknown): string { return error
+            instanceof Error ? error.message : String(error); }
+
+            export function errorCode(error: unknown): string | undefined {
+              return typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : undefined;
+            }
+
+            export function isRecord(value: unknown): value is Record<string,
+            unknown> { return typeof value === "object" && value !== null &&
+            !Array.isArray(value); }
+      - index: 269
+        fact:
+          id: sha256:50f31e5ef5a93531b285fc35df365a44e4a3e6f1700a7ef310fe8f96a40fbc45
+          kind: module
+          path: web/web-ui/view-model
+          text: '{"contract":"documented","format":"yaml","sources":["web/web-ui/view-model/tree-paths.ts","web/web-ui/view-model/types.ts"]}'
+  current:
+    metadata:
+      id: launch-6708ade6c212f0cf08d8d4dea96bf8de61d89407874c682c52b626bc482ce538
+      digest: sha256:d017f92b40ecd14e7ef1cfaad48bb22ce7fbcc04c940e8a0fa7c63aca87069ad
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-26T19:08:34.222Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 6708ade6c212f0cf08d8d4dea96bf8de61d89407874c682c52b626bc482ce538
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+      baseRevision: 83ff62688c450024102aac06fd190e0fd831c5ad
       observations:
         architecture-change-view:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 864
+          revision: 866
           grasp: 5
           implementation: 1
         archiview-distribution:
@@ -380,9 +903,9 @@ publication:
           implementation: 4
         architecture-tests:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 520
+          revision: 522
           grasp: 1
-          implementation: 62
+          implementation: 64
         architecture-web:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 388
@@ -590,9 +1113,9 @@ publication:
           implementation: 18
         archiview-views:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 395
+          revision: 399
           grasp: 2
-          implementation: 14
+          implementation: 18
         archiview-workspace-presenter:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 388
@@ -615,9 +1138,9 @@ publication:
           implementation: 1
         archiview-module-operations:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 420
+          revision: 422
           grasp: 1
-          implementation: 14
+          implementation: 16
         archiview-project-context:
           lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
           revision: 376

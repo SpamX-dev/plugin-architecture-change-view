@@ -3,7 +3,7 @@ import type { AggregateAssessment, DependencySelector, ReviewFreshness, TreeRevi
 import type { AnalysisStatus, PreparedAnalysis, HarnessOption, Delivery } from "./analysis-record.js";
 export type { AnalysisStatus, PreparedAnalysis } from "./analysis-record.js";
 import type { AnalysisType, ClauseInput, ReviewReport, Side } from "../framework/ai-report/types.js";
-import type { Comparison, ComparisonModule, Fact, Snapshot } from "../framework/snapshots/types.js";
+import type { ChangeStatus, Comparison, ComparisonModule, Fact, Snapshot } from "../framework/snapshots/types.js";
 import type { compareContracts, RoleChange } from "../analyse/git-changes/contract-diff.js";
 import type { StructuredPatchHunk } from "diff";
 import type { Section } from "../framework/contracts/types.js";
@@ -61,7 +61,12 @@ export interface ModuleReviewState {
   reviewStatus?: TreeReviewStatus | null;
 }
 
-export type ModuleSummary = Omit<ComparisonModule, "before" | "after" | "files"> & ModuleReviewState & { roles?: RoleChange[]; prototypeModule?: boolean };
+export type ModuleSummary = Omit<ComparisonModule, "before" | "after" | "files"> & ModuleReviewState & {
+  filesStatus: ChangeStatus;
+  contractStatus: ChangeStatus | "unavailable";
+  roles?: RoleChange[];
+  prototypeModule?: boolean;
+};
 export interface ComparisonView extends Pick<Comparison, "schema_version" | "id" | "root" | "complete" | "diagnostics" | "counts" | "before" | "after"> {
   /** Served from the last complete publication, before checking the working tree. */
   published?: true;

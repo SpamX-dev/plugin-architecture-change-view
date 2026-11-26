@@ -6,14 +6,14 @@ import { isPrototype } from "../framework/contracts/types.js";
 import { currentContractYaml } from "../framework/contracts/document.js";
 import { diffLines } from "diff";
 import { compareContracts, compareRoles } from "../analyse/git-changes/contract-diff.js";
-import type { Snapshot } from "../framework/snapshots/types.js";
+import type { ChangeStatus, FileChange, Snapshot } from "../framework/snapshots/types.js";
 import type { ReportModel } from "../analyse/module-review/model.js";
 import type { ReviewEntry } from "../framework/static-report/types.js";
 import type { ReviewBundle } from "../framework/ai-report/types.js";
 import { effectiveClauses } from "../analyse/module-review/bundle.js";
 import { canonical } from "../framework/serialization/digest.js";
 import { moduleReportName } from "../analyse/module-review/report-store.js";
-import type { DocumentDiffLine, ModuleDetail } from "./api.js";
+import type { DocumentDiffLine, ModuleDetail, ModuleSummary } from "./api.js";
 import type { SessionView } from "./session-view.js";
 
 /** Метаданные базы, необходимые интерфейсу без передачи всех документов. */
@@ -70,12 +70,39 @@ function contentFileChanges({ files, before, after }: SessionView["modules"][num
   return files.filter(file => !isModuleDocumentFile(file.path, before?.documentPath) && !isModuleDocumentFile(file.path, after?.documentPath));
 }
 
-export function moduleSummary(entry: SessionView["modules"][number]) {
+function filesStatus(changes: FileChange[], initial: boolean): ChangeStatus {
+  if (!changes.length) return "unchanged";
+  if (initial) return "initial";
+  const { status } = changes[0];
+  return (status === "new" || status === "removed") && changes.every(file => file.status === status) ? status : "changed";
+}
+
+function contractStatus({ before, after, status, documentChanged }: SessionView["modules"][number]): ModuleSummary["contractStatus"] {
+  const previousText = before?.document.text;
+  const currentText = after?.document.text;
+  if (previousText != null && currentText != null) return documentChanged ? "changed" : "unchanged";
+  // An invalid registry cannot identify the contract file for its directory.
+  if ((before?.document.state === "invalid" && previousText == null) ||
+      (after?.document.state === "invalid" && currentText == null)) return "unavailable";
+  const previousFile = before?.files.find(file => isModuleDocumentFile(file.path, before.documentPath));
+  const currentFile = after?.files.find(file => isModuleDocumentFile(file.path, after.documentPath));
+  const hadContract = previousText != null || Boolean(previousFile);
+  const hasContract = currentText != null || Boolean(currentFile);
+  if (hasContract && status === "initial") return "initial";
+  if (!hadContract) return hasContract ? "new" : "unchanged";
+  if (!hasContract) return "removed";
+  if (!previousFile?.hash || !currentFile?.hash) return "unavailable";
+  return previousFile.hash === currentFile.hash ? "unchanged" : "changed";
+}
+
+export function moduleSummary(entry: SessionView["modules"][number]): ModuleSummary {
   const { before, after, files, ...module } = entry;
-  module.filesChanged = contentFileChanges(entry).length;
+  const changes = contentFileChanges(entry);
   const roles = compareRoles(before?.document.contract, after?.document.contract, module.status !== "initial")
     .filter(role => role.status !== "removed");
-  return { ...module, ...(roles.length ? { roles } : {}), ...(isPrototype((after ?? before)?.document.contract) ? { prototypeModule: true } : {}) };
+  return { ...module, filesChanged: changes.length, filesStatus: filesStatus(changes, module.status === "initial"),
+    contractStatus: contractStatus(entry), ...(roles.length ? { roles } : {}),
+    ...(isPrototype((after ?? before)?.document.contract) ? { prototypeModule: true } : {}) };
 }
 
 export function reviewSummary(matching: ReviewEntry[], model: ReportModel) {

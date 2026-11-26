@@ -26,7 +26,7 @@ export function renderHeading(module: ModuleSummary, modules: ModuleSummary[], s
   byId("module-title").removeAttribute("title");
   byId("module-title").onclick = null;
   byId("module-title").textContent = module.title ?? module.name;
-  byId("module-status").replaceChildren(badge(module.status, false, module.descendantChanges));
+  byId("module-status").replaceChildren(badge(module.status, module.descendantChanges));
   byId("module-subtitle").textContent = module.directory === "." ?
     "Корневой модуль проекта" : module.directory;
   byId("module-subtitle").hidden = false;
