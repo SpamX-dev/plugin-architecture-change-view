@@ -13,10 +13,10 @@ export function validateComposition(report: ReviewReport, children: string[]) {
         !text(item.task) || !text(item.assessment) ||
         (item.role === "utility" && !Array.isArray(item.consumers)) ||
         (item.consumers !== undefined && (!Array.isArray(item.consumers) || !item.consumers.every(text))))
-      throw new Error("GRASP: некорректная оценка участника композиции.");
+      throw new Error("Некорректная оценка участника композиции.");
   }
   if (pending.size || !Array.isArray(report.extensions?.["archiview.grasp"]))
-    throw new Error("GRASP: требуется оценка каждого непосредственного ребёнка: " + [...pending].join(", "));
+    throw new Error("Для проверки композиции требуется оценка каждого непосредственного ребёнка: " + [...pending].join(", "));
 }
 
 /** The closest mapped ancestor owns each child in the composition. */

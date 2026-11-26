@@ -194,7 +194,7 @@ export class AnalysisRequests {
       ...(this.store.directory !== path.join(this.store.root, ".archiview") ? ["--state-dir", this.store.directory] : []),
       "--complete-analysis", request.id];
     if (request.analysisType) return [
-      header + "Выполни анализ " + (request.analysisType === "grasp" ? "GRASP" : "реализации") + " для модуля " + request.moduleId + ".",
+      header + "Выполни анализ " + (request.analysisType === "grasp" ? "композиции" : "реализации") + " для модуля " + request.moduleId + ".",
       "Запрос (JSON): " + JSON.stringify({project:this.store.root, moduleId:request.moduleId, requestId:request.id}),
       analysisInstructions[request.analysisType],
       "Используй только неизменяемые входы и факты в " + JSON.stringify(path.join(directory, "input.yaml")) + ".",

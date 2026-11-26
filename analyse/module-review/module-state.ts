@@ -3,7 +3,7 @@ import type { StoredContract as Contract } from "../../framework/contracts/types
 import type { FileInput, ModuleState, SelfState } from "../../framework/static-report/types.js";
 import { MODULE_TREE_FILE } from "../../framework/project/storage-paths.js";
 import { canonical, digest } from "../../framework/serialization/digest.js";
-import { compositionChildren } from "../grasp/analysis.js";
+import { compositionChildren } from "../composition/analysis.js";
 
 const NORMALIZATION = "archiview/module-state/v1";
 // Historical snapshots can contain R clauses. Include them only when replaying those saved inputs.

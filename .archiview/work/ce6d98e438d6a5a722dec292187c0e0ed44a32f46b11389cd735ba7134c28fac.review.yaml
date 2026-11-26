@@ -12461,3 +12461,2771 @@ entries:
     result_digest: sha256:54a4d3bf142e5e254755ad97d80abb87fb49f3d9ebbb5fd476ec63e0c8d02bbf
     content_digest: sha256:f9e3eb583fc85e04a6209914a794e6321e86c9bdeed132621b807e4b5262d626
     registration_order: 988
+  - schema_version: 2
+    kind: review
+    module_id: archiview-analyse
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-829c09f0-d14d-40d0-b712-20e15ba285f3
+    check_hash: 06bc8903d6e102d760152f61e1bafc7096bbde53709ca487acd0ffae30dfa66c
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-analyse
+      baseline: null
+      current:
+        exists: true
+        directory: analyse
+        self_digest: sha256:9ff26a36a98726d1ca5e81b84a15ba961ab4fda35cc39f12e1db651de1a4b790
+        subtree_digest: sha256:f6529c1a618a52e2e35efc66749118bbffbfb0dcfed4691d6958aa7eaeb0f5fb
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-analyse
+          directory: analyse
+          own_files: []
+          contract:
+            id: archiview-analyse
+            kind: group
+            purpose: Объединять виды анализа проекта с доступом к его файлам и сохранённым
+              результатам.
+            boundaries: {}
+            invariants:
+              I1: Каждый вид анализа реализуется в отдельном модуле.
+          children:
+            - module_id: archiview-git-changes
+              directory: analyse/git-changes
+              contract:
+                id: archiview-git-changes
+                kind: module
+                purpose: Формировать, сохранять и читать отчёт о добавленных, изменённых и
+                  удалённых файлах между двумя состояниями репозитория.
+                boundaries:
+                  B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не
+                    отслеживает и не игнорирует.
+                invariants:
+                  I1: Источники сравнения — коммиты, индекс и рабочее дерево одного
+                    Git-репозитория.
+              document_state: documented
+            - module_id: archiview-grasp
+              directory: analyse/grasp
+              contract:
+                id: archiview-grasp
+                kind: module
+                purpose: Определять область и правила проверки согласованности контрактов в
+                  композиции модуля.
+                boundaries:
+                  B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-implementation
+              directory: analyse/implementation
+              contract:
+                id: archiview-implementation
+                kind: module
+                purpose: Определять область и правила проверки соответствия собственной
+                  реализации контракту модуля и выявлять участие модуля в
+                  циклических зависимостях.
+                boundaries:
+                  B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с
+                    местом использования для каждого перехода.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-module-relations
+              directory: analyse/module-relations
+              contract:
+                id: archiview-module-relations
+                kind: module
+                purpose: Определять прямые связи модулей выбранного снимка по ссылкам на символы
+                  и сохранять места их использования.
+                boundaries:
+                  B1: Учитывать связи между собственными файлами разных модулей выбранного
+                    репозитория.
+                  B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного
+                    файла.
+                  B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+                invariants:
+                  I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках
+                    и читается с привязкой к содержимому снимка.
+              document_state: documented
+            - module_id: archiview-module-review
+              directory: analyse/module-review
+              contract:
+                id: archiview-module-review
+                kind: module
+                purpose: Готовить входные данные проверки модуля, сохранять проверенные отчёты и
+                  показывать актуальность результатов относительно выбранных
+                  снимков.
+                boundaries:
+                  B1: Содержательная проверка относится к модулю и входным данным, указанным в её
+                    манифесте.
+                  B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-project-location
+              directory: analyse/project
+              contract:
+                id: archiview-project-location
+                kind: module
+                purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+                  модулей ArchiView в каждом из них.
+                boundaries:
+                  B5: Включать в результат каждый найденный репозиторий, в том числе при
+                    отсутствии в нём .archiview/modules.tree.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-project-sources
+              directory: analyse/project-sources
+              contract:
+                id: archiview-project-sources
+                kind: module
+                purpose: Читать принадлежащие репозиторию файлы, карту и контракты, составлять
+                  по ним инвентаризацию модулей рабочей папки и определять
+                  цепочку контрактов для выбранного пути.
+                boundaries: {}
+                invariants: {}
+              document_state: documented
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:c4975e657111832a39e29ba9b67e0cba814cde07db71f49ddc1194cf9cfce916
+      change_digest: sha256:6918d747be3706ccd6ed8cc19abd4d8265b33fb4d66181c8bb6cb491a4da35e9
+    report:
+      schema_version: 1
+      id: review-829c09f0-d14d-40d0-b712-20e15ba285f3
+      module:
+        id: archiview-analyse
+        baseline_path: null
+        current_path: analyse
+      comparison:
+        baseline: null
+        current:
+          id: working-e9428aea9c54b7c1dd3996b50519308a707abb20e086d73120910f9fe51ade90
+          digest: sha256:b5f3035a3fb48a31f479c7c7f905f27eda9ad99e792a1c248def5c7034e491d4
+      analysis:
+        created_at: 2026-11-26T19:26:35.035Z
+        analyzer:
+          name: archiview-grasp
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:f433db4e92258e51b42e94d97ad5c5b301de45aac3d1baece4af5ccb74c44ba2
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: openai
+          id: gpt-6
+        prompt_digest: sha256:824e341c96a0e0a21972e145ded74d87a35a66ee1b9ed45b7f6365d4c296fafd
+      observed:
+        baseline: null
+        current:
+          summary: Семь непосредственных детей имеют сохранённые контракты. Четыре модуля
+            предоставляют самостоятельные виды анализа или их правила, а три
+            обеспечивают обнаружение репозиториев, доступ к исходным данным и
+            работу с отчётами.
+          responsibilities: []
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-analyse
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Контракты Git changes, Композиции, Реализации и Module relations
+            распределяют файловое сравнение, проверку композиции, проверку
+            собственного кода и определение прямых связей. Project discovery и
+            Project sources дают выбор репозитория, чтение файлов и контрактов.
+            Git changes и Module review обеспечивают сохранение и доступность
+            отчётов и их актуальности. Циклические цепочки Реализации опираются
+            на прямые связи с местами использования того же снимка. Вместе эти
+            обещания достаточны для назначения Analyse.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+            - snapshot: current
+              fact_id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+            - snapshot: current
+              fact_id: sha256:364ea10d97eb14c2e2fb7f72dafc4ec9ce700bdb55936a8612933b0515c35988
+            - snapshot: current
+              fact_id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+            - snapshot: current
+              fact_id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+            - snapshot: current
+              fact_id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+            - snapshot: current
+              fact_id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
+            - snapshot: current
+              fact_id: sha256:53a3fe6a5d7dc753d005facc1b974afbc43831caf9e16408e7db0cdd2ec35192
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-analyse
+            section: invariants
+            id: I1
+          subject: current
+          verdict: consistent
+          explanation: Отдельные контракты задают Git-сравнение, проверку композиции
+            контрактов, проверку реализации с выявлением участия в циклах и
+            определение прямых связей. Module relations определяет факты прямых
+            связей, Реализация выводит из них циклы. Подготовка входов, работа с
+            отчётами и доступ к проекту выделены в обслуживающие модули.
+            Распределение соответствует I1.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+            - snapshot: current
+              fact_id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+            - snapshot: current
+              fact_id: sha256:364ea10d97eb14c2e2fb7f72dafc4ec9ce700bdb55936a8612933b0515c35988
+            - snapshot: current
+              fact_id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+            - snapshot: current
+              fact_id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+            - snapshot: current
+              fact_id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+            - snapshot: current
+              fact_id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
+            - snapshot: current
+              fact_id: sha256:53a3fe6a5d7dc753d005facc1b974afbc43831caf9e16408e7db0cdd2ec35192
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Композиция Analyse обеспечивает заявленные виды анализа, доступ к
+            файлам выбранного проекта и сохранённым результатам. Сопоставлены
+            контракты семи непосредственных детей. Назначение и инвариант I1
+            согласуются с распределением обязанностей.
+        change:
+          verdict: not_applicable
+          summary: Экспорт охватывает текущее состояние. Базовый снимок отсутствует.
+      extensions:
+        archiview.grasp:
+          - moduleId: archiview-git-changes
+            role: executor
+            task: Сравнивать файлы двух состояний Git и сохранять отчёт об изменениях.
+            assessment: Даёт отдельный вид анализа на состояниях одного Git-репозитория.
+              Отчёты о файловых изменениях дополняют содержательные проверки
+              контрактов.
+          - moduleId: archiview-grasp
+            role: executor
+            task: Задавать область и правила проверки композиции.
+            assessment: Контракты выбранного модуля и его непосредственных детей дают
+              отдельную область проверки распределения обязанностей. Она
+              совместима с проверкой собственного кода.
+          - moduleId: archiview-implementation
+            role: executor
+            task: Задавать область и правила анализа реализации и выявлять участие в циклах.
+            assessment: Соответствие собственного кода оценивается по контракту модуля. Цикл
+              подтверждается замкнутой цепочкой прямых связей выбранного снимка
+              с координатами использования. Эти доказательства покрывает
+              контракт модуля связей.
+          - moduleId: archiview-module-relations
+            role: executor
+            task: Определять прямые связи по символам и сохранять места использования.
+            assessment: Поставляет привязанный к выбранному снимку граф прямых связей TS/JS.
+              Места использования обеспечивают доказательную основу для проверки
+              цикла в реализации.
+          - moduleId: archiview-module-review
+            role: utility
+            task: Готовить входы, сохранять проверенные отчёты и определять их актуальность
+              для снимков.
+            assessment: Поддерживает проверку композиции и реализации общим жизненным циклом
+              отчёта. Контракт привязывает содержательную проверку к её входам и
+              сохраняет исходный результат при повторном импорте.
+            consumers:
+              - archiview-grasp
+              - archiview-implementation
+          - moduleId: archiview-project-location
+            role: utility
+            task: Находить репозитории рабочей папки и отмечать наличие карты модулей.
+            assessment: Даёт родительской композиции выбор репозитория и данные о
+              доступности карты. В результат включаются также проекты без карты,
+              что позволяет отличить выбор репозитория от готовности его
+              контрактов.
+            consumers:
+              - archiview-analyse
+          - moduleId: archiview-project-sources
+            role: utility
+            task: Получать файлы и контракты репозитория и составлять инвентаризацию.
+            assessment: Обеспечивает обещанный родителем доступ к файлам и контрактам
+              выбранного проекта. Инвентаризация и цепочка контрактов дают
+              данные для привязки проверки к нужному модулю.
+            consumers:
+              - archiview-analyse
+              - archiview-module-review
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-e9428aea9c54b7c1dd3996b50519308a707abb20e086d73120910f9fe51ade90
+          digest: sha256:b5f3035a3fb48a31f479c7c7f905f27eda9ad99e792a1c248def5c7034e491d4
+      module:
+        id: archiview-analyse
+        baseline_path: null
+        current_path: analyse
+      analyzer:
+        name: archiview-grasp
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-analyse
+              section: purpose
+              id: purpose
+            text: Объединять виды анализа проекта с доступом к его файлам и сохранённым
+              результатам.
+          - reference:
+              snapshot: current
+              module_id: archiview-analyse
+              section: invariants
+              id: I1
+            text: Каждый вид анализа реализуется в отдельном модуле.
+      instructions: 'Проверь композицию по собственному контракту и контрактам
+        непосредственных детей. Разбери детей по их роли относительно обещания
+        родителя. Для непосредственных исполнителей проверь совместимость их
+        контрактов между собой и способность вместе выполнить обещание родителя.
+        Для утилит (Pure Fabrication) укажи потребителя и задачу, проверь
+        достаточность и границы обязанностей. Для листа объясни неприменимость
+        композиции. Выводы и замечания обоснуй сохранёнными контрактами. Заполни
+        report.extensions["archiview.grasp"] для каждого непосредственного
+        ребёнка из экспорта: moduleId, role (executor или utility), task
+        (задача), assessment (результат сравнения). Для утилиты добавь consumers
+        со списком потребителей; если по контрактам потребитель не установлен,
+        укажи это в assessment и оставь пустой список. Для листа используй
+        пустой массив. Код, контракты предков и более глубоких потомков в эту
+        проверку не входят.'
+      context: {}
+      analysis_type: grasp
+      source_snapshot:
+        id: working-e9428aea9c54b7c1dd3996b50519308a707abb20e086d73120910f9fe51ade90
+        digest: sha256:e9428aea9c54b7c1dd3996b50519308a707abb20e086d73120910f9fe51ade90
+      source_head: fa5e97a3a14082cbcb875a528856116b84980b33
+      source_captured_at: 2026-11-26T19:26:35.013Z
+      review_scope: self
+      model:
+        provider: openai
+        id: gpt-6
+      prompt_digest: sha256:824e341c96a0e0a21972e145ded74d87a35a66ee1b9ed45b7f6365d4c296fafd
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-e9428aea9c54b7c1dd3996b50519308a707abb20e086d73120910f9fe51ade90
+      digest: sha256:b5f3035a3fb48a31f479c7c7f905f27eda9ad99e792a1c248def5c7034e491d4
+      kind: working
+      complete: true
+      modules:
+        - directory: analyse
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-analyse
+
+              title: Analyse
+
+              kind: group
+
+              extensions:
+                archiview.roles: [root]
+              purpose: Объединять виды анализа проекта с доступом к его файлам и
+              сохранённым результатам.
+
+              boundaries: {}
+
+              invariants:
+                I1: Каждый вид анализа реализуется в отдельном модуле.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-analyse
+              title: Analyse
+              kind: group
+              extensions:
+                archiview.roles:
+                  - root
+              purpose: Объединять виды анализа проекта с доступом к его файлам и сохранённым
+                результатам.
+              boundaries: {}
+              invariants:
+                I1: Каждый вид анализа реализуется в отдельном модуле.
+          documentPath: .archiview/modules/archiview-analyse.yaml
+          files:
+            - path: .archiview/modules/archiview-analyse.yaml
+              hash: 5a05d588b4c16b75a10c90970031fb9202741ad3
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:fc700d1354bac6fa9f90ff84670a2c4a563ad922ad5ac9c8436d2a0202aed3a5
+        - directory: analyse/git-changes
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-git-changes
+
+              title: Git changes
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Формировать, сохранять и читать отчёт о добавленных,
+              изменённых и удалённых файлах между двумя состояниями репозитория.
+
+              boundaries:
+                B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не отслеживает и не игнорирует.
+              invariants:
+                I1: Источники сравнения — коммиты, индекс и рабочее дерево одного Git-репозитория.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-git-changes
+              title: Git changes
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Формировать, сохранять и читать отчёт о добавленных, изменённых и
+                удалённых файлах между двумя состояниями репозитория.
+              boundaries:
+                B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не
+                  отслеживает и не игнорирует.
+              invariants:
+                I1: Источники сравнения — коммиты, индекс и рабочее дерево одного
+                  Git-репозитория.
+          documentPath: .archiview/modules/archiview-git-changes.yaml
+          files:
+            - path: .archiview/modules/archiview-git-changes.yaml
+              hash: 69181e93eaeebe7019fd9e74c7592a47740781a8
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:90095091881739480a3a1e8c0dc67c16dc6f968d54e56dcf531364028192fb10
+        - directory: analyse/grasp
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-grasp
+
+              title: Композиция
+
+              kind: module
+
+              purpose: Определять область и правила проверки согласованности
+              контрактов в композиции модуля.
+
+              boundaries:
+                B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-grasp
+              title: Композиция
+              kind: module
+              purpose: Определять область и правила проверки согласованности контрактов в
+                композиции модуля.
+              boundaries:
+                B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-grasp.yaml
+          files:
+            - path: .archiview/modules/archiview-grasp.yaml
+              hash: 791c41816c8482430c703a7a1387ede0c2ed25e2
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:383947d004a87d92b40b56dd6c851a4510cdd775e39ac4087524b60339a1e73c
+        - directory: analyse/implementation
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-implementation
+
+              title: Реализация
+
+              kind: module
+
+              purpose: Определять область и правила проверки соответствия
+              собственной реализации контракту модуля и выявлять участие модуля
+              в циклических зависимостях.
+
+              boundaries:
+                B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с местом использования для каждого перехода.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-implementation
+              title: Реализация
+              kind: module
+              purpose: Определять область и правила проверки соответствия собственной
+                реализации контракту модуля и выявлять участие модуля в
+                циклических зависимостях.
+              boundaries:
+                B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с
+                  местом использования для каждого перехода.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-implementation.yaml
+          files:
+            - path: .archiview/modules/archiview-implementation.yaml
+              hash: d09ec7040e5d2b7c40b5c2c1e0c328b5bf23e310
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:8664989a977709a63696c56a2bd62c01ee3d505720ac4d8045ce9116d9bdc8f1
+        - directory: analyse/module-relations
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-module-relations
+
+              title: Module relations
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Определять прямые связи модулей выбранного снимка по
+              ссылкам на символы и сохранять места их использования.
+
+              boundaries:
+                B1: Учитывать связи между собственными файлами разных модулей выбранного репозитория.
+                B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного файла.
+                B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+              invariants:
+                I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках и читается с привязкой к содержимому снимка.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-module-relations
+              title: Module relations
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Определять прямые связи модулей выбранного снимка по ссылкам на символы
+                и сохранять места их использования.
+              boundaries:
+                B1: Учитывать связи между собственными файлами разных модулей выбранного
+                  репозитория.
+                B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного
+                  файла.
+                B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+              invariants:
+                I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках
+                  и читается с привязкой к содержимому снимка.
+          documentPath: .archiview/modules/archiview-module-relations.yaml
+          files:
+            - path: .archiview/modules/archiview-module-relations.yaml
+              hash: cc98ea8039415b22278aef11bd5efd6af2668a05
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:aab1471d1063a4d3216c682bf8a00e31f20cbde0f2025061cf95727201adf997
+        - directory: analyse/module-review
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-module-review
+
+              title: Module review
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Готовить входные данные проверки модуля, сохранять
+              проверенные отчёты и показывать актуальность результатов
+              относительно выбранных снимков.
+
+              boundaries:
+                B1: Содержательная проверка относится к модулю и входным данным, указанным в её манифесте.
+                B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-module-review
+              title: Module review
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Готовить входные данные проверки модуля, сохранять проверенные отчёты и
+                показывать актуальность результатов относительно выбранных
+                снимков.
+              boundaries:
+                B1: Содержательная проверка относится к модулю и входным данным, указанным в её
+                  манифесте.
+                B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-module-review.yaml
+          files:
+            - path: .archiview/modules/archiview-module-review.yaml
+              hash: 20a37710c97a98c2ae47c6ef9aa32c020f89e305
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:f55a89d6770782c277b22df45dd93b714fe2236cbe7578d261d5464e0c1732a7
+        - directory: analyse/project
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-project-location
+
+              title: Project discovery
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Находить Git-репозитории в рабочей папке и определять
+              наличие карты модулей ArchiView в каждом из них.
+
+              boundaries:
+                B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-project-location
+              title: Project discovery
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+                модулей ArchiView в каждом из них.
+              boundaries:
+                B5: Включать в результат каждый найденный репозиторий, в том числе при
+                  отсутствии в нём .archiview/modules.tree.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-project-location.yaml
+          files:
+            - path: .archiview/modules/archiview-project-location.yaml
+              hash: 30e840dd8e46ba7af8073000a4ec9cdce20533c7
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:f7b0f926f6e827955c4a1b3244e8a646c483a7e07b749255d9198cdd70472c52
+        - directory: analyse/project-sources
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-project-sources
+
+              title: Project sources
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Читать принадлежащие репозиторию файлы, карту и
+              контракты, составлять по ним инвентаризацию модулей рабочей папки
+              и определять цепочку контрактов для выбранного пути.
+
+              boundaries: {}
+
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-project-sources
+              title: Project sources
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Читать принадлежащие репозиторию файлы, карту и контракты, составлять
+                по ним инвентаризацию модулей рабочей папки и определять цепочку
+                контрактов для выбранного пути.
+              boundaries: {}
+              invariants: {}
+          documentPath: .archiview/modules/archiview-project-sources.yaml
+          files:
+            - path: .archiview/modules/archiview-project-sources.yaml
+              hash: f9d03ed199a295909a96e3f1aefc81ecc836ee52
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:f0bf1cd234b7c22954a5bdb45d3961b6263d8deece84a4904fb3ee0d20442161
+      facts:
+        - kind: file
+          path: .archiview/modules/archiview-analyse.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-analyse
+
+            title: Analyse
+
+            kind: group
+
+            extensions:
+              archiview.roles: [root]
+            purpose: Объединять виды анализа проекта с доступом к его файлам и
+            сохранённым результатам.
+
+            boundaries: {}
+
+            invariants:
+              I1: Каждый вид анализа реализуется в отдельном модуле.
+          id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+        - kind: file
+          path: .archiview/modules/archiview-git-changes.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-git-changes
+
+            title: Git changes
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Формировать, сохранять и читать отчёт о добавленных,
+            изменённых и удалённых файлах между двумя состояниями репозитория.
+
+            boundaries:
+              B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не отслеживает и не игнорирует.
+            invariants:
+              I1: Источники сравнения — коммиты, индекс и рабочее дерево одного Git-репозитория.
+          id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+        - kind: file
+          path: .archiview/modules/archiview-grasp.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-grasp
+
+            title: Композиция
+
+            kind: module
+
+            purpose: Определять область и правила проверки согласованности
+            контрактов в композиции модуля.
+
+            boundaries:
+              B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+            invariants: {}
+          id: sha256:364ea10d97eb14c2e2fb7f72dafc4ec9ce700bdb55936a8612933b0515c35988
+        - kind: file
+          path: .archiview/modules/archiview-implementation.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-implementation
+
+            title: Реализация
+
+            kind: module
+
+            purpose: Определять область и правила проверки соответствия
+            собственной реализации контракту модуля и выявлять участие модуля в
+            циклических зависимостях.
+
+            boundaries:
+              B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с местом использования для каждого перехода.
+            invariants: {}
+          id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+        - kind: file
+          path: .archiview/modules/archiview-module-relations.yaml
+          start_line: 1
+          end_line: 14
+          text: >
+            schema_version: 1
+
+            id: archiview-module-relations
+
+            title: Module relations
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Определять прямые связи модулей выбранного снимка по
+            ссылкам на символы и сохранять места их использования.
+
+            boundaries:
+              B1: Учитывать связи между собственными файлами разных модулей выбранного репозитория.
+              B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного файла.
+              B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+            invariants:
+              I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках и читается с привязкой к содержимому снимка.
+          id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+        - kind: file
+          path: .archiview/modules/archiview-module-review.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-module-review
+
+            title: Module review
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Готовить входные данные проверки модуля, сохранять
+            проверенные отчёты и показывать актуальность результатов
+            относительно выбранных снимков.
+
+            boundaries:
+              B1: Содержательная проверка относится к модулю и входным данным, указанным в её манифесте.
+              B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+            invariants: {}
+          id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+        - kind: file
+          path: .archiview/modules/archiview-project-location.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-project-location
+
+            title: Project discovery
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Находить Git-репозитории в рабочей папке и определять
+            наличие карты модулей ArchiView в каждом из них.
+
+            boundaries:
+              B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
+            invariants: {}
+          id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
+        - kind: file
+          path: .archiview/modules/archiview-project-sources.yaml
+          start_line: 1
+          end_line: 10
+          text: >
+            schema_version: 1
+
+            id: archiview-project-sources
+
+            title: Project sources
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Читать принадлежащие репозиторию файлы, карту и контракты,
+            составлять по ним инвентаризацию модулей рабочей папки и определять
+            цепочку контрактов для выбранного пути.
+
+            boundaries: {}
+
+            invariants: {}
+          id: sha256:53a3fe6a5d7dc753d005facc1b974afbc43831caf9e16408e7db0cdd2ec35192
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-analyse:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 383
+          grasp: 7
+          implementation: 1
+      scope_digest: sha256:cfff0d687bdeddba01ffe19a5f7876dabe462b679eb4d8486b4403b1c0adee07
+    input_digest: sha256:f3f18c6eacfd8b0ec8f5cb137287094dd12e8eb9b5a73ed2fde2ee2ae9479b20
+    result_digest: sha256:d83a66f810eeaafbc99bea811764b0384d4f2d3e4e9f362a6288f96d725663b4
+    content_digest: sha256:aef3f561092c98a416bdbc756fee6963f638f0538685d0608b72765c6953ceee
+    registration_order: 1052
+  - schema_version: 2
+    kind: review
+    module_id: archiview-analyse
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-be088b03-e846-4f66-92d6-75eed68fe420
+    check_hash: 8c5f71adac69524941be430ba90e18da786ac051087eda1e6fd0a5ef865f7c3d
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-analyse
+      baseline: null
+      current:
+        exists: true
+        directory: analyse
+        self_digest: sha256:9ff26a36a98726d1ca5e81b84a15ba961ab4fda35cc39f12e1db651de1a4b790
+        subtree_digest: sha256:8d0cd585810a1aac60fb3fe57675a993bf53044f69b03541def53a0b395dfd73
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-analyse
+          directory: analyse
+          own_files: []
+          contract:
+            id: archiview-analyse
+            kind: group
+            purpose: Объединять виды анализа проекта с доступом к его файлам и сохранённым
+              результатам.
+            boundaries: {}
+            invariants:
+              I1: Каждый вид анализа реализуется в отдельном модуле.
+          children:
+            - module_id: archiview-git-changes
+              directory: analyse/git-changes
+              contract:
+                id: archiview-git-changes
+                kind: module
+                purpose: Формировать, сохранять и читать отчёт о добавленных, изменённых и
+                  удалённых файлах между двумя состояниями репозитория.
+                boundaries:
+                  B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не
+                    отслеживает и не игнорирует.
+                invariants:
+                  I1: Источники сравнения — коммиты, индекс и рабочее дерево одного
+                    Git-репозитория.
+              document_state: documented
+            - module_id: archiview-grasp
+              directory: analyse/composition
+              contract:
+                id: archiview-grasp
+                kind: module
+                purpose: Определять область и правила проверки согласованности контрактов в
+                  композиции модуля.
+                boundaries:
+                  B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-implementation
+              directory: analyse/implementation
+              contract:
+                id: archiview-implementation
+                kind: module
+                purpose: Определять область и правила проверки соответствия собственной
+                  реализации контракту модуля и выявлять участие модуля в
+                  циклических зависимостях.
+                boundaries:
+                  B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с
+                    местом использования для каждого перехода.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-module-relations
+              directory: analyse/module-relations
+              contract:
+                id: archiview-module-relations
+                kind: module
+                purpose: Определять прямые связи модулей выбранного снимка по ссылкам на символы
+                  и сохранять места их использования.
+                boundaries:
+                  B1: Учитывать связи между собственными файлами разных модулей выбранного
+                    репозитория.
+                  B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного
+                    файла.
+                  B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+                invariants:
+                  I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках
+                    и читается с привязкой к содержимому снимка.
+              document_state: documented
+            - module_id: archiview-module-review
+              directory: analyse/module-review
+              contract:
+                id: archiview-module-review
+                kind: module
+                purpose: Готовить входные данные проверки модуля, сохранять проверенные отчёты и
+                  показывать актуальность результатов относительно выбранных
+                  снимков.
+                boundaries:
+                  B1: Содержательная проверка относится к модулю и входным данным, указанным в её
+                    манифесте.
+                  B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-project-location
+              directory: analyse/project
+              contract:
+                id: archiview-project-location
+                kind: module
+                purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+                  модулей ArchiView в каждом из них.
+                boundaries:
+                  B5: Включать в результат каждый найденный репозиторий, в том числе при
+                    отсутствии в нём .archiview/modules.tree.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-project-sources
+              directory: analyse/project-sources
+              contract:
+                id: archiview-project-sources
+                kind: module
+                purpose: Читать принадлежащие репозиторию файлы, карту и контракты, составлять
+                  по ним инвентаризацию модулей рабочей папки и определять
+                  цепочку контрактов для выбранного пути.
+                boundaries: {}
+                invariants: {}
+              document_state: documented
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:f672815b934ad146d0384f181b4e9113aacc100e9b714f5310b4d1ce1215148e
+      change_digest: sha256:0e65d1e2bab68583c975fa25d1ef0529ddd0a089e55f7ef00b338c2eb60441e5
+    report:
+      schema_version: 1
+      id: review-be088b03-e846-4f66-92d6-75eed68fe420
+      module:
+        id: archiview-analyse
+        baseline_path: null
+        current_path: analyse
+      comparison:
+        baseline: null
+        current:
+          id: working-707af174cc80c15d5c08de5d022e1a7e4c8815ce45cce771d1dbe6183d1520a6
+          digest: sha256:1dc5fc2266e733aa2b9eade4c311139ca95cd49ea1c50e1806b4e88643c0d497
+      analysis:
+        created_at: 2026-11-26T19:44:20.695Z
+        analyzer:
+          name: archiview-grasp
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:8ced0bedcd769700a693fa9a3a9bf77153ea0f107340ba423d7940639e0b64c5
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: GPT-6 Codex
+        prompt_digest: sha256:512e9cc54d9de4657c138b243908aec69619ee59618948c411f0254934a51548
+      observed:
+        baseline: null
+        current:
+          summary: Сопоставлены сохранённые контракты всех семи непосредственных детей
+            Analyse. Контракты видов анализа дополняются возможностями
+            обнаружения проектов, получения файлов и ведения отчётов.
+          responsibilities: []
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-analyse
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Дети дают анализ Git-изменений, композиции, реализации и прямых
+            связей. Обнаружение репозитория и инвентаризация дают доступ к его
+            файлам и контрактам. Подготовка и сохранение отчётов дают доступ к
+            зафиксированным результатам проверки. Контракт связей
+            предусматривает доказательства, требуемые проверкой циклов.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+            - snapshot: current
+              fact_id: sha256:364ea10d97eb14c2e2fb7f72dafc4ec9ce700bdb55936a8612933b0515c35988
+            - snapshot: current
+              fact_id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+            - snapshot: current
+              fact_id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+            - snapshot: current
+              fact_id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+            - snapshot: current
+              fact_id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+            - snapshot: current
+              fact_id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
+            - snapshot: current
+              fact_id: sha256:53a3fe6a5d7dc753d005facc1b974afbc43831caf9e16408e7db0cdd2ec35192
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-analyse
+            section: invariants
+            id: I1
+          subject: current
+          verdict: consistent
+          explanation: Контракты композиции, реализации, Git-изменений и прямых связей
+            принадлежат отдельным непосредственным модулям. Обнаружение
+            проектов, доступ к исходникам и ведение результатов поддерживают эти
+            виды анализа общими операциями.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+            - snapshot: current
+              fact_id: sha256:364ea10d97eb14c2e2fb7f72dafc4ec9ce700bdb55936a8612933b0515c35988
+            - snapshot: current
+              fact_id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+            - snapshot: current
+              fact_id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+            - snapshot: current
+              fact_id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+            - snapshot: current
+              fact_id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Контракты семи непосредственных модулей Analyse обеспечивают виды
+            проверки, доступ к исходникам и сохранённым результатам.
+            Переименованный каталог analyse/composition по-прежнему указан как
+            отдельный модуль archiview-grasp.
+        change:
+          verdict: not_applicable
+          summary: Первый анализ без базового снимка.
+      extensions:
+        archiview.grasp:
+          - moduleId: archiview-grasp
+            role: executor
+            task: Определять область проверки композиции по контрактам.
+            assessment: Проверка согласованности контрактов выделена в модуль
+              analyse/composition. Область собственного модуля и
+              непосредственных детей дополняет проверку собственного кода.
+          - moduleId: archiview-git-changes
+            role: executor
+            task: Формировать, сохранять и читать отчёт об изменениях файлов между двумя
+              состояниями.
+            assessment: Предоставляет самостоятельный анализ файловых изменений. Обе стороны
+              относятся к одному Git-репозиторию, а сравнение с рабочим деревом
+              охватывает новые неигнорируемые файлы.
+          - moduleId: archiview-implementation
+            role: executor
+            task: Определять проверку собственной реализации и выявлять участие модуля в
+              циклических зависимостях.
+            assessment: Собственный код проверяется по контракту модуля. Для доказательства
+              цикла нужна замкнутая цепочка прямых связей выбранного снимка с
+              местами использования. Эти входы предусмотрены контрактом модуля
+              связей.
+          - moduleId: archiview-module-relations
+            role: executor
+            task: Определять прямые связи модулей и сохранять места их использования.
+            assessment: Формирует самостоятельный результат по связям выбранного снимка.
+              Охват поддерживаемых исходников и места использования дают
+              доказательства для проверки циклов в реализации.
+          - moduleId: archiview-module-review
+            role: utility
+            task: Готовить входы проверок, сохранять проверенные отчёты и определять
+              актуальность по снимкам.
+            assessment: Предоставляет композиции и реализации общий жизненный цикл отчётов.
+              Контракт привязывает проверку к её манифесту, а повторный импорт
+              сохраняет исходную запись.
+            consumers:
+              - archiview-grasp
+              - archiview-implementation
+          - moduleId: archiview-project-location
+            role: utility
+            task: Обнаруживать репозитории рабочей папки и наличие карты ArchiView.
+            assessment: Даёт композиции область работы на уровне репозитория и сведения о
+              наличии карты. Учитывает репозитории без карты, поэтому
+              обнаружение отделимо от наличия структурированных входов.
+            consumers:
+              - archiview-analyse
+          - moduleId: archiview-project-sources
+            role: utility
+            task: Получать файлы и контракты репозитория, составлять инвентаризацию и
+              определять цепочку контрактов.
+            assessment: Обеспечивает родителю доступ к файлам проекта. Инвентаризация и
+              цепочка контрактов позволяют подготовить входы к проверке нужного
+              модуля.
+            consumers:
+              - archiview-analyse
+              - archiview-module-review
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-707af174cc80c15d5c08de5d022e1a7e4c8815ce45cce771d1dbe6183d1520a6
+          digest: sha256:1dc5fc2266e733aa2b9eade4c311139ca95cd49ea1c50e1806b4e88643c0d497
+      module:
+        id: archiview-analyse
+        baseline_path: null
+        current_path: analyse
+      analyzer:
+        name: archiview-grasp
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-analyse
+              section: purpose
+              id: purpose
+            text: Объединять виды анализа проекта с доступом к его файлам и сохранённым
+              результатам.
+          - reference:
+              snapshot: current
+              module_id: archiview-analyse
+              section: invariants
+              id: I1
+            text: Каждый вид анализа реализуется в отдельном модуле.
+      instructions: 'Проверь композицию по собственному контракту и контрактам
+        непосредственных детей. Разбери детей по их роли относительно обещания
+        родителя. Для непосредственных исполнителей проверь совместимость их
+        контрактов между собой и способность вместе выполнить обещание родителя.
+        Для утилит (Pure Fabrication) укажи потребителя и задачу, проверь
+        достаточность и границы обязанностей. Для листа объясни неприменимость
+        композиции. Выводы и замечания обоснуй сохранёнными контрактами. Заполни
+        report.extensions["archiview.grasp"] для каждого непосредственного
+        ребёнка из экспорта: moduleId, role (executor или utility), task
+        (задача), assessment (результат сравнения). Для утилиты добавь consumers
+        со списком потребителей; если по контрактам потребитель не установлен,
+        укажи это в assessment и оставь пустой список. Для листа используй
+        пустой массив. Код, контракты предков и более глубоких потомков в эту
+        проверку не входят.'
+      context: {}
+      analysis_type: grasp
+      source_snapshot:
+        id: working-707af174cc80c15d5c08de5d022e1a7e4c8815ce45cce771d1dbe6183d1520a6
+        digest: sha256:707af174cc80c15d5c08de5d022e1a7e4c8815ce45cce771d1dbe6183d1520a6
+      source_head: fa5e97a3a14082cbcb875a528856116b84980b33
+      source_captured_at: 2026-11-26T19:44:20.678Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: GPT-6 Codex
+      prompt_digest: sha256:512e9cc54d9de4657c138b243908aec69619ee59618948c411f0254934a51548
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-707af174cc80c15d5c08de5d022e1a7e4c8815ce45cce771d1dbe6183d1520a6
+      digest: sha256:1dc5fc2266e733aa2b9eade4c311139ca95cd49ea1c50e1806b4e88643c0d497
+      kind: working
+      complete: true
+      modules:
+        - directory: analyse
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-analyse
+
+              title: Analyse
+
+              kind: group
+
+              extensions:
+                archiview.roles: [root]
+              purpose: Объединять виды анализа проекта с доступом к его файлам и
+              сохранённым результатам.
+
+              boundaries: {}
+
+              invariants:
+                I1: Каждый вид анализа реализуется в отдельном модуле.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-analyse
+              title: Analyse
+              kind: group
+              extensions:
+                archiview.roles:
+                  - root
+              purpose: Объединять виды анализа проекта с доступом к его файлам и сохранённым
+                результатам.
+              boundaries: {}
+              invariants:
+                I1: Каждый вид анализа реализуется в отдельном модуле.
+          documentPath: .archiview/modules/archiview-analyse.yaml
+          files:
+            - path: .archiview/modules/archiview-analyse.yaml
+              hash: 5a05d588b4c16b75a10c90970031fb9202741ad3
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:fc700d1354bac6fa9f90ff84670a2c4a563ad922ad5ac9c8436d2a0202aed3a5
+        - directory: analyse/composition
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-grasp
+
+              title: Композиция
+
+              kind: module
+
+              purpose: Определять область и правила проверки согласованности
+              контрактов в композиции модуля.
+
+              boundaries:
+                B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-grasp
+              title: Композиция
+              kind: module
+              purpose: Определять область и правила проверки согласованности контрактов в
+                композиции модуля.
+              boundaries:
+                B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-grasp.yaml
+          files:
+            - path: .archiview/modules/archiview-grasp.yaml
+              hash: 791c41816c8482430c703a7a1387ede0c2ed25e2
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:383947d004a87d92b40b56dd6c851a4510cdd775e39ac4087524b60339a1e73c
+        - directory: analyse/git-changes
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-git-changes
+
+              title: Git changes
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Формировать, сохранять и читать отчёт о добавленных,
+              изменённых и удалённых файлах между двумя состояниями репозитория.
+
+              boundaries:
+                B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не отслеживает и не игнорирует.
+              invariants:
+                I1: Источники сравнения — коммиты, индекс и рабочее дерево одного Git-репозитория.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-git-changes
+              title: Git changes
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Формировать, сохранять и читать отчёт о добавленных, изменённых и
+                удалённых файлах между двумя состояниями репозитория.
+              boundaries:
+                B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не
+                  отслеживает и не игнорирует.
+              invariants:
+                I1: Источники сравнения — коммиты, индекс и рабочее дерево одного
+                  Git-репозитория.
+          documentPath: .archiview/modules/archiview-git-changes.yaml
+          files:
+            - path: .archiview/modules/archiview-git-changes.yaml
+              hash: 69181e93eaeebe7019fd9e74c7592a47740781a8
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:90095091881739480a3a1e8c0dc67c16dc6f968d54e56dcf531364028192fb10
+        - directory: analyse/implementation
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-implementation
+
+              title: Реализация
+
+              kind: module
+
+              purpose: Определять область и правила проверки соответствия
+              собственной реализации контракту модуля и выявлять участие модуля
+              в циклических зависимостях.
+
+              boundaries:
+                B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с местом использования для каждого перехода.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-implementation
+              title: Реализация
+              kind: module
+              purpose: Определять область и правила проверки соответствия собственной
+                реализации контракту модуля и выявлять участие модуля в
+                циклических зависимостях.
+              boundaries:
+                B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с
+                  местом использования для каждого перехода.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-implementation.yaml
+          files:
+            - path: .archiview/modules/archiview-implementation.yaml
+              hash: d09ec7040e5d2b7c40b5c2c1e0c328b5bf23e310
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:8664989a977709a63696c56a2bd62c01ee3d505720ac4d8045ce9116d9bdc8f1
+        - directory: analyse/module-relations
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-module-relations
+
+              title: Module relations
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Определять прямые связи модулей выбранного снимка по
+              ссылкам на символы и сохранять места их использования.
+
+              boundaries:
+                B1: Учитывать связи между собственными файлами разных модулей выбранного репозитория.
+                B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного файла.
+                B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+              invariants:
+                I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках и читается с привязкой к содержимому снимка.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-module-relations
+              title: Module relations
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Определять прямые связи модулей выбранного снимка по ссылкам на символы
+                и сохранять места их использования.
+              boundaries:
+                B1: Учитывать связи между собственными файлами разных модулей выбранного
+                  репозитория.
+                B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного
+                  файла.
+                B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+              invariants:
+                I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках
+                  и читается с привязкой к содержимому снимка.
+          documentPath: .archiview/modules/archiview-module-relations.yaml
+          files:
+            - path: .archiview/modules/archiview-module-relations.yaml
+              hash: cc98ea8039415b22278aef11bd5efd6af2668a05
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:aab1471d1063a4d3216c682bf8a00e31f20cbde0f2025061cf95727201adf997
+        - directory: analyse/module-review
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-module-review
+
+              title: Module review
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Готовить входные данные проверки модуля, сохранять
+              проверенные отчёты и показывать актуальность результатов
+              относительно выбранных снимков.
+
+              boundaries:
+                B1: Содержательная проверка относится к модулю и входным данным, указанным в её манифесте.
+                B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-module-review
+              title: Module review
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Готовить входные данные проверки модуля, сохранять проверенные отчёты и
+                показывать актуальность результатов относительно выбранных
+                снимков.
+              boundaries:
+                B1: Содержательная проверка относится к модулю и входным данным, указанным в её
+                  манифесте.
+                B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-module-review.yaml
+          files:
+            - path: .archiview/modules/archiview-module-review.yaml
+              hash: 20a37710c97a98c2ae47c6ef9aa32c020f89e305
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:f55a89d6770782c277b22df45dd93b714fe2236cbe7578d261d5464e0c1732a7
+        - directory: analyse/project
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-project-location
+
+              title: Project discovery
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Находить Git-репозитории в рабочей папке и определять
+              наличие карты модулей ArchiView в каждом из них.
+
+              boundaries:
+                B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-project-location
+              title: Project discovery
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+                модулей ArchiView в каждом из них.
+              boundaries:
+                B5: Включать в результат каждый найденный репозиторий, в том числе при
+                  отсутствии в нём .archiview/modules.tree.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-project-location.yaml
+          files:
+            - path: .archiview/modules/archiview-project-location.yaml
+              hash: 30e840dd8e46ba7af8073000a4ec9cdce20533c7
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:f7b0f926f6e827955c4a1b3244e8a646c483a7e07b749255d9198cdd70472c52
+        - directory: analyse/project-sources
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-project-sources
+
+              title: Project sources
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Читать принадлежащие репозиторию файлы, карту и
+              контракты, составлять по ним инвентаризацию модулей рабочей папки
+              и определять цепочку контрактов для выбранного пути.
+
+              boundaries: {}
+
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-project-sources
+              title: Project sources
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Читать принадлежащие репозиторию файлы, карту и контракты, составлять
+                по ним инвентаризацию модулей рабочей папки и определять цепочку
+                контрактов для выбранного пути.
+              boundaries: {}
+              invariants: {}
+          documentPath: .archiview/modules/archiview-project-sources.yaml
+          files:
+            - path: .archiview/modules/archiview-project-sources.yaml
+              hash: f9d03ed199a295909a96e3f1aefc81ecc836ee52
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:f0bf1cd234b7c22954a5bdb45d3961b6263d8deece84a4904fb3ee0d20442161
+      facts:
+        - kind: file
+          path: .archiview/modules/archiview-analyse.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-analyse
+
+            title: Analyse
+
+            kind: group
+
+            extensions:
+              archiview.roles: [root]
+            purpose: Объединять виды анализа проекта с доступом к его файлам и
+            сохранённым результатам.
+
+            boundaries: {}
+
+            invariants:
+              I1: Каждый вид анализа реализуется в отдельном модуле.
+          id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+        - kind: file
+          path: .archiview/modules/archiview-grasp.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-grasp
+
+            title: Композиция
+
+            kind: module
+
+            purpose: Определять область и правила проверки согласованности
+            контрактов в композиции модуля.
+
+            boundaries:
+              B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+            invariants: {}
+          id: sha256:364ea10d97eb14c2e2fb7f72dafc4ec9ce700bdb55936a8612933b0515c35988
+        - kind: file
+          path: .archiview/modules/archiview-git-changes.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-git-changes
+
+            title: Git changes
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Формировать, сохранять и читать отчёт о добавленных,
+            изменённых и удалённых файлах между двумя состояниями репозитория.
+
+            boundaries:
+              B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не отслеживает и не игнорирует.
+            invariants:
+              I1: Источники сравнения — коммиты, индекс и рабочее дерево одного Git-репозитория.
+          id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+        - kind: file
+          path: .archiview/modules/archiview-implementation.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-implementation
+
+            title: Реализация
+
+            kind: module
+
+            purpose: Определять область и правила проверки соответствия
+            собственной реализации контракту модуля и выявлять участие модуля в
+            циклических зависимостях.
+
+            boundaries:
+              B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с местом использования для каждого перехода.
+            invariants: {}
+          id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+        - kind: file
+          path: .archiview/modules/archiview-module-relations.yaml
+          start_line: 1
+          end_line: 14
+          text: >
+            schema_version: 1
+
+            id: archiview-module-relations
+
+            title: Module relations
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Определять прямые связи модулей выбранного снимка по
+            ссылкам на символы и сохранять места их использования.
+
+            boundaries:
+              B1: Учитывать связи между собственными файлами разных модулей выбранного репозитория.
+              B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного файла.
+              B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+            invariants:
+              I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках и читается с привязкой к содержимому снимка.
+          id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+        - kind: file
+          path: .archiview/modules/archiview-module-review.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-module-review
+
+            title: Module review
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Готовить входные данные проверки модуля, сохранять
+            проверенные отчёты и показывать актуальность результатов
+            относительно выбранных снимков.
+
+            boundaries:
+              B1: Содержательная проверка относится к модулю и входным данным, указанным в её манифесте.
+              B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+            invariants: {}
+          id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+        - kind: file
+          path: .archiview/modules/archiview-project-location.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-project-location
+
+            title: Project discovery
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Находить Git-репозитории в рабочей папке и определять
+            наличие карты модулей ArchiView в каждом из них.
+
+            boundaries:
+              B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
+            invariants: {}
+          id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
+        - kind: file
+          path: .archiview/modules/archiview-project-sources.yaml
+          start_line: 1
+          end_line: 10
+          text: >
+            schema_version: 1
+
+            id: archiview-project-sources
+
+            title: Project sources
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Читать принадлежащие репозиторию файлы, карту и контракты,
+            составлять по ним инвентаризацию модулей рабочей папки и определять
+            цепочку контрактов для выбранного пути.
+
+            boundaries: {}
+
+            invariants: {}
+          id: sha256:53a3fe6a5d7dc753d005facc1b974afbc43831caf9e16408e7db0cdd2ec35192
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-analyse:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 384
+          grasp: 8
+          implementation: 1
+      scope_digest: sha256:dad4e752e6625fabc860f34feb8b135f7bb6d997ffd8265962f11ba2e41f664c
+    input_digest: sha256:fb9257213798b0d28ca564e36978d1080737232c098c8eb3f896b9dd57f11170
+    result_digest: sha256:90d98b586fffbfb4710a0eb512b6396a078d371ffdd5742561cff7f6df3abd84
+    content_digest: sha256:b27780e2262514c2ca5272540748e8c13e6c5995f923fdd45cb78efdee3360e2
+    registration_order: 1057
+  - schema_version: 2
+    kind: review
+    module_id: archiview-analyse
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-d2b23d7d-30e3-4c76-b536-36e6e3986c20
+    check_hash: 39b0f2d8ff7905d44c6adc9b57057ac56095e13bb921263247bd0617592c9927
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-analyse
+      baseline: null
+      current:
+        exists: true
+        directory: analyse
+        self_digest: sha256:9ff26a36a98726d1ca5e81b84a15ba961ab4fda35cc39f12e1db651de1a4b790
+        subtree_digest: sha256:0cd075beef86bc127902b353e6601101f54ea295b70ce083b4b5a91e4bed9694
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-analyse
+          directory: analyse
+          own_files: []
+          contract:
+            id: archiview-analyse
+            kind: group
+            purpose: Объединять виды анализа проекта с доступом к его файлам и сохранённым
+              результатам.
+            boundaries: {}
+            invariants:
+              I1: Каждый вид анализа реализуется в отдельном модуле.
+          children:
+            - module_id: archiview-composition
+              directory: analyse/composition
+              contract:
+                id: archiview-composition
+                kind: module
+                purpose: Определять область и правила проверки согласованности контрактов в
+                  композиции модуля.
+                boundaries:
+                  B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-git-changes
+              directory: analyse/git-changes
+              contract:
+                id: archiview-git-changes
+                kind: module
+                purpose: Формировать, сохранять и читать отчёт о добавленных, изменённых и
+                  удалённых файлах между двумя состояниями репозитория.
+                boundaries:
+                  B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не
+                    отслеживает и не игнорирует.
+                invariants:
+                  I1: Источники сравнения — коммиты, индекс и рабочее дерево одного
+                    Git-репозитория.
+              document_state: documented
+            - module_id: archiview-implementation
+              directory: analyse/implementation
+              contract:
+                id: archiview-implementation
+                kind: module
+                purpose: Определять область и правила проверки соответствия собственной
+                  реализации контракту модуля и выявлять участие модуля в
+                  циклических зависимостях.
+                boundaries:
+                  B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с
+                    местом использования для каждого перехода.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-module-relations
+              directory: analyse/module-relations
+              contract:
+                id: archiview-module-relations
+                kind: module
+                purpose: Определять прямые связи модулей выбранного снимка по ссылкам на символы
+                  и сохранять места их использования.
+                boundaries:
+                  B1: Учитывать связи между собственными файлами разных модулей выбранного
+                    репозитория.
+                  B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного
+                    файла.
+                  B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+                invariants:
+                  I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках
+                    и читается с привязкой к содержимому снимка.
+              document_state: documented
+            - module_id: archiview-module-review
+              directory: analyse/module-review
+              contract:
+                id: archiview-module-review
+                kind: module
+                purpose: Готовить входные данные проверки модуля, сохранять проверенные отчёты и
+                  показывать актуальность результатов относительно выбранных
+                  снимков.
+                boundaries:
+                  B1: Содержательная проверка относится к модулю и входным данным, указанным в её
+                    манифесте.
+                  B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-project-location
+              directory: analyse/project
+              contract:
+                id: archiview-project-location
+                kind: module
+                purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+                  модулей ArchiView в каждом из них.
+                boundaries:
+                  B5: Включать в результат каждый найденный репозиторий, в том числе при
+                    отсутствии в нём .archiview/modules.tree.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-project-sources
+              directory: analyse/project-sources
+              contract:
+                id: archiview-project-sources
+                kind: module
+                purpose: Читать принадлежащие репозиторию файлы, карту и контракты, составлять
+                  по ним инвентаризацию модулей рабочей папки и определять
+                  цепочку контрактов для выбранного пути.
+                boundaries: {}
+                invariants: {}
+              document_state: documented
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:47eefedb64e2f1e42685bacc58a64f75c5b8c37899fc3eb2fedc83f1c7f9f4c5
+      change_digest: sha256:6a61a86a9039fc9b92d595aa3b48cdd990dd30ddc80ba820108232c8b86ec139
+    report:
+      schema_version: 1
+      id: review-d2b23d7d-30e3-4c76-b536-36e6e3986c20
+      module:
+        id: archiview-analyse
+        baseline_path: null
+        current_path: analyse
+      comparison:
+        baseline: null
+        current:
+          id: working-e27ff0217606cdf4f9ac657fcb47f804c9d814a143f1036f2336653818aa6a58
+          digest: sha256:83fbbd44415ee54ecd95ad42dca992905f6be59fd295cdc94da9c17061a9721c
+      analysis:
+        created_at: 2026-11-26T20:15:59.448Z
+        analyzer:
+          name: archiview-grasp
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:79af6af3423adac12efee3653a1885fe4eed0a8050a4b2e61bd97ba35caf6ad4
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: openai
+          id: gpt-6
+        prompt_digest: sha256:cdec6e91090461d5257592d9481402dbf87529690ecfd996b375821c407ae8aa
+      observed:
+        baseline: null
+        current:
+          summary: По контрактам Analyse объединяет четыре результата анализа и три
+            утилиты для выбора репозитория, доступа к источникам и ведения
+            отчётов.
+          responsibilities:
+            - text: Объединяет самостоятельные виды анализа изменений файлов, композиции,
+                реализации и межмодульных связей.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+                - snapshot: current
+                  fact_id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+                - snapshot: current
+                  fact_id: sha256:8008318d127c5330fcd587f4464a210bb81f534be0b8e23c0fdf0104d2666f2c
+                - snapshot: current
+                  fact_id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+                - snapshot: current
+                  fact_id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+            - text: Включает обнаружение репозиториев и чтение исходных файлов и контрактов
+                как источников входных данных.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+                - snapshot: current
+                  fact_id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
+                - snapshot: current
+                  fact_id: sha256:53a3fe6a5d7dc753d005facc1b974afbc43831caf9e16408e7db0cdd2ec35192
+            - text: Включает подготовку области проверки, хранение проверенных результатов и
+                сопоставление их с актуальным снимком.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+                - snapshot: current
+                  fact_id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-analyse
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Четыре непосредственных исполнителя дают различимые результаты по
+            изменениям Git, составу и контрактам, реализации и связям. Проектные
+            утилиты обеспечивают выбор репозитория, чтение файлов и контрактов,
+            подготовку входов и доступ к сохранённым отчётам. Контракт графа
+            поставляет данные в форме, необходимой для проверки циклов.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+            - snapshot: current
+              fact_id: sha256:8008318d127c5330fcd587f4464a210bb81f534be0b8e23c0fdf0104d2666f2c
+            - snapshot: current
+              fact_id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+            - snapshot: current
+              fact_id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+            - snapshot: current
+              fact_id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+            - snapshot: current
+              fact_id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+            - snapshot: current
+              fact_id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
+            - snapshot: current
+              fact_id: sha256:53a3fe6a5d7dc753d005facc1b974afbc43831caf9e16408e7db0cdd2ec35192
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-analyse
+            section: invariants
+            id: I1
+          subject: current
+          verdict: consistent
+          explanation: Правила композиции, правила проверки реализации, сравнение файлов
+            Git и определение прямых связей закреплены за четырьмя отдельными
+            непосредственными модулями. Утилиты обеспечивают доступ и жизненный
+            цикл данных для этих исполнителей.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+            - snapshot: current
+              fact_id: sha256:8008318d127c5330fcd587f4464a210bb81f534be0b8e23c0fdf0104d2666f2c
+            - snapshot: current
+              fact_id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+            - snapshot: current
+              fact_id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+            - snapshot: current
+              fact_id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+            - snapshot: current
+              fact_id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+            - snapshot: current
+              fact_id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
+            - snapshot: current
+              fact_id: sha256:53a3fe6a5d7dc753d005facc1b974afbc43831caf9e16408e7db0cdd2ec35192
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Договорённости семи непосредственных детей совместимы с назначением
+            Analyse и I1. Отдельный модуль «Композиция» представлен
+            идентификатором archiview-composition.
+        change:
+          verdict: not_applicable
+          summary: Запрос содержит только выбранный срез контрактов, поэтому оценка
+            перехода неприменима.
+      extensions:
+        archiview.grasp:
+          - moduleId: archiview-composition
+            role: executor
+            task: Задавать область и правила проверки согласованности контрактов композиции.
+            assessment: B1 ограничивает область выбранным модулем и непосредственными
+              детьми. Этот вид анализа опирается на объявления контрактов и
+              дополняет проверку соответствия собственного кода.
+          - moduleId: archiview-git-changes
+            role: executor
+            task: Формировать, сохранять и читать отчёт об изменениях файлов между двумя
+              состояниями репозитория.
+            assessment: I1 задаёт источники состояний одного Git-репозитория. B1 включает
+              новые неигнорируемые файлы при сравнении с рабочим деревом. Отчёт
+              описывает изменения файлов и совместим с отдельными проверками
+              контрактов и связей.
+          - moduleId: archiview-implementation
+            role: executor
+            task: Задавать область и правила сопоставления реализации с контрактом и
+              выявлять участие модуля в цикле.
+            assessment: B1 требует замкнутую цепочку прямых связей одного снимка с указанием
+              мест использования. Граф модуля связей содержит необходимые рёбра
+              и места для поддерживаемых исходников, а область собственной
+              реализации отделена от договорённостей между детьми.
+          - moduleId: archiview-module-relations
+            role: executor
+            task: Определять прямые связи между модулями и сохранять места использования
+              символов.
+            assessment: Привязанный к снимку граф является отдельным результатом анализа.
+              B1–B3 и I1 фиксируют охват и правила определения рёбер.
+              Сохранённые места использования служат доказательствами для
+              проверки циклов.
+          - moduleId: archiview-module-review
+            role: utility
+            task: Готовить входы проверки модуля, сохранять проверенные отчёты и вычислять
+              их актуальность.
+            assessment: Эти операции обслуживают проверки композиции и реализации. B1
+              связывает отчёт с указанным модулем и входами, а B2 сохраняет
+              неизменную исходную запись при повторном импорте. Правила оценки
+              определяют исполнители соответствующих проверок.
+            consumers:
+              - archiview-composition
+              - archiview-implementation
+          - moduleId: archiview-project-location
+            role: utility
+            task: Находить репозитории рабочей папки и отмечать наличие карты модулей.
+            assessment: Определяет область выбора репозитория. B5 включает репозитории без
+              карты, поэтому перечень подходит для выбора до загрузки
+              контрактов. Контракт родителя использует это в общей задаче
+              доступа к данным, а конкретный получатель перечня в заявленных
+              контрактах не установлен.
+            consumers: []
+          - moduleId: archiview-project-sources
+            role: utility
+            task: Читать файлы, карты и контракты, строить инвентаризацию и получать цепочки
+              контрактов.
+            assessment: Выполняет часть обещания Analyse о доступе к файлам и даёт модулю
+              отчётов сведения для подготовки входов к проверке выбранного
+              модуля. Инвентаризация и контракты адресуют данные, а глубину
+              конкретного анализа определяет его исполнитель.
+            consumers:
+              - archiview-analyse
+              - archiview-module-review
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-e27ff0217606cdf4f9ac657fcb47f804c9d814a143f1036f2336653818aa6a58
+          digest: sha256:83fbbd44415ee54ecd95ad42dca992905f6be59fd295cdc94da9c17061a9721c
+      module:
+        id: archiview-analyse
+        baseline_path: null
+        current_path: analyse
+      analyzer:
+        name: archiview-grasp
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-analyse
+              section: purpose
+              id: purpose
+            text: Объединять виды анализа проекта с доступом к его файлам и сохранённым
+              результатам.
+          - reference:
+              snapshot: current
+              module_id: archiview-analyse
+              section: invariants
+              id: I1
+            text: Каждый вид анализа реализуется в отдельном модуле.
+      instructions: 'Проверь композицию по собственному контракту и контрактам
+        непосредственных детей. Разбери детей по их роли относительно обещания
+        родителя. Для непосредственных исполнителей проверь совместимость их
+        контрактов между собой и способность вместе выполнить обещание родителя.
+        Для утилит (Pure Fabrication) укажи потребителя и задачу, проверь
+        достаточность и границы обязанностей. Для листа объясни неприменимость
+        композиции. Выводы и замечания обоснуй сохранёнными контрактами. Заполни
+        report.extensions["archiview.grasp"] для каждого непосредственного
+        ребёнка из экспорта: moduleId, role (executor или utility), task
+        (задача), assessment (результат сравнения). Для утилиты добавь consumers
+        со списком потребителей; если по контрактам потребитель не установлен,
+        укажи это в assessment и оставь пустой список. Для листа используй
+        пустой массив. Код, контракты предков и более глубоких потомков в эту
+        проверку не входят.'
+      context: {}
+      analysis_type: grasp
+      source_snapshot:
+        id: working-e27ff0217606cdf4f9ac657fcb47f804c9d814a143f1036f2336653818aa6a58
+        digest: sha256:e27ff0217606cdf4f9ac657fcb47f804c9d814a143f1036f2336653818aa6a58
+      source_head: fa5e97a3a14082cbcb875a528856116b84980b33
+      source_captured_at: 2026-11-26T20:15:59.425Z
+      review_scope: self
+      model:
+        provider: openai
+        id: gpt-6
+      prompt_digest: sha256:cdec6e91090461d5257592d9481402dbf87529690ecfd996b375821c407ae8aa
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-e27ff0217606cdf4f9ac657fcb47f804c9d814a143f1036f2336653818aa6a58
+      digest: sha256:83fbbd44415ee54ecd95ad42dca992905f6be59fd295cdc94da9c17061a9721c
+      kind: working
+      complete: true
+      modules:
+        - directory: analyse
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-analyse
+
+              title: Analyse
+
+              kind: group
+
+              extensions:
+                archiview.roles: [root]
+              purpose: Объединять виды анализа проекта с доступом к его файлам и
+              сохранённым результатам.
+
+              boundaries: {}
+
+              invariants:
+                I1: Каждый вид анализа реализуется в отдельном модуле.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-analyse
+              title: Analyse
+              kind: group
+              extensions:
+                archiview.roles:
+                  - root
+              purpose: Объединять виды анализа проекта с доступом к его файлам и сохранённым
+                результатам.
+              boundaries: {}
+              invariants:
+                I1: Каждый вид анализа реализуется в отдельном модуле.
+          documentPath: .archiview/modules/archiview-analyse.yaml
+          files:
+            - path: .archiview/modules/archiview-analyse.yaml
+              hash: 5a05d588b4c16b75a10c90970031fb9202741ad3
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:fc700d1354bac6fa9f90ff84670a2c4a563ad922ad5ac9c8436d2a0202aed3a5
+        - directory: analyse/composition
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-composition
+
+              title: Композиция
+
+              kind: module
+
+              purpose: Определять область и правила проверки согласованности
+              контрактов в композиции модуля.
+
+              boundaries:
+                B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-composition
+              title: Композиция
+              kind: module
+              purpose: Определять область и правила проверки согласованности контрактов в
+                композиции модуля.
+              boundaries:
+                B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-composition.yaml
+          files:
+            - path: .archiview/modules/archiview-composition.yaml
+              hash: a67aaaab875f5b12f9c4dbeec10eaf040b66ea00
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:5d54a823ecc9f6de33631d28abe0c10e75926004fe45b888a6c7be3d6d548078
+        - directory: analyse/git-changes
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-git-changes
+
+              title: Git changes
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Формировать, сохранять и читать отчёт о добавленных,
+              изменённых и удалённых файлах между двумя состояниями репозитория.
+
+              boundaries:
+                B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не отслеживает и не игнорирует.
+              invariants:
+                I1: Источники сравнения — коммиты, индекс и рабочее дерево одного Git-репозитория.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-git-changes
+              title: Git changes
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Формировать, сохранять и читать отчёт о добавленных, изменённых и
+                удалённых файлах между двумя состояниями репозитория.
+              boundaries:
+                B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не
+                  отслеживает и не игнорирует.
+              invariants:
+                I1: Источники сравнения — коммиты, индекс и рабочее дерево одного
+                  Git-репозитория.
+          documentPath: .archiview/modules/archiview-git-changes.yaml
+          files:
+            - path: .archiview/modules/archiview-git-changes.yaml
+              hash: 69181e93eaeebe7019fd9e74c7592a47740781a8
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:90095091881739480a3a1e8c0dc67c16dc6f968d54e56dcf531364028192fb10
+        - directory: analyse/implementation
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-implementation
+
+              title: Реализация
+
+              kind: module
+
+              purpose: Определять область и правила проверки соответствия
+              собственной реализации контракту модуля и выявлять участие модуля
+              в циклических зависимостях.
+
+              boundaries:
+                B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с местом использования для каждого перехода.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-implementation
+              title: Реализация
+              kind: module
+              purpose: Определять область и правила проверки соответствия собственной
+                реализации контракту модуля и выявлять участие модуля в
+                циклических зависимостях.
+              boundaries:
+                B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с
+                  местом использования для каждого перехода.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-implementation.yaml
+          files:
+            - path: .archiview/modules/archiview-implementation.yaml
+              hash: d09ec7040e5d2b7c40b5c2c1e0c328b5bf23e310
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:8664989a977709a63696c56a2bd62c01ee3d505720ac4d8045ce9116d9bdc8f1
+        - directory: analyse/module-relations
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-module-relations
+
+              title: Module relations
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Определять прямые связи модулей выбранного снимка по
+              ссылкам на символы и сохранять места их использования.
+
+              boundaries:
+                B1: Учитывать связи между собственными файлами разных модулей выбранного репозитория.
+                B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного файла.
+                B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+              invariants:
+                I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках и читается с привязкой к содержимому снимка.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-module-relations
+              title: Module relations
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Определять прямые связи модулей выбранного снимка по ссылкам на символы
+                и сохранять места их использования.
+              boundaries:
+                B1: Учитывать связи между собственными файлами разных модулей выбранного
+                  репозитория.
+                B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного
+                  файла.
+                B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+              invariants:
+                I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках
+                  и читается с привязкой к содержимому снимка.
+          documentPath: .archiview/modules/archiview-module-relations.yaml
+          files:
+            - path: .archiview/modules/archiview-module-relations.yaml
+              hash: cc98ea8039415b22278aef11bd5efd6af2668a05
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:aab1471d1063a4d3216c682bf8a00e31f20cbde0f2025061cf95727201adf997
+        - directory: analyse/module-review
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-module-review
+
+              title: Module review
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Готовить входные данные проверки модуля, сохранять
+              проверенные отчёты и показывать актуальность результатов
+              относительно выбранных снимков.
+
+              boundaries:
+                B1: Содержательная проверка относится к модулю и входным данным, указанным в её манифесте.
+                B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-module-review
+              title: Module review
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Готовить входные данные проверки модуля, сохранять проверенные отчёты и
+                показывать актуальность результатов относительно выбранных
+                снимков.
+              boundaries:
+                B1: Содержательная проверка относится к модулю и входным данным, указанным в её
+                  манифесте.
+                B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-module-review.yaml
+          files:
+            - path: .archiview/modules/archiview-module-review.yaml
+              hash: 20a37710c97a98c2ae47c6ef9aa32c020f89e305
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:f55a89d6770782c277b22df45dd93b714fe2236cbe7578d261d5464e0c1732a7
+        - directory: analyse/project
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-project-location
+
+              title: Project discovery
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Находить Git-репозитории в рабочей папке и определять
+              наличие карты модулей ArchiView в каждом из них.
+
+              boundaries:
+                B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-project-location
+              title: Project discovery
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Находить Git-репозитории в рабочей папке и определять наличие карты
+                модулей ArchiView в каждом из них.
+              boundaries:
+                B5: Включать в результат каждый найденный репозиторий, в том числе при
+                  отсутствии в нём .archiview/modules.tree.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-project-location.yaml
+          files:
+            - path: .archiview/modules/archiview-project-location.yaml
+              hash: 30e840dd8e46ba7af8073000a4ec9cdce20533c7
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:f7b0f926f6e827955c4a1b3244e8a646c483a7e07b749255d9198cdd70472c52
+        - directory: analyse/project-sources
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-project-sources
+
+              title: Project sources
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Читать принадлежащие репозиторию файлы, карту и
+              контракты, составлять по ним инвентаризацию модулей рабочей папки
+              и определять цепочку контрактов для выбранного пути.
+
+              boundaries: {}
+
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-project-sources
+              title: Project sources
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Читать принадлежащие репозиторию файлы, карту и контракты, составлять
+                по ним инвентаризацию модулей рабочей папки и определять цепочку
+                контрактов для выбранного пути.
+              boundaries: {}
+              invariants: {}
+          documentPath: .archiview/modules/archiview-project-sources.yaml
+          files:
+            - path: .archiview/modules/archiview-project-sources.yaml
+              hash: f9d03ed199a295909a96e3f1aefc81ecc836ee52
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:f0bf1cd234b7c22954a5bdb45d3961b6263d8deece84a4904fb3ee0d20442161
+      facts:
+        - kind: file
+          path: .archiview/modules/archiview-analyse.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-analyse
+
+            title: Analyse
+
+            kind: group
+
+            extensions:
+              archiview.roles: [root]
+            purpose: Объединять виды анализа проекта с доступом к его файлам и
+            сохранённым результатам.
+
+            boundaries: {}
+
+            invariants:
+              I1: Каждый вид анализа реализуется в отдельном модуле.
+          id: sha256:de2922fcc9cfda91f449cc61375e6ff14ffd88d1578806bf4cd8c9b6f6e61279
+        - kind: file
+          path: .archiview/modules/archiview-composition.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-composition
+
+            title: Композиция
+
+            kind: module
+
+            purpose: Определять область и правила проверки согласованности
+            контрактов в композиции модуля.
+
+            boundaries:
+              B1: Композиция охватывает выбранный модуль и его непосредственных детей.
+            invariants: {}
+          id: sha256:8008318d127c5330fcd587f4464a210bb81f534be0b8e23c0fdf0104d2666f2c
+        - kind: file
+          path: .archiview/modules/archiview-git-changes.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-git-changes
+
+            title: Git changes
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Формировать, сохранять и читать отчёт о добавленных,
+            изменённых и удалённых файлах между двумя состояниями репозитория.
+
+            boundaries:
+              B1: При сравнении с рабочим деревом учитывать новые файлы, которые Git ещё не отслеживает и не игнорирует.
+            invariants:
+              I1: Источники сравнения — коммиты, индекс и рабочее дерево одного Git-репозитория.
+          id: sha256:a1b17071d8ca09a34f4183db0a780b591ace528bee0577975f55fb7c86544561
+        - kind: file
+          path: .archiview/modules/archiview-implementation.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-implementation
+
+            title: Реализация
+
+            kind: module
+
+            purpose: Определять область и правила проверки соответствия
+            собственной реализации контракту модуля и выявлять участие модуля в
+            циклических зависимостях.
+
+            boundaries:
+              B1: Подтверждать цикл замкнутой цепочкой прямых связей выбранного снимка с местом использования для каждого перехода.
+            invariants: {}
+          id: sha256:2985479771ec868b03767d0240873cf05458e52a6e90c18017d67bf6e9aa1c7c
+        - kind: file
+          path: .archiview/modules/archiview-module-relations.yaml
+          start_line: 1
+          end_line: 14
+          text: >
+            schema_version: 1
+
+            id: archiview-module-relations
+
+            title: Module relations
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Определять прямые связи модулей выбранного снимка по
+            ссылкам на символы и сохранять места их использования.
+
+            boundaries:
+              B1: Учитывать связи между собственными файлами разных модулей выбранного репозитория.
+              B2: Показывать ближайший модуль, указанный в импорте или реэкспорте исходного файла.
+              B3: Поставляемый индексатор определяет связи исходников TypeScript и JavaScript.
+            invariants:
+              I1: Граф охватывает все исходники проекта на поддерживаемых индексатором языках и читается с привязкой к содержимому снимка.
+          id: sha256:52be03793edf6a9038d13670d676faba2f7d5e8db5104be1a6d6c6dbdfe6a699
+        - kind: file
+          path: .archiview/modules/archiview-module-review.yaml
+          start_line: 1
+          end_line: 12
+          text: >
+            schema_version: 1
+
+            id: archiview-module-review
+
+            title: Module review
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Готовить входные данные проверки модуля, сохранять
+            проверенные отчёты и показывать актуальность результатов
+            относительно выбранных снимков.
+
+            boundaries:
+              B1: Содержательная проверка относится к модулю и входным данным, указанным в её манифесте.
+              B2: Повторный импорт того же результата сохраняет исходную запись проверки.
+            invariants: {}
+          id: sha256:a22ab570cd2c246e25adc6f738279ded37463298ae352fc722015df482dcd9e9
+        - kind: file
+          path: .archiview/modules/archiview-project-location.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-project-location
+
+            title: Project discovery
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Находить Git-репозитории в рабочей папке и определять
+            наличие карты модулей ArchiView в каждом из них.
+
+            boundaries:
+              B5: Включать в результат каждый найденный репозиторий, в том числе при отсутствии в нём .archiview/modules.tree.
+            invariants: {}
+          id: sha256:e26bf2bb74e9b91b109cbe28f59c23c0c823ef51714a393e372ec3ded96ea557
+        - kind: file
+          path: .archiview/modules/archiview-project-sources.yaml
+          start_line: 1
+          end_line: 10
+          text: >
+            schema_version: 1
+
+            id: archiview-project-sources
+
+            title: Project sources
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Читать принадлежащие репозиторию файлы, карту и контракты,
+            составлять по ним инвентаризацию модулей рабочей папки и определять
+            цепочку контрактов для выбранного пути.
+
+            boundaries: {}
+
+            invariants: {}
+          id: sha256:53a3fe6a5d7dc753d005facc1b974afbc43831caf9e16408e7db0cdd2ec35192
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-analyse:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 9
+          implementation: 1
+      scope_digest: sha256:651f92a0fe5a0b2ba3b091f6d0179b6c2ae6c4c6e65229d3492f54246a1c86c7
+    input_digest: sha256:5d21f0dfe8fc064807074e5e12f5c8a4911aa57ad88c0e8bfa2e880109a550b5
+    result_digest: sha256:d271f84fabed7b1a1da1dab6027d505260e07f5c732e850391ed2936ba10ea60
+    content_digest: sha256:9e65a163263d1c4466c2870eacbc0d2a892dcc9cb2f36450ff220c90d438a95f
+    registration_order: 1061

@@ -252,7 +252,7 @@ test("implementation and tree flag indexed cycles and clear them when the workin
   await tabBug.waitFor();
   await featureBug.waitFor();
   await tabFinding.waitFor();
-  await page.getByRole("tab", {name:"GRASP"}).click();
+  await page.getByRole("tab", {name:"Композиция",exact:true}).click();
   assert.equal(await page.getByRole("heading", {name:"Циклические зависимости"}).count(), 0);
 });
 
@@ -1333,7 +1333,7 @@ test("retrying a finding link reveals the original clause only after its documen
   await card.getByLabel("Решение", {exact:true}).fill("Принято для этого среза.");
   await card.getByRole("button", {name:"Сохранить решение"}).click();
   await page.waitForFunction(() => document.querySelector<HTMLSelectElement>('[data-finding-id="finding-link"] select')?.value === "accepted" &&
-    document.querySelector("#tab-grasp")?.textContent?.includes("· 1"));
+    document.querySelector("#tab-grasp")?.textContent === "Композиция · 1");
   await page.reload();
   await page.locator("#tab-grasp").click();
   await card.waitFor();

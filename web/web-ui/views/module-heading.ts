@@ -65,7 +65,7 @@ export function renderHeading(module: ModuleSummary, modules: ModuleSummary[], s
 }
 
 export function renderFindingCount(module: Pick<ModuleSummary, "analyses" | "dependencyCycleCount">, cycleCount = module.dependencyCycleCount ?? 0) {
-  for (const [type, label] of [["grasp", "GRASP"], ["implementation", "Реализация"]] as const) {
+  for (const [type, label] of [["grasp", "Композиция"], ["implementation", "Реализация"]] as const) {
     const count = module.analyses?.[type]?.openFindings ?? 0;
     const tab = byId(type === "grasp" ? "tab-grasp" : "tab-implementation");
     tab.textContent = count ? label + " · " + count : label;

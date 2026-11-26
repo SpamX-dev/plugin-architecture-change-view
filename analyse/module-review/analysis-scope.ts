@@ -2,15 +2,15 @@ import { isAnalysisType, type AnalysisType, type ReviewManifest, type ReviewRepo
 import type { Snapshot, SnapshotData, SnapshotModule } from "../../framework/snapshots/types.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
 import { digest } from "../../framework/serialization/digest.js";
-import * as grasp from "../grasp/analysis.js";
+import * as composition from "../composition/analysis.js";
 import * as implementation from "../implementation/analysis.js";
 import { directChildContracts } from "./module-state.js";
 
-export const analysisInstructions = { grasp: grasp.instructions, implementation: implementation.instructions };
+export const analysisInstructions = { grasp: composition.instructions, implementation: implementation.instructions };
 
 export function analysisModules(type: AnalysisType, snapshot: SnapshotData, own: SnapshotModule) {
   if (type === "implementation") return [own];
-  return [own, ...(grasp.compositionChildren(snapshot.modules).get(own.directory) ?? [])];
+  return [own, ...(composition.compositionChildren(snapshot.modules).get(own.directory) ?? [])];
 }
 
 /** Both full bundles and compact records must prove the projection of the declared analysis. */
@@ -35,7 +35,7 @@ export function validateTypedAnalysis({ report, manifest, current, baseline }: {
       if (!module.document.contract) throw new Error("Missing analysis contract: " + module.directory);
       return module.document.contract.id;
     });
-    grasp.validateComposition(report, children);
+    composition.validateComposition(report, children);
   }
   const paths = new Set(selected.map(module => module.documentPath));
   if (type === "implementation") {
