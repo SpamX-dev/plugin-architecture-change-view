@@ -13,7 +13,7 @@ import type { openProjectHistory } from "../analyse/module-review/legacy-history
 import { readReviewBundle } from "../analyse/module-review/review-store.js";
 import { parseYaml } from "../framework/serialization/yaml.js";
 import { digest } from "../framework/serialization/digest.js";
-import { isAnalysisType } from "../framework/ai-report/types.js";
+import { normalizeAnalysisType } from "../framework/ai-report/types.js";
 import { createReviewInput } from "../analyse/module-review/review-input.js";
 import { checkPreparedIndex } from "../analyse/module-review/report-index.js";
 import { moduleContext, moduleInventory } from "../analyse/project-sources/inventory.js";
@@ -69,6 +69,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
     "module-context": { type: "string" }, scaffold: { type: "string" },
   } });
   const root = values.root ?? process.cwd();
+  const analysisType = normalizeAnalysisType(values["analysis-type"]);
   if (values.reason !== undefined && !values["analysis-limitation"]) throw new Error("--reason используется с --analysis-limitation");
   if (values.wait !== undefined && values["review-turn"] === undefined) throw new Error("--wait используется с --review-turn");
   const mode = (["turn-hook", "review-current", "prepare-current-review", "relation-review-input",
@@ -92,15 +93,14 @@ async function execute(prepareWeb?: () => Promise<void>) {
         const wait = Number(values.wait ?? 0);
         if (!Number.isSafeInteger(wait) || wait < 0 || wait > 3600) throw new Error("--wait принимает от 0 до 3600 секунд");
       }
-      const type = values["analysis-type"];
-      if (mode === "prepare-current-review" && !isAnalysisType(type))
-        throw new Error("--prepare-current-review требует --analysis-type grasp|implementation");
+      if (mode === "prepare-current-review" && !analysisType)
+        throw new Error("--prepare-current-review требует --analysis-type composition|implementation");
       const workspace = await createWorkspaceSession({root, stateDirectory:values["state-dir"], initialRepository:values.repository});
       try {
         const session = await workspace.session(values.repository ?? ".", true);
         let result;
-        if (mode === "prepare-current-review" && isAnalysisType(type)) {
-          result = await session.turns.prepareCurrent(values[mode]!, type);
+        if (mode === "prepare-current-review" && analysisType) {
+          result = await session.turns.prepareCurrent(values[mode]!, analysisType);
         } else if (mode === "relation-review-input") {
           result = await session.turns.relationReviewInput();
         } else if (mode === "complete-relation-review") {
@@ -129,9 +129,8 @@ async function execute(prepareWeb?: () => Promise<void>) {
     throw new Error("--baseline используется с --save-comparison");
   if (!values.help && values.target !== undefined && !["list-modules", "module-files", "module-relations", "get-contract", "write-contract", "save-comparison"].some(name => name === moduleCommands[0]))
     throw new Error("--target используется с операциями снимка модуля");
-  const analysisType = values["analysis-type"];
-  if (analysisType !== undefined && (!isAnalysisType(analysisType) || !values["export-review-input"]))
-    throw new Error("--analysis-type grasp|implementation применяется с --export-review-input");
+  if (values["analysis-type"] !== undefined && (!analysisType || !values["export-review-input"]))
+    throw new Error("--analysis-type composition|implementation применяется с --export-review-input");
   if (!values.help && (values.dependencies !== undefined || values["dependencies-complete"]))
     throw new Error("Сбор зависимостей через LLM отключён. Для связей TS/JS используйте --build-relations.");
   if (values.help) {
@@ -147,11 +146,11 @@ async function execute(prepareWeb?: () => Promise<void>) {
       "  --review-current                    Показать актуальные потребности в анализе и исправлениях (JSON)\n" +
       "  --relation-review-input             Получить текущий граф связей и цепочки циклов (JSON)\n" +
       "  --complete-relation-review FILE     Импортировать JSON-отчёт разбора текущего графа\n" +
-      "  --prepare-current-review MODULE_ID --analysis-type grasp|implementation\n" +
+      "  --prepare-current-review MODULE_ID --analysis-type composition|implementation\n" +
       "                                      Подготовить входы выбранной проверки для подагента (JSON)\n" +
       "  --review-turn ID [--wait SECONDS]    Прежнее имя команды списка текущих проверок\n" +
       "  --prepare-analysis REQUEST_ID        Повторить экспорт исходного снимка без зависимостей\n" +
-      "  --export-review-input MODULE_ID --output FILE [--analysis-type grasp|implementation]\n" +
+      "  --export-review-input MODULE_ID --output FILE [--analysis-type composition|implementation]\n" +
       "  --list-modules                       Проекты и модули выбранной рабочей папки (JSON)\n" +
       "  --module-files ID                    Список файлов модуля (JSON)\n" +
       "  --build-relations                    Построить связи TS/JS всего репозитория\n" +

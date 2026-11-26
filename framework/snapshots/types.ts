@@ -49,7 +49,7 @@ export interface Snapshot {
   modules: SnapshotModule[];
   facts: Fact[];
   evidenceLimitations: string[];
-  observations?: Record<string, { lineage: string; revision: number; grasp?: number; implementation?: number;
+  observations?: Record<string, { lineage: string; revision: number; composition?: number; grasp?: number; implementation?: number;
     skillHistory?: SkillObservationHistory }>;
   scoped?: boolean;
   scope_digest?: string;

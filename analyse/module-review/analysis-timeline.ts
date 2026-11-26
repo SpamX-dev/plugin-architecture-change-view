@@ -1,6 +1,7 @@
 import type { Snapshot } from "../../framework/snapshots/types.js";
 import type { ReviewEntry } from "../../framework/static-report/types.js";
 import type { GitTreeReader } from "../git-changes/git-tree.js";
+import { normalizeAnalysisType } from "../../framework/ai-report/types.js";
 import { analysisFingerprint, analysisModules } from "./analysis-scope.js";
 
 /** Equal content on two endpoints also needs an uninterrupted path along the selected timeline. */
@@ -20,7 +21,8 @@ export async function followsAnalysis(entry: ReviewEntry, target: Snapshot, read
   const history = await reader.firstParentHistory(to);
   const start = from === null ? history.length : history.indexOf(from);
   if (start < 0) return false;
-  const type = entry.manifest.analysis_type!;
+  const type = normalizeAnalysisType(entry.manifest.analysis_type);
+  if (!type) return false;
   const own = entry.current.modules.find(module => module.document.contract?.id === entry.module_id)!;
   const expected = analysisFingerprint(type, analysisModules(type, entry.current, own));
   for (const revision of history.slice(0, start)) {

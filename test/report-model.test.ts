@@ -391,7 +391,7 @@ test("legacy effective checks must refer to a clause selected by the manifest", 
 test("typed legacy bundles accept the projected evidence and reject facts outside it", () => {
   const source = snapshot();
   const external = source.facts.find(fact => fact.path === "provider/provider.js")!;
-  for (const analysisType of ["grasp", "implementation"] as const) {
+  for (const analysisType of ["composition", "implementation"] as const) {
     const { report, manifest } = reviewed(null, source, "grand", { analysisType, draft: true });
     const current = analysisSnapshot(analysisType, source, "grand");
     const bundle = { report, manifest, current, baseline: null };

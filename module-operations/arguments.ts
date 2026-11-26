@@ -1,4 +1,4 @@
-import { isAnalysisType, validDisposition } from "../framework/ai-report/types.js";
+import { normalizeAnalysisType, validDisposition } from "../framework/ai-report/types.js";
 import type { SessionOperations } from "./api.js";
 import { ApplicationError } from "./errors.js";
 
@@ -93,10 +93,12 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
         throw new ApplicationError("INVALID_ARGUMENT", "Можно изменить только статус и решение замечания.");
       return session.updateFinding({...selector, view, path, reviewId, findingId, ...next, expected});
     }
-    case "prepareAnalysis":
-      if (typeof args.view !== "string" || typeof args.path !== "string" || (args.analysisType !== undefined && !isAnalysisType(args.analysisType)))
+    case "prepareAnalysis": {
+      const analysisType = normalizeAnalysisType(args.analysisType);
+      if (typeof args.view !== "string" || typeof args.path !== "string" || (args.analysisType !== undefined && !analysisType))
         throw new ApplicationError("INVALID_ARGUMENT", "Нужны view, path и корректный вид анализа");
-      return session.prepareAnalysis({view: args.view, path: args.path, analysisType: args.analysisType, ...selector});
+      return session.prepareAnalysis({view: args.view, path: args.path, analysisType, ...selector});
+    }
     case "getRelations":
     case "getDependencyCycles":
     case "buildRelations":

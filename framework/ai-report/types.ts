@@ -1,17 +1,27 @@
 import type { ReviewSection } from "../contracts/types.js";
 import type { Snapshot, SnapshotReference } from "../snapshots/types.js";
 
-export const analysisTypes = ["grasp", "implementation"] as const;
+export const analysisTypes = ["composition", "implementation"] as const;
 export type AnalysisType = typeof analysisTypes[number];
+export type StoredAnalysisType = AnalysisType | "grasp";
 export function isAnalysisType(value: unknown): value is AnalysisType {
   return analysisTypes.some(type => type === value);
 }
 
-export interface GraspParticipant { moduleId: string; role: "executor" | "utility"; task: string; assessment: string; consumers?: string[] }
-export function graspParticipants(report: Pick<ReviewReport, "extensions">): GraspParticipant[] {
-  const value = report.extensions?.["archiview.grasp"];
-  if (!Array.isArray(value)) return [];
-  return value;
+/** Translate the old stored/request key without changing the source data. */
+export function normalizeAnalysisType(value: unknown): AnalysisType | undefined {
+  if (value === "grasp") return "composition";
+  if (isAnalysisType(value)) return value;
+}
+
+export const compositionExtension = "archiview.composition";
+export interface CompositionParticipant { moduleId: string; role: "executor" | "utility"; task: string; assessment: string; consumers?: string[] }
+export function compositionParticipants(report: Pick<ReviewReport, "extensions"> & {
+  analysis: { analyzer?: Pick<Analyzer, "name"> };
+}): CompositionParticipant[] | undefined {
+  const key = report.analysis.analyzer?.name === "archiview-grasp" ? "archiview.grasp" : compositionExtension;
+  const value = report.extensions?.[key];
+  if (Array.isArray(value)) return value;
 }
 
 export interface FindingDisposition { status: "open" | "accepted" | "resolved"; decision: string }
@@ -87,7 +97,7 @@ export interface ReviewManifest {
   model?: Model;
   prompt_digest?: string;
   review_scope?: string;
-  analysis_type?: AnalysisType;
+  analysis_type?: StoredAnalysisType;
   source_snapshot?: SnapshotReference;
   source_head?: string | null;
   source_captured_at?: string;

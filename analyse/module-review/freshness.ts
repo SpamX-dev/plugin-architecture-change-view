@@ -1,5 +1,5 @@
 import type { Snapshot, SnapshotData } from "../../framework/snapshots/types.js";
-import type { FreshnessReason, Coverage, ReviewBundle } from "../../framework/ai-report/types.js";
+import { normalizeAnalysisType, type FreshnessReason, type Coverage, type ReviewBundle } from "../../framework/ai-report/types.js";
 import { analysisFingerprint, analysisModules } from "./analysis-scope.js";
 import { ANALYZER } from "./bundle.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
@@ -63,7 +63,7 @@ function inputFreshness(previous: ReviewState | null, current: ReviewState | nul
 
 /** Все проекции одной оценки используют те же состояния зафиксированных снимков. */
 export function freshness(entry: ReviewEntry, baseline: SnapshotData | null, current: SnapshotData, context: ModuleStateContext): ReviewFreshness {
-  const type = entry.manifest?.analysis_type;
+  const type = normalizeAnalysisType(entry.manifest?.analysis_type);
   if (type) {
     const own = current.modules.find(module => moduleId(module) === entry.module_id);
     const saved = entry.current.modules.find(module => moduleId(module) === entry.module_id);
@@ -75,8 +75,11 @@ export function freshness(entry: ReviewEntry, baseline: SnapshotData | null, cur
     const sharedOrder = history && beforeRevision >= history.since && beforeRevision < (history.sharedSince ?? Infinity);
     const sameSkillRevision = type === "implementation" && comparable && previous.revision === now.revision &&
       (previous.skillHistory || now.skillHistory);
+    const analysisRevision = (observation: typeof previous) =>
+      observation?.[type] ?? (type === "composition" ? observation?.grasp : undefined);
+    const previousAnalysisRevision = analysisRevision(previous);
     const interrupted = sharedOrder ? beforeRevision < (history.changedAt ?? 0) :
-      !sameSkillRevision && comparable && previous[type] !== undefined && now[type] !== previous[type];
+      !sameSkillRevision && comparable && previousAnalysisRevision !== undefined && analysisRevision(now) !== previousAnalysisRevision;
     const uncertain = sharedOrder && beforeRevision < (history.uncertainAt ?? 0);
     const matches = own && saved && analysisFingerprint(type, analysisModules(type, current, own)) ===
       analysisFingerprint(type, analysisModules(type, entry.current, saved));

@@ -186,7 +186,7 @@ not_checked, ограничения — в analysis.coverage. Не выдава�
      В список исправлений входят обнаруженные циклы и замечания из отчёта о связях.
 2. Для каждого `pending` в `checks` подготовь задание командой
    `archiview --root ROOT --prepare-current-review MODULE_ID --analysis-type TYPE`,
-   где `TYPE` — `grasp` или `implementation`. Передай `prompt` из JSON-ответа
+   где `TYPE` — `composition` или `implementation`. Передай `prompt` из JSON-ответа
    нативному подагенту этого же чата. Подагент проверяет текущее состояние
    модуля и использует экспорт доказательств из задания. Анализ можно выполнять
    параллельно. Поручай импорт готовых отчётов через `--complete-analysis ID`

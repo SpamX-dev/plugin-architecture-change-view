@@ -22,7 +22,7 @@ import { observeModules } from "../analyse/module-review/module-observations.js"
 import { moduleReportName, ReportStore } from "../analyse/module-review/report-store.js";
 import { createReviewInput } from "../analyse/module-review/review-input.js";
 import { reviewFreshness } from "../analyse/module-review/model.js";
-import type { Fact } from "../framework/snapshots/types.js";
+import type { Fact, Snapshot } from "../framework/snapshots/types.js";
 import type { CycleStep, RelationGraph } from "../framework/module-relations/types.js";
 import type { ReviewInput } from "../framework/static-report/types.js";
 import type { ComparisonView } from "../module-operations/api.js";
@@ -75,8 +75,9 @@ async function completeCurrentReview(root: string, id: string, finding = false) 
   await assert.rejects(stat(path.join(folder, "snapshots.json")), {code:"ENOENT"});
   const result = completedFixture(input);
   result.report.analysis.coverage = {status:"complete", limitations:[]};
-  if (input.manifest.analysis_type === "grasp") {
-    result.report.extensions = {"archiview.grasp": input.current.modules.filter(module => module.document.contract?.id !== input.module_id)
+  const type = input.manifest.analysis_type;
+  if (type === "composition" || type === "grasp") {
+    result.report.extensions = {["archiview." + type]: input.current.modules.filter(module => module.document.contract?.id !== input.module_id)
       .map(module => ({moduleId:module.document.contract!.id, role:"utility", task:"Fixture", assessment:"Fixture", consumers:[input.module_id]}))};
   }
   const evidence = [{snapshot:"current" as const, fact_id:input.current.facts[0].id}];
@@ -85,6 +86,60 @@ async function completeCurrentReview(root: string, id: string, finding = false) 
     severity:"warning", summary:"Review fixture", clauses:[result.report.checks[0].contract], evidence}];
   await writeFile(path.join(folder, "result.yaml"), stringify(result, {aliasDuplicateObjects:false}));
 }
+
+test("legacy composition requests complete and display without changing their saved inputs", async t => {
+  const root = await repositoryFixture(t);
+  commitTestFiles(root);
+  const cli = fileURLToPath(new URL("../dist/cli.mjs", import.meta.url));
+  const {stdout} = await promisify(execFile)(process.execPath,
+    [cli, "--root", root, "--prepare-current-review", "root", "--analysis-type", "grasp"], {windowsHide:true});
+  const request = JSON.parse(stdout);
+  assert.equal(request.analysisType, "composition");
+
+  const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
+  const inputFile = path.join(folder, "input.yaml");
+  const input: ReviewInput = parse(await readFile(inputFile, "utf8"));
+  assert.equal(input.manifest.analysis_type, "composition");
+  assert.deepEqual(input.report.extensions, {"archiview.composition":[]});
+
+  // Recreate the persisted keys of a request prepared before the rename.
+  input.manifest.analysis_type = "grasp";
+  input.manifest.instructions = input.manifest.instructions.replace("archiview.composition", "archiview.grasp");
+  input.manifest.analyzer.name = input.report.analysis.analyzer.name = "archiview-grasp";
+  input.report.extensions = {"archiview.grasp":[]};
+  input.report.analysis.input_digest = digest(input.manifest);
+  const observed = input.current.observations!.root;
+  assert.ok(observed.composition);
+  observed.grasp = observed.composition;
+  delete observed.composition;
+  delete input.current.scope_digest;
+  input.current.scope_digest = digest(input.current);
+  const legacyInput = stringify(input, {aliasDuplicateObjects:false});
+  const inputDigest = digest(input);
+  const requestFile = path.join(folder, "request.json");
+  const saved = JSON.parse(await readFile(requestFile, "utf8"));
+  await writeFile(inputFile, legacyInput);
+  await writeFile(requestFile, JSON.stringify({...saved, analysisType:"grasp", inputDigest}));
+  await writeFile(path.join(folder, "scope.json"), JSON.stringify({file:"input.yaml", digest:inputDigest}));
+  await completeCurrentReview(root, request.id);
+
+  const app = await serve(t, root);
+  assert.equal((await app.analysis.complete(request.id)).analysisType, "composition");
+  assert.equal(await readFile(inputFile, "utf8"), legacyInput);
+  const view = await app.getComparison();
+  const detail = await app.getModule({view:view.id, path:".", currentOnly:true});
+  assert.equal(detail.analyses?.composition?.id, input.review_id);
+  assert.equal(detail.reviews[0].analysisType, "composition");
+  assert.equal(detail.reviews[0].report.analysis.analyzer.name, "archiview-grasp");
+  assert.deepEqual(detail.reviews[0].report.extensions?.["archiview.grasp"], [{
+    moduleId:"child", role:"utility", task:"Fixture", assessment:"Fixture", consumers:["root"],
+  }]);
+  assert.equal((await app.reports.readReviews()).find(entry => entry.review_id === input.review_id)?.manifest.analysis_type, "grasp");
+  const fromApi = await fetch(app.url + "/api/analysis", {method:"POST",
+    headers:{"content-type":"application/json"}, body:JSON.stringify({view:view.id, path:"child", analysisType:"grasp"})});
+  assert.equal(fromApi.status, 201);
+  assert.equal((await fromApi.json()).analysisType, "composition");
+});
 
 test("current reviews select by typed freshness after commits, reparenting and deletion", async t => {
   const root = await repositoryFixture(t);
@@ -115,18 +170,18 @@ test("current reviews select by typed freshness after commits, reparenting and d
 
   await writeFile(path.join(root,".archiview/modules/child.yaml"),contractYaml("child","Changed contract"));
   commitTestFiles(root);
-  assert.deepEqual(await selected(), ["child/grasp", "child/implementation", "root/grasp"]);
+  assert.deepEqual(await selected(), ["child/composition", "child/implementation", "root/composition"]);
   await finishPending();
 
   await rename(path.join(root,"child"),path.join(root,"other/child"));
   await writeModuleTree(root, {...tree, child:"other/child"});
-  assert.deepEqual(await selected(), ["child/grasp", "child/implementation", "other/grasp", "root/grasp"]);
+  assert.deepEqual(await selected(), ["child/composition", "child/implementation", "other/composition", "root/composition"]);
   await finishPending();
 
   await rm(path.join(root,"other/child"),{recursive:true});
   await rm(path.join(root,".archiview/modules/child.yaml"));
   await writeModuleTree(root, {root:".",other:"other"});
-  assert.deepEqual(await selected(), ["other/grasp"]);
+  assert.deepEqual(await selected(), ["other/composition"]);
 });
 
 test("Stop and the CLI share module and relation review work without opening review chats", async t => {
@@ -297,7 +352,8 @@ async function observeLegacyChild(reports: ReportStore, includeSkill = false) {
     const fingerprint = digest([own.directory, own.files, own.document]);
     const revision = prior.revision + Number(prior.fingerprint !== fingerprint);
     const typed = (type: "implementation" | "grasp") => {
-      const hash = analysisFingerprint(type, [projected]);
+      const hash = type === "grasp" ? digest({type, contracts:[[own.directory, own.document.contract]], files:[]})
+        : analysisFingerprint(type, [projected]);
       return {hash, revision:prior.types[type].revision + Number(prior.types[type].hash !== hash)};
     };
     const types = {grasp:typed("grasp"), implementation:typed("implementation")};
@@ -325,12 +381,13 @@ test("observer generations preserve report history and independently track real 
   const initial = await captureWorkingTree(root);
   const own = initial.modules.find(module => module.directory === "child")!;
   const legacyOwn = {...own, files:own.files.filter(file => file.path !== "child/SKILL.md")};
-  const before = {lineage:"fixture-lineage", revision:383, grasp:1, implementation:12};
-  initial.observations = {child:before};
+  const before = {lineage:"fixture-lineage", revision:383, composition:1, implementation:12};
+  const {composition, ...legacyObservation} = before;
+  initial.observations = {child:{...legacyObservation, grasp:composition}};
   const legacyRecord = {
     fingerprint:digest([own.directory, own.files, own.document]), composition:digest([]), revision:before.revision,
     types:{
-      grasp:{hash:analysisFingerprint("grasp", [own]), revision:before.grasp},
+      grasp:{hash:digest({type:"grasp", contracts:[[own.directory, own.document.contract]], files:[]}), revision:composition},
       implementation:{hash:analysisFingerprint("implementation", [legacyOwn]), revision:before.implementation},
     },
   };
@@ -446,13 +503,15 @@ test("a skill review made at the last shared observation survives later document
   }
 });
 
-test("compatible observers share implementation and GRASP cursors across reverts in either direction", async t => {
+test("compatible observers share implementation and composition cursors across reverts in either direction", async t => {
   const root = await repositoryFixture(t);
   const reports = new ReportStore(new SnapshotStore(root));
   const source = path.join(root, "child/code.js");
   const contract = path.join(root, ".archiview/modules/child.yaml");
   const originalSource = await readFile(source, "utf8"), originalContract = await readFile(contract, "utf8");
   const modern = () => observeCurrent(reports), legacy = () => observeLegacyChild(reports);
+  const revisions = ({grasp, composition, ...other}: NonNullable<Snapshot["observations"]>[string]) =>
+    ({...other, composition:composition ?? grasp});
   await modern();
   for (const [writer, reader] of [[legacy, modern], [modern, legacy]]) {
     const before = await reader();
@@ -462,10 +521,10 @@ test("compatible observers share implementation and GRASP cursors across reverts
     await writeFile(source, originalSource);
     await writeFile(contract, originalContract);
     const after = await writer(), target = await reader();
-    assert.deepEqual(target.observations!.child, after.observations!.child);
-    for (const analysisType of ["implementation", "grasp"] as const) {
+    assert.deepEqual(revisions(target.observations!.child), revisions(after.observations!.child));
+    for (const analysisType of ["implementation", "composition"] as const) {
       const makeReview = (snapshot: typeof before) => createReviewInput(digest(root), null, snapshot, "child", {analysisType});
-      assert.equal(after.observations!.child[analysisType], before.observations!.child[analysisType]! + 2);
+      assert.equal(revisions(after.observations!.child)[analysisType], revisions(before.observations!.child)[analysisType]! + 2);
       assert.equal(reviewFreshness(makeReview(before), null, target).current.status, "stale");
       assert.equal(reviewFreshness(makeReview(after), null, target).current.status, "fresh");
     }
@@ -508,7 +567,7 @@ test("typed analyses track only their own inputs and keep decisions outside the 
   const app = await serve(t, root);
   const initial = await app.getComparison();
   const entries = new Map<string, ReviewInput>();
-  for (const [directory, type] of [[".", "grasp"], ["child", "grasp"], ["child", "implementation"]] as const) {
+  for (const [directory, type] of [[".", "composition"], ["child", "composition"], ["child", "implementation"]] as const) {
     const request = await app.prepareAnalysis({view:initial.id, path:directory, analysisType:type});
     const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
     const input: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
@@ -525,7 +584,7 @@ test("typed analyses track only their own inputs and keep decisions outside the 
     await save();
     await assert.rejects(app.analysis.complete(request.id));
     result.report.analysis.coverage = {status:"complete", limitations:[]};
-    if (type === "grasp") result.report.extensions = {"archiview.grasp": input.current.modules.filter(m => m.directory !== directory)
+    if (type === "composition") result.report.extensions = {"archiview.composition": input.current.modules.filter(m => m.directory !== directory)
       .map(m => ({moduleId:m.document.contract!.id, role:"utility", task:"Fixture", assessment:"Fixture", consumers:[input.module_id]}))};
     const evidence = [{snapshot:"current" as const, fact_id:(code[0] ?? input.current.facts[0]).id}];
     for (const check of result.report.checks) Object.assign(check, {verdict:"consistent", explanation:"Fixture", evidence});
@@ -533,7 +592,7 @@ test("typed analyses track only their own inputs and keep decisions outside the 
       kind:"contract_conflict", lifecycle:"unknown", clauses:[result.report.checks[0].contract], evidence}];
     // Direct imports verify the stored evidence against the typed file inventory too.
     const outside = structuredClone(result);
-    const content = { kind: "file", path: type === "grasp" ? "child/code.js" : "child/extra.js", text: "Fixture" };
+    const content = { kind: "file", path: type === "composition" ? "child/code.js" : "child/extra.js", text: "Fixture" };
     const fact = { ...content, id: digest(content) };
     outside.current.facts.push(fact);
     outside.report.checks[0].evidence = [{ snapshot: "current", fact_id: fact.id }];
@@ -574,7 +633,7 @@ test("typed analyses track only their own inputs and keep decisions outside the 
     const view = await app.getComparison();
     return Object.fromEntries((await app.getReviewStatuses({view:view.id})).modules.map(m => [m.key, Object.keys(m.analyses ?? {}).sort()]));
   };
-  assert.deepEqual(await statuses(), {".":["grasp"], child:["grasp","implementation"], "child/grand":[]});
+  assert.deepEqual(await statuses(), {".":["composition"], child:["composition","implementation"], "child/grand":[]});
   await writeFile(path.join(root, "unrelated.txt"), "Later commit");
   commitTestFiles(root);
   async function headResults() {
@@ -586,14 +645,14 @@ test("typed analyses track only their own inputs and keep decisions outside the 
   const file = path.join(root, "child/code.js");
   const original = await readFile(file);
   await writeFile(file, "export const changed = true;");
-  assert.deepEqual(await statuses(), {".":["grasp"], child:["grasp"], "child/grand":[]});
+  assert.deepEqual(await statuses(), {".":["composition"], child:["composition"], "child/grand":[]});
   commitTestFiles(root);
   await writeFile(file, original);
   commitTestFiles(root);
   assert.equal((await headResults())?.implementation, undefined, "an intermediate Git change invalidates the earlier review after a revert");
-  assert.deepEqual((await statuses()).child, ["grasp"], "a reverted implementation requires a new analysis");
+  assert.deepEqual((await statuses()).child, ["composition"], "a reverted implementation requires a new analysis");
   await writeFile(grandContract, stringify({...child, id:"grand", purpose:"Новое назначение"}));
-  assert.deepEqual(await statuses(), {".":["grasp"], child:[], "child/grand":[]});
+  assert.deepEqual(await statuses(), {".":["composition"], child:[], "child/grand":[]});
   await writeFile(childContract, stringify({...child, purpose:"Новое назначение ребёнка"}));
   assert.deepEqual((await statuses())["."], []);
 });

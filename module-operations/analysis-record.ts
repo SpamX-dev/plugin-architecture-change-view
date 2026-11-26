@@ -1,4 +1,4 @@
-import { isAnalysisType, type AnalysisType } from "../framework/ai-report/types.js";
+import { normalizeAnalysisType, type AnalysisType } from "../framework/ai-report/types.js";
 
 export interface AnalysisRequest {
   analysisType?: AnalysisType;
@@ -49,12 +49,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function readAnalysisRequest(value: unknown): AnalysisRequest {
   if (!isRecord(value)) throw new Error("Некорректная запись запроса анализа");
   const { schema_version, id, moduleId, directory, viewId, reviewId, createdAt, inputDigest, snapshotsDigest } = value;
-  if ((value.analysisType !== undefined && !isAnalysisType(value.analysisType)) || schema_version !== 1 || typeof id !== "string" || typeof moduleId !== "string" ||
+  const analysisType = normalizeAnalysisType(value.analysisType);
+  if ((value.analysisType !== undefined && !analysisType) || schema_version !== 1 || typeof id !== "string" || typeof moduleId !== "string" ||
       typeof directory !== "string" || typeof viewId !== "string" || typeof reviewId !== "string" ||
-      typeof createdAt !== "string" || typeof inputDigest !== "string" || (snapshotsDigest !== undefined && typeof snapshotsDigest !== "string") || (snapshotsDigest === undefined && !value.analysisType)) {
+      typeof createdAt !== "string" || typeof inputDigest !== "string" || (snapshotsDigest !== undefined && typeof snapshotsDigest !== "string") || (snapshotsDigest === undefined && !analysisType)) {
     throw new Error("Некорректная запись запроса анализа");
   }
-  return { ...(value.analysisType ? {analysisType: value.analysisType} : {}), schema_version, id, moduleId, directory, viewId, reviewId, createdAt, inputDigest, snapshotsDigest };
+  return { ...(analysisType ? {analysisType} : {}), schema_version, id, moduleId, directory, viewId, reviewId, createdAt, inputDigest, snapshotsDigest };
 }
 
 export function readAnalysisStatus(value: Record<string, unknown>): AnalysisStatus {

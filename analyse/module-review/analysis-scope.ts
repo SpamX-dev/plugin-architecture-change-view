@@ -1,4 +1,4 @@
-import { isAnalysisType, type AnalysisType, type ReviewManifest, type ReviewReport } from "../../framework/ai-report/types.js";
+import { normalizeAnalysisType, type AnalysisType, type ReviewManifest, type ReviewReport } from "../../framework/ai-report/types.js";
 import type { Snapshot, SnapshotData, SnapshotModule } from "../../framework/snapshots/types.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
 import { digest } from "../../framework/serialization/digest.js";
@@ -6,7 +6,7 @@ import * as composition from "../composition/analysis.js";
 import * as implementation from "../implementation/analysis.js";
 import { directChildContracts } from "./module-state.js";
 
-export const analysisInstructions = { grasp: composition.instructions, implementation: implementation.instructions };
+export const analysisInstructions = { composition: composition.instructions, implementation: implementation.instructions };
 
 export function analysisModules(type: AnalysisType, snapshot: SnapshotData, own: SnapshotModule) {
   if (type === "implementation") return [own];
@@ -17,11 +17,12 @@ export function analysisModules(type: AnalysisType, snapshot: SnapshotData, own:
 export function validateTypedAnalysis({ report, manifest, current, baseline }: {
   report: ReviewReport; manifest: ReviewManifest; current: SnapshotData; baseline: SnapshotData | null;
 }) {
-  const type = manifest.analysis_type;
+  const storedType = manifest.analysis_type;
+  const type = normalizeAnalysisType(storedType);
   const analyzer = report.analysis.analyzer.name;
-  if (type === undefined && analyzer !== "archiview-grasp" && analyzer !== "archiview-implementation") return;
+  if (storedType === undefined && !["archiview-grasp", "archiview-composition", "archiview-implementation"].includes(analyzer)) return;
   const source = manifest.source_snapshot;
-  if (!isAnalysisType(type) || analyzer !== "archiview-" + type || baseline || !current.complete ||
+  if (!type || analyzer !== "archiview-" + storedType || baseline || !current.complete ||
       !source || source.id !== current.id || typeof source.digest !== "string" || !/^sha256:[0-9a-f]{64}$/.test(source.digest) ||
       report.analysis.coverage.status !== "complete" || report.assessment.current.verdict === "inconclusive" ||
       report.checks.some(check => check.verdict === "not_checked" || check.verdict === "uncertain"))
@@ -30,7 +31,7 @@ export function validateTypedAnalysis({ report, manifest, current, baseline }: {
   if (!own) throw new Error("Missing analysis module: " + report.module.id);
   const selected = analysisModules(type, current, own);
   if (current.modules.length !== selected.length) throw new Error("Modules outside analysis scope");
-  if (type === "grasp") {
+  if (type === "composition") {
     const children = selected.slice(1).map(module => {
       if (!module.document.contract) throw new Error("Missing analysis contract: " + module.directory);
       return module.document.contract.id;
@@ -54,7 +55,7 @@ export function projectAnalysisScopes(snapshot: SnapshotData) {
   return snapshot.modules.map(module => {
     const composition = children.get(module.directory) ?? [];
     const participants = composition.map(child => directories.get(child.directory)!);
-    const hashes = { grasp: analysisFingerprint("grasp", [module, ...participants]),
+    const hashes = { composition: analysisFingerprint("composition", [module, ...participants]),
       implementation: analysisFingerprint("implementation", [module]) };
     return {module, composition, hashes};
   });
@@ -64,7 +65,8 @@ export function analysisFingerprint(type: AnalysisType, modules: SnapshotModule[
   const contracts = [...modules].sort((a, b) => a.directory < b.directory ? -1 : a.directory > b.directory ? 1 : 0)
     .map(module => [module.directory, module.document.contract ?? null]);
   const files = type === "implementation" ? implementation.sourceFiles(modules[0]) : [];
-  return digest({type, contracts, files: files.map(file => [file.path, file.hash, file.mode ?? null])});
+  // The digest domain is shared by both names so unchanged inputs keep their identity.
+  return digest({type: type === "composition" ? "grasp" : type, contracts, files: files.map(file => [file.path, file.hash, file.mode ?? null])});
 }
 
 /** Export only evidence belonging to this analysis. Keep the original snapshot reference in the manifest. */
@@ -88,9 +90,15 @@ export function analysisSnapshot(type: AnalysisType, source: Snapshot, moduleId:
     const files = module.files.filter(file => file.path === module.documentPath || sources.includes(file));
     return { ...module, files, sourceFiles: sources.length, fingerprint: digest(files) };
   });
+  let observations: Snapshot["observations"];
+  const observed = source.observations?.[moduleId];
+  if (observed) {
+    const { grasp, ...observation } = observed;
+    if (grasp !== undefined) observation.composition ??= grasp;
+    observations = { [moduleId]: observation };
+  }
   const snapshot = { ...source, modules, facts, fingerprint: analysisFingerprint(type, selected),
-    diagnostics: [], evidenceLimitations: [], observations: source.observations?.[moduleId] ?
-      { [moduleId]: source.observations[moduleId] } : undefined };
+    diagnostics: [], evidenceLimitations: [], observations };
   snapshot.digest = snapshotDigest(snapshot);
   return snapshot;
 }

@@ -243,7 +243,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     }
     const directories = new Map(view.modules.map(module => [module.directory, module]));
     for (const module of view.modules) {
-      if (!module.after || module.analyses?.grasp && module.analyses.implementation) continue;
+      if (!module.after || module.analyses?.composition && module.analyses.implementation) continue;
       let directory = module.directory;
       while (directory !== ".") {
         directory = directory.includes("/") ? directory.slice(0, directory.lastIndexOf("/")) : ".";
@@ -444,7 +444,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     if (!view.complete || !(module.after ?? module.before)?.document.contract || !module.moduleId)
       throw new ApplicationError("INCOMPLETE_VIEW", "Нужны полный снимок и корректный контракт модуля");
     if (args.analysisType && !module.after) throw new ApplicationError("INVALID_ARGUMENT", "Модуль отсутствует в выбранном срезе.");
-    if (args.analysisType === "grasp") return analysis.create(view, module, "grasp");
+    if (args.analysisType === "composition") return analysis.create(view, module, "composition");
     return reports.withLivePublication(async () => analysis.create(await evidenceView(view), module, args.analysisType, view.after));
   }
 

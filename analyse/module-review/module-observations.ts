@@ -4,7 +4,6 @@ import path from "node:path";
 import { digest } from "../../framework/serialization/digest.js";
 import { errorDetails } from "../../node-errors.js";
 import { analysisFingerprint, projectAnalysisScopes } from "./analysis-scope.js";
-import type { AnalysisType } from "../../framework/ai-report/types.js";
 import { moduleId } from "./module-state.js";
 import type { SkillObservationHistory, Snapshot, SnapshotModule } from "../../framework/snapshots/types.js";
 import type { SnapshotStore } from "../git-changes/snapshot-store.js";
@@ -14,7 +13,7 @@ interface ModuleCursor {
   fingerprint: string | null;
   composition?: string | null;
   revision: number;
-  types?: Record<AnalysisType, Version>;
+  types?: { grasp?: Version; composition?: Version; implementation: Version };
   skillHistory?: SkillObservationHistory;
 }
 interface ObservationFile { lineage: string; modules: Record<string, ModuleCursor> }
@@ -75,7 +74,7 @@ export async function observeModules(store: SnapshotStore, current: Snapshot) {
   const fingerprints = new Map(projectAnalysisScopes(current).map(({module, composition, hashes}) => [moduleId(module), {
     fingerprint: digest([module.directory, module.files, module.document]),
     composition: digest(composition),
-    grasp: hashes.grasp,
+    compositionHash: hashes.composition,
     implementation: implementationHashes(module, hashes.implementation),
   }]));
   for (const id of new Set([...sharedById.keys(), ...currentById.keys(), ...fingerprints.keys()])) {
@@ -88,7 +87,8 @@ export async function observeModules(store: SnapshotStore, current: Snapshot) {
     const unchanged = previous.some(cursor => cursor.revision === highest && cursor.fingerprint === fingerprint &&
       (cursor.composition === undefined || cursor.composition === composition));
     const revision = unchanged ? highest : highest + 1;
-    const grasp = advance(state?.grasp ?? null, shared?.types?.grasp, privateCursor?.types?.grasp);
+    const compositionVersion = advance(state?.compositionHash ?? null,
+      shared?.types?.grasp ?? shared?.types?.composition, privateCursor?.types?.composition ?? privateCursor?.types?.grasp);
     const full = state?.implementation.current ?? null, narrow = state?.implementation.legacy ?? null;
     let implementation: Version, legacyImplementation: Version;
     let skillHistory = privateCursor?.skillHistory;
@@ -122,11 +122,12 @@ export async function observeModules(store: SnapshotStore, current: Snapshot) {
       else if (privateCursor.types?.implementation.hash !== full)
         skillHistory.changedAt = gap > 0 ? privateCursor.revision + 1 : revision;
     }
-    const cursor = {fingerprint, composition, revision, types:{grasp, implementation:legacyImplementation}};
-    commonModules.set(id, cursor);
+    const cursor = {fingerprint, composition, revision};
+    // Older observers still read and write this common cursor under its original name.
+    commonModules.set(id, {...cursor, types:{grasp:compositionVersion, implementation:legacyImplementation}});
     const history = skillHistory ? {skillHistory} : {};
-    currentModules.set(id, {...cursor, types:{grasp, implementation}, ...history});
-    current.observations[id] = {lineage, revision, grasp:grasp.revision, implementation:implementation.revision, ...history};
+    currentModules.set(id, {...cursor, types:{composition:compositionVersion, implementation}, ...history});
+    current.observations[id] = {lineage, revision, composition:compositionVersion.revision, implementation:implementation.revision, ...history};
   }
   await saveObservations(commonFile, common, {lineage, modules:Object.fromEntries(commonModules)});
   await saveObservations(currentFile, generation, {lineage, modules:Object.fromEntries(currentModules)});

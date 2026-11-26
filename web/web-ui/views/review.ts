@@ -1,5 +1,5 @@
 import type { Check, EvidenceReference, Observation, ReviewBundle, ReviewRenderOptions, ClauseReference } from "../view-model/types.js";
-import { graspParticipants } from "../../../framework/ai-report/types.js";
+import { compositionParticipants } from "../../../framework/ai-report/types.js";
 import { findingDecision } from "./finding-decision.js";
 import { el } from "./dom.js";
 import { evidenceLinks } from "./evidence.js";
@@ -113,8 +113,8 @@ export function renderReview(panel: HTMLElement, bundle: ReviewBundle, options: 
   body.dataset.reviewId = report.id;
   panel.append(body);
   body.append(el("p", "review-state", "Анализ · " + reviewDate(bundle)), el("p", "", report.assessment.current.summary));
-  if (bundle.analysisType === "grasp") {
-    const participants = graspParticipants(report);
+  if (bundle.analysisType === "composition") {
+    const participants = compositionParticipants(report) ?? [];
     body.append(el("h3", "section-heading", "Композиция"));
     if (!participants.length) body.append(el("p", "", "У модуля нет непосредственных детей."));
     for (const item of participants) {

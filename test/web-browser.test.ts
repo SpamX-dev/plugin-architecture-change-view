@@ -21,7 +21,7 @@ import { digest } from "../framework/serialization/digest.js";
 import { captureWorkingTree } from "../analyse/git-changes/capture.js";
 
 function completeChecks(input: ReviewInput) {
-  if (input.manifest.analysis_type === "grasp") input.report.extensions = {"archiview.grasp": input.current.modules.filter(m => m.document.contract?.id !== input.module_id).map(m => ({moduleId:m.document.contract!.id, role:"executor", task:"Fixture task", assessment:"Fixture result"}))};
+  if (input.manifest.analysis_type === "composition") input.report.extensions = {"archiview.composition": input.current.modules.filter(m => m.document.contract?.id !== input.module_id).map(m => ({moduleId:m.document.contract!.id, role:"executor", task:"Fixture task", assessment:"Fixture result"}))};
   input.report.analysis.coverage = {status:"complete", limitations:[]};
   for (const check of input.report.checks) {
     check.verdict = "consistent";
@@ -273,7 +273,7 @@ test("analysis menu refreshes registrations and delivers only on selecting a har
   const app = await createArchiView({ root });
   const page = await (await browserContext(defer)).newPage();
   await page.goto(await listen(defer, app.server));
-  await page.locator("#tab-grasp").click();
+  await page.locator("#tab-composition").click();
   const trigger = page.locator("#analyze-module");
   await trigger.click();
   await page.getByText("Нет подключённых harness", { exact: true }).waitFor();
@@ -286,7 +286,9 @@ test("analysis menu refreshes registrations and delivers only on selecting a har
   const action = page.getByRole("button", { name: "Codex", exact: true });
   await action.waitFor();
   assert.equal(calls, 0);
+  const preparation = page.waitForRequest(request => request.method() === "POST" && new URL(request.url()).pathname === "/api/analysis");
   await action.click();
+  assert.equal((await preparation).postDataJSON().analysisType, "composition");
   await page.locator("#analysis-status").filter({ hasText: "Отправлено в новый чат Codex" }).waitFor();
   assert.equal(calls, 1);
 });
@@ -401,7 +403,7 @@ test("standalone browser loads modules, navigates history, copies analysis and f
     const view: ComparisonView = await response.json();
     for (const module of view.modules) {
       const result = {id: "test", openFindings: 0};
-      module.analyses = module.key === "src" && childRequiresAnalysis ? {} : {grasp: result, implementation: result};
+      module.analyses = module.key === "src" && childRequiresAnalysis ? {} : {composition: result, implementation: result};
       module.descendantsNeedAnalysis = childRequiresAnalysis && module.key === ".";
       for (const scope of [module.reviewStatus!.self, module.reviewStatus!.subtree]) {
         Object.assign(scope.current, { status: "fresh", conflict: false });
@@ -628,7 +630,7 @@ test("a native watch updates the selected files and review status after atomic s
   const app = await createArchiView({ root });
   const origin = await listen(defer, app.server);
   const initial = await app.getComparison();
-  for (const key of [".", "src"]) for (const analysisType of ["grasp", "implementation"] as const) {
+  for (const key of [".", "src"]) for (const analysisType of ["composition", "implementation"] as const) {
     const request = await app.prepareAnalysis({ view: initial.id, path: key, analysisType });
     const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
     const input: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
@@ -846,7 +848,7 @@ test("files remain browsable while independent review statuses load, fail and re
   assert.equal(await page.locator(".review-marker").count(),0);
   await request.fulfill({status:500,json:{error:"Ошибка чтения анализа"}});
   await page.locator("#updated").filter({hasText:"Ошибка чтения анализа"}).waitFor();
-  await page.locator("#tab-grasp").click();
+  await page.locator("#tab-composition").click();
   await page.route("**/api/review-statuses?**", async route => {
     const response = await route.fetch();
     const statuses = await response.json();
@@ -1283,7 +1285,7 @@ test("retrying a finding link reveals the original clause only after its documen
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
   const origin = await listen(defer, app.server);
-  const review = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root), "browser-project", {analysisType:"grasp"});
+  const review = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root), "browser-project", {analysisType:"composition"});
   completeChecks(review);
   review.report.assessment.current = {verdict:"needs_review", summary:"Замечания композиции."};
   const reference = review.report.checks.find((check) => check.contract.id === "purpose")!.contract;
@@ -1298,7 +1300,9 @@ test("retrying a finding link reveals the original clause only after its documen
 
   const page = await (await browserContext(defer)).newPage();
   await page.goto(origin);
-  await page.locator("#tab-grasp").click();
+  await page.locator("#tab-composition").click();
+  await page.getByRole("heading", {name: "browser-feature", exact: true}).waitFor();
+  assert.equal(await page.locator("#document-panel").getAttribute("aria-labelledby"), "tab-composition");
   const card = page.locator('.finding-card[data-finding-id="finding-link"]');
   const fix = card.getByRole("button", { name: "Исправить", exact: true });
   await fix.click();
@@ -1333,9 +1337,9 @@ test("retrying a finding link reveals the original clause only after its documen
   await card.getByLabel("Решение", {exact:true}).fill("Принято для этого среза.");
   await card.getByRole("button", {name:"Сохранить решение"}).click();
   await page.waitForFunction(() => document.querySelector<HTMLSelectElement>('[data-finding-id="finding-link"] select')?.value === "accepted" &&
-    document.querySelector("#tab-grasp")?.textContent === "Композиция · 1");
+    document.querySelector("#tab-composition")?.textContent === "Композиция · 1");
   await page.reload();
-  await page.locator("#tab-grasp").click();
+  await page.locator("#tab-composition").click();
   await card.waitFor();
   assert.equal(await card.getByLabel("Решение", {exact:true}).inputValue(), "Принято для этого среза.");
   assert.equal(await card.locator("h3").innerText(), "Проверить пункт");
@@ -1362,7 +1366,7 @@ test("retrying a finding link reveals the original clause only after its documen
   assert.equal(requested[1], requested[0], "the first retry must keep the same module and view");
 });
 
-test("legacy reports stay intact and do not populate either typed analysis tab", browserOptions, async t => {
+test("legacy typed composition reports render while untyped reports stay out of analysis tabs", browserOptions, async t => {
   const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const app = await createArchiView({root});
@@ -1375,10 +1379,28 @@ test("legacy reports stay intact and do not populate either typed analysis tab",
   const before = (await app.reports.readReviews())[0];
   const page = await (await browserContext(defer)).newPage();
   await page.goto(origin + "/#src");
-  for (const tab of ["grasp", "implementation"]) {
+  for (const tab of ["composition", "implementation"]) {
     await page.locator("#tab-" + tab).click();
     await page.locator("#document-panel #analyze-module").waitFor();
     assert.equal(await page.locator(".review-body, .review-picker").count(), 0);
   }
-  assert.deepEqual((await app.reports.readReviews())[0], before);
+
+  const legacy = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root),
+    "browser-project", {analysisType:"composition"});
+  completeChecks(legacy);
+  legacy.report.assessment.current = {verdict:"consistent", summary:"Композиция проверена."};
+  legacy.manifest.analysis_type = "grasp";
+  legacy.manifest.analyzer.name = legacy.report.analysis.analyzer.name = "archiview-grasp";
+  legacy.manifest.instructions = legacy.manifest.instructions.replace("archiview.composition", "archiview.grasp");
+  legacy.report.extensions = {...legacy.report.extensions, "archiview.grasp":legacy.report.extensions?.["archiview.composition"],
+    "archiview.composition":[]};
+  legacy.report.analysis.model = legacy.manifest.model = {provider:"test", id:"legacy-composition"};
+  legacy.report.analysis.prompt_digest = legacy.manifest.prompt_digest = digest("legacy composition");
+  legacy.report.analysis.input_digest = digest(legacy.manifest);
+  await app.reports.saveReview(legacy);
+  await page.goto(origin);
+  await page.locator("#tab-composition").click();
+  await page.getByRole("heading", {name:"browser-feature", exact:true}).waitFor();
+  assert.equal(await page.getByText("Исполнитель · Fixture task", {exact:true}).count(), 1);
+  assert.deepEqual((await app.reports.readReviews()).find(entry => entry.review_id === before.review_id), before);
 });

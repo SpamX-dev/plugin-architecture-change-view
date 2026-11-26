@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { analysisTypes, type AnalysisType } from "../../../framework/ai-report/types.js";
+import { analysisTypes, normalizeAnalysisType, type AnalysisType } from "../../../framework/ai-report/types.js";
 import type { Snapshot } from "../../../framework/snapshots/types.js";
 import type { FindingDecisions } from "../../../analyse/module-review/dispositions.js";
 import { createReportModel } from "../../../analyse/module-review/model.js";
@@ -83,7 +83,7 @@ export class AgentTurns {
       }
       const current = await currentAnalysisEntries(reviews.get(owner) ?? [], model, snapshot, entry => this.follows(entry, snapshot));
       for (const type of analysisTypes) {
-        const entry = current.find(entry => entry.manifest.analysis_type === type);
+        const entry = current.find(entry => normalizeAnalysisType(entry.manifest.analysis_type) === type);
         if (!entry) {
           checks.push({moduleId:owner, type, status:"pending"});
           continue;

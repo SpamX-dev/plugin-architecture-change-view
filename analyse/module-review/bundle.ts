@@ -1,7 +1,8 @@
 import type { SnapshotData, SnapshotModule, Snapshot, ComparisonModule } from "../../framework/snapshots/types.js";
-import type {
-  Side, ReviewBundle, ReviewReport, ReviewManifest, ClauseReference, ClauseInput,
-  ClauseCheck, Finding, EvidenceReference,
+import {
+  normalizeAnalysisType,
+  type Side, type ReviewBundle, type ReviewReport, type ReviewManifest, type ClauseReference, type ClauseInput,
+  type ClauseCheck, type Finding, type EvidenceReference,
 } from "../../framework/ai-report/types.js";
 /**
  * Проверка структуры и связи отчёта со снимками. Не выводит семантику кода:
@@ -94,7 +95,8 @@ export function validateContractScope(report: ReviewReport, manifest: ReviewMani
     throw new Error("Review check references a clause outside the manifest");
   const localConstraint = (clause: ClauseReference) => {
     if (clause.module_id === report.module.id) return true;
-    if (manifest.analysis_type === "grasp") return snapshots?.current?.modules.some(module => module.document.contract?.id === clause.module_id);
+    if (normalizeAnalysisType(manifest.analysis_type) === "composition")
+      return snapshots?.current?.modules.some(module => module.document.contract?.id === clause.module_id);
     if (!["boundaries", "invariants"].includes(clause.section)) return false;
     const directory = report.module[`${clause.snapshot}_path`];
     const ancestor = snapshots?.[clause.snapshot]?.modules.find((module) =>

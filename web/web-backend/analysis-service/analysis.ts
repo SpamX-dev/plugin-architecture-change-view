@@ -97,8 +97,9 @@ export class AnalysisRequests {
     const directory = requestDirectory(this.store, id);
     const request = await this.status(id);
     if (!request.delivery && request.status === "completed") throw new ApplicationError("DELIVERY_CONFLICT", "Анализ уже завершён");
+    const instructions = request.analysisType && !request.delivery ? (await this.typedInput(id)).manifest.instructions : undefined;
     return this.deliverOnce(directory, harnessId, { ...this.target(), requestId: id, moduleId: request.moduleId,
-      prompt: this.prompt(request, directory) }, request.delivery);
+      prompt: this.prompt(request, directory, instructions) }, request.delivery);
   }
 
   async deliverFix({ id, harnessId, reviewId, findingId }: FindingFixArgs) {
@@ -183,20 +184,20 @@ export class AnalysisRequests {
       await rm(directory, { recursive: true, force: true });
       throw error;
     }
-    return { ...request, status: "prepared", prompt: this.prompt(request, directory) };
+    return { ...request, status: "prepared", prompt: this.prompt(request, directory, input.manifest.instructions) };
   }
 
   /** Формирует ограниченное пользовательское поручение; пути передаются как данные argv. */
-  prompt(request: AnalysisRequest, directory: string) {
+  prompt(request: AnalysisRequest, directory: string, instructions?: string) {
     const header = reviewAssignmentPrefix + request.id + "\n";
     const result = path.join(directory, "result.yaml");
     const argv = [...cliArguments(), "--root", this.store.root,
       ...(this.store.directory !== path.join(this.store.root, ".archiview") ? ["--state-dir", this.store.directory] : []),
       "--complete-analysis", request.id];
     if (request.analysisType) return [
-      header + "Выполни анализ " + (request.analysisType === "grasp" ? "композиции" : "реализации") + " для модуля " + request.moduleId + ".",
+      header + "Выполни анализ " + (request.analysisType === "composition" ? "композиции" : "реализации") + " для модуля " + request.moduleId + ".",
       "Запрос (JSON): " + JSON.stringify({project:this.store.root, moduleId:request.moduleId, requestId:request.id}),
-      analysisInstructions[request.analysisType],
+      instructions ?? analysisInstructions[request.analysisType],
       "Используй только неизменяемые входы и факты в " + JSON.stringify(path.join(directory, "input.yaml")) + ".",
       "Скопируй экспорт в " + JSON.stringify(result) + ". Заполни report и model/prompt_digest в manifest. Оцени каждый обязательный пункт, объясни неприменимые пункты. Запиши доказательства и отдельные замечания. При полном анализе установи report.analysis.coverage = {status: 'complete', limitations: []}. Если данных недостаточно, сообщи причину.",
       "Формат отчёта: " + JSON.stringify(fileURLToPath(new URL("docs/report-format-v2.md", packageUrl))),

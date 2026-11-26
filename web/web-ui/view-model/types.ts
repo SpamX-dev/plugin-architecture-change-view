@@ -22,7 +22,7 @@ export type ReviewBundle = Pick<ModuleReview, "contracts"> & Partial<Pick<Module
   facts: Record<Side, (Pick<Fact, "id" | "path"> & Partial<Fact>)[]>;
   report: Pick<ReviewReport, "id" | "module" | "assessment" | "observed" | "checks" | "extensions"> & {
     comparison: Partial<Record<Side, SnapshotReference | null>>;
-    analysis: Pick<ReviewReport["analysis"], "created_at" | "coverage">;
+    analysis: Pick<ReviewReport["analysis"], "created_at" | "coverage"> & Partial<Pick<ReviewReport["analysis"], "analyzer">>;
     findings: Finding[];
   };
 };

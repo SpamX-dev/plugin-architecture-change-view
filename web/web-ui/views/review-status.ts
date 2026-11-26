@@ -7,7 +7,7 @@ export function moduleAnalysisStatus(module: {
   reviewStatus?: { self?: { current?: Freshness }; subtree?: { current?: Freshness } } | null;
 }, scope: "self" | "subtree" = "self") {
   if (module.analyses) {
-    if (!module.analyses.grasp || !module.analyses.implementation) return "Требует анализа";
+    if (!module.analyses.composition || !module.analyses.implementation) return "Требует анализа";
     return scope === "subtree" && module.descendantsNeedAnalysis ? "Вложенные модули требуют анализа" : null;
   }
   if (module.reviewStatus === undefined) return null;
