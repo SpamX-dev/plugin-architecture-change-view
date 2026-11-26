@@ -259,6 +259,13 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     return structuredClone({ modules: view.modules.map(({key, review, reviewStatus, analyses, descendantsNeedAnalysis}) => ({key, review, reviewStatus, analyses, descendantsNeedAnalysis})), diagnostics: view.reviewDiagnostics });
   }
 
+  async function workingEvidence(tree: Snapshot, head: string | null) {
+    const current = await captureWorkingTree(root, captureOptions);
+    attachVersions(current, tree);
+    if (await readGitHeadRevision(root) !== head) throw new ApplicationError("STALE_VIEW", "HEAD изменился");
+    return current;
+  }
+
   /** Full evidence is only collected for an explicit action on the immutable tree. */
   async function evidenceView(view: SessionView): Promise<SessionView> {
     if (!view.gitTree) return view;
@@ -271,9 +278,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       if (head !== (base?.revision ?? null)) throw new ApplicationError("STALE_VIEW", "HEAD изменился, обновите дерево");
       const tree = await liveTree(head);
       if (tree.digest !== view.currentSnapshot.digest) throw new ApplicationError("STALE_VIEW", "Рабочее дерево изменилось");
-      current = await captureWorkingTree(root, captureOptions);
-      attachVersions(current, tree);
-      if (await readGitHeadRevision(root) !== head) throw new ApplicationError("STALE_VIEW", "HEAD изменился");
+      current = await workingEvidence(tree, head);
     }
     if (!current.complete || baseline?.complete === false) {
       throw new ApplicationError("INCOMPLETE_VIEW", "Не удалось получить полные входные данные для анализа");
@@ -519,6 +524,10 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     const { view, module } = selectedModule(args);
     return relations.getRelations(root, store.directory, view.currentSnapshot, module.currentPath);
   };
+  const getDependencyCycles: SessionOperations["getDependencyCycles"] = async args => {
+    const { view, module } = selectedModule(args);
+    return relations.getDependencyCycles(root, store.directory, view.currentSnapshot, module.after);
+  };
   const buildRelations: SessionOperations["buildRelations"] = async args => {
     const { view, module } = selectedModule(args);
     if (view.target?.id !== "current") throw new ApplicationError("INVALID_ARGUMENT", "Построение связей доступно для рабочего дерева.");
@@ -529,7 +538,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     if (!module.after?.files.some(f => f.path === args.file)) throw new ApplicationError("NOT_FOUND", "Файл отсутствует в модуле.");
     return relations.getRelationSource(root, store.directory, view.currentSnapshot, args.file);
   };
-  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, updateFinding, getRelations, buildRelations, getRelationSource,
+  const operations = { waitForChanges, getComparison, getReviewStatuses, getModule, updateFinding, getRelations, getDependencyCycles, buildRelations, getRelationSource,
     changeClause, changePrototype, getFileDiff, prepareAnalysis, getAnalysis, buildReview, saveSnapshot,
     getReviewSettings: (_args: {repository?: string}) => settings.read(),
     setReviewSetting: settings.set,
@@ -537,7 +546,10 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     deliverFindingFix: (args: FindingFixArgs) => analysis.deliverFix(args),
     deliverAnalysis: (args: {id: string; harnessId: string}) => analysis.deliver(args.id, args.harnessId) } satisfies SessionOperations;
   const turns = new AgentTurns(analysis, decisions,
-    async () => findView((await getComparison({historyLimit:1})).id),
-    view => reports.withLivePublication(() => evidenceView(view)), selectedAnalyses);
+    evidence => reports.withLivePublication(async () => {
+      const head = await readGitHeadRevision(root);
+      const tree = await liveTree(head);
+      return evidence && tree.complete ? workingEvidence(tree, head) : tree;
+    }), (entry, snapshot) => followsAnalysis(entry, snapshot, reader));
   return { root, store, migration, reviews, reports, changes, analysis, turns, startupComparison, ...operations, close: () => watcher.close() };
 }

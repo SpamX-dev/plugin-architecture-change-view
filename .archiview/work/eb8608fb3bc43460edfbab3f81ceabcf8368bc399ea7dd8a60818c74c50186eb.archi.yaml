@@ -2,7 +2,7 @@ schema_version: 2
 kind: archi
 module_id: archiview-storage
 project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
-check_hash: b40c0614e4a9805e1cb78ccc93c7f4b1f40c67d8ac9754a7a5e91a9a0a55491d
+check_hash: ba839e7495d1887cfbdd1a03a34e637c54ffa63a41385f6020b1f30c2d3aaec9
 input_manifest:
   domain: archiview/module-check/v1
   project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
@@ -10,7 +10,7 @@ input_manifest:
   baseline:
     identity:
       kind: git
-      id: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      id: a01e0166d2b853bc85b9ea49e163005902d9c8b8
     state:
       exists: true
       directory: storage
@@ -257,801 +257,23 @@ structure:
   diagnostics: []
   document_state: documented
 publication:
-  generation: 254
-  comparison_key: sha256:89819d7fd0e86afcd1899944a76691772ff6b2fd320f3a434974e8ecf2c3be6f
+  generation: 255
+  comparison_key: sha256:93a8f2a1f8de47545161a0f48ea26f02ecc8c3c79e66aa191f4453d0434536d1
   baseline:
     metadata:
-      id: git-8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
-      digest: sha256:536e150cce8ea9fc1bc8badae375532e3de349fb5b6a3d58b541e4d4a2f21f87
+      id: git-a01e0166d2b853bc85b9ea49e163005902d9c8b8
+      digest: sha256:a0fbc09147248a6e65c5df94a5703c8376e437817acf21d4d6e50f3d16dc4303
       schema_version: 2
       root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-26T09:44:39.155Z
+      capturedAt: 2026-11-26T11:51:14.998Z
       kind: git
-      revision: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
+      revision: a01e0166d2b853bc85b9ea49e163005902d9c8b8
       label: HEAD
-      fingerprint: 2dee2965eb997121b14a6fd797be0b773eca592bd578ce0553474b2e511dd5df
-      complete: true
-      diagnostics: []
-      evidenceLimitations: []
-      isHead: true
-    module_index: 26
-    module:
-      directory: storage
-      document:
-        state: documented
-        text: >
-          schema_version: 1
-
-          id: archiview-storage
-
-          title: State storage
-
-          kind: module
-
-          extensions:
-            archiview.roles: [service]
-          purpose: Обеспечивать файловым хранилищам ArchiView безопасный доступ
-          к состоянию проекта, проверку происхождения, чтение архивов и
-          согласование параллельных записей.
-
-          boundaries: {}
-
-          invariants: {}
-        format: yaml
-        contract:
-          schema_version: 1
-          id: archiview-storage
-          title: State storage
-          kind: module
-          extensions:
-            archiview.roles:
-              - service
-          purpose: Обеспечивать файловым хранилищам ArchiView безопасный доступ к
-            состоянию проекта, проверку происхождения, чтение архивов и
-            согласование параллельных записей.
-          boundaries: {}
-          invariants: {}
-      documentPath: .archiview/modules/archiview-storage.yaml
-      files:
-        - path: .archiview/modules/archiview-storage.yaml
-          hash: 7a30d5e896ce367791f57260de9a62d9354b8832
-          mode: "100644"
-        - path: storage/archive-cache.ts
-          hash: 1ccf44c6787b3a51069d5d11d6e71a5204a6a2f9
-          mode: "100644"
-        - path: storage/file-lock.ts
-          hash: 226d1648f778fef1b28b40fcdb7c8011014086ec
-          mode: "100644"
-        - path: storage/identity.ts
-          hash: 051c288e56239d01b991287d61e773678eec7f55
-          mode: "100644"
-        - path: storage/paths.ts
-          hash: b2fe8fab79c54b75c792d7ce38cf8953d26733c9
-          mode: "100644"
-      sourceFiles: 4
-      fingerprint: 9f67232fba275ee13f92d045e1eb9371a2acc780b1ddc7960c8943ac60f9a59b
-    facts:
-      - index: 36
-        fact:
-          id: sha256:67af2e95cbd54ad97fe0e5109c883afbd4b4eaf4f5aee0312acd0361ff1c1a24
-          kind: file
-          path: .archiview/modules/archiview-storage.yaml
-          start_line: 1
-          end_line: 10
-          text: >
-            schema_version: 1
-
-            id: archiview-storage
-
-            title: State storage
-
-            kind: module
-
-            extensions:
-              archiview.roles: [service]
-            purpose: Обеспечивать файловым хранилищам ArchiView безопасный
-            доступ к состоянию проекта, проверку происхождения, чтение архивов и
-            согласование параллельных записей.
-
-            boundaries: {}
-
-            invariants: {}
-      - index: 138
-        fact:
-          id: sha256:c8ec8cb8d02b71ef3e748655dee49d23ba415d727648ec29f0a0a2529004fec4
-          kind: file
-          path: storage/archive-cache.ts
-          start_line: 1
-          end_line: 34
-          text: >
-            import { lstat, readFile } from "node:fs/promises";
-
-
-            /** Reads the original bytes of a bounded, ordinary archive file. */
-
-            export async function readArchiveFile(file: string) {
-              const info = await lstat(file);
-              if (!info.isFile() || info.size > 64 * 1024 * 1024) throw new Error("Invalid stored file");
-              return readFile(file);
-            }
-
-
-            /** A store owns its cache. Directory listings decide membership on
-            every scan. */
-
-            export class ArchiveCache<T> {
-              readonly #files = new Map<string, { version: string; value: T }>();
-
-              async read(file: string, load: () => Promise<T>, key = file): Promise<T> {
-                const version = await fileVersion(file);
-                const cached = this.#files.get(key);
-                if (cached?.version === version) return cached.value;
-                const value = await load();
-                if (await fileVersion(file) !== version) throw new Error("Archive file changed while being read: " + file);
-                this.#files.set(key, { version, value });
-                return value;
-              }
-
-              retain(keys: Set<string>) {
-                for (const key of this.#files.keys()) if (!keys.has(key)) this.#files.delete(key);
-              }
-            }
-
-
-            async function fileVersion(file: string) {
-              const info = await lstat(file, { bigint: true });
-              if (!info.isFile()) throw new Error("Archive file must be an ordinary file: " + file);
-              return [info.dev, info.ino, info.size, info.ctimeNs, info.mtimeNs].join("/");
-            }
-      - index: 139
-        fact:
-          id: sha256:10b4c8d174e512f93d943ad0dd0250e8a48d62be909be774427350a7c8aa2725
-          kind: file
-          path: storage/file-lock.ts
-          start_line: 1
-          end_line: 83
-          text: >
-            import { createHash, randomUUID } from "node:crypto";
-
-            import { link, lstat, readFile, rm, writeFile } from
-            "node:fs/promises";
-
-            import path from "node:path";
-
-            import { setTimeout as wait } from "node:timers/promises";
-
-            import { errorDetails } from "../node-errors.js";
-
-
-            interface Owner {
-              pid: number;
-              token: string;
-            }
-
-
-            async function readOwner(file: string): Promise<Owner | undefined> {
-              try {
-                const info = await lstat(file);
-                if (!info.isFile() || info.isSymbolicLink()) throw new Error("Invalid storage lock");
-                const owner = JSON.parse(await readFile(file, "utf8"));
-                if (!owner || !Number.isSafeInteger(owner.pid) || owner.pid < 1 || typeof owner.token !== "string")
-                  throw new Error("Invalid storage lock owner");
-                return { pid: owner.pid, token: owner.token };
-              } catch (error) {
-                if (errorDetails(error).code !== "ENOENT") throw error;
-              }
-            }
-
-
-            function processExited(pid: number): boolean {
-              try {
-                process.kill(pid, 0);
-                return false;
-              } catch (error) {
-                return errorDetails(error).code === "ESRCH";
-              }
-            }
-
-
-            /** Only one contender may remove a particular abandoned ownership
-            record. */
-
-            async function acquire(file: string, candidate: string, deadline:
-            number): Promise<void> {
-              for (;;) {
-                try {
-                  await link(candidate, file);
-                  return;
-                } catch (error) {
-                  if (errorDetails(error).code !== "EEXIST") throw error;
-                }
-                if (Date.now() >= deadline) throw new Error("Storage is locked by another writer");
-                const observed = await readOwner(file);
-                if (!observed) continue;
-                if (!processExited(observed.pid)) {
-                  await wait(25);
-                  continue;
-                }
-
-                // A second observer can reach this point after a new writer acquired the original name.
-                // Serialize recovery for the unique dead token, then re-read under that recovery lock.
-                // Recovery locks follow the same protocol if the recovering process itself exits.
-                const key = createHash("sha256").update(JSON.stringify([path.basename(file), observed.token])).digest("hex");
-                const recovery = path.join(path.dirname(file), ".recover-" + key);
-                await acquire(recovery, candidate, deadline);
-                try {
-                  if ((await readOwner(file))?.token === observed.token) await rm(file);
-                } finally {
-                  await rm(recovery);
-                }
-              }
-            }
-
-
-            /** The caller supplies a verified storage directory. The on-disk
-            pid/token format is portable across versions. */
-
-            export async function withFileLock<T>(directory: string, name:
-            string, action: () => Promise<T>): Promise<T> {
-              const file = path.join(directory, name);
-              const token = randomUUID();
-              const candidate = path.join(directory, ".owner-" + token);
-              await writeFile(candidate, JSON.stringify({ pid: process.pid, token }), { flag: "wx" });
-              try {
-                await acquire(file, candidate, Date.now() + 30_000);
-                try {
-                  await rm(candidate);
-                  return await action();
-                } finally {
-                  await rm(file);
-                }
-              } finally {
-                await rm(candidate, { force: true });
-              }
-            }
-      - index: 140
-        fact:
-          id: sha256:3ac6da92a80bfb62effbc3a1ab56c0e7504b77a1ba093caea1e1ed1886cd4b8b
-          kind: file
-          path: storage/identity.ts
-          start_line: 1
-          end_line: 43
-          text: >
-            import { randomUUID } from "node:crypto";
-
-            import { link, lstat, mkdir, readFile, rm, writeFile } from
-            "node:fs/promises";
-
-            import path from "node:path";
-
-            import { errorDetails } from "../node-errors.js";
-
-            import { assertStateLocation, projectStateDirectory } from
-            "./paths.js";
-
-            import { isProjectIdentity } from
-            "../framework/project/identity.js";
-
-            import type { ProjectIdentity } from
-            "../framework/project-types/types.js";
-
-
-            /** Читает происхождение истории; отсутствующий манифест не
-            создаётся при анализе. */
-
-            export async function readSnapshotRoot(root: string, directory =
-            projectStateDirectory(root)) {
-              await assertStateLocation(root, directory);
-              const file = path.join(directory, "project.json");
-              try {
-                const info = await lstat(file);
-                if (!info.isFile() || info.isSymbolicLink() || info.size > 16 * 1024) throw new Error("Invalid ArchiView project identity file");
-                const value: unknown = JSON.parse(await readFile(file, "utf8"));
-                if (!isProjectIdentity(value)) throw new Error("Invalid ArchiView project identity");
-                return value.snapshot_root;
-              } catch (errorCause) { const error = errorDetails(errorCause);
-                if (error.code === "ENOENT") return null;
-                throw error;
-              }
-            }
-
-
-            /** Фиксирует идентичность один раз; Git отслеживает историю, но
-            пропускает временные записи. */
-
-            export async function ensureProjectIdentity(root: string, directory:
-            string, snapshotRoot: string) {
-              await assertStateLocation(root, directory);
-              await mkdir(directory, { recursive: true });
-              const temporary = path.join(directory, ".identity-" + randomUUID());
-              try {
-                const identity: ProjectIdentity = { schema_version: 1, snapshot_root: snapshotRoot };
-                await writeFile(temporary, JSON.stringify(identity, null, 2) + "\n", { flag: "wx" });
-                // Hard link публикует готовый файл атомарно и не заменяет уже принятую идентичность.
-                try { await link(temporary, path.join(directory, "project.json")); }
-                catch (errorCause) { const error = errorDetails(errorCause);
-                  if (error.code !== "EEXIST") throw error;
-                  if (await readSnapshotRoot(root, directory) !== snapshotRoot) throw new Error("ArchiView project identity collision");
-                }
-              } finally { await rm(temporary, { force: true }); }
-              try { await writeFile(path.join(directory, ".gitignore"), ".snapshot-*\n.pending-*\n.identity-*\n", { flag: "wx" }); }
-              catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "EEXIST") throw error; }
-            }
-      - index: 141
-        fact:
-          id: sha256:8ef38c1320e4204f589e6e42bc84a2038313db2a14d88f7f61376be3c13a5cee
-          kind: file
-          path: storage/paths.ts
-          start_line: 1
-          end_line: 46
-          text: >
-            import { lstat, realpath } from "node:fs/promises";
-
-            import path from "node:path";
-
-            import { errorDetails } from "../node-errors.js";
-
-
-            import { STATE_DIRECTORY, within } from
-            "../framework/project/paths.js";
-
-
-            export { projectStateDirectory, STATE_DIRECTORY, within } from
-            "../framework/project/paths.js";
-
-
-            /** Resolves existing components before checking the location of a
-            pending write. */
-
-            export async function physicalPath(target: string): Promise<string>
-            {
-              let ancestor = target;
-              while (true) {
-                try {
-                  await lstat(ancestor);
-                  break;
-                } catch (cause) {
-                  const parent = path.dirname(ancestor);
-                  if (errorDetails(cause).code !== "ENOENT" || parent === ancestor) throw cause;
-                  ancestor = parent;
-                }
-              }
-              // A dangling link exists according to lstat; its realpath error must reach the caller.
-              return path.resolve(await realpath(ancestor), path.relative(ancestor, target));
-            }
-
-
-            /**
-             * Разрешает данные только в зарезервированной папке проекта либо во внешнем
-             * хранилище. Ссылки не могут перенаправить локальные данные в исходники или наружу.
-             */
-            export async function assertStateLocation(root: string, directory:
-            string, target = directory) {
-              const local = within(root, directory);
-              if (local && !within(path.join(root, STATE_DIRECTORY), directory)) {
-                throw new Error("State storage inside source project must be under .archiview");
-              }
-              if (!within(directory, target)) throw new Error("Path escapes state storage");
-              const destination = await physicalPath(target);
-              if (local) {
-                if (path.relative(target, destination) !== "") throw new Error("Local state storage cannot use directory links");
-                return;
-              }
-              const boundary = target === directory ? destination : await physicalPath(directory);
-              const project = await realpath(root);
-              if (within(project, boundary) || within(project, destination)) throw new Error("External state storage resolves inside source project");
-              if (!within(boundary, destination)) throw new Error("Path resolves outside external state storage");
-            }
-      - index: 245
-        fact:
-          id: sha256:c521b97160e2e0105fd852b41dd47119de34367827daf417feafba2580e72ff6
-          kind: module
-          path: storage
-          text: '{"contract":"documented","format":"yaml","sources":["storage/archive-cache.ts","storage/file-lock.ts","storage/identity.ts","storage/paths.ts"]}'
-  current:
-    metadata:
-      id: launch-79c5c319ff4856a430dc67e2014806a8767b305f5c1a1605e266e957ffcb98c9
-      digest: sha256:37a05bd036aac1c7ed49910180164901d7b9415d2a7cab0a8ef16e597010fef5
-      schema_version: 2
-      root: D:\projects\dsh.plugins\plugin-architecture-change-view
-      capturedAt: 2026-11-26T09:44:43.720Z
-      kind: launch
-      label: Начальное состояние
       fingerprint: 79c5c319ff4856a430dc67e2014806a8767b305f5c1a1605e266e957ffcb98c9
       complete: true
       diagnostics: []
       evidenceLimitations: []
-      baseRevision: 8cd8afba9f4a40d8f24c66d3044c1de539a04cdd
-      observations:
-        architecture-change-view:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 853
-          grasp: 5
-          implementation: 1
-        archiview-distribution:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 392
-          grasp: 1
-          implementation: 3
-        archiview-skills:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 377
-          grasp: 2
-          implementation: 1
-        archiview-module-boundaries-skill:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 386
-          grasp: 2
-          implementation: 17
-          skillHistory:
-            since: 383
-            uncertainAt: 385
-            changedAt: 386
-        architecture-core:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 17
-          grasp: 1
-          implementation: 1
-        archiview-application:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 465
-          grasp: 4
-          implementation: 21
-        archiview-http:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 400
-          grasp: 1
-          implementation: 4
-        archiview-codex:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 408
-          grasp: 2
-          implementation: 2
-        archiview-contracts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 385
-          grasp: 1
-          implementation: 1
-        dsh-adapter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 405
-          grasp: 6
-          implementation: 6
-        dsh-client-panel:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 10
-          grasp: 1
-          implementation: 1
-        archiview-mcp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-          grasp: 1
-          implementation: 1
-        archiview-project-location:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 395
-          grasp: 1
-          implementation: 9
-        archiview-reports:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 386
-          grasp: 1
-          implementation: 1
-        archiview-reviews:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 385
-          grasp: 1
-          implementation: 3
-        archiview-node-runtime:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 382
-          grasp: 1
-          implementation: 2
-        archiview-serialization:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 390
-          grasp: 1
-          implementation: 12
-        archiview-snapshots:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 392
-          grasp: 1
-          implementation: 3
-        archiview-storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 15
-          grasp: 2
-          implementation: 4
-        architecture-tests:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 501
-          grasp: 1
-          implementation: 43
-        architecture-web:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 388
-          grasp: 3
-          implementation: 1
-        archiview-client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 418
-          grasp: 3
-          implementation: 2
-        prototype-smoke-1674b57d:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        prototype-smoke-9a3440c6:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        directory:.:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-          grasp: 1
-          implementation: 1
-        directory:scripts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-          grasp: 1
-          implementation: 1
-        directory:skills:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:skills/module-boundaries:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-          grasp: 1
-          implementation: 1
-        directory:src:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 8
-          grasp: 1
-          implementation: 1
-        directory:src/application:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 11
-          grasp: 1
-          implementation: 1
-        directory:src/archiview:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/codex:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-          grasp: 1
-          implementation: 1
-        directory:src/contracts:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-          grasp: 1
-          implementation: 1
-        directory:src/dsh:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/dsh/client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/mcp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/project:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/reports:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 10
-          grasp: 1
-          implementation: 1
-        directory:src/reviews:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 8
-          grasp: 1
-          implementation: 1
-        directory:src/runtime:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/serialization:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:src/snapshots:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 7
-          grasp: 1
-          implementation: 1
-        directory:src/storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:test:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 12
-          grasp: 1
-          implementation: 1
-        directory:web:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 6
-          grasp: 1
-          implementation: 1
-        directory:web/archiview:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 13
-          grasp: 1
-          implementation: 1
-        archiview-analyse:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 381
-          grasp: 4
-          implementation: 1
-        archiview-analyse-type:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-report-store:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-project-files:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-bridges:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 398
-          grasp: 7
-          implementation: 3
-        archiview-cli:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 391
-          grasp: 1
-          implementation: 13
-        archiview-cli-operation:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-framework:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 385
-          grasp: 1
-          implementation: 1
-        archiview-project-types:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 370
-          grasp: 1
-          implementation: 1
-        archiview-tools:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 371
-          grasp: 1
-          implementation: 2
-        archiview-analysis-service:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 406
-          grasp: 3
-          implementation: 20
-        archiview-file-service:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-host-bridge:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 378
-          grasp: 1
-          implementation: 3
-        archiview-web-api-client:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 377
-          grasp: 2
-          implementation: 3
-        archiview-module-presenter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 391
-          grasp: 2
-          implementation: 9
-        archiview-views:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 389
-          grasp: 2
-          implementation: 8
-        archiview-workspace-presenter:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 379
-          grasp: 3
-          implementation: 7
-        archiview-file-watcher:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 377
-          grasp: 1
-          implementation: 1
-        archiview-git-changes:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 390
-          grasp: 1
-          implementation: 7
-        archiview-git-changes-report:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-module-operations:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 416
-          grasp: 1
-          implementation: 10
-        archiview-project-context:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 376
-          grasp: 1
-          implementation: 2
-        archiview-module-access:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-module-review:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 394
-          grasp: 1
-          implementation: 13
-        archiview-module-relations:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 388
-          grasp: 2
-          implementation: 14
-        archiview-relation-model:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 372
-          grasp: 1
-          implementation: 4
-        archiview-grasp:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 1
-          implementation: 1
-        archiview-implementation:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 4
-          grasp: 1
-          implementation: 3
-        directory:storage:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 2
-          implementation: 2
-        directory:analyse/project-sources:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 2
-          grasp: 2
-          implementation: 2
-        archiview-project-sources:
-          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
-          revision: 1
-          grasp: 1
-          implementation: 1
+      isHead: true
     module_index: 26
     module:
       directory: storage
@@ -1421,6 +643,784 @@ publication:
               if (!within(boundary, destination)) throw new Error("Path resolves outside external state storage");
             }
       - index: 253
+        fact:
+          id: sha256:c521b97160e2e0105fd852b41dd47119de34367827daf417feafba2580e72ff6
+          kind: module
+          path: storage
+          text: '{"contract":"documented","format":"yaml","sources":["storage/archive-cache.ts","storage/file-lock.ts","storage/identity.ts","storage/paths.ts"]}'
+  current:
+    metadata:
+      id: launch-3d2cd1df9d8c0d48a9261c2422d64e8fbfe1e91b5d269380642c7fc2087eb0a3
+      digest: sha256:df00125e424430a2ea0ab11600bfb1c5d1a1dbb5a85d397d6227acd93098337a
+      schema_version: 2
+      root: D:\projects\dsh.plugins\plugin-architecture-change-view
+      capturedAt: 2026-11-26T11:51:19.056Z
+      kind: launch
+      label: Начальное состояние
+      fingerprint: 3d2cd1df9d8c0d48a9261c2422d64e8fbfe1e91b5d269380642c7fc2087eb0a3
+      complete: true
+      diagnostics: []
+      evidenceLimitations: []
+      baseRevision: a01e0166d2b853bc85b9ea49e163005902d9c8b8
+      observations:
+        architecture-change-view:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 859
+          grasp: 5
+          implementation: 1
+        archiview-distribution:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 392
+          grasp: 1
+          implementation: 3
+        archiview-skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 379
+          grasp: 4
+          implementation: 1
+        archiview-module-boundaries-skill:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 392
+          grasp: 4
+          implementation: 23
+          skillHistory:
+            since: 383
+            uncertainAt: 385
+            changedAt: 392
+        architecture-core:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 17
+          grasp: 1
+          implementation: 1
+        archiview-application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 470
+          grasp: 7
+          implementation: 23
+        archiview-http:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 402
+          grasp: 1
+          implementation: 6
+        archiview-codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 408
+          grasp: 2
+          implementation: 2
+        archiview-contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 1
+        dsh-adapter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 406
+          grasp: 7
+          implementation: 7
+        dsh-client-panel:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 10
+          grasp: 1
+          implementation: 1
+        archiview-mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        archiview-project-location:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 395
+          grasp: 1
+          implementation: 9
+        archiview-reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 386
+          grasp: 1
+          implementation: 1
+        archiview-reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 3
+        archiview-node-runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 382
+          grasp: 1
+          implementation: 2
+        archiview-serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 1
+          implementation: 12
+        archiview-snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 392
+          grasp: 1
+          implementation: 3
+        archiview-storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 15
+          grasp: 2
+          implementation: 4
+        architecture-tests:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 514
+          grasp: 1
+          implementation: 56
+        architecture-web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 388
+          grasp: 3
+          implementation: 1
+        archiview-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 418
+          grasp: 3
+          implementation: 2
+        prototype-smoke-1674b57d:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        prototype-smoke-9a3440c6:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        directory:.:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:scripts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:skills:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:skills/module-boundaries:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+          grasp: 1
+          implementation: 1
+        directory:src/application:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 11
+          grasp: 1
+          implementation: 1
+        directory:src/archiview:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/codex:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src/contracts:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:src/dsh:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/dsh/client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/mcp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/project:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/reports:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 10
+          grasp: 1
+          implementation: 1
+        directory:src/reviews:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 8
+          grasp: 1
+          implementation: 1
+        directory:src/runtime:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/serialization:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:src/snapshots:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 7
+          grasp: 1
+          implementation: 1
+        directory:src/storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:test:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 12
+          grasp: 1
+          implementation: 1
+        directory:web:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 1
+          implementation: 1
+        directory:web/archiview:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 13
+          grasp: 1
+          implementation: 1
+        archiview-analyse:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 383
+          grasp: 6
+          implementation: 1
+        archiview-analyse-type:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-report-store:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-project-files:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-bridges:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 399
+          grasp: 8
+          implementation: 3
+        archiview-cli:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 395
+          grasp: 1
+          implementation: 17
+        archiview-cli-operation:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-framework:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 385
+          grasp: 1
+          implementation: 1
+        archiview-project-types:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 370
+          grasp: 1
+          implementation: 1
+        archiview-tools:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 371
+          grasp: 1
+          implementation: 2
+        archiview-analysis-service:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 418
+          grasp: 6
+          implementation: 32
+        archiview-file-service:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-host-bridge:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 378
+          grasp: 1
+          implementation: 3
+        archiview-web-api-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 378
+          grasp: 2
+          implementation: 4
+        archiview-module-presenter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 394
+          grasp: 2
+          implementation: 12
+        archiview-views:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 2
+          implementation: 9
+        archiview-workspace-presenter:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 381
+          grasp: 3
+          implementation: 9
+        archiview-file-watcher:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 377
+          grasp: 1
+          implementation: 1
+        archiview-git-changes:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 390
+          grasp: 1
+          implementation: 7
+        archiview-git-changes-report:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-module-operations:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 419
+          grasp: 1
+          implementation: 13
+        archiview-project-context:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 376
+          grasp: 1
+          implementation: 2
+        archiview-module-access:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-module-review:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 394
+          grasp: 1
+          implementation: 13
+        archiview-module-relations:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 389
+          grasp: 2
+          implementation: 15
+        archiview-relation-model:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 373
+          grasp: 1
+          implementation: 5
+        archiview-grasp:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 1
+          implementation: 1
+        archiview-implementation:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 6
+          grasp: 3
+          implementation: 5
+        directory:storage:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 2
+          implementation: 2
+        directory:analyse/project-sources:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 2
+          grasp: 2
+          implementation: 2
+        archiview-project-sources:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 1
+          grasp: 1
+          implementation: 1
+    module_index: 26
+    module:
+      directory: storage
+      document:
+        state: documented
+        text: >
+          schema_version: 1
+
+          id: archiview-storage
+
+          title: State storage
+
+          kind: module
+
+          extensions:
+            archiview.roles: [service]
+          purpose: Обеспечивать файловым хранилищам ArchiView безопасный доступ
+          к состоянию проекта, проверку происхождения, чтение архивов и
+          согласование параллельных записей.
+
+          boundaries: {}
+
+          invariants: {}
+        format: yaml
+        contract:
+          schema_version: 1
+          id: archiview-storage
+          title: State storage
+          kind: module
+          extensions:
+            archiview.roles:
+              - service
+          purpose: Обеспечивать файловым хранилищам ArchiView безопасный доступ к
+            состоянию проекта, проверку происхождения, чтение архивов и
+            согласование параллельных записей.
+          boundaries: {}
+          invariants: {}
+      documentPath: .archiview/modules/archiview-storage.yaml
+      files:
+        - path: .archiview/modules/archiview-storage.yaml
+          hash: 7a30d5e896ce367791f57260de9a62d9354b8832
+          mode: "100644"
+        - path: storage/archive-cache.ts
+          hash: 1ccf44c6787b3a51069d5d11d6e71a5204a6a2f9
+          mode: "100644"
+        - path: storage/file-lock.ts
+          hash: 226d1648f778fef1b28b40fcdb7c8011014086ec
+          mode: "100644"
+        - path: storage/identity.ts
+          hash: 051c288e56239d01b991287d61e773678eec7f55
+          mode: "100644"
+        - path: storage/paths.ts
+          hash: b2fe8fab79c54b75c792d7ce38cf8953d26733c9
+          mode: "100644"
+      sourceFiles: 4
+      fingerprint: 9f67232fba275ee13f92d045e1eb9371a2acc780b1ddc7960c8943ac60f9a59b
+    facts:
+      - index: 36
+        fact:
+          id: sha256:67af2e95cbd54ad97fe0e5109c883afbd4b4eaf4f5aee0312acd0361ff1c1a24
+          kind: file
+          path: .archiview/modules/archiview-storage.yaml
+          start_line: 1
+          end_line: 10
+          text: >
+            schema_version: 1
+
+            id: archiview-storage
+
+            title: State storage
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Обеспечивать файловым хранилищам ArchiView безопасный
+            доступ к состоянию проекта, проверку происхождения, чтение архивов и
+            согласование параллельных записей.
+
+            boundaries: {}
+
+            invariants: {}
+      - index: 141
+        fact:
+          id: sha256:c8ec8cb8d02b71ef3e748655dee49d23ba415d727648ec29f0a0a2529004fec4
+          kind: file
+          path: storage/archive-cache.ts
+          start_line: 1
+          end_line: 34
+          text: >
+            import { lstat, readFile } from "node:fs/promises";
+
+
+            /** Reads the original bytes of a bounded, ordinary archive file. */
+
+            export async function readArchiveFile(file: string) {
+              const info = await lstat(file);
+              if (!info.isFile() || info.size > 64 * 1024 * 1024) throw new Error("Invalid stored file");
+              return readFile(file);
+            }
+
+
+            /** A store owns its cache. Directory listings decide membership on
+            every scan. */
+
+            export class ArchiveCache<T> {
+              readonly #files = new Map<string, { version: string; value: T }>();
+
+              async read(file: string, load: () => Promise<T>, key = file): Promise<T> {
+                const version = await fileVersion(file);
+                const cached = this.#files.get(key);
+                if (cached?.version === version) return cached.value;
+                const value = await load();
+                if (await fileVersion(file) !== version) throw new Error("Archive file changed while being read: " + file);
+                this.#files.set(key, { version, value });
+                return value;
+              }
+
+              retain(keys: Set<string>) {
+                for (const key of this.#files.keys()) if (!keys.has(key)) this.#files.delete(key);
+              }
+            }
+
+
+            async function fileVersion(file: string) {
+              const info = await lstat(file, { bigint: true });
+              if (!info.isFile()) throw new Error("Archive file must be an ordinary file: " + file);
+              return [info.dev, info.ino, info.size, info.ctimeNs, info.mtimeNs].join("/");
+            }
+      - index: 142
+        fact:
+          id: sha256:10b4c8d174e512f93d943ad0dd0250e8a48d62be909be774427350a7c8aa2725
+          kind: file
+          path: storage/file-lock.ts
+          start_line: 1
+          end_line: 83
+          text: >
+            import { createHash, randomUUID } from "node:crypto";
+
+            import { link, lstat, readFile, rm, writeFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { setTimeout as wait } from "node:timers/promises";
+
+            import { errorDetails } from "../node-errors.js";
+
+
+            interface Owner {
+              pid: number;
+              token: string;
+            }
+
+
+            async function readOwner(file: string): Promise<Owner | undefined> {
+              try {
+                const info = await lstat(file);
+                if (!info.isFile() || info.isSymbolicLink()) throw new Error("Invalid storage lock");
+                const owner = JSON.parse(await readFile(file, "utf8"));
+                if (!owner || !Number.isSafeInteger(owner.pid) || owner.pid < 1 || typeof owner.token !== "string")
+                  throw new Error("Invalid storage lock owner");
+                return { pid: owner.pid, token: owner.token };
+              } catch (error) {
+                if (errorDetails(error).code !== "ENOENT") throw error;
+              }
+            }
+
+
+            function processExited(pid: number): boolean {
+              try {
+                process.kill(pid, 0);
+                return false;
+              } catch (error) {
+                return errorDetails(error).code === "ESRCH";
+              }
+            }
+
+
+            /** Only one contender may remove a particular abandoned ownership
+            record. */
+
+            async function acquire(file: string, candidate: string, deadline:
+            number): Promise<void> {
+              for (;;) {
+                try {
+                  await link(candidate, file);
+                  return;
+                } catch (error) {
+                  if (errorDetails(error).code !== "EEXIST") throw error;
+                }
+                if (Date.now() >= deadline) throw new Error("Storage is locked by another writer");
+                const observed = await readOwner(file);
+                if (!observed) continue;
+                if (!processExited(observed.pid)) {
+                  await wait(25);
+                  continue;
+                }
+
+                // A second observer can reach this point after a new writer acquired the original name.
+                // Serialize recovery for the unique dead token, then re-read under that recovery lock.
+                // Recovery locks follow the same protocol if the recovering process itself exits.
+                const key = createHash("sha256").update(JSON.stringify([path.basename(file), observed.token])).digest("hex");
+                const recovery = path.join(path.dirname(file), ".recover-" + key);
+                await acquire(recovery, candidate, deadline);
+                try {
+                  if ((await readOwner(file))?.token === observed.token) await rm(file);
+                } finally {
+                  await rm(recovery);
+                }
+              }
+            }
+
+
+            /** The caller supplies a verified storage directory. The on-disk
+            pid/token format is portable across versions. */
+
+            export async function withFileLock<T>(directory: string, name:
+            string, action: () => Promise<T>): Promise<T> {
+              const file = path.join(directory, name);
+              const token = randomUUID();
+              const candidate = path.join(directory, ".owner-" + token);
+              await writeFile(candidate, JSON.stringify({ pid: process.pid, token }), { flag: "wx" });
+              try {
+                await acquire(file, candidate, Date.now() + 30_000);
+                try {
+                  await rm(candidate);
+                  return await action();
+                } finally {
+                  await rm(file);
+                }
+              } finally {
+                await rm(candidate, { force: true });
+              }
+            }
+      - index: 143
+        fact:
+          id: sha256:3ac6da92a80bfb62effbc3a1ab56c0e7504b77a1ba093caea1e1ed1886cd4b8b
+          kind: file
+          path: storage/identity.ts
+          start_line: 1
+          end_line: 43
+          text: >
+            import { randomUUID } from "node:crypto";
+
+            import { link, lstat, mkdir, readFile, rm, writeFile } from
+            "node:fs/promises";
+
+            import path from "node:path";
+
+            import { errorDetails } from "../node-errors.js";
+
+            import { assertStateLocation, projectStateDirectory } from
+            "./paths.js";
+
+            import { isProjectIdentity } from
+            "../framework/project/identity.js";
+
+            import type { ProjectIdentity } from
+            "../framework/project-types/types.js";
+
+
+            /** Читает происхождение истории; отсутствующий манифест не
+            создаётся при анализе. */
+
+            export async function readSnapshotRoot(root: string, directory =
+            projectStateDirectory(root)) {
+              await assertStateLocation(root, directory);
+              const file = path.join(directory, "project.json");
+              try {
+                const info = await lstat(file);
+                if (!info.isFile() || info.isSymbolicLink() || info.size > 16 * 1024) throw new Error("Invalid ArchiView project identity file");
+                const value: unknown = JSON.parse(await readFile(file, "utf8"));
+                if (!isProjectIdentity(value)) throw new Error("Invalid ArchiView project identity");
+                return value.snapshot_root;
+              } catch (errorCause) { const error = errorDetails(errorCause);
+                if (error.code === "ENOENT") return null;
+                throw error;
+              }
+            }
+
+
+            /** Фиксирует идентичность один раз; Git отслеживает историю, но
+            пропускает временные записи. */
+
+            export async function ensureProjectIdentity(root: string, directory:
+            string, snapshotRoot: string) {
+              await assertStateLocation(root, directory);
+              await mkdir(directory, { recursive: true });
+              const temporary = path.join(directory, ".identity-" + randomUUID());
+              try {
+                const identity: ProjectIdentity = { schema_version: 1, snapshot_root: snapshotRoot };
+                await writeFile(temporary, JSON.stringify(identity, null, 2) + "\n", { flag: "wx" });
+                // Hard link публикует готовый файл атомарно и не заменяет уже принятую идентичность.
+                try { await link(temporary, path.join(directory, "project.json")); }
+                catch (errorCause) { const error = errorDetails(errorCause);
+                  if (error.code !== "EEXIST") throw error;
+                  if (await readSnapshotRoot(root, directory) !== snapshotRoot) throw new Error("ArchiView project identity collision");
+                }
+              } finally { await rm(temporary, { force: true }); }
+              try { await writeFile(path.join(directory, ".gitignore"), ".snapshot-*\n.pending-*\n.identity-*\n", { flag: "wx" }); }
+              catch (errorCause) { const error = errorDetails(errorCause); if (error.code !== "EEXIST") throw error; }
+            }
+      - index: 144
+        fact:
+          id: sha256:8ef38c1320e4204f589e6e42bc84a2038313db2a14d88f7f61376be3c13a5cee
+          kind: file
+          path: storage/paths.ts
+          start_line: 1
+          end_line: 46
+          text: >
+            import { lstat, realpath } from "node:fs/promises";
+
+            import path from "node:path";
+
+            import { errorDetails } from "../node-errors.js";
+
+
+            import { STATE_DIRECTORY, within } from
+            "../framework/project/paths.js";
+
+
+            export { projectStateDirectory, STATE_DIRECTORY, within } from
+            "../framework/project/paths.js";
+
+
+            /** Resolves existing components before checking the location of a
+            pending write. */
+
+            export async function physicalPath(target: string): Promise<string>
+            {
+              let ancestor = target;
+              while (true) {
+                try {
+                  await lstat(ancestor);
+                  break;
+                } catch (cause) {
+                  const parent = path.dirname(ancestor);
+                  if (errorDetails(cause).code !== "ENOENT" || parent === ancestor) throw cause;
+                  ancestor = parent;
+                }
+              }
+              // A dangling link exists according to lstat; its realpath error must reach the caller.
+              return path.resolve(await realpath(ancestor), path.relative(ancestor, target));
+            }
+
+
+            /**
+             * Разрешает данные только в зарезервированной папке проекта либо во внешнем
+             * хранилище. Ссылки не могут перенаправить локальные данные в исходники или наружу.
+             */
+            export async function assertStateLocation(root: string, directory:
+            string, target = directory) {
+              const local = within(root, directory);
+              if (local && !within(path.join(root, STATE_DIRECTORY), directory)) {
+                throw new Error("State storage inside source project must be under .archiview");
+              }
+              if (!within(directory, target)) throw new Error("Path escapes state storage");
+              const destination = await physicalPath(target);
+              if (local) {
+                if (path.relative(target, destination) !== "") throw new Error("Local state storage cannot use directory links");
+                return;
+              }
+              const boundary = target === directory ? destination : await physicalPath(directory);
+              const project = await realpath(root);
+              if (within(project, boundary) || within(project, destination)) throw new Error("External state storage resolves inside source project");
+              if (!within(boundary, destination)) throw new Error("Path resolves outside external state storage");
+            }
+      - index: 255
         fact:
           id: sha256:c521b97160e2e0105fd852b41dd47119de34367827daf417feafba2580e72ff6
           kind: module

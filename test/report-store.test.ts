@@ -187,6 +187,10 @@ test("published tree reads only work, loads one module's exact reviews, and dete
   const copy = await createPublishedView({ root: clone });
   assert.ok(copy);
   assert.deepEqual((await copy.getModule({ view: copy.comparison.id, path: "." })).reviews, []);
+  const filesOnly = await copy.getModule({ view: copy.comparison.id, path: "child", analysis: false });
+  assert.equal(filesOnly.moduleId, "child");
+  assert.deepEqual(filesOnly.reviews, []);
+  assert.equal(filesOnly.analyses, undefined);
   await assert.rejects(copy.getModule({ view: copy.comparison.id, path: "child" }), /Invalid review history schema/);
   assert.deepEqual((await readdir(path.join(clone, ".archiview"))).sort(), ["project.json", "work"]);
 });

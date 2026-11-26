@@ -34,15 +34,20 @@ function inputs(snapshot: Snapshot) {
     m.files.map(f => [f.path, f.hash, f.mode ?? "100644"])])]);
 }
 
-function graphPath(directory: string, key: string) {
+export function relationGraphPath(directory: string, key: string) {
   return path.join(directory, "snapshots", "relations", key.slice(7) + ".json");
+}
+
+export function hasRelationSources(snapshot: Snapshot) {
+  return snapshot.modules.some(module => module.files.some(file =>
+    !excludedProjectPath(file.path) && supportsFile(file.path)));
 }
 
 export async function readRelationGraph(root: string, state: string | undefined, snapshot: Snapshot) {
   if (!snapshot.complete) return null;
   const directory = projectStateDirectory(root, state);
   const key = inputs(snapshot);
-  const file = graphPath(directory, key);
+  const file = relationGraphPath(directory, key);
   await assertStateLocation(root, directory, file);
   try {
     const graph: RelationGraph = JSON.parse(await readFile(file, "utf8"));
@@ -61,7 +66,7 @@ export async function readRelationGraph(root: string, state: string | undefined,
 export function rebuildRelationGraph(root: string, state: string | undefined, snapshot: Snapshot): Promise<RelationGraph> {
   const directory = projectStateDirectory(root, state);
   const key = inputs(snapshot);
-  const destination = graphPath(directory, key);
+  const destination = relationGraphPath(directory, key);
   const pending = active.get(destination);
   if (pending) return pending;
   const task = build(root, directory, snapshot, key, destination).finally(() => active.delete(destination));

@@ -34,7 +34,7 @@ export function openReviewSettings(client: ArchiViewClient, view: ComparisonView
     input.onchange = () => { void loadOrSave(setting, input.checked); };
     return input;
   }
-  const auto = option("autoAnalysis", "Автоанализ изменений", "Агент проверяет изменённые модули перед ответом. При завершении запускаются пропущенные проверки.");
+  const auto = option("autoAnalysis", "Автоанализ изменений", "Перед ответом подагенты обновляют нужные анализы и разбирают замечания. При завершении ArchiView проверяет, что ещё осталось.");
   const codex = option("codexHooks", "Подключить хуки Codex", "Добавляет UserPromptSubmit и Stop в .codex/hooks.json этого репозитория.");
   const trustText = {
     trusted: "Codex подтвердил доверие к обоим хукам.",

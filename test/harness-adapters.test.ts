@@ -17,21 +17,29 @@ const workspaceRoot = path.resolve("workspace");
 const repositoryRoot = path.join(workspaceRoot, "repository");
 const job = { workspaceRoot, repositoryRoot, moduleId: "test-module", requestId: "0c7c8927-540a-45b8-9474-13dd0f908c5d", prompt: "Test assignment" };
 
-test("DSH runs both hooks with the current session policy and skips other projects", async () => {
+test("DSH hooks use the current session policy and Stop continues the same turn once", async () => {
   const events = new EventEmitter();
-  const hooks: string[] = [];
-  const audit: string[] = [];
-  const session = { header: { id: "author" }, append(type: string) { audit.push(type); } };
+  const hooks: [string, string, boolean | undefined][] = [];
+  const audit: {type: string; decision: unknown}[] = [];
+  const warnings: string[] = [];
+  const steered: unknown[] = [];
+  const session = { header: { id: "author" }, append(type: string, data: Record<string, unknown>) {
+    audit.push({type, decision:data.decision});
+  } };
   const policy = { mode: "read-only" };
   const content = [{ type: "text", text: "Change a module" }];
   const messages = [{ content }];
   const signal = new AbortController().signal;
-  const event = { agent: { session }, turn: 17, messages, signal };
+  let steeringFails = false;
+  const event = { agent: { session, steer(message: unknown) {
+    if (steeringFails) throw new Error("Steering unavailable");
+    steered.push(message);
+  } }, turn: 17, messages, signal };
   const decision = { kind: "enter", messages };
   let cwd = path.join(repositoryRoot, "module");
   installSessionHooks({
     on: events.on.bind(events),
-    logger: { warn: message => assert.fail(message) },
+    logger: { warn: message => warnings.push(message) },
     workingDirectory: { ensure: async () => cwd },
     sandboxPolicy: { resolve(request) { assert.equal(request.session, session); return policy; } },
     shell: {
@@ -41,12 +49,13 @@ test("DSH runs both hooks with the current session policy and skips other projec
         assert.equal(request.signal, signal);
         const payload = JSON.parse(request.stdin);
         assert.equal(payload.session_id, "author");
-        assert.equal(payload.turn_id, "17");
-        hooks.push(payload.hook_event_name);
+        hooks.push([payload.hook_event_name, payload.turn_id, payload.stop_hook_active]);
         return payload.hook_event_name;
       },
       async execute(point) {
-        const response = point === "UserPromptSubmit" ? { hookSpecificOutput: { hookEventName: point, additionalContext: "review command" } } : {};
+        const response = point === "UserPromptSubmit"
+          ? { hookSpecificOutput: { hookEventName: point, additionalContext: "review command" } }
+          : { decision: "block", reason: "Finish the review" };
         return { result: async () => ({ exitCode: 0, stdout: { text: JSON.stringify(response) }, stderr: { text: "" } }) };
       },
     },
@@ -58,11 +67,31 @@ test("DSH runs both hooks with the current session policy and skips other projec
     kind: "enter", messages: [messages[0], { role: "user", content: [{ type: "text", text: "review command" }] }],
   });
   await stop(event);
+  assert.partialDeepStrictEqual(steered, [{ role: "user", source: {kind: "archiview"}, content: [{ type: "text", text: "Finish the review" }] }]);
+  assert.equal(await submit({...event, messages:steered}, async () => decision), decision);
+  await stop(event);
+  assert.equal(steered.length, 1);
+
+  const child = { ...event, agent: { ...event.agent, session: { ...session, header: {id: "reviewer", origin: "subagent"} } } };
+  assert.equal(await submit(child, async () => decision), decision);
+  await stop(child);
   cwd = repositoryRoot + "-other";
   assert.equal(await submit(event, async () => decision), decision);
   await stop(event);
-  assert.deepEqual(hooks, ["UserPromptSubmit", "Stop"]);
-  assert.deepEqual(audit, ["hook/invoked", "hook/result", "hook/invoked", "hook/result"]);
+
+  cwd = repositoryRoot;
+  steeringFails = true;
+  await stop({...event, turn:18});
+  assert.deepEqual(warnings, ["ArchiView: Steering unavailable"]);
+  assert.equal(audit.at(-1)?.decision, "pass");
+  steeringFails = false;
+  await stop({...event, turn:18});
+  assert.equal(steered.length, 2);
+  assert.deepEqual(hooks, [
+    ["UserPromptSubmit", "17", undefined], ["Stop", "17", false], ["Stop", "17", true],
+    ["Stop", "18", false], ["Stop", "18", false],
+  ]);
+  assert.deepEqual(audit.filter(item => item.type === "hook/result").map(item => item.decision), ["pass", "block", "pass", "pass", "block"]);
 });
 
 test("Codex discovers the exact local project, falls back to the workspace and preserves model defaults", async () => {

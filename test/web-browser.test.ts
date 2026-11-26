@@ -168,6 +168,29 @@ test("module relations build the project, reveal source lines and navigate to th
   await page.getByRole("button",{name:"Функция браузера",exact:true}).waitFor();
 });
 
+test("implementation shows a module cycle with source evidence before its first agent review", browserOptions, async t => {
+  const defer = await fixtureCleanup(t);
+  const root = await browserProject(defer);
+  await writeFile(path.join(root, "main.ts"), 'import "./src/feature.js";\nexport type Options = string;\n');
+  await writeFile(path.join(root, "src/feature.ts"), 'import type { Options } from "../main.js";\nexport const feature: Options = "enabled";\n');
+  const page = await (await browserContext(defer)).newPage();
+  await page.goto(await cliOrigin(defer, root));
+  await page.getByRole("treeitem").filter({hasText:"Функция браузера"}).click();
+  await page.getByRole("tab", {name:"Реализация"}).click();
+  await page.getByText(/Циклы не проверены/).waitFor();
+  await page.getByRole("button", {name:"Построить связи проекта"}).click();
+  await page.getByText("Функция браузера → Новый заголовок проекта → Функция браузера", {exact:true}).click();
+  await page.getByRole("button", {name:/^main\.ts:1:/}).click();
+  assert.equal(await page.locator("dialog mark").textContent(), 'import "./src/feature.js";');
+  await page.getByRole("button", {name:"Закрыть",exact:true}).click();
+  await page.getByRole("button", {name:/^src\/feature\.ts:1:/}).click();
+  assert.equal(await page.locator("dialog mark").textContent(), 'import type { Options } from "../main.js";');
+  await page.getByRole("button", {name:"Закрыть",exact:true}).click();
+  assert.equal(await page.locator("#analyze-module").isEnabled(), true);
+  await page.getByRole("tab", {name:"GRASP"}).click();
+  assert.equal(await page.getByRole("heading", {name:"Циклические зависимости"}).count(), 0);
+});
+
 async function isolateHarnesses(defer: DeferCleanup) {
   const registry = await mkdtemp(path.join(os.tmpdir(), "archiview-menu-"));
   const old = process.env.ARCHIVIEW_BRIDGE_DIR;
@@ -718,8 +741,14 @@ test("files remain browsable while independent review statuses load, fail and re
   await request.fulfill({status:500,json:{error:"Ошибка чтения анализа"}});
   await page.locator("#updated").filter({hasText:"Ошибка чтения анализа"}).waitFor();
   await page.locator("#tab-grasp").click();
+  await page.route("**/api/review-statuses?**", async route => {
+    const response = await route.fetch();
+    const statuses = await response.json();
+    await route.fulfill({response, json:{...statuses, diagnostics:["Предупреждение из отчёта анализа"]}});
+  }, {times:1});
   await page.getByRole("button",{name:"Повторить"}).click();
   await page.locator('.tree-row[data-key="src"] .review-marker').waitFor();
+  await page.locator("#warning").filter({hasText:"Предупреждение из отчёта анализа"}).waitFor();
 });
 
 test("a reused directory retains its exact module under search and status filters", browserOptions, async (t) => {
@@ -931,6 +960,25 @@ test("analysis reuses a prepared request after clipboard denial and refreshes on
   assert.equal((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, "\n"), request.prompt);
   assert.equal((await app.getAnalysis({ id: request.id })).status, "prepared");
 
+  await page.evaluate(() => {
+    const blocked = new Promise<void>(resolve => {
+      document.addEventListener("finish-test-copy", () => resolve(), { once: true });
+    });
+    Object.defineProperty(navigator.clipboard, "writeText", {
+      configurable: true, value: Promise.resolve.bind(Promise, blocked),
+    });
+  });
+  await page.locator("#analyze-module").click();
+  await copy.click();
+  await page.getByRole("button", { name: "Подготавливаем…" }).waitFor();
+  const pollWhileCopying = await page.waitForResponse(response => new URL(response.url()).pathname === "/api/analysis/" + request.id);
+  assert.ok(pollWhileCopying.ok());
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event("finish-test-copy"));
+    Reflect.deleteProperty(navigator.clipboard, "writeText");
+  });
+  await page.locator("#analyze-module:enabled").waitFor();
+
   const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
   const result: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
   completeChecks(result);
@@ -975,12 +1023,20 @@ test("an import refreshes a historical card while its files tab stays selected",
   result.report.analysis.prompt_digest = result.manifest.prompt_digest = digest("Historical card fixture");
   result.report.assessment.current = { verdict: "consistent", summary: "Проверен выбранный срез" };
   await writeFile(path.join(folder, "result.yaml"), stringify(result, { aliasDuplicateObjects: false }));
+  let refreshAttempts = 0;
+  await page.route("**/api/module?**", route => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("path") === "src" && ++refreshAttempts === 1)
+      return route.fulfill({ status: 503, json: { error: "Карточка временно недоступна" } });
+    return route.continue();
+  });
   const reloaded = page.waitForResponse(response => {
     const url = new URL(response.url());
     return url.pathname === "/api/module" && url.searchParams.get("path") === "src" && response.ok();
   });
   await app.analysis.complete(request.id);
   await reloaded;
+  assert.ok(refreshAttempts >= 2, "a temporary card error must keep the imported request available for refresh");
   assert.equal(await timeline.inputValue(), revision);
   assert.equal(await page.locator("#tab-files").getAttribute("aria-selected"), "true");
   await page.locator("#tab-implementation").click();
@@ -1166,7 +1222,7 @@ test("retrying a finding link reveals the original clause only after its documen
   assert.equal((await repeated.json()).chatId, "fix-chat");
   const invalid = await page.request.post(origin + "/api/findings/fix", {data: {...args, findingId: "absent"}});
   assert.equal(invalid.status(), 400);
-  assert.deepEqual(delivered, [fixPrompt.replace(/\r\n/g, "\n")]);
+  assert.deepEqual(delivered, ["[ArchiView fix] " + fixPrompt.replace(/\r\n/g, "\n")]);
   await card.getByLabel("Статус", {exact:true}).selectOption("accepted");
   await card.getByLabel("Решение", {exact:true}).fill("Принято для этого среза.");
   await card.getByRole("button", {name:"Сохранить решение"}).click();

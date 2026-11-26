@@ -98,6 +98,7 @@ export function callSessionOperation(session: SessionOperations, method: keyof S
         throw new ApplicationError("INVALID_ARGUMENT", "Нужны view, path и корректный вид анализа");
       return session.prepareAnalysis({view: args.view, path: args.path, analysisType: args.analysisType, ...selector});
     case "getRelations":
+    case "getDependencyCycles":
     case "buildRelations":
     case "buildReview":
       if (typeof args.view !== "string" || typeof args.path !== "string")

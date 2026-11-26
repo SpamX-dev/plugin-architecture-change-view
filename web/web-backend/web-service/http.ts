@@ -46,6 +46,16 @@ function requestUrl(request: IncomingMessage, serverOrigin: string) {
   throw new ApplicationError("INVALID_ARGUMENT", "Некорректная цель запроса");
 }
 
+function hasNonLocalApiContext(request: IncomingMessage, serverOrigin: string) {
+  const site = request.headers["sec-fetch-site"];
+  // Browser GETs can omit Origin. Fetch Metadata also distinguishes same-site from same-origin.
+  if (site !== undefined && site !== "same-origin" && site !== "none") return true;
+  const referer = request.headers.referer;
+  if (request.headers.origin !== undefined || referer === undefined) return false;
+  try { return new URL(referer).origin !== serverOrigin; }
+  catch { return true; }
+}
+
 /** Programmatic access to the server and its initialized store. The standalone CLI only needs the HTTP adapter. */
 export async function createArchiView({ root, stateDirectory, publishOnOpen = false }: { root: string; stateDirectory?: string; publishOnOpen?: boolean }) {
   const workspace = await createWorkspaceSession({ root, stateDirectory });
@@ -87,7 +97,8 @@ export function createArchiViewHttpServer(session: SessionOperations & { root: s
       const serverOrigin = "http://" + host;
       const url = requestUrl(request, serverOrigin);
       const origin = request.headers.origin;
-      if (origin !== undefined && origin !== serverOrigin) {
+      if ((origin !== undefined && origin !== serverOrigin) ||
+          (url.pathname.startsWith("/api/") && hasNonLocalApiContext(request, serverOrigin))) {
         return json(response, 403, { error: "Запрос должен исходить из локального ArchiView" });
       }
       if (request.method === "GET" && url.pathname === "/favicon.ico") {
@@ -138,6 +149,7 @@ export function createArchiViewHttpServer(session: SessionOperations & { root: s
       if (request.method === "GET" && url.pathname === "/api/harnesses") return json(response, 200, await callSessionOperation(session, "listHarnesses", args));
       if (request.method === "GET" && url.pathname === "/api/review-settings") return json(response, 200, await callSessionOperation(session, "getReviewSettings", args));
       if (request.method === "GET" && url.pathname === "/api/relations") return json(response, 200, await callSessionOperation(session, "getRelations", args));
+      if (request.method === "GET" && url.pathname === "/api/implementation/cycles") return json(response, 200, await callSessionOperation(session, "getDependencyCycles", args));
       if (request.method === "GET" && url.pathname === "/api/relations/source") return json(response, 200, await callSessionOperation(session, "getRelationSource", args));
       if (request.method === "GET" && url.pathname === "/api/file-diff") return json(response, 200, await callSessionOperation(session, "getFileDiff", args));
       if (request.method === "GET" && /^\/api\/analysis\/[a-f0-9-]{36}$/.test(url.pathname))

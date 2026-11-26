@@ -1,4 +1,4 @@
-import type { ModuleRelations, RelationPeer, Site } from "../../../framework/module-relations/types.js";
+import type { DependencyCycleCheck, ModuleRelations, RelationPeer, Site } from "../../../framework/module-relations/types.js";
 import { el } from "./dom.js";
 import { openDiffDialog } from "./diff.js";
 import { errorMessage } from "../types.js";
@@ -16,6 +16,31 @@ function textButton(text: string, action: () => void) {
 }
 
 type OpenSite = (owner: string, site: Site) => void;
+
+export function renderDependencyCycles(body: HTMLElement, result: DependencyCycleCheck, title: (dir: string) => string, openSite: OpenSite) {
+  if (result.status !== "checked") {
+    body.append(el("p", "relations-coverage", result.status === "unsupported"
+      ? "В модуле нет исходников TypeScript или JavaScript для проверки."
+      : "Циклы не проверены. Для этого снимка ещё нет графа связей TypeScript / JavaScript."));
+    return;
+  }
+  if (!result.cycles.length) {
+    body.append(el("p", "relations-coverage", "В графе TypeScript / JavaScript циклов через этот модуль не найдено."));
+    return;
+  }
+  body.append(el("p", "relations-coverage", "Для каждой зависимости, замыкающей цикл, показан кратчайший обратный путь в графе TypeScript / JavaScript."));
+  for (const cycle of result.cycles) {
+    const details = el("details", "relation-peer");
+    details.append(el("summary", "", [title(cycle[0].from), ...cycle.map(step => title(step.to))].join(" → ")));
+    for (const { from, to, use } of cycle) {
+      const row = el("div", "relation-use");
+      row.append(el("span", "", title(from) + " → " + title(to) + " · "),
+        textButton(use.file + ":" + use.line + ":" + use.column, () => openSite(from, use)));
+      details.append(row);
+    }
+    body.append(details);
+  }
+}
 
 export async function openRelationSource(site: Site, load: () => Promise<{text: string}>) {
   const dialog = openDiffDialog(site.file + ":" + site.line);

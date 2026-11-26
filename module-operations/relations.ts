@@ -1,10 +1,19 @@
-import { moduleRelations } from "../analyse/module-relations/graph.js";
+import { moduleRelations, supportsFile } from "../analyse/module-relations/graph.js";
+import { dependencyCycles } from "../analyse/implementation/dependency-cycles.js";
 import { readRelationGraph, rebuildRelationGraph, RelationBuildError } from "../analyse/module-relations/store.js";
-import type { Snapshot } from "../framework/snapshots/types.js";
+import type { Snapshot, SnapshotModule } from "../framework/snapshots/types.js";
+import type { DependencyCycleCheck } from "../framework/module-relations/types.js";
 import { ApplicationError } from "./errors.js";
 
 export async function getRelations(root: string, state: string | undefined, snapshot: Snapshot, directory: string | null) {
   return moduleRelations(await readRelationGraph(root, state, snapshot), snapshot, directory);
+}
+
+export async function getDependencyCycles(root: string, state: string | undefined, snapshot: Snapshot, module: SnapshotModule | null): Promise<DependencyCycleCheck> {
+  if (!module) throw new ApplicationError("NOT_FOUND", "Модуль отсутствует в выбранном снимке.");
+  if (!module.files.some(file => supportsFile(file.path))) return { status: "unsupported" };
+  const graph = await readRelationGraph(root, state, snapshot);
+  return graph ? { status: "checked", cycles: dependencyCycles(graph.edges, module.directory) } : { status: "unindexed" };
 }
 
 export async function buildRelations(root: string, state: string | undefined, snapshot: Snapshot, directory: string | null) {

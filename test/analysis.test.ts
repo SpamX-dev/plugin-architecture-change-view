@@ -9,7 +9,7 @@ import test, { type TestContext } from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { parse, stringify } from "yaml";
-import { harnessInstanceId, registerHarness, type Assignment } from "../web/web-backend/host-bridge/channel.js";
+import { registerHarness } from "../web/web-backend/host-bridge/channel.js";
 import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
 import { createArchiViewSession } from "../web/web-backend/session.js";
 import { turnHook } from "../cli/turn-hook.js";
@@ -23,6 +23,7 @@ import { moduleReportName, ReportStore } from "../analyse/module-review/report-s
 import { createReviewInput } from "../analyse/module-review/review-input.js";
 import { reviewFreshness } from "../analyse/module-review/model.js";
 import type { Fact } from "../framework/snapshots/types.js";
+import type { CycleStep, RelationGraph } from "../framework/module-relations/types.js";
 import type { ReviewInput } from "../framework/static-report/types.js";
 import type { ComparisonView } from "../module-operations/api.js";
 import { readDelivery } from "../module-operations/analysis-record.js";
@@ -67,189 +68,195 @@ test("delivery states are literal strings and sent receipts identify the chat", 
   assert.throws(() => readDelivery({ ...receipt, state: "sent", chatId: "" }));
 });
 
-test("contract changes, reparenting and deletion select the affected final modules", async t => {
+async function completeCurrentReview(root: string, id: string, finding = false) {
+  const folder = path.join(root, ".archiview/snapshots/analysis", id);
+  const input: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
+  assert.equal(input.baseline, null);
+  await assert.rejects(stat(path.join(folder, "snapshots.json")), {code:"ENOENT"});
+  const result = completedFixture(input);
+  result.report.analysis.coverage = {status:"complete", limitations:[]};
+  if (input.manifest.analysis_type === "grasp") {
+    result.report.extensions = {"archiview.grasp": input.current.modules.filter(module => module.document.contract?.id !== input.module_id)
+      .map(module => ({moduleId:module.document.contract!.id, role:"utility", task:"Fixture", assessment:"Fixture", consumers:[input.module_id]}))};
+  }
+  const evidence = [{snapshot:"current" as const, fact_id:input.current.facts[0].id}];
+  for (const clause of result.report.checks) Object.assign(clause, {verdict:"consistent", explanation:"Fixture", evidence});
+  if (finding) result.report.findings = [{id:"finding", kind:"contract_conflict", lifecycle:"introduced", certainty:"confirmed",
+    severity:"warning", summary:"Review fixture", clauses:[result.report.checks[0].contract], evidence}];
+  await writeFile(path.join(folder, "result.yaml"), stringify(result, {aliasDuplicateObjects:false}));
+}
+
+test("current reviews select by typed freshness after commits, reparenting and deletion", async t => {
   const root = await repositoryFixture(t);
-  const registry = await mkdtemp(path.join(os.tmpdir(), "archiview-offline-bridges-"));
-  const previous = process.env.ARCHIVIEW_BRIDGE_DIR;
-  process.env.ARCHIVIEW_BRIDGE_DIR = registry;
-  t.after(async () => {
-    if (previous === undefined) delete process.env.ARCHIVIEW_BRIDGE_DIR;
-    else process.env.ARCHIVIEW_BRIDGE_DIR = previous;
-    await rm(registry, { recursive: true, force: true });
-  });
   await mkdir(path.join(root, "other"));
   await writeFile(path.join(root, "other/index.js"), "export {};");
   await writeFile(path.join(root, ".archiview/modules/other.yaml"), contractYaml("other"));
   const tree = {root:".", other:"other", child:"child"};
   await writeModuleTree(root, tree);
-  const offline = harnessInstanceId("codex","offline-test-" + root);
-  await writeFile(path.join(root, ".archiview/agent-review.json"), JSON.stringify({enabled:true, codex:offline}));
-  const event = {hook_event_name:"UserPromptSubmit", session_id:"author", turn_id:"codex-turn", cwd:root};
-  const context = await turnHook("codex", event);
-  const id = context.hookSpecificOutput!.additionalContext.match(/"--review-turn","([a-f0-9]{64})"/)![1];
+  commitTestFiles(root);
   const app = await createArchiViewSession({root});
   t.after(() => app.close());
   const selected = async () => {
-    const {checks} = (await app.turns.review(id, 0))!;
-    assert.ok(checks.every(check => check.status === "unavailable" && check.requestId && check.message));
+    const {checks} = await app.turns.current();
+    assert.ok(checks.every(check => check.status === "pending"));
     return checks.map(check => check.moduleId + "/" + check.type).sort();
   };
+  const finishPending = async () => {
+    for (const check of (await app.turns.current()).checks) {
+      assert.equal(check.status, "pending");
+      const request = await app.turns.prepareCurrent(check.moduleId, check.type);
+      await completeCurrentReview(root, request.id);
+      await app.analysis.complete(request.id);
+    }
+  };
+  assert.equal((await selected()).length, 6, "clean Git tree without reports still needs analysis");
+  await finishPending();
+  assert.deepEqual(await selected(), []);
+
   await writeFile(path.join(root,".archiview/modules/child.yaml"),contractYaml("child","Changed contract"));
+  commitTestFiles(root);
   assert.deepEqual(await selected(), ["child/grasp", "child/implementation", "root/grasp"]);
+  await finishPending();
+
   await rename(path.join(root,"child"),path.join(root,"other/child"));
   await writeModuleTree(root, {...tree, child:"other/child"});
   assert.deepEqual(await selected(), ["child/grasp", "child/implementation", "other/grasp", "root/grasp"]);
+  await finishPending();
+
   await rm(path.join(root,"other/child"),{recursive:true});
   await rm(path.join(root,".archiview/modules/child.yaml"));
   await writeModuleTree(root, {root:".",other:"other"});
-  assert.deepEqual(await selected(), ["root/grasp"]);
-  await mkdir(path.join(root,"new"));
-  await writeFile(path.join(root,"new/a.js"), "export {};");
-  await writeFile(path.join(root,".archiview/modules/new.yaml"), contractYaml("new"));
-  await writeModuleTree(root, {root:".",other:"other",new:"new"});
-  assert.deepEqual(await selected(), ["new/grasp","new/implementation","root/grasp"]);
+  assert.deepEqual(await selected(), ["other/grasp"]);
 });
 
-test("turn hooks and the agent CLI share pinned reviews, findings and fallback dispatch", async t => {
+test("Stop and the CLI share module and relation review work without opening review chats", async t => {
   const root = await repositoryFixture(t);
-  const bridgeDir = await mkdtemp(path.join(os.tmpdir(), "archiview-turn-bridges-"));
-  const previous = process.env.ARCHIVIEW_BRIDGE_DIR;
-  process.env.ARCHIVIEW_BRIDGE_DIR = bridgeDir;
-  const jobs: Assignment[] = [];
-  const close = await registerHarness({kind:"dsh", instance:"turn-test", async available() {}, async start(job) {
-    jobs.push(job);
-    return "review-" + job.requestId;
-  }});
-  t.after(async () => {
-    await close();
-    if (previous === undefined) delete process.env.ARCHIVIEW_BRIDGE_DIR;
-    else process.env.ARCHIVIEW_BRIDGE_DIR = previous;
-    await rm(bridgeDir, {recursive:true,force:true});
-  });
-  const cli = fileURLToPath(new URL("../dist/cli.mjs", import.meta.url));
-  const run = (...args: string[]) => promisify(execFile)(process.execPath, [cli, "--root",root,...args], {windowsHide:true});
-  async function hook(event: string, sessionId = "author", prompt = "Change the child", kind = "dsh") {
-    const child = spawn(process.execPath, [cli, "--turn-hook", kind], {windowsHide:true});
-    const output: Buffer[] = [], errors: Buffer[] = [];
-    child.stdout.on("data", data => output.push(data));
-    child.stderr.on("data", data => errors.push(data));
-    child.stdin.end(JSON.stringify({hook_event_name:event, cwd:path.join(root,"child"), session_id:sessionId, turn_id:"1", prompt}));
-    assert.deepEqual(await once(child,"close"), [0,null], Buffer.concat(errors).toString());
-    return JSON.parse(Buffer.concat(output).toString());
-  }
-  assert.deepEqual(await hook("UserPromptSubmit"), {});
   const config = path.join(root, ".archiview/agent-review.json");
-  await writeFile(config, JSON.stringify({enabled:true,dsh:harnessInstanceId("dsh","turn-test")}));
-  commitTestFiles(root);
-  await writeFile(path.join(root, "predates.js"), "export const original = true;");
-  const start = await hook("UserPromptSubmit");
-  const turnId = start.hookSpecificOutput.additionalContext.match(/"--review-turn","([a-f0-9]{64})"/)[1];
-  const check = async (wait = 0) => JSON.parse((await run("--review-turn", turnId, "--wait", String(wait))).stdout).checks;
-  assert.deepEqual(await check(), []);
+  const localState = path.join(root, ".archiview/snapshots");
+  const cli = fileURLToPath(new URL("../dist/cli.mjs", import.meta.url));
+  const execute = (...args: string[]) => promisify(execFile)(process.execPath, [cli,"--root",root,...args], {windowsHide:true});
+  const run = async (...args: string[]) => JSON.parse((await execute(...args)).stdout);
+  const event = {cwd:path.join(root,"child"), session_id:"author", turn_id:"1"};
+  const hook = (hook_event_name: string, overrides = {}) => turnHook("codex", {...event, hook_event_name, ...overrides});
   const code = path.join(root, "child/code.js");
-  await writeFile(code, "export const value = 2;");
-  assert.deepEqual(await hook("UserPromptSubmit"), start, "duplicate starts preserve the original dirty baseline");
-  const [a,b] = await Promise.all([check(),check()]);
-  assert.equal(a.length,1);
-  assert.equal(b[0].requestId,a[0].requestId);
-  assert.equal(a[0].moduleId,"child");
-  assert.equal(a[0].type,"implementation");
-  commitTestFiles(root);
-  assert.equal((await check())[0].requestId, a[0].requestId, "committing checked inputs reuses the in-flight request");
-  assert.equal(jobs.length,1);
-  const folder = path.join(root,".archiview/snapshots/analysis",jobs[0].requestId);
-  const input: ReviewInput = parse(await readFile(path.join(folder,"input.yaml"),"utf8"));
-  const result = completedFixture(input);
-  result.report.analysis.coverage = {status:"complete", limitations:[]};
-  const evidence = [{snapshot:"current" as const, fact_id:input.current.facts.find(f => f.path === "child/code.js")!.id}];
-  for (const clause of result.report.checks) Object.assign(clause,{verdict:"consistent",explanation:"Fixture",evidence});
-  result.report.findings = [{id:"finding",kind:"contract_conflict",lifecycle:"introduced",certainty:"confirmed",severity:"warning",
-    summary:"Review fixture",clauses:[result.report.checks[0].contract],evidence}];
-  const waiting = check(10);
-  await writeFile(path.join(folder,"result.yaml"), stringify(result,{aliasDuplicateObjects:false}));
-  await run("--complete-analysis", jobs[0].requestId);
-  const [review] = await waiting;
-  assert.equal(review.status,"reviewed");
-  assert.equal(review.result.findings[0].summary,"Review fixture");
+  const cyclicCode = (value: number) =>
+    `import { readValue } from "../main.js";\nexport const value = ${value};\nexport const readParent = () => readValue();\n`;
+  await writeFile(path.join(root,"package.json"), '{"name":"relation-fixture","type":"module"}');
+  await writeFile(path.join(root,"main.js"), 'import { value } from "./child/code.js";\nexport const readValue = () => value;\n');
+  await writeFile(code, cyclicCode(1));
+  assert.deepEqual(await hook("UserPromptSubmit"), {});
+  await writeFile(config, JSON.stringify({enabled:true}));
+  const start = await hook("UserPromptSubmit");
+  assert.match(start.hookSpecificOutput!.additionalContext, /--review-current/);
+  await assert.rejects(stat(path.join(localState,"agent-turns/turns")), {code:"ENOENT"});
+  await assert.rejects(stat(path.join(localState,"analysis")), {code:"ENOENT"});
+  const list = () => run("--review-current");
+  const pending = await list();
+  assert.equal(pending.checks.length, 4);
+  assert.equal(pending.relations.status, "unindexed");
+  const legacy = await run("--review-turn", "a".repeat(64), "--wait", "60");
+  assert.deepEqual(legacy.checks, pending.checks);
+  assert.deepEqual(legacy.relations, pending.relations);
+  assert.equal((await hook("Stop", {session_id:"without-submit"})).decision, "block");
+  assert.match((await hook("Stop",{stop_hook_active:true})).systemMessage!, /child\/implementation/);
+  await assert.rejects(stat(path.join(localState,"analysis")), {code:"ENOENT"});
+
+  for (const {moduleId,type} of pending.checks) {
+    const request = await run("--prepare-current-review",moduleId,"--analysis-type",type);
+    assert.match(request.prompt, /--complete-analysis/);
+    await completeCurrentReview(root, request.id, moduleId === "child" && type === "implementation");
+    await execute("--complete-analysis",request.id);
+  }
+  const [review] = (await list()).checks;
+  assert.equal(review.status, "reviewed");
+  assert.equal(review.result.findings[0].id, "finding");
+  assert.equal((await hook("Stop")).decision, "block");
+  for (const [sessionId,prompt] of [["reviewer","[ArchiView review] 1"],["fixer","[ArchiView fix] 1"]]) {
+    assert.deepEqual(await hook("UserPromptSubmit",{session_id:sessionId,prompt}), {});
+    assert.deepEqual(await hook("Stop",{session_id:sessionId}), {});
+  }
+
+  await writeFile(code, cyclicCode(2));
+  const request = await run("--prepare-current-review","child","--analysis-type","implementation");
+  await writeFile(code, cyclicCode(3));
+  await completeCurrentReview(root, request.id);
+  await execute("--complete-analysis",request.id);
+  assert.deepEqual((await list()).checks, [{moduleId:"child",type:"implementation",status:"pending"}]);
+  const finishImplementation = async () => {
+    const fresh = await run("--prepare-current-review","child","--analysis-type","implementation");
+    await completeCurrentReview(root, fresh.id);
+    await execute("--complete-analysis",fresh.id);
+  };
+  await finishImplementation();
+  assert.deepEqual((await list()).checks, []);
+  assert.equal((await hook("Stop")).decision, "block", "an absent graph blocks even with fresh module reports");
+  assert.equal((await list()).relations.status, "unindexed", "Stop leaves the work to the same chat");
+  const repeated = await hook("Stop",{stop_hook_active:true});
+  assert.ok(repeated.systemMessage);
+  assert.equal(repeated.decision, undefined);
+
+  await run("--build-relations");
+  const graphPending = (await list()).relations;
+  assert.equal(graphPending.status, "pending");
+  assert.equal((await hook("Stop")).decision, "block", "building the graph does not count as its review");
+  const input = await run("--relation-review-input");
+  assert.equal(input.graphId, graphPending.graphId);
+  assert.ok(path.isAbsolute(input.graphFile));
+  assert.equal(input.indexed, 2);
+  assert.equal(input.eligible, 2);
+  assert.equal(input.edges, 2);
+  const graph: RelationGraph = JSON.parse(await readFile(input.graphFile,"utf8"));
+  await writeFile(input.graphFile, JSON.stringify({...graph,edges:null}));
+  assert.equal((await list()).relations.status, "unindexed");
+  await assert.rejects(execute("--relation-review-input"), {code:1});
+  await run("--build-relations");
+  assert.equal((await run("--relation-review-input")).graphId, input.graphId);
+  const cycles: CycleStep[][] = input.cycles;
+  assert.deepEqual(cycles.map(chain => chain.map(step => step.from).join("/")).sort(), ["./child", "child/."]);
+  for (const {from,to,use} of cycles.flat()) {
+    assert.ok(graph.edges.some(edge => edge.from === from && edge.to === to && edge.symbols.some(symbol =>
+      symbol.uses.some(site => site.file === use.file && site.line === use.line && site.column === use.column))));
+  }
+  const {from,to,use} = cycles.flat().find(step => step.from === "child")!;
+  const evidence = {from,to,...use};
+  const report = {graphId:input.graphId, summary:"Fixture relation assessment", findings:[{
+    summary:"The child imports its parent", evidence:[evidence],
+  }]};
+  const reportFile = path.join(localState,"fixture-relation-result.json");
+  const completeRelations = async (value: typeof report) => {
+    await writeFile(reportFile, JSON.stringify(value));
+    await execute("--complete-relation-review",reportFile);
+  };
+  await assert.rejects(completeRelations({...report, findings:[{...report.findings[0], evidence:[{...evidence,line:999}]}]}), {code:1});
+  assert.equal((await list()).relations.status, "pending");
+  await completeRelations(report);
+  const {relations:reviewed, checks} = await list();
+  assert.equal(reviewed.status, "reviewed");
+  assert.deepEqual(reviewed.report.findings, report.findings);
+  assert.deepEqual(checks, []);
+  assert.equal((await hook("Stop")).decision, "block", "open relation findings also block");
+  assert.ok((await hook("Stop",{stop_hook_active:true})).systemMessage);
+
+  await writeFile(code, "export const value = 3;\n");
+  await finishImplementation();
+  assert.equal((await list()).relations.status, "unindexed");
+  await run("--build-relations");
+  const fixed = await run("--relation-review-input");
+  assert.notEqual(fixed.graphId, input.graphId);
+  assert.deepEqual(fixed.cycles, []);
+  await assert.rejects(completeRelations(report), {code:1});
+  assert.equal((await list()).relations.status, "pending");
+  await completeRelations({graphId:fixed.graphId, summary:"The revised graph has no cycle", findings:[]});
+  assert.equal((await list()).relations.status, "reviewed");
   assert.deepEqual(await hook("Stop"), {});
-  assert.equal(jobs.length,1);
-  assert.deepEqual(await hook("UserPromptSubmit","reviewer",jobs[0].prompt,"codex"), {});
-  assert.deepEqual(await hook("UserPromptSubmit","reviewer","Continue the review","codex"), {});
-  await writeFile(code, "export const value = 3;");
-  assert.deepEqual(await hook("Stop","reviewer","","codex"), {});
-  assert.deepEqual(await hook("Stop"), {});
-  // The detached sender starts after Stop. Its input must remain the captured value even after a further edit.
-  await writeFile(code, "export const value = 4;");
-  for (let i=0; jobs.length === 1 && i<100; i++) await new Promise(resolve => setTimeout(resolve,100));
-  assert.equal(jobs.length,2);
-  const fallback: ReviewInput = parse(await readFile(path.join(root,".archiview/snapshots/analysis",jobs[1].requestId,"input.yaml"),"utf8"));
-  assert.equal(fallback.current.facts.find(f => f.path === "child/code.js")?.text,"export const value = 3;");
-  const [last] = await check();
-  assert.equal(jobs.length,3);
-  await run("--analysis-limitation",last.requestId,"--reason","Fixture limitation");
-  const [limited] = await check(10);
-  assert.equal(limited.status,"unavailable");
-  assert.equal(limited.message,"Fixture limitation");
-  assert.match((await hook("Stop")).systemMessage,/Fixture limitation/);
-  assert.equal(jobs.length,3);
 });
 
-test("turn requests reuse the selected bridge instance, including a receipt from manual delivery", async t => {
+test("current review skips relation work in repositories without indexed languages", async t => {
   const root = await repositoryFixture(t);
-  const registry = await mkdtemp(path.join(os.tmpdir(), "archiview-turn-hosts-"));
-  const priorRegistry = process.env.ARCHIVIEW_BRIDGE_DIR;
-  process.env.ARCHIVIEW_BRIDGE_DIR = registry;
+  await rm(path.join(root,"child/code.js"));
   const app = await createArchiViewSession({root});
-  const sent: string[] = [];
-  const register = (instance: string) => registerHarness({
-    kind: "dsh", instance, async available() {},
-    async start(job) {
-      sent.push(instance);
-      if (instance === "first") throw new Error("Acknowledgement lost");
-      return job.requestId;
-    },
-  });
-  let close: (() => Promise<void>) | undefined;
-  try {
-    const turns = ["a", "b", "a-again", "offline", "manual-again"].map(name => digest(name).slice(7));
-    for (const id of turns) await app.turns.begin(id, {kind:"dsh"});
-    await writeFile(path.join(root, "child/code.js"), "export const value = 2;");
-    const review = async (id: string) => {
-      const {checks} = (await app.turns.review(id, 0))!;
-      assert.equal(checks.length, 1);
-      return checks[0];
-    };
-    close = await register("first");
-    const first = await review(turns[0]);
-    assert.equal(first.status, "unconfirmed");
-    await close();
-    close = await register("second");
-    const second = await review(turns[1]);
-    assert.notEqual(first.requestId, second.requestId);
-    assert.equal(second.delivery?.harnessId, harnessInstanceId("dsh", "second"));
-    const retry = await review(turns[0]);
-    assert.equal(retry.requestId, first.requestId);
-    assert.equal(retry.status, "unconfirmed");
-    await close();
-    close = await register("first");
-    assert.equal((await review(turns[2])).requestId, first.requestId);
-    await close();
-    close = undefined;
-    const offline = await review(turns[3]);
-    assert.equal(offline.status, "unavailable");
-    assert.ok(offline.requestId);
-    assert.equal((await review(turns[3])).requestId, offline.requestId);
-    close = await register("manual");
-    await app.analysis.deliver(offline.requestId, harnessInstanceId("dsh", "manual"));
-    assert.equal((await review(turns[4])).requestId, offline.requestId);
-    assert.deepEqual(sent, ["first", "second", "manual"]);
-  } finally {
-    await close?.();
-    app.close();
-    if (priorRegistry === undefined) delete process.env.ARCHIVIEW_BRIDGE_DIR;
-    else process.env.ARCHIVIEW_BRIDGE_DIR = priorRegistry;
-    await rm(registry, {recursive:true, force:true});
-  }
+  t.after(() => app.close());
+  assert.equal((await app.turns.current()).relations.status, "unsupported");
 });
 
 test("skill instructions supply implementation evidence and invalidate the previous typed analysis after editing", async t => {

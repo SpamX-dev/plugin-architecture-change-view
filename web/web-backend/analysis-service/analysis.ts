@@ -32,6 +32,7 @@ const MAX_SAVED_INPUT_BYTES = 256 * 1024 * 1024;
 const MAX_METADATA_BYTES = 32 * 1024 * 1024;
 const MAX_REVIEW_ADDITION_BYTES = 32 * 1024 * 1024;
 export const reviewAssignmentPrefix = "[ArchiView review] ";
+export const findingFixAssignmentPrefix = "[ArchiView fix] ";
 
 function savedInput(text: string) {
   if (Buffer.byteLength(text) > MAX_SAVED_INPUT_BYTES) throw new Error("Вход анализа превышает допустимый размер");
@@ -60,10 +61,6 @@ export class AnalysisRequests {
 
   private target() { return { repositoryRoot: this.store.root, workspaceRoot: this.workspaceRoot }; }
   harnesses() { return listHarnesses(this.target()); }
-
-  requestDelivery(id: string) {
-    return this.delivery(requestDirectory(this.store, id));
-  }
 
   private async delivery(directory: string): Promise<Delivery | undefined> {
     let raw;
@@ -116,7 +113,7 @@ export class AnalysisRequests {
     const directory = path.join(this.store.directory, "snapshots", "finding-fixes", digest([id, moduleId, reviewId, findingId]).slice(7));
     await assertStateLocation(this.store.root, this.store.directory, directory);
     await mkdir(directory, { recursive: true });
-    return this.deliverOnce(directory, harnessId, { ...this.target(), moduleId, prompt, requestId: randomUUID() },
+    return this.deliverOnce(directory, harnessId, { ...this.target(), moduleId, prompt: findingFixAssignmentPrefix + prompt, requestId: randomUUID() },
       await this.delivery(directory));
   }
 
@@ -157,7 +154,9 @@ export class AnalysisRequests {
   }
 
   /** Экспортирует входы точно выбранного сравнения; не перечитывает текущий код вместо снимка. */
-  async create(view: SessionView, module: ComparisonModule, analysisType?: AnalysisType, sourceSnapshot?: SnapshotReference): Promise<PreparedAnalysis> {
+  async create(view: Pick<SessionView, "id" | "complete" | "baselineSnapshot" | "currentSnapshot">,
+    module: Pick<ComparisonModule, "moduleId" | "directory" | "before" | "after">,
+    analysisType?: AnalysisType, sourceSnapshot?: SnapshotReference): Promise<PreparedAnalysis> {
     if (!view.complete) throw new Error("Неполный снимок: обновите сравнение перед анализом");
     const selected = module.after ?? module.before;
     if (!module.moduleId || selected?.document.state !== "documented")
@@ -290,7 +289,7 @@ export class AnalysisRequests {
   }
 
   /** Проверяет привязку к исходному экспорту до передачи результата общему валидатору отчётов. */
-  async complete(id: string) {
+  async complete(id: string): Promise<AnalysisStatus> {
     const directory = requestDirectory(this.store, id);
     const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json", MAX_METADATA_BYTES)));
     const scope: {file:string;digest:string} = JSON.parse(await readRequestFile(this.store, directory, "scope.json", MAX_METADATA_BYTES));
@@ -309,6 +308,7 @@ export class AnalysisRequests {
     if (result.report?.id !== request.reviewId) throw new Error("Изменён идентификатор результата");
     result.report.analysis.input_digest = digest(result.manifest);
     await this.reports.saveReview(result);
-    return this.status(id);
+    const delivery = await this.delivery(directory);
+    return { ...request, status: "completed", ...(delivery ? {delivery} : {}) };
   }
 }

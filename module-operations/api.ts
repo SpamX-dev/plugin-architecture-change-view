@@ -7,7 +7,7 @@ import type { Comparison, ComparisonModule, Fact, Snapshot } from "../framework/
 import type { compareContracts, RoleChange } from "../analyse/git-changes/contract-diff.js";
 import type { StructuredPatchHunk } from "diff";
 import type { Section } from "../framework/contracts/types.js";
-import type { ModuleRelations } from "../framework/module-relations/types.js";
+import type { DependencyCycleCheck, ModuleRelations } from "../framework/module-relations/types.js";
 
 import type { FindingDisposition } from "../framework/ai-report/types.js";
 export interface RepositoryArgs { repository?: string }
@@ -118,6 +118,7 @@ export interface SessionOperations {
   getReviewStatuses(args: RepositoryArgs & {view: string}): Promise<{modules: (ModuleReviewState & {key: string})[]; diagnostics: string[]}>;
   getModule(args: ModuleArgs): Promise<ModuleDetail>;
   getRelations(args: ModuleArgs): Promise<ModuleRelations>;
+  getDependencyCycles(args: ModuleArgs): Promise<DependencyCycleCheck>;
   buildRelations(args: ModuleArgs): Promise<ModuleRelations>;
   getRelationSource(args: FileDiffArgs): Promise<{ text: string }>;
   changeClause(args: ChangeClauseArgs): Promise<{ clauseId: string; undoToken?: string }>;

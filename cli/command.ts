@@ -55,7 +55,9 @@ async function execute(prepareWeb?: () => Promise<void>) {
     "save-comparison": { type: "boolean" }, "read-comparison": { type: "string" }, baseline: { type: "string" },
     "complete-analysis": { type: "string" },
     "analysis-limitation": { type: "string" }, reason: { type: "string" },
-    "turn-hook": { type: "string" }, "review-turn": { type: "string" }, "dispatch-turn": { type: "string" }, wait: { type: "string" },
+    "turn-hook": { type: "string" }, "review-current": { type: "boolean" }, "prepare-current-review": { type: "string" },
+    "relation-review-input": { type: "boolean" }, "complete-relation-review": { type: "string" },
+    "review-turn": { type: "string" }, wait: { type: "string" },
     "prepare-analysis": { type: "string" },
     "check-index": { type: "boolean" }, "export-review-input": { type: "string" }, "analysis-type": {type:"string"},
     output: { type: "string" }, dependencies: { type: "string" },
@@ -69,24 +71,44 @@ async function execute(prepareWeb?: () => Promise<void>) {
   const root = values.root ?? process.cwd();
   if (values.reason !== undefined && !values["analysis-limitation"]) throw new Error("--reason используется с --analysis-limitation");
   if (values.wait !== undefined && values["review-turn"] === undefined) throw new Error("--wait используется с --review-turn");
-  const mode = (["turn-hook", "review-turn", "dispatch-turn"] as const).find(key => values[key] !== undefined);
+  const mode = (["turn-hook", "review-current", "prepare-current-review", "relation-review-input",
+    "complete-relation-review", "review-turn"] as const).find(key => values[key] !== undefined);
   if (mode && !values.help) {
-    const allowed = new Set(["root", "state-dir", mode, "port", ...(mode === "turn-hook" ? [] : ["repository", "wait"])]);
-    if (Object.keys(values).some(key => !allowed.has(key))) throw new Error("Выберите одну операцию анализа хода");
-    if (values["turn-hook"] !== undefined) {
+    const allowed = new Set(["root", "state-dir", mode, "port"]);
+    if (mode !== "turn-hook") allowed.add("repository");
+    if (mode === "review-turn") allowed.add("wait");
+    if (mode === "prepare-current-review") allowed.add("analysis-type");
+    if (Object.keys(values).some(key => !allowed.has(key))) throw new Error("Выберите одну операцию текущего анализа");
+    if (mode === "turn-hook") {
       let input = "";
       process.stdin.setEncoding("utf8");
       for await (const chunk of process.stdin) input += chunk;
-      const response = await turnHook(values["turn-hook"], JSON.parse(input), values.root, values["state-dir"]);
+      const response = await turnHook(values[mode]!, JSON.parse(input), values.root, values["state-dir"]);
       process.stdout.write(JSON.stringify(response) + "\n");
     } else {
-      const wait = Number(values.wait ?? 0);
-      if (!Number.isSafeInteger(wait) || wait < 0 || wait > 3600) throw new Error("--wait принимает от 0 до 3600 секунд");
+      const turnId = values["review-turn"];
+      if (turnId !== undefined) {
+        if (!/^[a-f0-9]{64}$/.test(turnId)) throw new Error("Некорректный идентификатор хода");
+        const wait = Number(values.wait ?? 0);
+        if (!Number.isSafeInteger(wait) || wait < 0 || wait > 3600) throw new Error("--wait принимает от 0 до 3600 секунд");
+      }
+      const type = values["analysis-type"];
+      if (mode === "prepare-current-review" && !isAnalysisType(type))
+        throw new Error("--prepare-current-review требует --analysis-type grasp|implementation");
       const workspace = await createWorkspaceSession({root, stateDirectory:values["state-dir"], initialRepository:values.repository});
       try {
         const session = await workspace.session(values.repository ?? ".", true);
-        const result = mode === "dispatch-turn" ? await session.turns.dispatchBatch(values[mode]!) :
-          await session.turns.review(values["review-turn"]!, wait);
+        let result;
+        if (mode === "prepare-current-review" && isAnalysisType(type)) {
+          result = await session.turns.prepareCurrent(values[mode]!, type);
+        } else if (mode === "relation-review-input") {
+          result = await session.turns.relationReviewInput();
+        } else if (mode === "complete-relation-review") {
+          const report: unknown = JSON.parse(await readFile(values[mode]!, "utf8"));
+          result = await session.turns.completeRelationReview(report);
+        } else {
+          result = {...(turnId && {turnId}), ...await session.turns.current()};
+        }
         process.stdout.write(JSON.stringify(result, null, 2) + "\n");
       } finally { await workspace.close(); }
     }
@@ -122,7 +144,12 @@ async function execute(prepareWeb?: () => Promise<void>) {
       "  --complete-analysis REQUEST_ID       Проверить и импортировать result.yaml запроса панели\n" +
       "  --analysis-limitation ID --reason TEXT  Сохранить причину незавершённой проверки\n" +
       "  --turn-hook codex|dsh                Обработать событие UserPromptSubmit или Stop из stdin\n" +
-      "  --review-turn ID [--wait SECONDS]    Запустить недостающие проверки хода и вернуть отчёты (JSON)\n" +
+      "  --review-current                    Показать актуальные потребности в анализе и исправлениях (JSON)\n" +
+      "  --relation-review-input             Получить текущий граф связей и цепочки циклов (JSON)\n" +
+      "  --complete-relation-review FILE     Импортировать JSON-отчёт разбора текущего графа\n" +
+      "  --prepare-current-review MODULE_ID --analysis-type grasp|implementation\n" +
+      "                                      Подготовить входы выбранной проверки для подагента (JSON)\n" +
+      "  --review-turn ID [--wait SECONDS]    Прежнее имя команды списка текущих проверок\n" +
       "  --prepare-analysis REQUEST_ID        Повторить экспорт исходного снимка без зависимостей\n" +
       "  --export-review-input MODULE_ID --output FILE [--analysis-type grasp|implementation]\n" +
       "  --list-modules                       Проекты и модули выбранной рабочей папки (JSON)\n" +

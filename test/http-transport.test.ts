@@ -236,6 +236,22 @@ test("a malformed request-target returns 400 and the server keeps serving", asyn
   assert.equal((await next.json()).complete, true);
 });
 
+test("API validates browser request context and preserves direct local clients", async t => {
+  const app = await serve(t);
+  const get = (headers?: Record<string, string>) => fetch(app.url + "/api/review-settings", { headers });
+  const localReferer = app.url + "/";
+  const foreignReferer = "https://example.invalid/";
+  const nonLocalContexts: Record<string, string>[] = [
+    { "Sec-Fetch-Site": "cross-site" }, { "Sec-Fetch-Site": "same-site" }, { Referer: foreignReferer },
+  ];
+  for (const headers of nonLocalContexts) {
+    assert.equal((await get(headers)).status, 403);
+  }
+  assert.equal((await get()).status, 200);
+  assert.equal((await get({ "Sec-Fetch-Site": "none" })).status, 200);
+  assert.equal((await get({ "Sec-Fetch-Site": "same-origin", Referer: localReferer })).status, 200);
+});
+
 test("CLI shutdown releases an active watch connection when another server takes the same port", async t => {
   const app = await serve(t);
   const view: ComparisonView = await (await fetch(app.url + "/api/comparison?watch=true")).json();

@@ -136,6 +136,7 @@ export async function createWorkspaceSession({ root: folder, stateDirectory, sha
     async getReviewStatuses(args) { return (await viewSession(args.repository, args.view)).getReviewStatuses(args); },
     async getModule(args) { return (await readableView(args)).getModule(args); },
     async getRelations(args) { return (await readableView(args)).getRelations(args); },
+    async getDependencyCycles(args) { return (await readableView(args)).getDependencyCycles(args); },
     async getRelationSource(args) { return (await readableView(args)).getRelationSource(args); },
     async buildRelations(args) { return (await viewSession(args.repository, args.view)).buildRelations(args); },
     async changeClause(args) { return (await viewSession(args.repository, args.view)).changeClause(args); },

@@ -41,6 +41,7 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
   let subscription: AbortController | undefined;
   let reviewError: string | undefined;
   let statusLoaded = false;
+  let statusGeneration = 0;
   const card = openModule({
     get view() { return current; },
     get refreshing() { return refreshing; },
@@ -57,28 +58,38 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
     return refresh({ repository, target: previous?.view.target.id ?? "current", key, historyLimit: previous?.historyLimit ?? 50 });
   }
 
+  function renderWarnings(view: ComparisonView) {
+    const warning = byId("warning");
+    const diagnostics = [...view.diagnostics, ...view.reviewDiagnostics];
+    warning.hidden = view.complete && !diagnostics.length;
+    warning.textContent = diagnostics.join("; ");
+  }
+
   async function loadStatuses(view: ComparisonView) {
+    if (view !== current || refreshing) return;
+    const request = ++statusGeneration;
+    const comparison = generation;
+    const active = () => view === current && request === statusGeneration && comparison === generation;
     reviewError = undefined;
     statusLoaded = false;
     try {
       const result = await client.getReviewStatuses({view:view.id, repository:view.workspace?.repository});
-      if (view !== current) return;
+      if (!active()) return;
       const byKey = new Map(result.modules.map(module => [module.key,module]));
       for (const module of view.modules) Object.assign(module, byKey.get(module.key));
       view.reviewDiagnostics = result.diagnostics;
+      renderWarnings(view);
       statusLoaded = true;
       tree.refreshStatuses();
       const selected = view.modules.find(module => module.key === card.selected);
       if (selected) card.renderHeading(selected);
     } catch (error) {
-      if (view !== current) return;
+      if (!active()) return;
       reviewError = "Не удалось загрузить анализ: " + errorMessage(error);
     }
-    if (view === current) {
-      byId("updated").textContent = (view.target.id === "current" ? "Обновлено " : "Состояние от ") + timelineDate(view.after.capturedAt) +
-        (reviewError ? " · " + reviewError : "");
-      card.renderPanel();
-    }
+    byId("updated").textContent = (view.target.id === "current" ? "Обновлено " : "Состояние от ") + timelineDate(view.after.capturedAt) +
+      (reviewError ? " · " + reviewError : "");
+    card.renderPanel();
   }
 
   async function showComparison(view: ComparisonView, historyLimit: number, key?: string, clause?: ClauseNavigation, reviewId?: string, automatic = false) {
@@ -94,8 +105,7 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
     byId("project-name").textContent = view.modules[0]?.name ?? "Проект";
     byId("project-path").textContent = view.root;
     byId("project-path").title = view.root;
-    byId("warning").hidden = view.complete && !view.diagnostics.length && !view.reviewDiagnostics.length;
-    byId("warning").textContent = [...view.diagnostics, ...view.reviewDiagnostics].join("; ");
+    renderWarnings(view);
     const captured = timelineDate(view.after.capturedAt);
     byId("updated").textContent = view.published ? "Сохранено " + captured + " · Проверяем изменения…" :
       currentTarget === "current" ? "Обновлено " + captured : "Состояние от " + captured;

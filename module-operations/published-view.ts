@@ -44,6 +44,7 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
   }
   async function getModule(args: ModuleArgs): Promise<ModuleDetail> {
     const module = selectedModule(args);
+    if (args.analysis === false) return moduleDetail(module, [], undefined, modules, root, work);
     try {
       const entries = await readReviews(module.moduleId ?? "directory:" + module.directory);
       model ??= createReportModel(baseline, current);
@@ -60,9 +61,10 @@ export async function createPublishedView({ root: project, stateDirectory }: { r
   }
   const getFileDiff = (args: FileDiffArgs) => fileDiff(selectedModule(args), baseline, current, args.file, { repository: root });
   const getRelations = (args: ModuleArgs) => relations.getRelations(root, stateDirectory, current, selectedModule(args).currentPath);
+  const getDependencyCycles = (args: ModuleArgs) => relations.getDependencyCycles(root, stateDirectory, current, selectedModule(args).after);
   const getRelationSource = (args: FileDiffArgs) => {
     if (!selectedModule(args).after?.files.some(f => f.path === args.file)) throw new ApplicationError("NOT_FOUND", "Файл отсутствует в модуле.");
     return relations.getRelationSource(root, stateDirectory, current, args.file);
   };
-  return { comparison, getModule, getFileDiff, getRelations, getRelationSource };
+  return { comparison, getModule, getFileDiff, getRelations, getDependencyCycles, getRelationSource };
 }

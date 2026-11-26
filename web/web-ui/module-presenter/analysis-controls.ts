@@ -8,13 +8,15 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
   client: Pick<ArchiViewClient, "prepareAnalysis" | "getAnalysis" | "listHarnesses" | "deliverAnalysis">;
   selection: () => { type?: AnalysisType; module?: ModuleSummary; view: ComparisonView | null };
   copyPrompt: (prompt: string) => Promise<void>;
-  refresh: () => Promise<void>;
+  refresh: (view: ComparisonView, module: ModuleSummary) => Promise<void>;
   toast: (message: string) => void;
 }) {
   const analyses = new Map<string, AnalysisRecord>();
+  const actions = new Set<AnalysisRecord>();
   type PendingRequest = {
     record: AnalysisRecord;
     request: NonNullable<AnalysisRecord["request"]>;
+    imported?: boolean;
     poll?: { timer: ReturnType<typeof setTimeout> };
   };
   const pending = new Map<string, PendingRequest>();
@@ -44,8 +46,9 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
 
   function renderAnalysisControls() {
     const { request, view, module, type } = selectedAnalysis();
-    trigger.disabled = !type || !module?.currentPath || !view?.complete || module?.documentState !== "documented" || !module.moduleId || request?.status === "preparing";
-    trigger.textContent = request?.status === "preparing" ? "Подготавливаем…" : "Выполнить анализ ▾";
+    const busy = Boolean(request && actions.has(request));
+    trigger.disabled = !type || !module?.currentPath || !view?.complete || module?.documentState !== "documented" || !module.moduleId || busy;
+    trigger.textContent = busy ? "Подготавливаем…" : "Выполнить анализ ▾";
     updateMenu();
     watchPreparedRequests(view, module);
     const unavailable = !module?.currentPath ? "Модуль отсутствует в выбранном срезе." :
@@ -57,12 +60,15 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
 
   async function runAnalysis(harnessId?: string) {
     const { module, view, key, type, request: previous } = selectedAnalysis();
-    if (!module || !view || !key || previous?.status === "preparing") return;
+    if (!module || !view || !key || previous && actions.has(previous)) return;
     const record: AnalysisRecord = previous && previous.status !== "completed" && !(harnessId && previous.delivery) ? previous :
       { status: "ready", message: "" };
-    const alreadyCopied = record.status === "prepared";
-    record.status = "preparing";
-    record.message = "Подготавливаем входы выбранного снимка…";
+    const watching = record.status === "prepared";
+    if (!watching) {
+      record.status = "preparing";
+      record.message = "Подготавливаем входы выбранного снимка…";
+    }
+    actions.add(record);
     analyses.set(key, record);
     renderAnalysisControls();
     try {
@@ -73,8 +79,10 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
         record.request = prepared;
       }
       if (selectedAnalysis().key !== key) {
-        record.status = alreadyCopied ? "prepared" : "ready";
-        record.message = alreadyCopied ? "Ожидаем импорт результата для выбранного снимка." : "Промпт подготовлен. Скопируйте его для анализа.";
+        if (!watching) {
+          record.status = "ready";
+          record.message = "Промпт подготовлен. Скопируйте его для анализа.";
+        }
         return;
       }
       if (harnessId) {
@@ -82,21 +90,26 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
         renderAnalysisControls();
         try {
           record.delivery = await client.deliverAnalysis({ repository: view.workspace?.repository, id: record.request.id, harnessId });
+          if (record.status !== "preparing" && record.status !== "prepared") return;
           record.message = deliveryMessage(record.delivery);
         } catch (error) {
+          if (record.status !== "preparing" && record.status !== "prepared") return;
           record.message = "Не удалось подтвердить доставку: " + errorMessage(error);
         }
         record.status = "prepared";
         return;
       }
       await copyPrompt(record.request.prompt);
+      if (record.status !== "preparing" && record.status !== "prepared") return;
       record.status = "prepared";
       record.message = "Промпт скопирован. Вставьте его в чат с агентом. Ожидаем импорт результата для выбранного снимка.";
       if (selectedAnalysis().key === key) toast("Промпт для анализа модуля скопирован");
     } catch (error) {
-      record.status = alreadyCopied ? "prepared" : "error";
+      if (record.status !== "preparing" && record.status !== "prepared") return;
+      record.status = watching ? "prepared" : "error";
       record.message = (record.request ? "Не удалось скопировать промпт: " : "Не удалось подготовить промпт: ") + errorMessage(error);
     } finally {
+      actions.delete(record);
       if (record.status === "prepared" && record.request && !pending.has(record.request.id)) {
         pending.set(record.request.id, { record, request: record.request });
       }
@@ -107,14 +120,14 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
   /** Every pending request belongs to one card, across all of its tabs. */
   function watchPreparedRequests(view: ComparisonView | null, module?: ModuleSummary) {
     for (const item of pending.values()) {
-      if (item.request.viewId !== view?.id || item.request.moduleId !== module?.moduleId || item.record.status !== "prepared") {
+      if (!view || !module || item.request.viewId !== view.id || item.request.moduleId !== module.moduleId || item.record.status !== "prepared") {
         clearTimeout(item.poll?.timer);
         item.poll = undefined;
-      } else if (!item.poll) startPoll(item, view.workspace?.repository);
+      } else if (!item.poll) startPoll(item, view, module);
     }
   }
 
-  function startPoll(item: PendingRequest, repository?: string) {
+  function startPoll(item: PendingRequest, view: ComparisonView, module: ModuleSummary) {
     const { id, viewId, moduleId } = item.request;
     const { record } = item;
     const observer = { timer: setTimeout(check, 3000) };
@@ -127,34 +140,38 @@ export function createAnalysisControls({ client, selection, copyPrompt, refresh,
         return;
       }
       try {
-        const status = await client.getAnalysis({ id, repository });
-        if (item.poll !== observer) return;
-        if (status.id !== id || status.viewId !== viewId || status.moduleId !== moduleId)
-          throw new Error("Получен статус другого запроса анализа");
-        if (status.delivery) {
-          record.delivery = status.delivery;
-          record.message = deliveryMessage(status.delivery);
+        if (!item.imported) {
+          const status = await client.getAnalysis({ id, repository: view.workspace?.repository });
+          if (item.poll !== observer) return;
+          if (status.id !== id || status.viewId !== viewId || status.moduleId !== moduleId)
+            throw new Error("Получен статус другого запроса анализа");
+          if (status.delivery) {
+            record.delivery = status.delivery;
+            record.message = deliveryMessage(status.delivery);
+          }
+          if (status.limitation) {
+            pending.delete(id);
+            item.poll = undefined;
+            record.status = "error";
+            record.message = status.limitation;
+            renderAnalysisControls();
+            return;
+          }
+          item.imported = status.status === "completed";
         }
-        if (status.status === "completed") {
+        if (item.imported) {
+          await refresh(view, module);
+          if (item.poll !== observer) return;
           pending.delete(id);
           item.poll = undefined;
           record.status = "completed";
           record.message = "Анализ выбранного снимка сохранён. Актуальность показана в результатах проверки.";
           renderAnalysisControls();
-          await refresh();
-          return;
-        }
-        if (status.limitation) {
-          pending.delete(id);
-          item.poll = undefined;
-          record.status = "error";
-          record.message = status.limitation;
-          renderAnalysisControls();
           return;
         }
       } catch (error) {
         if (item.poll !== observer) return;
-        record.message = "Не удалось обновить статус: " + errorMessage(error);
+        record.message = (item.imported ? "Анализ сохранён. Не удалось обновить карточку: " : "Не удалось обновить статус: ") + errorMessage(error);
       }
       observer.timer = setTimeout(check, 3000);
       renderAnalysisControls();

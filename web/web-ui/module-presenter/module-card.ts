@@ -34,6 +34,7 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
   let reviewDetail: ModuleDetail | undefined;
   let detailRequest: ModuleDetail | undefined;
   let detailError: string | undefined;
+  let analysisRefresh = 0;
   let selectedClause: ClauseNavigation | undefined;
   async function copyPrompt(prompt: string) {
     if (!navigator.clipboard) throw new Error("Буфер обмена недоступен в этом браузере");
@@ -42,7 +43,7 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
   const analysisActions = document.getElementById("analysis-actions")!;
   const renderAnalysisControls = createAnalysisControls({ client, copyPrompt,
     selection: () => ({ type: isAnalysisType(state.tab) ? state.tab : undefined, view: workspace.refreshing || !state.detail || workspace.view?.published ? null : workspace.view, module: workspace.view?.modules.find((entry) => entry.key === state.selected) }),
-    refresh: workspace.refresh, toast });
+    refresh: refreshAnalysisCard, toast });
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
   const clauseControls = createClauseEditor(client, async (view, key, change) => {
     if (workspace.view?.root !== view.root || workspace.view?.target.id !== "current") return;
@@ -83,6 +84,26 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
   function renderHeading(module: ModuleSummary) {
     showHeading(module, currentView().modules, selectModule);
     renderAnalysisControls();
+  }
+
+  async function refreshAnalysisCard(view: ComparisonView, module: ModuleSummary) {
+    const selection = state.selection;
+    const refresh = ++analysisRefresh;
+    const active = () => state.selection === selection && workspace.view === view;
+    let detail: ModuleDetail;
+    try {
+      detail = await client.getModule({ currentOnly: true, view: view.id, path: module.key, repository: view.workspace?.repository });
+    } catch (error) {
+      if (errorCode(error) !== "STALE_VIEW") throw error;
+      if (active()) await workspace.refresh({ target: view.target.id, key: module.key, clause: selectedClause });
+      return;
+    }
+    if (!active() || refresh !== analysisRefresh) return;
+    state.detail = reviewDetail = detail;
+    detailError = undefined;
+    renderFindingCount(detail);
+    renderPanel();
+    if (view.separateAnalysis) void workspace.loadStatuses(view);
   }
 
   /** Загружает детали из того же снимка сравнения, что и дерево слева. */
@@ -181,10 +202,17 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
     if (selected.document.contract) renderContractHeading(heading, selected.document, {
       contractDiff: state.detail.contractDiff, titleElement: byId("module-title"), groupElement: byId("module-heading-content"),
     });
+    let reviewPanel = panel;
+    if (state.tab === "implementation") {
+      const cycles = el("section", "");
+      reviewPanel = el("div", "");
+      panel.append(cycles, reviewPanel);
+      void showRelations(cycles, currentView(), state.detail, selectModule, "cycles");
+    }
     const needsReview = viewNeedsReview();
     if (needsReview && state.detail !== reviewDetail && state.tab !== "files") {
       if (isAnalysisType(state.tab)) {
-        panel.replaceChildren(el("div", "loading-state", detailError ?? workspace.reviewError ?? "Загружаем анализ…"));
+        reviewPanel.replaceChildren(el("div", "loading-state", detailError ?? workspace.reviewError ?? "Загружаем анализ…"));
         if (detailError || workspace.reviewError) {
           const retry = el("button", "button button-quiet", "Повторить");
           retry.onclick = () => {
@@ -192,7 +220,7 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
             if (workspace.reviewError) void workspace.loadStatuses(currentView());
             else renderPanel(navigation);
           };
-          panel.append(retry);
+          reviewPanel.append(retry);
           return;
         }
       }
@@ -233,12 +261,12 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
       const entry = state.detail.reviews.find(review => review.report.id === state.detail?.analyses?.[type]?.id);
       renderFindingCount(state.detail);
       if (!entry) {
-        panel.append(analysisActions);
+        reviewPanel.append(analysisActions);
         analysisActions.hidden = false;
         renderAnalysisControls();
         return;
       }
-      renderReview(panel, entry, { openClause: openReviewClause,
+      renderReview(reviewPanel, entry, { openClause: openReviewClause,
         projectRoot: view.root, fixStates: state.findingFixes, copyFixPrompt: copyPrompt,
         listFixHarnesses: () => client.listHarnesses({ repository }),
         deliverFix: args => client.deliverFindingFix({ ...args, repository }),

@@ -7,9 +7,25 @@ import test from "node:test";
 import { promisify } from "node:util";
 import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
 import { directImportEdges } from "../analyse/module-relations/graph.js";
+import { dependencyCycles } from "../analyse/implementation/dependency-cycles.js";
 import { GitTreeReader } from "../analyse/git-changes/git-tree.js";
 import { rebuildRelationGraph, readRelationGraph } from "../analyse/module-relations/store.js";
 import { commitTestFiles, contractYaml, initTestRepository, writeModuleTree } from "./support.js";
+
+test("implementation cycles contain a shortest evidenced return path for each cyclic dependency of the owner", () => {
+  function edge(from: string, to: string) {
+    const use = { file: from + "/index.ts", line: 3, column: 1 };
+    const definition = { file: to + "/index.ts", line: 1, column: 1 };
+    return { from, to, symbols: [{ id: to + "/", name: to, definition, uses: [use] }] };
+  }
+  const edges = [edge("a","b"), edge("b","a"), edge("a","c"), edge("c","e"), edge("c","d"),
+    edge("d","a"), edge("e","a"), edge("a","x"), edge("x","y"), edge("y","x"), edge("a","a")];
+  const cycles = dependencyCycles(edges, "a");
+  assert.deepEqual(cycles.map(cycle => cycle.map(step => step.to)), [["b","a"], ["c","d","a"]]);
+  for (const step of cycles.flat()) assert.deepEqual(step.use, { file: step.from + "/index.ts", line: 3, column: 1 });
+  assert.deepEqual(dependencyCycles([...edges].reverse(), "a"), cycles);
+  assert.deepEqual(dependencyCycles([edge("caller","x"), ...edges], "caller"), []);
+});
 
 test("a standalone distribution builds both directions, retains snapshot source and refuses stale rebuilds", async t => {
   const temp = await mkdtemp(path.join(await realpath(tmpdir()), "archiview-relations-"));
@@ -20,7 +36,7 @@ test("a standalone distribution builds both directions, retains snapshot source 
   await writeModuleTree(root, { app: ".", library: "lib" });
   for (const id of ["app","library"]) await writeFile(path.join(root, ".archiview/modules", id + ".yaml"), contractYaml(id));
   await writeFile(path.join(root, "package.json"), '{"name":"demo","type":"module"}');
-  await writeFile(path.join(root, "lib/service.js"), "export function run() { return 42; }\n");
+  await writeFile(path.join(root, "lib/service.js"), "import '../main.js';\nexport function run() { return 42; }\n");
   const source = 'import { run as execute } from "./lib/service.js";\nexecute();\n';
   await writeFile(path.join(root, "main.js"), source);
   commitTestFiles(root);
@@ -39,26 +55,32 @@ test("a standalone distribution builds both directions, retains snapshot source 
   const args = {view:view.id, path:"lib"};
   const relations = await workspace.getRelations(args);
   assert.ok(relations.ready);
-  assert.equal(relations.outgoing.length, 0);
+  assert.equal(relations.outgoing.length, 1);
   assert.equal(relations.incoming.length, 1);
   const usages = relations.incoming[0].symbols.find(symbol => symbol.definition.file === "lib/service.js" && symbol.uses.some(u=>u.line===2));
   assert.ok(usages?.uses.some(u=>u.text==="execute();"));
   const outgoing = await workspace.getRelations({view:view.id,path:"."});
   assert.ok(outgoing.ready);
   assert.equal(outgoing.outgoing[0].count, relations.incoming[0].count);
+  const cycle = await workspace.getDependencyCycles(args);
+  assert.ok(cycle.status === "checked");
+  assert.deepEqual(cycle.cycles.map(chain => chain.map(step => step.use.file)), [["lib/service.js", "main.js"]]);
   await assert.rejects(readFile(path.join(root, "tsconfig.json")), {code:"ENOENT"});
   await writeFile(path.join(root, "main.js"), "export const replacement = 1;\n");
   await assert.rejects(workspace.buildRelations(args), {code:"STALE_VIEW"});
   const changed = await workspace.getComparison();
   assert.equal((await workspace.getRelations({view:changed.id,path:"lib"})).ready,false);
+  assert.deepEqual(await workspace.getDependencyCycles({view:changed.id,path:"lib"}), {status:"unindexed"});
   const history = await workspace.getComparison({target:"git-"+revision});
   const historical = {view:history.id,path:"."};
   assert.equal((await workspace.getRelations(historical)).ready,true);
+  assert.deepEqual(await workspace.getDependencyCycles({...historical,path:"lib"}), cycle);
   assert.equal((await workspace.getRelationSource({...historical,file:"main.js"})).text,source);
   await assert.rejects(workspace.buildRelations(historical), {code:"INVALID_ARGUMENT"});
   const next = await workspace.buildRelations({view:changed.id,path:"lib"});
   assert.ok(next.ready);
   assert.deepEqual(next.incoming,[]);
+  assert.deepEqual(await workspace.getDependencyCycles({view:changed.id,path:"lib"}), {status:"checked",cycles:[]});
 });
 
 test("imports stop at the facade in both directions, including aliases and exposed types", async t => {

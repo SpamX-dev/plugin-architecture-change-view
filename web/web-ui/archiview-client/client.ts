@@ -29,6 +29,7 @@ export function createArchiViewClient({ fetcher = globalThis.fetch, base = "" }:
     getReviewStatuses: args => request("GET", "/api/review-statuses", args),
     getModule: args => request("GET", "/api/module", args),
     getRelations: args => request("GET", "/api/relations", args),
+    getDependencyCycles: args => request("GET", "/api/implementation/cycles", args),
     buildRelations: args => request("POST", "/api/relations", args),
     getRelationSource: args => request("GET", "/api/relations/source", args),
     changeClause: args => request("POST", "/api/contract-clause", args),
