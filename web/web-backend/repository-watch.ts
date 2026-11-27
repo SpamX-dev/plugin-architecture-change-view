@@ -79,7 +79,7 @@ export class RepositoryWatch {
               !/^(?:packed-refs|refs\/heads(?:\/.*)?|info\/(?:exclude|attributes)|config|reftable(?:\/.*)?)$/.test(rel(commonDir))) return;
           if (file.endsWith(".lock")) return;
           this.dirty = true;
-        } else if (within(this.storage, file) && /^(?:work|work\/[^/]+\.review\.yaml|decisions|(?:decisions|snapshots\/relations)\/[a-f0-9]{64}\.json)$/.test(rel(this.storage))) {
+        } else if (within(this.storage, file) && /^(?:work|work\/[^/]+\.analysis\.yaml|decisions|(?:decisions|snapshots\/relations)\/[a-f0-9]{64}\.json)$/.test(rel(this.storage))) {
           this.reviewDirty = true;
         } else if (within(this.root, file)) {
           const source = rel(this.root);

@@ -37,7 +37,7 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
   }
   const analysisActions = document.getElementById("analysis-actions")!;
   const renderAnalysisControls = createAnalysisControls({ client, copyPrompt,
-    selection: () => ({ type: isAnalysisType(state.tab) ? state.tab : undefined, view: workspace.refreshing || !state.detail || workspace.view?.published ? null : workspace.view, module: workspace.view?.modules.find((entry) => entry.key === state.selected) }),
+    selection: () => ({ type: isAnalysisType(state.tab) ? state.tab : undefined, view: workspace.refreshing || !state.detail || workspace.view?.published || workspace.view?.target.kind === "git" ? null : workspace.view, module: workspace.view?.modules.find((entry) => entry.key === state.selected) }),
     refresh: refreshAnalysisCard, toast });
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
   const clauseControls = createClauseEditor(client, async (view, key, change) => {
@@ -256,16 +256,21 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
       const cycleCount = view.modules.find(module => module.key === moduleKey)?.dependencyCycleCount;
       renderFindingCount(state.detail, cycleCount);
       if (!entry) {
+        if (view.target.kind === "git") {
+          reviewPanel.append(el("p", "empty-clauses", "В этом коммите анализ не сохранён."));
+          renderAnalysisControls();
+          return;
+        }
         reviewPanel.append(analysisActions);
         analysisActions.hidden = false;
         renderAnalysisControls();
         return;
       }
       renderReview(reviewPanel, entry, { openClause: openReviewClause,
-        projectRoot: view.root, fixStates: state.findingFixes, copyFixPrompt: copyPrompt,
+        projectRoot: view.root, fixStates: state.findingFixes, copyFixPrompt: view.target.kind === "git" ? undefined : copyPrompt,
         listFixHarnesses: () => client.listHarnesses({ repository }),
         deliverFix: args => client.deliverFindingFix({ ...args, repository }),
-        saveDecision: view.published ? undefined : async (reviewId, findingId, next, expected) => {
+        saveDecision: view.published || view.target.kind === "git" ? undefined : async (reviewId, findingId, next, expected) => {
           await client.updateFinding({view:view.id, path:moduleKey, repository, reviewId, findingId, ...next, expected});
           if (workspace.view === view && state.detail?.key === moduleKey) await workspace.refresh();
         },

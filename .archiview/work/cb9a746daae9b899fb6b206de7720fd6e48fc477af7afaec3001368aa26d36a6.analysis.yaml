@@ -1,0 +1,1728 @@
+schema_version: 3
+kind: module_reviews
+module_id: archiview-client
+results:
+  composition:
+    schema_version: 2
+    kind: review
+    module_id: archiview-client
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-283b90c4-4cff-4c1f-b5de-6f01ea467982
+    check_hash: ae9c2a592e1954fdbd678451260b3d7a08fcf6e3fdf4458d9662f32e7f5ce41b
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-client
+      baseline: null
+      current:
+        exists: true
+        directory: web/web-ui
+        self_digest: sha256:86989564c70d8a2deb40cf9cc76c208ff614b490a2b0794bb28938f4dc3a8e60
+        subtree_digest: sha256:44d71f4c87f0b49b7dc6afcdcf16940ecb1bba8d49b1feb4e4850e178614bff3
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-client
+          directory: web/web-ui
+          own_files: []
+          contract:
+            id: archiview-client
+            kind: group
+            purpose: Давать пользователю возможность изучить изменения модуля, проверить
+              доказательства, сохранить правку контракта выбранного репозитория
+              и поручить дальнейший анализ.
+            boundaries:
+              B1: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов
+                сам по себе не определяет качество архитектуры.
+              B2: Копировать промпт анализа или исправления по явному действию пользователя.
+              B3: В основном чеклисте показывать только собственные пункты модуля для
+                выбранного состояния.
+              B4: В счётчики замечаний и действия исправления включать только содержательные
+                замечания. Изменения текста пунктов показывать в контракте.
+              B5: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а
+                раскрытая строка показывает собственный статус модуля.
+              B6: В карточке текущего состояния показывать полноту проверки зависимостей без
+                перечня зависимостей из прежнего отчёта.
+              B7: Устаревание одной лишь оценки перехода не требует повторного анализа
+                текущего состояния.
+              B8: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+              B9: Подтверждать завершение анализа по импорту результата.
+              B10: После копирования промпта исправления сохранять текущий статус замечания.
+              B11: Сохранять доступ к удалённым модулям и доказательствам выбранного
+                исторического состояния.
+              B12: Содержимое полученных документов и исходных файлов отображать только как
+                данные.
+            invariants: {}
+          children:
+            - module_id: archiview-module-presenter
+              directory: web/web-ui/module-presenter
+              contract:
+                id: archiview-module-presenter
+                kind: module
+                purpose: Готовить карточку выбранного модуля, передавать правки её контракта в
+                  сессию выбранного репозитория и обновлять карточку после
+                  завершения запрошенного анализа.
+                boundaries: {}
+                invariants:
+                  I1: Пока открыта карточка того же модуля и среза, отслеживать отправленные
+                    запросы по requestId на любой её вкладке и при завершении
+                    заново запрашивать карточку.
+              document_state: documented
+            - module_id: archiview-view-model
+              directory: web/web-ui/view-model
+              contract:
+                id: archiview-view-model
+                kind: module
+                purpose: Предоставлять общие данные веб-интерфейса, контракты действий и
+                  навигацию по сторонам сравнения.
+                boundaries:
+                  B1: Сопоставлять удалённые модули с путями и предками базовой стороны сравнения.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-views
+              directory: web/web-ui/views
+              contract:
+                id: archiview-views
+                kind: module
+                purpose: Показывать дерево рабочей области и карточку модуля, передавать
+                  действия пользователя презентерам.
+                boundaries:
+                  B1: Выводить текст контрактов, отчётов и исходных файлов как данные, включая
+                    содержащуюся в нём разметку.
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-web-api-client
+              directory: web/web-ui/archiview-client
+              contract:
+                id: archiview-web-api-client
+                kind: module
+                purpose: Предоставлять презентерам доступ к операциям просмотра, редактирования
+                  контрактов и анализа выбранного репозитория через HTTP API
+                  веб-сервиса.
+                boundaries: {}
+                invariants: {}
+              document_state: documented
+            - module_id: archiview-workspace-presenter
+              directory: web/web-ui/workspace-presenter
+              contract:
+                id: archiview-workspace-presenter
+                kind: module
+                purpose: Готовить дерево рабочей области для отображения, обрабатывать выбор
+                  проекта, снимка и модуля и предоставлять настройки выбранного
+                  проекта.
+                boundaries:
+                  B1: Открывать дерево Git для навигации, как только получена структура, и
+                    добавлять статусы анализа по мере их загрузки.
+                invariants: {}
+              document_state: documented
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:17f192cc1da25b2f93556e6be0014b59e193064b1b5b30886bf06e42ffa9a8a3
+      change_digest: sha256:99454ea8bbfbcbfb315b4fa863162c0f6adaaa25d25c4f7baa5078e5b1963469
+    report:
+      schema_version: 1
+      id: review-283b90c4-4cff-4c1f-b5de-6f01ea467982
+      module:
+        id: archiview-client
+        baseline_path: null
+        current_path: web/web-ui
+      comparison:
+        baseline: null
+        current:
+          id: working-7907b404dc4edfaf722fa22689e2b5a440a518e99702d9b95ce66b3b3194c622
+          digest: sha256:4772eb09fd5e6c69b2b5c4bc0be060526fe2a62ccc1bcadc7176dbbc59af174c
+      analysis:
+        created_at: 2026-11-26T12:26:40.387Z
+        analyzer:
+          name: archiview-grasp
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:6683c84f31b47a68da6eb4fe2c82867272495bb8966f568454d88862016a713f
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:8844fd04931ebf092af6577be98469ca1ce811872b6403989b4ece9dfd5a58a0
+      observed:
+        baseline: null
+        current:
+          summary: Композиция оценена по контрактам непосредственных детей.
+          responsibilities: []
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: Workspace Presenter выбирает срез и модуль, Module Presenter
+            готовит карточку и координирует действия, Views выводит дерево и
+            карточку, а ArchiViewClient предоставляет операции выбранного
+            репозитория.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+            - snapshot: current
+              fact_id: sha256:c7a77cbe0987e1193585a30e233760c195bbf6c66edbd40be77b569c2e17059a
+            - snapshot: current
+              fact_id: sha256:342e71d3b0e6bc40f362e168c5b4880fb69ca21b5dd4c47a6c30b1464737533c
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B1
+          subject: current
+          verdict: consistent
+          explanation: Подготовка карточки из выбранного результата относится к Module
+            Presenter, её вывод к Views, а выбор среза и подготовка дерева к
+            Workspace Presenter. Контракты не приписывают статусу Git смысловую
+            оценку.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+            - snapshot: current
+              fact_id: sha256:c7a77cbe0987e1193585a30e233760c195bbf6c66edbd40be77b569c2e17059a
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: consistent
+          explanation: Views передаёт действия пользователя презентерам, а Module
+            Presenter координирует работу с карточкой и анализом. Такой
+            интерфейс допускает привязку копирования к действию пользователя.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+        - id: check-4
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: consistent
+          explanation: "Граница применяется к карточке: Module Presenter готовит карточку
+            выбранного модуля, Views отображает её. Отдельное обещание о показе
+            чужого чеклиста отсутствует."
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+        - id: check-5
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B4
+          subject: current
+          verdict: consistent
+          explanation: Подготовка карточки и её отображение отделены от выбора контекста
+            дерева. Эта композиция позволяет передавать для счётчика только
+            содержательные замечания и оставлять изменения пункта в контракте.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+            - snapshot: current
+              fact_id: sha256:c7a77cbe0987e1193585a30e233760c195bbf6c66edbd40be77b569c2e17059a
+        - id: check-6
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B5
+          subject: current
+          verdict: consistent
+          explanation: Workspace Presenter получает структуру и статусы дерева независимо
+            и отвечает за подготовку строк. Views отображает подготовленное
+            дерево. Эти роли позволяют агрегировать скрытые ветви и показывать
+            собственный статус раскрытой строки.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+            - snapshot: current
+              fact_id: sha256:c7a77cbe0987e1193585a30e233760c195bbf6c66edbd40be77b569c2e17059a
+        - id: check-7
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B6
+          subject: current
+          verdict: consistent
+          explanation: Карточка выбранного модуля координируется Module Presenter и
+            выводится Views. Транспорт просматривает выбранный репозиторий и не
+            навязывает прежний список зависимостей как текущую оценку.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+            - snapshot: current
+              fact_id: sha256:342e71d3b0e6bc40f362e168c5b4880fb69ca21b5dd4c47a6c30b1464737533c
+        - id: check-8
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B7
+          subject: current
+          verdict: consistent
+          explanation: Workspace Presenter отдельно добавляет статусы анализа к структуре
+            Git. Module Presenter обновляет карточку по завершению конкретного
+            запроса. Эти договорённости не связывают запуск анализа с любой
+            сменой оценки перехода.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:c7a77cbe0987e1193585a30e233760c195bbf6c66edbd40be77b569c2e17059a
+        - id: check-9
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B8
+          subject: current
+          verdict: consistent
+          explanation: Workspace Presenter B1 прямо требует открывать дерево для навигации
+            по получении структуры и добавлять статусы по мере их загрузки.
+            Views выводит это дерево.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+            - snapshot: current
+              fact_id: sha256:c7a77cbe0987e1193585a30e233760c195bbf6c66edbd40be77b569c2e17059a
+        - id: check-10
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B9
+          subject: current
+          verdict: consistent
+          explanation: Module Presenter отслеживает конкретный requestId на выбранном
+            срезе и заново запрашивает карточку при его завершении.
+            Взаимодействие с сессией позволяет подтверждать завершение импортом
+            результата.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:342e71d3b0e6bc40f362e168c5b4880fb69ca21b5dd4c47a6c30b1464737533c
+        - id: check-11
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B10
+          subject: current
+          verdict: consistent
+          explanation: Views передаёт действие копирования потребителю, а контроль
+            редактирования и анализа карточки остаётся за её презентером. В
+            контрактах нет обязательства менять решение по замечанию при
+            копировании.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+        - id: check-12
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B11
+          subject: current
+          verdict: consistent
+          explanation: Workspace Presenter выбирает срез, Model представления сохраняет
+            базовые пути удалённых модулей, а Module Presenter и Views
+            предоставляют карточку этого выбора. Обещания совместимы с
+            сохранением исторической навигации.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+            - snapshot: current
+              fact_id: sha256:c7a77cbe0987e1193585a30e233760c195bbf6c66edbd40be77b569c2e17059a
+            - snapshot: current
+              fact_id: sha256:ab0751cb1ddfc01306121c4a745f721e786b63598ad651f05ebd481f823bd44e
+        - id: check-13
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B12
+          subject: current
+          verdict: consistent
+          explanation: Views B1 прямо предписывает выводить текст контрактов, отчётов и
+            исходников как данные. Ни модель, ни HTTP-адаптер не делегируют
+            выполнение такого текста.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+            - snapshot: current
+              fact_id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+            - snapshot: current
+              fact_id: sha256:ab0751cb1ddfc01306121c4a745f721e786b63598ad651f05ebd481f823bd44e
+            - snapshot: current
+              fact_id: sha256:342e71d3b0e6bc40f362e168c5b4880fb69ca21b5dd4c47a6c30b1464737533c
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Непосредственные участники покрывают навигацию по срезам, карточку
+            модуля, вывод данных и доступ к сессии репозитория. Модель
+            представления предоставляет общие данные и правила выбора стороны
+            сравнения. Несовместимых обещаний в контрактах участников не
+            выявлено.
+        change:
+          verdict: not_applicable
+          summary: Первый анализ без базового снимка.
+      extensions:
+        archiview.grasp:
+          - moduleId: archiview-workspace-presenter
+            role: executor
+            task: Готовить дерево и переключать репозиторий, срез и выбор модуля.
+            assessment: Предоставляет навигационный контекст карточке и прямо поддерживает
+              ранний доступ к дереву.
+          - moduleId: archiview-module-presenter
+            role: executor
+            task: Готовить карточку выбранного среза, координировать правки и отслеживать
+              запросы анализа.
+            assessment: Контракт использует выбор рабочей области и согласуется с выводом
+              карточки через Views. I1 задаёт обновление по завершению
+              конкретного запроса.
+          - moduleId: archiview-views
+            role: executor
+            task: Показывать дерево, карточку и доказательства и передавать действия
+              презентерам.
+            assessment: B1 сохраняет трактовку текстовых данных, требуемую родителем.
+              Подготовка выборки и работа с сессией остаются задачами
+              презентеров.
+          - moduleId: archiview-web-api-client
+            role: utility
+            consumers:
+              - archiview-workspace-presenter
+              - archiview-module-presenter
+            task: Предоставлять операции сессии выбранного репозитория через HTTP.
+            assessment: Граница адаптера достаточна для чтения, редактирования и анализа.
+              Выбор среза и представление данных остаются у потребителей.
+          - moduleId: archiview-view-model
+            role: utility
+            consumers:
+              - archiview-workspace-presenter
+              - archiview-module-presenter
+              - archiview-views
+            task: Задавать общие данные и контракты действий, сопоставлять пути со сторонами
+              сравнения.
+            assessment: B1 соответствует исторической навигации родителя. Модуль не
+              присваивает себе управление выбором, чтение из сессии или разметку
+              карточки.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-7907b404dc4edfaf722fa22689e2b5a440a518e99702d9b95ce66b3b3194c622
+          digest: sha256:4772eb09fd5e6c69b2b5c4bc0be060526fe2a62ccc1bcadc7176dbbc59af174c
+      module:
+        id: archiview-client
+        baseline_path: null
+        current_path: web/web-ui
+      analyzer:
+        name: archiview-grasp
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: purpose
+              id: purpose
+            text: Давать пользователю возможность изучить изменения модуля, проверить
+              доказательства, сохранить правку контракта выбранного репозитория
+              и поручить дальнейший анализ.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B1
+            text: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов
+              сам по себе не определяет качество архитектуры.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B2
+            text: Копировать промпт анализа или исправления по явному действию пользователя.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B3
+            text: В основном чеклисте показывать только собственные пункты модуля для
+              выбранного состояния.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B4
+            text: В счётчики замечаний и действия исправления включать только содержательные
+              замечания. Изменения текста пунктов показывать в контракте.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B5
+            text: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а
+              раскрытая строка показывает собственный статус модуля.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B6
+            text: В карточке текущего состояния показывать полноту проверки зависимостей без
+              перечня зависимостей из прежнего отчёта.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B7
+            text: Устаревание одной лишь оценки перехода не требует повторного анализа
+              текущего состояния.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B8
+            text: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B9
+            text: Подтверждать завершение анализа по импорту результата.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B10
+            text: После копирования промпта исправления сохранять текущий статус замечания.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B11
+            text: Сохранять доступ к удалённым модулям и доказательствам выбранного
+              исторического состояния.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B12
+            text: Содержимое полученных документов и исходных файлов отображать только как
+              данные.
+      instructions: 'Проверь композицию по собственному контракту и контрактам
+        непосредственных детей. Разбери детей по их роли относительно обещания
+        родителя. Для непосредственных исполнителей проверь совместимость их
+        контрактов между собой и способность вместе выполнить обещание родителя.
+        Для утилит (Pure Fabrication) укажи потребителя и задачу, проверь
+        достаточность и границы обязанностей. Для листа объясни неприменимость
+        композиции. Выводы и замечания обоснуй сохранёнными контрактами. Заполни
+        report.extensions["archiview.grasp"] для каждого непосредственного
+        ребёнка из экспорта: moduleId, role (executor или utility), task
+        (задача), assessment (результат сравнения). Для утилиты добавь consumers
+        со списком потребителей; если по контрактам потребитель не установлен,
+        укажи это в assessment и оставь пустой список. Для листа используй
+        пустой массив. Код, контракты предков и более глубоких потомков в эту
+        проверку не входят.'
+      context: {}
+      analysis_type: grasp
+      source_snapshot:
+        id: working-7907b404dc4edfaf722fa22689e2b5a440a518e99702d9b95ce66b3b3194c622
+        digest: sha256:7907b404dc4edfaf722fa22689e2b5a440a518e99702d9b95ce66b3b3194c622
+      source_head: d8304bd7550f4527428f2a07736bc14f45427e6a
+      source_captured_at: 2026-11-26T12:26:40.366Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:8844fd04931ebf092af6577be98469ca1ce811872b6403989b4ece9dfd5a58a0
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-7907b404dc4edfaf722fa22689e2b5a440a518e99702d9b95ce66b3b3194c622
+      digest: sha256:4772eb09fd5e6c69b2b5c4bc0be060526fe2a62ccc1bcadc7176dbbc59af174c
+      kind: working
+      complete: true
+      modules:
+        - directory: web/web-ui
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-client
+
+              title: web-ui
+
+              kind: group
+
+              extensions:
+                archiview.roles: [src]
+              purpose: Давать пользователю возможность изучить изменения модуля,
+              проверить доказательства, сохранить правку контракта выбранного
+              репозитория и поручить дальнейший анализ.
+
+              boundaries:
+                B1: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов сам по себе не определяет качество архитектуры.
+                B2: Копировать промпт анализа или исправления по явному действию пользователя.
+                B3: В основном чеклисте показывать только собственные пункты модуля для выбранного состояния.
+                B4: В счётчики замечаний и действия исправления включать только содержательные замечания. Изменения текста пунктов показывать в контракте.
+                B5: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а раскрытая строка показывает собственный статус модуля.
+                B6: В карточке текущего состояния показывать полноту проверки зависимостей без перечня зависимостей из прежнего отчёта.
+                B7: Устаревание одной лишь оценки перехода не требует повторного анализа текущего состояния.
+                B8: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+                B9: Подтверждать завершение анализа по импорту результата.
+                B10: После копирования промпта исправления сохранять текущий статус замечания.
+                B11: Сохранять доступ к удалённым модулям и доказательствам выбранного исторического состояния.
+                B12: Содержимое полученных документов и исходных файлов отображать только как данные.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-client
+              title: web-ui
+              kind: group
+              extensions:
+                archiview.roles:
+                  - src
+              purpose: Давать пользователю возможность изучить изменения модуля, проверить
+                доказательства, сохранить правку контракта выбранного
+                репозитория и поручить дальнейший анализ.
+              boundaries:
+                B1: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов
+                  сам по себе не определяет качество архитектуры.
+                B2: Копировать промпт анализа или исправления по явному действию пользователя.
+                B3: В основном чеклисте показывать только собственные пункты модуля для
+                  выбранного состояния.
+                B4: В счётчики замечаний и действия исправления включать только содержательные
+                  замечания. Изменения текста пунктов показывать в контракте.
+                B5: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а
+                  раскрытая строка показывает собственный статус модуля.
+                B6: В карточке текущего состояния показывать полноту проверки зависимостей без
+                  перечня зависимостей из прежнего отчёта.
+                B7: Устаревание одной лишь оценки перехода не требует повторного анализа
+                  текущего состояния.
+                B8: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+                B9: Подтверждать завершение анализа по импорту результата.
+                B10: После копирования промпта исправления сохранять текущий статус замечания.
+                B11: Сохранять доступ к удалённым модулям и доказательствам выбранного
+                  исторического состояния.
+                B12: Содержимое полученных документов и исходных файлов отображать только как
+                  данные.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-client.yaml
+          files:
+            - path: .archiview/modules/archiview-client.yaml
+              hash: 3fe0f82f3b1190e2e04fcd6a171285ca32e13898
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:15fc2ed202fa54d086845c4b59b54bc29efdca4ce27af353338f6d77dc5bfd34
+        - directory: web/web-ui/archiview-client
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-web-api-client
+
+              title: ArchiViewClient
+
+              kind: module
+
+              extensions:
+                archiview.roles: [web-client]
+              purpose: Предоставлять презентерам доступ к операциям просмотра,
+              редактирования контрактов и анализа выбранного репозитория через
+              HTTP API веб-сервиса.
+
+              boundaries: {}
+
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-web-api-client
+              title: ArchiViewClient
+              kind: module
+              extensions:
+                archiview.roles:
+                  - web-client
+              purpose: Предоставлять презентерам доступ к операциям просмотра, редактирования
+                контрактов и анализа выбранного репозитория через HTTP API
+                веб-сервиса.
+              boundaries: {}
+              invariants: {}
+          documentPath: .archiview/modules/archiview-web-api-client.yaml
+          files:
+            - path: .archiview/modules/archiview-web-api-client.yaml
+              hash: 167a9849d02e71621ebf88e4e6bd4d59ea3fa70e
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:d4dbf47d61e339f196056e80050ddd90ae9d82d502b9c8304a1d765cebfc0673
+        - directory: web/web-ui/module-presenter
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-module-presenter
+
+              title: Module Presenter
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Готовить карточку выбранного модуля, передавать правки её
+              контракта в сессию выбранного репозитория и обновлять карточку
+              после завершения запрошенного анализа.
+
+              boundaries: {}
+
+              invariants:
+                I1: Пока открыта карточка того же модуля и среза, отслеживать отправленные запросы по requestId на любой её вкладке и при завершении заново запрашивать карточку.
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-module-presenter
+              title: Module Presenter
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Готовить карточку выбранного модуля, передавать правки её контракта в
+                сессию выбранного репозитория и обновлять карточку после
+                завершения запрошенного анализа.
+              boundaries: {}
+              invariants:
+                I1: Пока открыта карточка того же модуля и среза, отслеживать отправленные
+                  запросы по requestId на любой её вкладке и при завершении
+                  заново запрашивать карточку.
+          documentPath: .archiview/modules/archiview-module-presenter.yaml
+          files:
+            - path: .archiview/modules/archiview-module-presenter.yaml
+              hash: 3fcb09bf7b3c3c583000444f76a71a598645cd97
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:2a9d880e18aa32b734f8f9c27ea14eb5512d2759b81595cf812881d5bdd9fcd1
+        - directory: web/web-ui/view-model
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-view-model
+
+              title: Модель представления
+
+              kind: module
+
+              purpose: Предоставлять общие данные веб-интерфейса, контракты
+              действий и навигацию по сторонам сравнения.
+
+              boundaries:
+                B1: Сопоставлять удалённые модули с путями и предками базовой стороны сравнения.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-view-model
+              title: Модель представления
+              kind: module
+              purpose: Предоставлять общие данные веб-интерфейса, контракты действий и
+                навигацию по сторонам сравнения.
+              boundaries:
+                B1: Сопоставлять удалённые модули с путями и предками базовой стороны сравнения.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-view-model.yaml
+          files:
+            - path: .archiview/modules/archiview-view-model.yaml
+              hash: 7b18ba2b7d292db99f26054aec6ba418ab45161f
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:07bb4b9ce9bfa53c13678fbc11be9d1a98251907cdaf228ee5ec6d997698b345
+        - directory: web/web-ui/views
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-views
+
+              title: Views
+
+              kind: module
+
+              extensions:
+                archiview.roles: [ui]
+              purpose: Показывать дерево рабочей области и карточку модуля,
+              передавать действия пользователя презентерам.
+
+              boundaries:
+                B1: Выводить текст контрактов, отчётов и исходных файлов как данные, включая содержащуюся в нём разметку.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-views
+              title: Views
+              kind: module
+              extensions:
+                archiview.roles:
+                  - ui
+              purpose: Показывать дерево рабочей области и карточку модуля, передавать
+                действия пользователя презентерам.
+              boundaries:
+                B1: Выводить текст контрактов, отчётов и исходных файлов как данные, включая
+                  содержащуюся в нём разметку.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-views.yaml
+          files:
+            - path: .archiview/modules/archiview-views.yaml
+              hash: bf46a407e9f820bc065d6b5dce6513aba920114f
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:334b21654999eb8b5948484d533f9040194ae687579aafea8e99ea364e5b4e04
+        - directory: web/web-ui/workspace-presenter
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-workspace-presenter
+
+              title: Workspace Presenter
+
+              kind: module
+
+              extensions:
+                archiview.roles: [service]
+              purpose: Готовить дерево рабочей области для отображения,
+              обрабатывать выбор проекта, снимка и модуля и предоставлять
+              настройки выбранного проекта.
+
+              boundaries:
+                B1: Открывать дерево Git для навигации, как только получена структура, и добавлять статусы анализа по мере их загрузки.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-workspace-presenter
+              title: Workspace Presenter
+              kind: module
+              extensions:
+                archiview.roles:
+                  - service
+              purpose: Готовить дерево рабочей области для отображения, обрабатывать выбор
+                проекта, снимка и модуля и предоставлять настройки выбранного
+                проекта.
+              boundaries:
+                B1: Открывать дерево Git для навигации, как только получена структура, и
+                  добавлять статусы анализа по мере их загрузки.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-workspace-presenter.yaml
+          files:
+            - path: .archiview/modules/archiview-workspace-presenter.yaml
+              hash: 0da221cbdc1a717f1ca1a58584511f733833a9c2
+              mode: "100644"
+          sourceFiles: 0
+          fingerprint: sha256:beebf33e10f4faac6698e83e12b6959fb3eaaf0655e21deecb2075a9b7d76993
+      facts:
+        - kind: file
+          path: .archiview/modules/archiview-client.yaml
+          start_line: 1
+          end_line: 22
+          text: >
+            schema_version: 1
+
+            id: archiview-client
+
+            title: web-ui
+
+            kind: group
+
+            extensions:
+              archiview.roles: [src]
+            purpose: Давать пользователю возможность изучить изменения модуля,
+            проверить доказательства, сохранить правку контракта выбранного
+            репозитория и поручить дальнейший анализ.
+
+            boundaries:
+              B1: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов сам по себе не определяет качество архитектуры.
+              B2: Копировать промпт анализа или исправления по явному действию пользователя.
+              B3: В основном чеклисте показывать только собственные пункты модуля для выбранного состояния.
+              B4: В счётчики замечаний и действия исправления включать только содержательные замечания. Изменения текста пунктов показывать в контракте.
+              B5: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а раскрытая строка показывает собственный статус модуля.
+              B6: В карточке текущего состояния показывать полноту проверки зависимостей без перечня зависимостей из прежнего отчёта.
+              B7: Устаревание одной лишь оценки перехода не требует повторного анализа текущего состояния.
+              B8: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+              B9: Подтверждать завершение анализа по импорту результата.
+              B10: После копирования промпта исправления сохранять текущий статус замечания.
+              B11: Сохранять доступ к удалённым модулям и доказательствам выбранного исторического состояния.
+              B12: Содержимое полученных документов и исходных файлов отображать только как данные.
+            invariants: {}
+          id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+        - kind: file
+          path: .archiview/modules/archiview-web-api-client.yaml
+          start_line: 1
+          end_line: 10
+          text: >
+            schema_version: 1
+
+            id: archiview-web-api-client
+
+            title: ArchiViewClient
+
+            kind: module
+
+            extensions:
+              archiview.roles: [web-client]
+            purpose: Предоставлять презентерам доступ к операциям просмотра,
+            редактирования контрактов и анализа выбранного репозитория через
+            HTTP API веб-сервиса.
+
+            boundaries: {}
+
+            invariants: {}
+          id: sha256:342e71d3b0e6bc40f362e168c5b4880fb69ca21b5dd4c47a6c30b1464737533c
+        - kind: file
+          path: .archiview/modules/archiview-module-presenter.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-module-presenter
+
+            title: Module Presenter
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Готовить карточку выбранного модуля, передавать правки её
+            контракта в сессию выбранного репозитория и обновлять карточку после
+            завершения запрошенного анализа.
+
+            boundaries: {}
+
+            invariants:
+              I1: Пока открыта карточка того же модуля и среза, отслеживать отправленные запросы по requestId на любой её вкладке и при завершении заново запрашивать карточку.
+          id: sha256:2faf2e66dcd2f6889dd04ba749e2324330af172ec9ade41ef0690440af179287
+        - kind: file
+          path: .archiview/modules/archiview-view-model.yaml
+          start_line: 1
+          end_line: 9
+          text: >
+            schema_version: 1
+
+            id: archiview-view-model
+
+            title: Модель представления
+
+            kind: module
+
+            purpose: Предоставлять общие данные веб-интерфейса, контракты
+            действий и навигацию по сторонам сравнения.
+
+            boundaries:
+              B1: Сопоставлять удалённые модули с путями и предками базовой стороны сравнения.
+            invariants: {}
+          id: sha256:ab0751cb1ddfc01306121c4a745f721e786b63598ad651f05ebd481f823bd44e
+        - kind: file
+          path: .archiview/modules/archiview-views.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-views
+
+            title: Views
+
+            kind: module
+
+            extensions:
+              archiview.roles: [ui]
+            purpose: Показывать дерево рабочей области и карточку модуля,
+            передавать действия пользователя презентерам.
+
+            boundaries:
+              B1: Выводить текст контрактов, отчётов и исходных файлов как данные, включая содержащуюся в нём разметку.
+            invariants: {}
+          id: sha256:8ae58339798acf425e2d4ac1135f06f0d718c0e97692fc734ab80a36083646b7
+        - kind: file
+          path: .archiview/modules/archiview-workspace-presenter.yaml
+          start_line: 1
+          end_line: 11
+          text: >
+            schema_version: 1
+
+            id: archiview-workspace-presenter
+
+            title: Workspace Presenter
+
+            kind: module
+
+            extensions:
+              archiview.roles: [service]
+            purpose: Готовить дерево рабочей области для отображения,
+            обрабатывать выбор проекта, снимка и модуля и предоставлять
+            настройки выбранного проекта.
+
+            boundaries:
+              B1: Открывать дерево Git для навигации, как только получена структура, и добавлять статусы анализа по мере их загрузки.
+            invariants: {}
+          id: sha256:c7a77cbe0987e1193585a30e233760c195bbf6c66edbd40be77b569c2e17059a
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 420
+          grasp: 4
+          implementation: 4
+      scope_digest: sha256:2003c103b724ad5650412274caa0bee9923d904b46103b2ac69707fc9c1993b1
+    input_digest: sha256:3ee1a44270d913fbbd3711b14dcc921a0553bc01d91510bdc480f0ae11e8423e
+    result_digest: sha256:9d44fd039943f496e363cd1c9e1e53db597b344b59e8527c3fcd622877d73222
+    content_digest: sha256:6a99633843c931bfd6043db0058adbc78bfda2f3fa299a6371540707e1b58899
+    registration_order: 1027
+  implementation:
+    schema_version: 2
+    kind: review
+    module_id: archiview-client
+    project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+    review_id: review-0f82b93d-05b1-4c14-b2cf-741bcea12061
+    check_hash: bb27128f38c4551b0dd18dafb454c88dfca3fb23a1f802c4c86517c423677292
+    check_manifest:
+      domain: archiview/module-check/v1
+      project_id: sha256:d0af59f402ccfdd31bd993b09d5a46eb163c0f359a3387eb064c612c7dea1f15
+      module_id: archiview-client
+      baseline: null
+      current:
+        exists: true
+        directory: web/web-ui
+        self_digest: sha256:60d23c2cbba85953c1fee726ef8490f0636f4e91fceebd0ccd05f9a6c02d086f
+        subtree_digest: sha256:517907afa1e40a131aaac6403ff2c4a3e2f3adeed1c1bec160a10468a5fac98c
+      analyzer:
+        name: archiview-structure
+        version: 1.1.0
+        config_digest: sha256:d4208fd53122193eb2daea0c208071c378c8d7635a8b73431fec88a63f5cd518
+    analysis_kind: semantic
+    format: native-v2
+    inputs:
+      schema_version: 1
+      scope: self
+      contract_scope: own
+      current:
+        exists: true
+        state:
+          normalization: archiview/module-state/v1
+          module_id: archiview-client
+          directory: web/web-ui
+          own_files:
+            - path: web/web-ui/app.ts
+              digest: sha256:63aec41553b9806e6169e9f7e6cd82eefc077c3a2f2e4c4e42974c897f359092
+              normalization: text-lf/v1
+            - path: web/web-ui/review-entry.ts
+              digest: sha256:51c6db614b6b85e62fc1dba102d7608def91231b8b02e8f70b4336d2f9c6e0b0
+              normalization: text-lf/v1
+            - path: web/web-ui/web-entry.ts
+              digest: sha256:58ee9e67db95b7c62e804a682b0b5f87fd1605eb3a2374cb0a68b2da1c424036
+              normalization: text-lf/v1
+          contract:
+            id: archiview-client
+            kind: group
+            purpose: Давать пользователю возможность изучить изменения модуля, проверить
+              доказательства, сохранить правку контракта выбранного репозитория
+              и поручить дальнейший анализ.
+            boundaries:
+              B1: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов
+                сам по себе не определяет качество архитектуры.
+              B2: Копировать промпт анализа или исправления по явному действию пользователя.
+              B3: В основном чеклисте показывать только собственные пункты модуля для
+                выбранного состояния.
+              B4: В счётчики замечаний и действия исправления включать только содержательные
+                замечания. Изменения текста пунктов показывать в контракте.
+              B5: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а
+                раскрытая строка показывает собственный статус модуля.
+              B6: В карточке текущего состояния показывать полноту проверки зависимостей без
+                перечня зависимостей из прежнего отчёта.
+              B7: Устаревание одной лишь оценки перехода не требует повторного анализа
+                текущего состояния.
+              B8: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+              B9: Подтверждать завершение анализа по импорту результата.
+              B10: После копирования промпта исправления сохранять текущий статус замечания.
+              B11: Сохранять доступ к удалённым модулям и доказательствам выбранного
+                исторического состояния.
+              B12: Содержимое полученных документов и исходных файлов отображать только как
+                данные.
+            invariants: {}
+          children: []
+        complete: true
+        dependencies: []
+        dependency_coverage:
+          status: complete
+          potential_influence: []
+      baseline: null
+      baseline_identity: null
+      current_digest: sha256:629477a294bad3045f60739157f25b02ee48cb4123a1377331ef0a8b40a13594
+      change_digest: sha256:eb72fd5e9cda7ea7f1f3fe9dd538e03f6da4de752fd408287792834ab0555325
+    report:
+      schema_version: 1
+      id: review-0f82b93d-05b1-4c14-b2cf-741bcea12061
+      module:
+        id: archiview-client
+        baseline_path: null
+        current_path: web/web-ui
+      comparison:
+        baseline: null
+        current:
+          id: working-55adf277d5c7c73ea3580728dba5ecdf0ab1dea7551b90897ec84a8451aa19a8
+          digest: sha256:b13eab0f422c16902cd1104b38bec4b3fda3ebc02f20e42afe672ab8a6a1dc5c
+      analysis:
+        created_at: 2026-11-26T12:27:08.821Z
+        analyzer:
+          name: archiview-implementation
+          version: "1"
+          config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+        input_digest: sha256:58051bcec7da9a0db63ffdf3a32139413dd31fea75e559d46a5cf97c6fc00f68
+        scope: module
+        coverage:
+          status: complete
+          limitations: []
+        model:
+          provider: OpenAI
+          id: gpt-6
+        prompt_digest: sha256:b53e8cb44d3abaca425c8289c969d2ea7d76bb80585889bc0d68049e7b36a3b2
+      observed:
+        baseline: null
+        current:
+          summary: Собственные точки входа связывают HTTP-адаптер, презентер рабочей
+            области и карточку модуля, а отдельный ресурс предоставляет экспорт
+            функций просмотра отчёта. Правила формирования карточки и действий
+            применяются в исполнителях интерфейса.
+          responsibilities:
+            - text: Создавать HTTP-клиент и связывать единый контекст рабочей области с
+                карточкой выбранного модуля.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:e807e39bd08d6454dbb25e9caefc25999737fedd58f9ecb9c0b0f74daa24625a
+                - snapshot: current
+                  fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - text: Экспортировать функции просмотра и доказательств отчёта, контракта,
+                статусов и счётчиков как отдельный браузерный ресурс.
+              evidence:
+                - snapshot: current
+                  fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+      checks:
+        - id: check-1
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: purpose
+            id: purpose
+          subject: current
+          verdict: consistent
+          explanation: web-entry запускает приложение с HTTP-адаптером. startApp передаёт
+            один клиент в рабочую область и в создаваемую по её контексту
+            карточку. review-entry предоставляет отдельный набор функций обзора.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:e807e39bd08d6454dbb25e9caefc25999737fedd58f9ecb9c0b0f74daa24625a
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+        - id: check-2
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B1
+          subject: current
+          verdict: not_applicable
+          explanation: Точки входа не вычисляют смысловой вердикт. startApp только
+            связывает исполнителей, а публичный ресурс экспортирует проверки и
+            отображение выбранного отчёта.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+        - id: check-3
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B2
+          subject: current
+          verdict: not_applicable
+          explanation: Собственная реализация запуска и экспорта не вызывает буфер обмена.
+            Поведение копирования находится за её входами.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:e807e39bd08d6454dbb25e9caefc25999737fedd58f9ecb9c0b0f74daa24625a
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+        - id: check-4
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B3
+          subject: current
+          verdict: not_applicable
+          explanation: Публичный ресурс передаёт потребителю функцию ownClauseGroups.
+            Точки входа не собирают и не выводят чеклист.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+        - id: check-5
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B4
+          subject: current
+          verdict: not_applicable
+          explanation: Публичный ресурс предоставляет счётчики замечаний и визуализацию
+            контракта через разные функции. Собственные файлы не формируют
+            списки или счётчики.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+        - id: check-6
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B5
+          subject: current
+          verdict: not_applicable
+          explanation: startApp подключает рабочую область, а review-entry экспортирует
+            функцию счётчика дерева. Состояние раскрытия ветви не обрабатывается
+            собственным кодом.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+        - id: check-7
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B6
+          subject: current
+          verdict: not_applicable
+          explanation: Точки входа не запрашивают зависимости и не добавляют их в
+            карточку. Проверка содержимого такой секции выходит за рамки
+            собственной реализации.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+        - id: check-8
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B7
+          subject: current
+          verdict: not_applicable
+          explanation: В startApp нет оценки актуальности и триггеров повторного анализа.
+            Приложение связывает выбранный контекст с карточкой.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+        - id: check-9
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B8
+          subject: current
+          verdict: consistent
+          explanation: Точка входа немедленно вызывает openWorkspace с клиентом и фабрикой
+            карточки, без предварительного чтения отчётов и текущих статусов.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:e807e39bd08d6454dbb25e9caefc25999737fedd58f9ecb9c0b0f74daa24625a
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+        - id: check-10
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B9
+          subject: current
+          verdict: not_applicable
+          explanation: Собственные файлы не выставляют статус запроса анализа, а запускают
+            и экспортируют компоненты интерфейса.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+        - id: check-11
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B10
+          subject: current
+          verdict: not_applicable
+          explanation: Точки входа не меняют диспозиции замечаний и не обрабатывают
+            операцию копирования.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+        - id: check-12
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B11
+          subject: current
+          verdict: not_applicable
+          explanation: Точка сборки не меняет выбранную версию, а передаёт контекст
+            Workspace Presenter в карточку. Исторические доказательства и версии
+            доступны через экспорт функций ресурса.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+        - id: check-13
+          contract:
+            snapshot: current
+            module_id: archiview-client
+            section: boundaries
+            id: B12
+          subject: current
+          verdict: not_applicable
+          explanation: Точки входа передают клиент и контекст между функциями. Собственные
+            файлы не интерпретируют разметку и не исполняют содержимое
+            документов.
+          evidence:
+            - snapshot: current
+              fact_id: sha256:e807e39bd08d6454dbb25e9caefc25999737fedd58f9ecb9c0b0f74daa24625a
+            - snapshot: current
+              fact_id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+            - snapshot: current
+              fact_id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+      findings: []
+      assessment:
+        current:
+          verdict: consistent
+          summary: Собственные точки входа связывают HTTP-адаптер, презентер рабочей
+            области и карточку модуля, а отдельный ресурс предоставляет экспорт
+            функций просмотра отчёта. Правила формирования карточки и действий
+            применяются в исполнителях интерфейса.
+        change:
+          verdict: not_applicable
+          summary: Первый анализ без базового снимка.
+    manifest:
+      schema_version: 1
+      comparison:
+        baseline: null
+        current:
+          id: working-55adf277d5c7c73ea3580728dba5ecdf0ab1dea7551b90897ec84a8451aa19a8
+          digest: sha256:b13eab0f422c16902cd1104b38bec4b3fda3ebc02f20e42afe672ab8a6a1dc5c
+      module:
+        id: archiview-client
+        baseline_path: null
+        current_path: web/web-ui
+      analyzer:
+        name: archiview-implementation
+        version: "1"
+        config_digest: sha256:2d7399707362a5db091a5f5d9b49dd0823e8d159c84210b10321e8a88fa5434d
+      scope: module
+      clause_format: purpose
+      contract_scope: own
+      contracts:
+        baseline: []
+        current:
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: purpose
+              id: purpose
+            text: Давать пользователю возможность изучить изменения модуля, проверить
+              доказательства, сохранить правку контракта выбранного репозитория
+              и поручить дальнейший анализ.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B1
+            text: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов
+              сам по себе не определяет качество архитектуры.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B2
+            text: Копировать промпт анализа или исправления по явному действию пользователя.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B3
+            text: В основном чеклисте показывать только собственные пункты модуля для
+              выбранного состояния.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B4
+            text: В счётчики замечаний и действия исправления включать только содержательные
+              замечания. Изменения текста пунктов показывать в контракте.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B5
+            text: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а
+              раскрытая строка показывает собственный статус модуля.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B6
+            text: В карточке текущего состояния показывать полноту проверки зависимостей без
+              перечня зависимостей из прежнего отчёта.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B7
+            text: Устаревание одной лишь оценки перехода не требует повторного анализа
+              текущего состояния.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B8
+            text: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B9
+            text: Подтверждать завершение анализа по импорту результата.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B10
+            text: После копирования промпта исправления сохранять текущий статус замечания.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B11
+            text: Сохранять доступ к удалённым модулям и доказательствам выбранного
+              исторического состояния.
+          - reference:
+              snapshot: current
+              module_id: archiview-client
+              section: boundaries
+              id: B12
+            text: Содержимое полученных документов и исходных файлов отображать только как
+              данные.
+      instructions: Проверь соответствие собственного исходного кода модуля его
+        назначению, границам и инвариантам. Укажи фактические обязанности и
+        подтверди выводы сохранёнными фактами исходных файлов. Для отсутствующей
+        реализации оцени, что требует контракт. Композиция детей и контракты
+        предков в эту проверку не входят.
+      context: {}
+      analysis_type: implementation
+      source_snapshot:
+        id: working-55adf277d5c7c73ea3580728dba5ecdf0ab1dea7551b90897ec84a8451aa19a8
+        digest: sha256:55adf277d5c7c73ea3580728dba5ecdf0ab1dea7551b90897ec84a8451aa19a8
+      source_head: d8304bd7550f4527428f2a07736bc14f45427e6a
+      source_captured_at: 2026-11-26T12:27:08.724Z
+      review_scope: self
+      model:
+        provider: OpenAI
+        id: gpt-6
+      prompt_digest: sha256:b53e8cb44d3abaca425c8289c969d2ea7d76bb80585889bc0d68049e7b36a3b2
+    baseline: null
+    current:
+      schema_version: 2
+      id: working-55adf277d5c7c73ea3580728dba5ecdf0ab1dea7551b90897ec84a8451aa19a8
+      digest: sha256:b13eab0f422c16902cd1104b38bec4b3fda3ebc02f20e42afe672ab8a6a1dc5c
+      kind: working
+      complete: true
+      modules:
+        - directory: web/web-ui
+          document:
+            state: documented
+            text: >
+              schema_version: 1
+
+              id: archiview-client
+
+              title: web-ui
+
+              kind: group
+
+              extensions:
+                archiview.roles: [src]
+              purpose: Давать пользователю возможность изучить изменения модуля,
+              проверить доказательства, сохранить правку контракта выбранного
+              репозитория и поручить дальнейший анализ.
+
+              boundaries:
+                B1: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов сам по себе не определяет качество архитектуры.
+                B2: Копировать промпт анализа или исправления по явному действию пользователя.
+                B3: В основном чеклисте показывать только собственные пункты модуля для выбранного состояния.
+                B4: В счётчики замечаний и действия исправления включать только содержательные замечания. Изменения текста пунктов показывать в контракте.
+                B5: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а раскрытая строка показывает собственный статус модуля.
+                B6: В карточке текущего состояния показывать полноту проверки зависимостей без перечня зависимостей из прежнего отчёта.
+                B7: Устаревание одной лишь оценки перехода не требует повторного анализа текущего состояния.
+                B8: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+                B9: Подтверждать завершение анализа по импорту результата.
+                B10: После копирования промпта исправления сохранять текущий статус замечания.
+                B11: Сохранять доступ к удалённым модулям и доказательствам выбранного исторического состояния.
+                B12: Содержимое полученных документов и исходных файлов отображать только как данные.
+              invariants: {}
+            format: yaml
+            contract:
+              schema_version: 1
+              id: archiview-client
+              title: web-ui
+              kind: group
+              extensions:
+                archiview.roles:
+                  - src
+              purpose: Давать пользователю возможность изучить изменения модуля, проверить
+                доказательства, сохранить правку контракта выбранного
+                репозитория и поручить дальнейший анализ.
+              boundaries:
+                B1: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов
+                  сам по себе не определяет качество архитектуры.
+                B2: Копировать промпт анализа или исправления по явному действию пользователя.
+                B3: В основном чеклисте показывать только собственные пункты модуля для
+                  выбранного состояния.
+                B4: В счётчики замечаний и действия исправления включать только содержательные
+                  замечания. Изменения текста пунктов показывать в контракте.
+                B5: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а
+                  раскрытая строка показывает собственный статус модуля.
+                B6: В карточке текущего состояния показывать полноту проверки зависимостей без
+                  перечня зависимостей из прежнего отчёта.
+                B7: Устаревание одной лишь оценки перехода не требует повторного анализа
+                  текущего состояния.
+                B8: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+                B9: Подтверждать завершение анализа по импорту результата.
+                B10: После копирования промпта исправления сохранять текущий статус замечания.
+                B11: Сохранять доступ к удалённым модулям и доказательствам выбранного
+                  исторического состояния.
+                B12: Содержимое полученных документов и исходных файлов отображать только как
+                  данные.
+              invariants: {}
+          documentPath: .archiview/modules/archiview-client.yaml
+          files:
+            - path: .archiview/modules/archiview-client.yaml
+              hash: 3fe0f82f3b1190e2e04fcd6a171285ca32e13898
+              mode: "100644"
+            - path: web/web-ui/app.ts
+              hash: 77bfd1e5f6ab3e6b72750822be4d7b4a12e4c938
+              mode: "100644"
+            - path: web/web-ui/review-entry.ts
+              hash: 1e6d5b3450d77993b14e64f15716bf65bebe7404
+              mode: "100644"
+            - path: web/web-ui/web-entry.ts
+              hash: 3678c27f6dd1e5992cd041efd357d8ed0498c9de
+              mode: "100644"
+          sourceFiles: 3
+          fingerprint: sha256:81e45ce5308cdac821b423a33fd611e5bb8a2a8588f4992651bf0b0ddfdfe2f0
+      facts:
+        - id: sha256:1cf4b661d21f711c448a6bd866afbf9a68b7b1f93cefdd5b0d534c7b4da901a3
+          kind: file
+          path: .archiview/modules/archiview-client.yaml
+          start_line: 1
+          end_line: 22
+          text: >
+            schema_version: 1
+
+            id: archiview-client
+
+            title: web-ui
+
+            kind: group
+
+            extensions:
+              archiview.roles: [src]
+            purpose: Давать пользователю возможность изучить изменения модуля,
+            проверить доказательства, сохранить правку контракта выбранного
+            репозитория и поручить дальнейший анализ.
+
+            boundaries:
+              B1: Отображать смысловую оценку из выбранного отчёта. Статус изменения файлов сам по себе не определяет качество архитектуры.
+              B2: Копировать промпт анализа или исправления по явному действию пользователя.
+              B3: В основном чеклисте показывать только собственные пункты модуля для выбранного состояния.
+              B4: В счётчики замечаний и действия исправления включать только содержательные замечания. Изменения текста пунктов показывать в контракте.
+              B5: Свёрнутая ветвь учитывает потребность скрытых потомков в анализе, а раскрытая строка показывает собственный статус модуля.
+              B6: В карточке текущего состояния показывать полноту проверки зависимостей без перечня зависимостей из прежнего отчёта.
+              B7: Устаревание одной лишь оценки перехода не требует повторного анализа текущего состояния.
+              B8: Обеспечивать просмотр дерева Git во время загрузки статусов проверок.
+              B9: Подтверждать завершение анализа по импорту результата.
+              B10: После копирования промпта исправления сохранять текущий статус замечания.
+              B11: Сохранять доступ к удалённым модулям и доказательствам выбранного исторического состояния.
+              B12: Содержимое полученных документов и исходных файлов отображать только как данные.
+            invariants: {}
+        - id: sha256:cb188c030cc595b1357f250d883540561c32b42bf49dd7693a89a64f5ee77b7b
+          kind: file
+          path: web/web-ui/app.ts
+          start_line: 1
+          end_line: 8
+          text: >
+            import type { ArchiViewClient } from "./view-model/types.js";
+
+            import { createModulePresenter } from
+            "./module-presenter/module-card.js";
+
+            import { openWorkspace } from "./workspace-presenter/workspace.js";
+
+
+            export function startApp(client: ArchiViewClient) {
+              return openWorkspace(client, workspace => createModulePresenter(client, workspace));
+            }
+        - id: sha256:44bc44b0735c709c3cae5e8021ef1b26941e6a22299f317a429b3a5cd0929d22
+          kind: file
+          path: web/web-ui/review-entry.ts
+          start_line: 1
+          end_line: 7
+          text: >
+            export { ownClauseGroups, reviewVersions, observedVersionGroups,
+            renderReview } from "./views/review.js";
+
+            export { freshnessLabel, coverageLabel, reviewFreshnessStates } from
+            "./views/review-status.js";
+
+            export { evidenceLabel } from "./views/evidence.js";
+
+            export { clauseFindingTargets, findingBug, findingFixPrompt,
+            reviewFindingItems } from "./views/findings.js";
+
+            export { moduleFindingCount, treeFindingCounts } from
+            "./workspace-presenter/tree-findings.js";
+
+            export { clauseSectionLabel, renderContract, renderContractHeading,
+            savedClauseText, savedClauseMatchesContract } from
+            "./views/contract.js";
+        - id: sha256:e807e39bd08d6454dbb25e9caefc25999737fedd58f9ecb9c0b0f74daa24625a
+          kind: file
+          path: web/web-ui/web-entry.ts
+          start_line: 1
+          end_line: 5
+          text: >
+            import { startApp } from "./app.js";
+
+            import { createArchiViewClient } from
+            "./archiview-client/client.js";
+
+
+            await startApp(createArchiViewClient());
+      diagnostics: []
+      evidenceLimitations: []
+      scoped: true
+      observations:
+        archiview-client:
+          lineage: 1a441a82-f5d7-4ecd-b215-f0d623f5b22f
+          revision: 420
+          grasp: 4
+          implementation: 4
+      scope_digest: sha256:d5c184d5a6ec13d70ecafc9e9d58b5fbad8f608b15d2b37934b8641d1102f145
+    input_digest: sha256:bfe3a101a867e447e52d4952455288894db87bc16fee4b5719d1d88518d737a8
+    result_digest: sha256:2293b9c8acc5c417e4233f6186e4f81c1ef10df06ae3048cc8a58c33c8f18077
+    content_digest: sha256:f876c5ced4749510cc192149f30e552e300cccb38472f3c6f5ec98f0ce54fb60
+    registration_order: 1035

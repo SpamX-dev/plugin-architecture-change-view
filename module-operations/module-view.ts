@@ -134,7 +134,7 @@ export async function currentAnalysisEntries(entries: ReviewEntry[], model: Repo
   return [...selected.values()];
 }
 
-export async function analysisSummary(entries: ReviewEntry[], decisions: FindingDecisions, details: ModuleDetail["reviews"] = []) {
+export async function analysisSummary(entries: ReviewEntry[], decisions: Pick<FindingDecisions, "read">, details: ModuleDetail["reviews"] = []) {
   const analyses: NonNullable<ModuleReviewState["analyses"]> = {};
   for (const entry of entries) {
     const type = normalizeAnalysisType(entry.manifest.analysis_type);
@@ -151,7 +151,7 @@ export async function analysisSummary(entries: ReviewEntry[], decisions: Finding
 }
 
 export function reviewFilePath(root: string, work: string, moduleId: string) {
-  return path.relative(root, path.join(work, moduleReportName(moduleId) + ".review.yaml")).split(path.sep).join("/");
+  return path.relative(root, path.join(work, moduleReportName(moduleId) + ".analysis.yaml")).split(path.sep).join("/");
 }
 
 export function moduleDetail(module: SessionView["modules"][number], matching: ReviewEntry[], model: ReportModel | undefined,

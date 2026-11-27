@@ -88,6 +88,30 @@ async function completeCurrentReview(root: string, id: string, finding = false) 
   await writeFile(path.join(folder, "result.yaml"), stringify(result, {aliasDuplicateObjects:false}));
 }
 
+test("late imports preserve the current result and replaced requests stay completed", async t => {
+  const root = await repositoryFixture(t);
+  commitTestFiles(root);
+  const app = await createArchiViewSession({root});
+  t.after(() => app.close());
+  const prepare = async () => {
+    const request = await app.turns.prepareCurrent("child", "implementation");
+    await completeCurrentReview(root, request.id);
+    return request;
+  };
+  const first = await prepare();
+  const late = await prepare();
+  await app.analysis.complete(first.id);
+  await writeFile(path.join(root, "child/code.js"), "export const value = 2;\n");
+  const latest = await prepare();
+  await app.analysis.complete(latest.id);
+  await assert.rejects(app.analysis.complete(late.id));
+  assert.equal((await app.analysis.status(late.id)).status, "prepared");
+  assert.equal((await app.analysis.status(first.id)).status, "completed");
+  await app.analysis.complete(first.id);
+  const entries = await app.reports.readModuleReviews("child");
+  assert.deepEqual(entries.map(entry => entry.review_id), [latest.reviewId]);
+});
+
 test("legacy composition requests complete and display without changing their saved inputs", async t => {
   const root = await repositoryFixture(t);
   commitTestFiles(root);
@@ -185,6 +209,70 @@ test("current reviews select by typed freshness after commits, reparenting and d
   assert.deepEqual(await selected(), ["other/composition"]);
 });
 
+test("Git views read the selected commit's module reports and decisions independently of live storage", async t => {
+  const root = await repositoryFixture(t);
+  const head = async () => "git-" + (await promisify(execFile)("git", ["rev-parse", "HEAD"], {cwd:root})).stdout.trim();
+  commitTestFiles(root);
+  const empty = await head();
+  const live = await createArchiViewSession({root});
+  t.after(() => live.close());
+  const request = await live.turns.prepareCurrent("child", "implementation");
+  await completeCurrentReview(root, request.id, true);
+  await live.analysis.complete(request.id);
+  const childFile = path.join(root, ".archiview/work", moduleReportName("child") + ".analysis.yaml");
+  const oldChildFile = path.join(root, ".archiview/work", moduleReportName("child") + ".review.yaml");
+  const supported = await readFile(childFile);
+  const rootFile = path.join(root, ".archiview/work", moduleReportName("root") + ".analysis.yaml");
+  const oldRootFile = path.join(root, ".archiview/work", moduleReportName("root") + ".review.yaml");
+  const obsolete = "schema_version: 2\nkind: review_history\nmodule_id: child\nentries:\n  - [unreadable old body\n";
+  await rename(childFile, oldChildFile);
+  commitTestFiles(root);
+  const old = await head();
+  await writeFile(childFile, supported);
+  await writeFile(oldRootFile, obsolete.replace("module_id: child", "module_id: root"));
+  commitTestFiles(root);
+  const published = await head();
+  await rm(oldRootFile);
+  const decision = {view:(await live.getComparison()).id, path:"child", reviewId:request.reviewId, findingId:"finding",
+    status:"resolved" as const, decision:"Decision in the next commit", expected:{status:"open" as const, decision:""}};
+  await live.updateFinding(decision);
+  commitTestFiles(root);
+  const resolved = await head();
+  const replacement = await live.turns.prepareCurrent("child", "implementation");
+  await completeCurrentReview(root, replacement.id);
+  await live.analysis.complete(replacement.id);
+  const latest = (await live.getComparison()).id;
+  assert.equal((await live.getModule({view:latest, path:"child", currentOnly:true})).analyses?.implementation?.id, replacement.reviewId);
+
+  const external = await mkdtemp(path.join(os.tmpdir(), "archiview-historical-state-"));
+  t.after(() => rm(external, {recursive:true, force:true}));
+  const history = await createArchiViewSession({root, stateDirectory:external});
+  t.after(() => history.close());
+  const moduleAt = async (target: string) => {
+    const view = (await history.getComparison({target})).id;
+    return history.getModule({view, path:"child", currentOnly:true});
+  };
+  assert.deepEqual((await moduleAt(empty)).reviews, []);
+  assert.deepEqual((await moduleAt(old)).reviews, []);
+  const oldTree = await history.getComparison({target:old});
+  assert.deepEqual((await history.getReviewStatuses({view:oldTree.id})).modules.find(m => m.key === "child")?.analyses, {});
+  const first = (await history.getComparison({target:published})).id;
+  const expected = {id:request.reviewId, openFindings:1};
+  assert.deepEqual((await history.getModule({view:first,path:"child"})).analyses?.implementation, expected);
+  assert.deepEqual((await history.getReviewStatuses({view:first})).modules.find(m => m.key === "child")?.analyses?.implementation, expected);
+  const custom = await history.getComparison({target:published, baseline:"initial"});
+  assert.deepEqual(custom.modules.find(m => m.key === "child")?.analyses?.implementation, expected);
+  assert.equal((await moduleAt(resolved)).analyses?.implementation?.openFindings, 0);
+  await assert.rejects(history.updateFinding({...decision, view:first}), /только для чтения/);
+  await assert.rejects(history.prepareAnalysis({view:first,path:"child",analysisType:"implementation"}), /только для чтения/);
+
+  await writeFile(rootFile, stringify({schema_version:2, kind:"review_history", module_id:"root", entries:[]}));
+  commitTestFiles(root);
+  const broken = (await history.getComparison({target:await head()})).id;
+  assert.equal((await history.getModule({view:broken,path:"child"})).analyses?.implementation?.id, replacement.reviewId);
+  await assert.rejects(history.getReviewStatuses({view:broken}));
+});
+
 test("tree, module and current checks share one Git history traversal past the snapshot cache", async t => {
   const root = await repositoryFixture(t);
   commitTestFiles(root);
@@ -265,7 +353,7 @@ test("Stop and the CLI share module and relation review work without opening rev
   const request = await run("--prepare-current-review","child","--analysis-type","implementation");
   await writeFile(code, cyclicCode(3));
   await completeCurrentReview(root, request.id);
-  await execute("--complete-analysis",request.id);
+  await assert.rejects(execute("--complete-analysis",request.id), /Входные данные проверки изменились/);
   assert.deepEqual((await list()).checks, [{moduleId:"child",type:"implementation",status:"pending"}]);
   const finishImplementation = async () => {
     const fresh = await run("--prepare-current-review","child","--analysis-type","implementation");
@@ -402,7 +490,7 @@ async function observeCurrent(reports: ReportStore) {
   });
 }
 
-test("observer generations preserve report history and independently track real implementation changes", async t => {
+test("observer generations preserve the published report and independently track real implementation changes", async t => {
   const root = await repositoryFixture(t);
   const instructions = path.join(root, "child/SKILL.md");
   await writeFile(instructions, "# A\n");
@@ -428,18 +516,21 @@ test("observer generations preserve report history and independently track real 
   await writeLegacy();
   // Both projections were used before observers acquired separate cursor files.
   const legacySnapshot = {...initial, modules:initial.modules.map(module => module === own ? legacyOwn : module)};
+  const projections = [];
   for (const snapshot of [legacySnapshot, initial]) {
     const result = completedFixture(createReviewInput(digest(root), null, snapshot, "child", {analysisType:"implementation"}));
     result.report.analysis.coverage = {status:"complete", limitations:[]};
     for (const check of result.report.checks) Object.assign(check, {verdict:"consistent", explanation:"Fixture",
       evidence:[{snapshot:"current", fact_id:result.current.facts[0].id}]});
     await reports.saveReview(result);
+    const published = await reports.readModuleReviews("child");
+    assert.deepEqual(published.map(entry => entry.review_id), [result.review_id]);
+    projections.push(published[0]);
   }
-  const historyFile = path.join(reports.work, moduleReportName("child") + ".review.yaml");
+  const historyFile = path.join(reports.work, moduleReportName("child") + ".analysis.yaml");
   const originalBytes = await readFile(historyFile);
   const entries = await reports.readModuleReviews("child");
-  const full = entries.find(entry => entry.current.facts.some(fact => fact.path === "child/SKILL.md"))!;
-  const incomplete = entries.find(entry => entry.review_id !== full.review_id)!;
+  const [incomplete, full] = projections;
   const observe = () => observeCurrent(reports);
   const migrated = await observe();
   assert.deepEqual(migrated.observations!.child, {...before, skillHistory:{since:383}});

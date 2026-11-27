@@ -1115,7 +1115,7 @@ test("analysis reuses a prepared request after clipboard denial and refreshes on
   await page.locator(".raw-document pre").filter({ hasText: "Проверка из браузерного теста" }).waitFor();
 });
 
-test("an import refreshes a historical card while its files tab stays selected", browserOptions, async t => {
+test("a commit without saved analysis stays read-only", browserOptions, async t => {
   const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
   const app = await createArchiView({ root });
@@ -1130,6 +1130,19 @@ test("an import refreshes a historical card while its files tab stays selected",
     return picker.value === target && !picker.disabled;
   }, revision);
   await page.locator("#tab-implementation").click();
+  await page.getByText("В этом коммите анализ не сохранён.", { exact: true }).waitFor();
+  assert.equal(await page.locator("#document-panel #analyze-module").count(), 0);
+});
+
+test("an import retries a temporary card error while its files tab stays selected", browserOptions, async t => {
+  const defer = await fixtureCleanup(t);
+  const root = await browserProject(defer);
+  const app = await createArchiView({ root });
+  const page = await (await browserContext(defer)).newPage();
+  // Exercise request polling independently of the working tree's native change notification.
+  await page.route("**/api/changes?**", () => {});
+  await page.goto(await listen(defer, app.server) + "/#src");
+  await page.locator("#tab-implementation").click();
   await page.locator("#analyze-module").click();
   const preparation = page.waitForResponse(response => new URL(response.url()).pathname === "/api/analysis");
   await page.getByRole("button", { name: "Копировать промпт", exact: true }).click();
@@ -1140,8 +1153,8 @@ test("an import refreshes a historical card while its files tab stays selected",
   const folder = path.join(root, ".archiview/snapshots/analysis", request.id);
   const result: ReviewInput = parse(await readFile(path.join(folder, "input.yaml"), "utf8"));
   completeChecks(result);
-  result.report.analysis.model = result.manifest.model = { provider: "test", id: "historical-card" };
-  result.report.analysis.prompt_digest = result.manifest.prompt_digest = digest("Historical card fixture");
+  result.report.analysis.model = result.manifest.model = { provider: "test", id: "card-retry" };
+  result.report.analysis.prompt_digest = result.manifest.prompt_digest = digest("Card refresh fixture");
   result.report.assessment.current = { verdict: "consistent", summary: "Проверен выбранный срез" };
   await writeFile(path.join(folder, "result.yaml"), stringify(result, { aliasDuplicateObjects: false }));
   let refreshAttempts = 0;
@@ -1158,7 +1171,7 @@ test("an import refreshes a historical card while its files tab stays selected",
   await app.analysis.complete(request.id);
   await reloaded;
   assert.ok(refreshAttempts >= 2, "a temporary card error must keep the imported request available for refresh");
-  assert.equal(await timeline.inputValue(), revision);
+  assert.equal(await page.locator("#timeline").inputValue(), "current");
   assert.equal(await page.locator("#tab-files").getAttribute("aria-selected"), "true");
   await page.locator("#tab-implementation").click();
   await page.getByText("Проверен выбранный срез", { exact: true }).waitFor();

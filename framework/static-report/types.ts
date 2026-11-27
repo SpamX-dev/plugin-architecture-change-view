@@ -195,11 +195,13 @@ export interface PublishedComparison {
   current: Snapshot;
 }
 
-export interface ReviewHistory {
-  schema_version: number;
-  kind: "review_history";
+export type ReviewSlot = "composition" | "implementation" | "generic";
+export interface CurrentModuleReviews {
+  schema_version: 3;
+  kind: "module_reviews";
   module_id: string;
-  entries: ReviewEntry[];
+  results: Partial<Record<ReviewSlot, ReviewEntry>>;
+  resolution_inputs?: Record<string, string>;
 }
 
 export interface Freshness {

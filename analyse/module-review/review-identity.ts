@@ -26,7 +26,21 @@ export function entryContentDigest(entry: ReviewEntry) {
  * удаление. Разрешать можно только ту же область и оба набора входов; смена
  * кода не разрешает спор о прежнем коде. Хранилище вызывает это перед записью.
  */
-export function validateReviewRelations(entries: ReviewEntry[]) {
+export function resolutionScope(entry: ReviewEntry) {
+  return digest([entry.module_id, entry.inputs.scope, entry.inputs.current_digest, entry.inputs.change_digest]);
+}
+
+/** Scopes of historical resolution targets omitted from an already checked current selection. */
+export function historicalResolutionInputs(entries: ReviewEntry[]) {
+  const present = new Set(entries.map(entry => entry.review_id));
+  const missing = new Map<string, string>();
+  for (const entry of entries) for (const id of entry.resolution?.review_ids ?? []) {
+    if (!present.has(id)) missing.set(id, resolutionScope(entry));
+  }
+  return missing;
+}
+
+export function validateReviewRelations(entries: ReviewEntry[], archivedInputs: ReadonlyMap<string, string> = new Map()) {
   const byId = new Map<string, ReviewEntry>();
   for (const entry of entries) {
     const previous = byId.get(entry.review_id);
@@ -35,6 +49,7 @@ export function validateReviewRelations(entries: ReviewEntry[]) {
   }
   for (const entry of entries) for (const id of entry.resolution?.review_ids ?? []) {
     const target = byId.get(id);
+    if (!target && archivedInputs.get(id) === resolutionScope(entry)) continue;
     if (!target) throw new Error("Unresolved review resolution: " + id);
     if (!isSemanticReview(entry) || !isSemanticReview(target) || entry.module_id !== target.module_id ||
       entry.inputs?.scope !== target.inputs?.scope || entry.inputs?.current_digest !== target.inputs?.current_digest ||

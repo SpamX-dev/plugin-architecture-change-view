@@ -1,5 +1,5 @@
 import type { Snapshot } from "../../framework/snapshots/types.js";
-import type { ReviewEntry, ReviewHistory } from "../../framework/static-report/types.js";
+import type { CurrentModuleReviews, ReviewEntry } from "../../framework/static-report/types.js";
 /**
  * Проверяет опубликованные отчёты именно из индекса Git. Временная копия содержит
  * только staged-данные ArchiView; рабочее дерево и индекс пользователя не меняются.
@@ -11,12 +11,9 @@ import os from "node:os";
 import path from "node:path";
 import { SnapshotStore } from "../git-changes/snapshot-store.js";
 import { captureGitIndex } from "../git-changes/capture.js";
-import { ReportStore } from "./report-store.js";
+import { publishedReviewIds, ReportStore, validateHistoryFile, validatePublishedReviewSet } from "./report-store.js";
 import { validateStoredReport } from "./publication.js";
 import { buildModuleStates } from "./module-state.js";
-import { validateReviewEntry } from "./review-validation.js";
-import { validateReviewRelations } from "./review-identity.js";
-import { REPORT_SCHEMA_VERSION } from "../../framework/static-report/types.js";
 import { digest } from "../../framework/serialization/digest.js";
 import { parseYaml } from "../../framework/serialization/yaml.js";
 
@@ -38,7 +35,7 @@ export async function checkPreparedIndex(root: string) {
   if (entries.some((entry) => entry.stage !== "0")) throw new Error("Unresolved Git index conflicts in ArchiView data");
   const raw = entries.filter((entry) => /^\.archiview\/(snapshots|reviews)\//.test(entry.file) || /^\.archiview\/saved-.*\.json$/.test(entry.file));
   if (raw.length) throw new Error("Raw ArchiView history is tracked in the index: " + raw.map((item) => item.file).join(", "));
-  const published = entries.filter((entry) => [".archiview/project.json", ".archiview/.gitignore"].includes(entry.file) || /^\.archiview\/work\/[^/]+\.(archi|review)\.yaml$/.test(entry.file));
+  const published = entries.filter((entry) => [".archiview/project.json", ".archiview/.gitignore"].includes(entry.file) || /^\.archiview\/work\/[^/]+\.(archi|analysis)\.yaml$/.test(entry.file));
   if (![".archiview/project.json", ".archiview/.gitignore"].every((file) => published.some((entry) => entry.file === file)))
     throw new Error("Prepared ArchiView data requires project.json and .gitignore");
   if (!published.some((entry) => entry.file.endsWith(".archi.yaml"))) throw new Error("No prepared ArchiView reports in the Git index");
@@ -59,13 +56,16 @@ export async function checkPreparedIndex(root: string) {
     const attempts: ReviewEntry[] = [];
     for (const entry of published) {
       if (entry.file.endsWith(".archi.yaml")) technical.push(parseYaml(await readFile(path.join(temporary, entry.file), "utf8"), validateStoredReport));
-      if (entry.file.endsWith(".review.yaml")) {
-        const history = parseYaml(await readFile(path.join(temporary, entry.file), "utf8"), (value) => value as ReviewHistory);
-        if (history.schema_version !== REPORT_SCHEMA_VERSION || history.kind !== "review_history" || !Array.isArray(history.entries)) throw new Error("Invalid staged review history");
-        for (const review of history.entries) attempts.push(validateReviewEntry(review));
+      if (entry.file.endsWith(".analysis.yaml")) {
+        const history = parseYaml(await readFile(path.join(temporary, entry.file), "utf8"), value => value as CurrentModuleReviews);
+        attempts.push(...validateHistoryFile(history, path.basename(entry.file), store.snapshotRoot));
       }
     }
-    validateReviewRelations(attempts);
+    validatePublishedReviewSet(attempts);
+    const owners = new Map(attempts.map(entry => [entry.review_id, entry.module_id]));
+    for (const report of technical) for (const id of publishedReviewIds(report)) {
+      if (owners.get(id) !== report.module_id) throw new Error("Missing published review: " + id);
+    }
     // Сравниваем состояния модулей, а не время захвата, тип снимка или абсолютный корень.
     const stateDigest = (snapshot: Snapshot) => digest([...buildModuleStates(snapshot)].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0));
     const actualDigest = stateDigest(actual);

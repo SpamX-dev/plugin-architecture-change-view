@@ -3,7 +3,7 @@ import type { AssessmentSide, ReviewReport } from "../../framework/ai-report/typ
 import type { ReviewEntry, ReviewFreshness, AggregateAssessment, ReviewStatus, TreeReviewStatus } from "../../framework/static-report/types.js";
 import { canonical, digest } from "../../framework/serialization/digest.js";
 import { ModuleStateContext } from "./module-state.js";
-import { isSemanticReview, validateReviewRelations } from "./review-identity.js";
+import { historicalResolutionInputs, isSemanticReview, validateReviewRelations } from "./review-identity.js";
 import { combineCoverage, freshness as assessFreshness } from "./freshness.js";
 
 /** Разные формулировки и непроверенные пункты не противоречат подтверждённому выводу. */
@@ -53,7 +53,7 @@ function aggregateAssessment(candidates: {entry:ReviewEntry;freshness:ReviewFres
 
 /** Учитываем разрешения один раз для всего набора попыток, в обеих областях. */
 function activeReviewsByModule(entries: ReviewEntry[]) {
-  validateReviewRelations(entries);
+  validateReviewRelations(entries, historicalResolutionInputs(entries));
   const resolved = new Set(entries.flatMap((entry) => entry.resolution?.review_ids ?? []));
   const active = new Map<string, ReviewEntry[]>();
   for (const entry of entries) {

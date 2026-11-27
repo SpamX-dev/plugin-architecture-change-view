@@ -269,9 +269,8 @@ test("HTTP separates open findings from resolved findings without changing the s
   const detail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: "child" }))).json() as Promise<ModuleResponse>);
   assert.deepEqual(detail.reviews[0].report.findings.map((finding) => finding.lifecycle), ["introduced", "persisting", "resolved"]);
   const saved = parse(await readFile(path.resolve(root, detail.reviews[0].reviewFile), "utf8"));
-  assert.match(detail.reviews[0].reviewFile, /^\.archiview\/work\/[a-f0-9]{64}\.review\.yaml$/);
-  assert.deepEqual(saved.entries.find((entry: {review_id:string;report:unknown}) => entry.review_id === detail.reviews[0].report.id).report,
-    detail.reviews[0].report);
+  assert.match(detail.reviews[0].reviewFile, /^\.archiview\/work\/[a-f0-9]{64}\.analysis\.yaml$/);
+  assert.deepEqual(saved.results.generic.report, detail.reviews[0].report);
 });
 
 test("HTTP excludes legacy contract changes from remark counts while preserving saved history", async (t) => {
@@ -298,11 +297,11 @@ test("HTTP excludes legacy contract changes from remark counts while preserving 
     const detail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: module!.directory }))).json() as Promise<ModuleResponse>);
     assert.deepEqual(detail.reviews[0].report, originals.get(id));
     const saved = parse(await readFile(path.resolve(root, detail.reviews[0].reviewFile), "utf8"));
-    assert.deepEqual(saved.entries.find((entry: { review_id: string; report: unknown }) => entry.review_id === detail.review!.id).report, originals.get(id));
+    assert.deepEqual(saved.results.generic.report, originals.get(id));
   }
 });
 
-test("HTTP preserves conflicting attempts and reports both conflict and subtree coverage", async (t) => {
+test("HTTP exposes the replacement verdict and independently reports subtree coverage", async (t) => {
   const root = await fixture(t);
   const app = await serve(t, root);
   const current = (await app.reports.publishedComparison())!.current;
@@ -312,15 +311,14 @@ test("HTTP preserves conflicting attempts and reports both conflict and subtree 
   await app.reports.saveReview(second);
   const view = await ((await fetch(app.url + "/api/comparison?baseline=initial")).json() as Promise<ComparisonResponse>);
   const parent = view.modules.find((module) => module.moduleId === "root");
-  assert.equal(parent!.reviewStatus!.self.current.conflict, true);
-  assert.equal(parent!.reviewStatus!.self.current.verdict, "inconclusive");
+  assert.equal(parent!.reviewStatus!.self.current.conflict, false);
+  assert.equal(parent!.reviewStatus!.self.current.verdict, "violation");
   assert.equal(parent!.reviewStatus!.subtree.current.current_violation, true);
   assert.equal(parent!.reviewStatus!.subtree.current.status, "not_reviewed");
   const detail = await ((await fetch(app.url + "/api/module?" + new URLSearchParams({ view: view.id, path: "." }))).json() as Promise<ModuleResponse>);
-  assert.deepEqual(detail.reviews.map((entry) => entry.report.id), [second.report.id, first.report.id]);
-  assert.equal(detail.reviews[0].reviewFile, detail.reviews[1].reviewFile);
+  assert.deepEqual(detail.reviews.map((entry) => entry.report.id), [second.report.id]);
   assert.equal(detail.review!.id, second.report.id);
-  assert.equal(detail.reviewStatus!.self.conflict, true);
+  assert.equal(detail.reviewStatus!.self.conflict, false);
 });
 
 test("module detail points to the actual review file in an explicitly selected external store", async (t) => {
@@ -336,5 +334,5 @@ test("module detail points to the actual review file in an explicitly selected e
   assert.equal(path.dirname(file), path.join(stateDirectory, "work"));
   assert.ok(!detail.reviews[0].reviewFile.includes("\\"));
   const saved = parse(await readFile(file, "utf8"));
-  assert.deepEqual(saved.entries.find((entry: { review_id: string; report: unknown }) => entry.review_id === review.report.id).report, review.report);
+  assert.deepEqual(saved.results.generic.report, review.report);
 });

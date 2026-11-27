@@ -9,6 +9,13 @@ import { errorDetails } from "../../node-errors.js";
 
 export class DecisionConflict extends Error {}
 
+export function parseFindingDecisions(text: string): Record<string, FindingDisposition> {
+  const values = JSON.parse(text);
+  if (!values || typeof values !== "object" || Array.isArray(values) || !Object.values(values).every(validDisposition))
+    throw new Error("Некорректные решения по замечаниям");
+  return Object.assign(Object.create(null), values);
+}
+
 export class FindingDecisions {
   constructor(private root: string, private state: string) {}
 
@@ -20,10 +27,7 @@ export class FindingDecisions {
     const file = this.file(reviewId);
     await assertStateLocation(this.root, this.state, file);
     try {
-      const values = JSON.parse(await readFile(file, "utf8"));
-      if (!values || typeof values !== "object" || Array.isArray(values) || !Object.values(values).every(validDisposition))
-        throw new Error("Некорректные решения по замечаниям");
-      return Object.assign(Object.create(null), values);
+      return parseFindingDecisions(await readFile(file, "utf8"));
     } catch (error) { if (errorDetails(error).code !== "ENOENT") throw error; return Object.create(null); }
   }
 

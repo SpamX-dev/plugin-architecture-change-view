@@ -7,6 +7,7 @@ import type { SessionView } from "../../module-operations/session-view.js";
 import { errorDetails } from "../../node-errors.js";
 /** Прикладная сессия проекта: снимки и операции просмотра без зависимости от транспорта. */
 import { AnalysisHistory, followsAnalysis } from "../../analyse/module-review/analysis-timeline.js";
+import { GitReviewArchive } from "../../analyse/module-review/git-reviews.js";
 import { DecisionConflict, FindingDecisions } from "../../analyse/module-review/dispositions.js";
 import { currentAnalysisEntries, analysisSummary } from "../../module-operations/module-view.js";
 import { observeModules } from "../../analyse/module-review/module-observations.js";
@@ -15,12 +16,12 @@ import { repositoryStateDirectory } from "./state-directory.js";
 import { GitTreeReader } from "../../analyse/git-changes/git-tree.js";
 import { projectReviewSettings } from "./project-review-settings.js";
 import { realpath } from "node:fs/promises";
+import path from "node:path";
 import { ApplicationError } from "../../module-operations/errors.js";
 import { captureGitHead, captureWorkingTree, listGitRevisions, readGitHeadRevision } from "../../analyse/git-changes/capture.js";
 import { compareGitFiles, compareRepositorySnapshots } from "../../analyse/git-changes/comparison.js";
 import { snapshotDigest } from "../../framework/snapshots/identity.js";
 import { openProjectHistory } from "../../analyse/module-review/legacy-history.js";
-import { ReviewStore } from "../../analyse/module-review/review-store.js";
 import { ReportStore, StalePublicationError } from "../../analyse/module-review/report-store.js";
 import { createReportModel } from "../../analyse/module-review/model.js";
 import { ChangeHistory } from "../../analyse/git-changes/change-history.js";
@@ -35,14 +36,21 @@ import { changeExistingPrototype, createPrototypes } from "../../module-operatio
 export async function createArchiViewSession({ root: requestedRoot, stateDirectory, sharedStateDirectory, workspaceRoot, deferPublication = true }: { root: string; stateDirectory?: string; sharedStateDirectory?: boolean; workspaceRoot?: string; deferPublication?: boolean }) {
   const root = await realpath(requestedRoot);
   const { store, migration } = await openProjectHistory(root, await repositoryStateDirectory(root, stateDirectory, sharedStateDirectory));
-  const reviews = new ReviewStore(store);
   const reports = new ReportStore(store);
   const changes = new ChangeHistory(store);
   const decisions = new FindingDecisions(root, store.directory);
-  const analysis = new AnalysisRequests(store, reports, workspaceRoot ?? root);
+  const analysis = new AnalysisRequests(store, reports, workspaceRoot ?? root, async entry => {
+    if (entry.current.revision) throw new ApplicationError("INVALID_ARGUMENT", "Результат для Git-коммита доступен только для чтения.");
+    const head = await readGitHeadRevision(root);
+    const tree = await liveTree(head);
+    if (!tree.complete || await readGitHeadRevision(root) !== head ||
+        createReportModel(null, tree).reviewFreshness(entry).current.status !== "fresh" || !await followsAnalysis(entry, tree, analysisHistory))
+      throw new ApplicationError("STALE_VIEW", "Входные данные проверки изменились. Запустите анализ текущего состояния заново.");
+  });
   const settings = projectReviewSettings(root, store.directory);
   const reader = new GitTreeReader(root, store.snapshotRoot);
   const analysisHistory = new AnalysisHistory(reader);
+  const gitReviews = new GitReviewArchive(root);
   const watcher = new RepositoryWatch(root, store.directory);
   const editor = createContractEditor(root);
   const captureOptions = { snapshotRoot: store.snapshotRoot };
@@ -211,7 +219,8 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   async function ensureReviews(view: SessionView, loaded?: SessionView["reviews"]) {
     if (!view.gitTree) return;
     view.reviewLoad ??= (async () => {
-      const entries = loaded ?? await reports.readReviews();
+      const revision = view.currentSnapshot.revision;
+      const entries = loaded ?? (revision ? await gitReviews.reviews(revision) : await reports.readReviews());
       const model = view.reportModel;
       const statuses = model.aggregateTreeStatuses(entries);
       for (const module of view.modules) {
@@ -228,6 +237,11 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     return currentAnalysisEntries(entries, view.reportModel, view.currentSnapshot, entry => followsAnalysis(entry, view.currentSnapshot, analysisHistory));
   }
 
+  function viewDecisions(view: SessionView) {
+    const revision = view.currentSnapshot.revision;
+    return revision ? {read: (id: string) => gitReviews.findingDecisions(revision, id)} : decisions;
+  }
+
   async function loadAnalysisSummaries(view: SessionView, entries = view.reviews) {
     const cycleCounts = await relations.getDependencyCycleCounts(root, store.directory, view.currentSnapshot);
     const byModule = new Map<string, typeof entries>();
@@ -238,7 +252,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     }
     for (const module of view.modules) {
       const reviews = byModule.get(module.moduleId ?? "");
-      module.analyses = reviews ? await analysisSummary(await selectedAnalyses(reviews, view), decisions) : {};
+      module.analyses = reviews ? await analysisSummary(await selectedAnalyses(reviews, view), viewDecisions(view)) : {};
       module.dependencyCycleCount = module.currentPath === null ? 0 : cycleCounts.get(module.currentPath) ?? 0;
       module.descendantsNeedAnalysis = false;
     }
@@ -256,7 +270,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
 
   async function getReviewStatuses({view:id}: {view:string}) {
     const view = findView(id);
-    const entries = await reports.readReviews();
+    const entries = view.currentSnapshot.revision ? undefined : await reports.readReviews();
     await ensureReviews(view, entries);
     await loadAnalysisSummaries(view, entries);
     return structuredClone({ modules: view.modules.map(({key, review, reviewStatus, analyses, dependencyCycleCount, descendantsNeedAnalysis}) =>
@@ -359,7 +373,9 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
     if (!baseline && selected && !["initial", "auto"].includes(selected)) throw new ApplicationError("NOT_FOUND", "База сравнения не найдена");
     const { history, liveReports } = targetId === "current"
       ? await reports.refreshWorking(working, usePublishedBaseline ? retainedBaseline : () => baseline)
-      : { history: await reports.list(), liveReports: [] };
+      : current.revision
+        ? { history: { entries: await gitReviews.reviews(current.revision), diagnostics: [], comparison: null }, liveReports: [] }
+        : { history: await reports.list(), liveReports: [] };
     if (usePublishedBaseline) baseline = retainedBaseline(history.comparison);
     if (history.comparison) {
       initialBaseline = history.comparison.baseline;
@@ -407,16 +423,20 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   /** Возвращает детали и доказательства из выбранного неизменяемого представления. */
   async function getModule(args: ModuleArgs): Promise<ModuleDetail> {
     const { view, module } = selectedModule(args);
-    if (args.analysis !== false && !args.currentOnly) await ensureReviews(view);
+    const revision = view.currentSnapshot.revision;
+    if (args.analysis !== false && !args.currentOnly && !revision) await ensureReviews(view);
     let matching: SessionView["reviews"] = [];
     if (args.analysis !== false) {
-      if (args.currentOnly && module.moduleId) matching = await reports.readModuleReviews(module.moduleId);
+      if (revision) matching = await gitReviews.reviews(revision, module.moduleId ?? "directory:" + module.directory);
+      else if (args.currentOnly && module.moduleId) matching = await reports.readModuleReviews(module.moduleId);
       else matching = view.reviews.filter(bundle => module.moduleId ? bundle.module_id === module.moduleId :
         (bundle.report.module.current_path ?? bundle.report.module.baseline_path) === module.directory);
     }
     const current = matching.length ? await selectedAnalyses(matching, view) : [];
-    const detail = moduleDetail(module, args.currentOnly ? current : matching, matching.length ? view.reportModel : undefined, view.modules, root, reports.work);
-    if (args.analysis !== false) detail.analyses = await analysisSummary(current, decisions, detail.reviews);
+    const selected = revision && args.analysis !== false ? {...module, review: matching.length ? reviewSummary(matching, view.reportModel) : null} : module;
+    const detail = moduleDetail(selected, args.currentOnly ? current : matching, matching.length ? view.reportModel : undefined, view.modules, root,
+      revision ? path.join(root, ".archiview", "work") : reports.work);
+    if (args.analysis !== false) detail.analyses = await analysisSummary(current, viewDecisions(view), detail.reviews);
     if (view.target?.id === "current" && module.after) {
       detail.deletedClauses = editor.deletedClauses(module.after);
       const last = detail.deletedClauses.at(-1);
@@ -442,6 +462,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   /** Экспортирует входы анализа выбранного представления без запуска агента. */
   async function prepareAnalysis(args: ModuleArgs) {
     const { view, module } = selectedModule(args);
+    if (view.currentSnapshot.revision) throw new ApplicationError("INVALID_ARGUMENT", "Сохранённый Git-коммит доступен только для чтения.");
     if (!view.complete || !(module.after ?? module.before)?.document.contract || !module.moduleId)
       throw new ApplicationError("INCOMPLETE_VIEW", "Нужны полный снимок и корректный контракт модуля");
     if (args.analysisType && !module.after) throw new ApplicationError("INVALID_ARGUMENT", "Модуль отсутствует в выбранном срезе.");
@@ -510,6 +531,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   };
   const updateFinding: SessionOperations["updateFinding"] = async args => {
     const {view, module} = selectedModule(args);
+    if (view.currentSnapshot.revision) throw new ApplicationError("INVALID_ARGUMENT", "Сохранённый Git-коммит доступен только для чтения.");
     const entries = module.moduleId ? await reports.readModuleReviews(module.moduleId) : [];
     const review = (await selectedAnalyses(entries, view)).find(entry => entry.review_id === args.reviewId);
     if (!review) throw new ApplicationError("STALE_VIEW", "Анализ отсутствует в выбранном срезе.");
@@ -555,5 +577,5 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       const tree = await liveTree(head);
       return evidence && tree.complete ? workingEvidence(tree, head) : tree;
     }), (entry, snapshot) => followsAnalysis(entry, snapshot, analysisHistory));
-  return { root, store, migration, reviews, reports, changes, analysis, turns, startupComparison, ...operations, close: () => watcher.close() };
+  return { root, store, migration, reports, changes, analysis, turns, startupComparison, ...operations, close: () => watcher.close() };
 }

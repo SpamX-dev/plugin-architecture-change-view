@@ -1,5 +1,5 @@
 import { writeModuleTree } from "./support.js";
-import type { ReviewHistory, ReviewInput } from "../framework/static-report/types.js";
+import type { CurrentModuleReviews, ReviewInput } from "../framework/static-report/types.js";
 import type { TestContext } from "node:test";
 /** Проверка реального staged-набора, CLI и переносимости без локального накопления. */
 import assert from "node:assert/strict";
@@ -93,16 +93,20 @@ test("CLI exports scoped YAML, imports a real attempt idempotently, and clone re
   assert.equal(history.entries[0].review_id, input.review_id);
   assert.equal(history.diagnostics.length, 0);
   assert.equal((await checkPreparedIndex(clone)).reviews, 1);
-  const historyFile = path.join(".archiview", "work", moduleReportName("root") + ".review.yaml");
+  const historyFile = path.join(".archiview", "work", moduleReportName("root") + ".analysis.yaml");
   const historyText = await readFile(path.join(clone, historyFile), "utf8");
-  const staged = parseYaml(historyText, (value) => value as ReviewHistory);
-  const [entry] = staged.entries;
+  const staged = parseYaml(historyText, (value) => value as CurrentModuleReviews);
+  const entry = staged.results.generic!;
   entry.resolution = { review_ids: ["missing-attempt"], reason: "Разрешить прежнее расхождение." };
   entry.content_digest = entryContentDigest(entry);
   await writeFile(path.join(clone, historyFile), stringify(staged, { aliasDuplicateObjects: false }));
   git(clone, ["add", historyFile]);
   await writeFile(path.join(clone, historyFile), historyText);
   await assert.rejects(checkPreparedIndex(clone), /Unresolved review resolution: missing-attempt/);
+  await writeFile(path.join(clone, historyFile), stringify({schema_version:2, kind:"review_history", module_id:"root", entries:[]}));
+  git(clone, ["add", historyFile]);
+  await writeFile(path.join(clone, historyFile), historyText);
+  await assert.rejects(checkPreparedIndex(clone), /Unsupported module review format/);
 });
 
 test("strict YAML rejects non-string keys and non-finite values before hashing", () => {

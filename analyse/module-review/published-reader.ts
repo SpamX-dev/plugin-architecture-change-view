@@ -4,10 +4,9 @@ import { setTimeout as delay } from "node:timers/promises";
 import { readSnapshotRoot } from "../../storage/identity.js";
 import { assertStateLocation, projectStateDirectory } from "../../storage/paths.js";
 import { digest } from "../../framework/serialization/digest.js";
-import { validateReviewRelations } from "./review-identity.js";
-import type { ReviewHistory, TechnicalReport } from "../../framework/static-report/types.js";
+import type { CurrentModuleReviews, TechnicalReport } from "../../framework/static-report/types.js";
 import { errorDetails } from "../../node-errors.js";
-import { moduleReportName, publishedPathVersion as stamp, readYaml, validateHistoryFile } from "./report-store.js";
+import { moduleReportName, publishedPathVersion as stamp, publishedReviewIds, readYaml, validateHistoryFile } from "./report-store.js";
 import { reconstruct, validateStoredReport } from "./publication.js";
 
 export class PublicationChanged extends Error {
@@ -44,7 +43,7 @@ async function readGeneration(root: string, directory: string, work: string) {
   }
   const origin = await readSnapshotRoot(root, directory) ?? root;
   const projectId = digest(origin);
-  const files = (await readdir(work)).filter(name => /\.(archi|review)\.yaml$/.test(name)).sort();
+  const files = (await readdir(work)).filter(name => /\.(archi|analysis)\.yaml$/.test(name)).sort();
   const versions = new Map<string, string>();
   const reports: TechnicalReport[] = [];
   for (const name of files) {
@@ -71,23 +70,20 @@ async function readGeneration(root: string, directory: string, work: string) {
   const generation = Math.max(...reports.map(report => report.publication!.generation));
   const selected = reports.filter(report => report.publication!.generation === generation);
   const reviewIds = new Map(selected.map(report => {
-    const status = report.review_status;
-    const ids = status ? [status.self.current, status.self.change, status.explicit_subtree.current, status.explicit_subtree.change]
-      .flatMap(side => side.review_ids ?? []) : [];
-    if (ids.length && !versions.has(moduleReportName(report.module_id) + ".review.yaml"))
+    const ids = publishedReviewIds(report);
+    if (ids.length && !versions.has(moduleReportName(report.module_id) + ".analysis.yaml"))
       throw new Error("Missing published review history: " + report.module_id);
     return [report.module_id, new Set(ids)] as const;
   }));
   async function readReviews(moduleId: string) {
     await checkDirectory();
-    const name = moduleReportName(moduleId) + ".review.yaml";
+    const name = moduleReportName(moduleId) + ".analysis.yaml";
     const file = path.join(work, name);
     await assertStateLocation(root, directory, file);
     const expected = versions.get(name) ?? null;
     if (await stamp(file) !== expected) throw new PublicationChanged();
     if (!expected) return [];
-    const entries = validateHistoryFile(await readYaml<ReviewHistory>(file), name, origin);
-    validateReviewRelations(entries);
+    const entries = validateHistoryFile(await readYaml<CurrentModuleReviews>(file), name, origin);
     const saved = new Set(entries.map(entry => entry.review_id));
     for (const id of reviewIds.get(moduleId) ?? []) if (!saved.has(id))
       throw new Error("Missing published review: " + id);
@@ -96,6 +92,6 @@ async function readGeneration(root: string, directory: string, work: string) {
     return entries.sort((a, b) => (b.registration_order ?? 0) - (a.registration_order ?? 0));
   }
   return { pair, reports: selected, work, readReviews,
-    hasReviews: (id: string) => versions.has(moduleReportName(id) + ".review.yaml"),
+    hasReviews: (id: string) => versions.has(moduleReportName(id) + ".analysis.yaml"),
     id: "published-" + digest([root, work, version, [...versions], generation, selected[0].publication!.comparison_key]).slice(7, 31) };
 }

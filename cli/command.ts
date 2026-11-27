@@ -10,7 +10,6 @@ import { stringify } from "yaml";
 import { createWorkspaceSession, listWorkspaceModules } from "../web/web-backend/workspace-session.js";
 import type { SessionOperations } from "../module-operations/api.js";
 import type { openProjectHistory } from "../analyse/module-review/legacy-history.js";
-import { readReviewBundle } from "../analyse/module-review/review-store.js";
 import { parseYaml } from "../framework/serialization/yaml.js";
 import { digest } from "../framework/serialization/digest.js";
 import { normalizeAnalysisType } from "../framework/ai-report/types.js";
@@ -33,8 +32,7 @@ async function serve(workspace: SessionOperations & { root: string }, port: numb
     process.stdout.write("ArchiView Local: http://" + address.address + ":" + address.port +
       "\nProject: " + workspace.root + "\n");
     if (history) process.stdout.write("State: " + history.store.directory + "\n");
-    if (history?.migration) process.stdout.write("History copied: " + history.migration.snapshots +
-      " snapshots, " + history.migration.reviews + " reviews\n");
+    if (history?.migration) process.stdout.write("Snapshots copied: " + history.migration.snapshots + "\n");
   });
   for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, server.shutdown);
 }
@@ -139,7 +137,7 @@ async function execute(prepareWeb?: () => Promise<void>) {
       "  --save-comparison [--baseline FROM] [--target TO]    Сохранить отчёт об изменениях и вывести его ID (JSON)\n" +
       "      Состояния Git: HEAD, index, current, git-<хеш>. Пустая база: empty. По умолчанию: HEAD и current.\n" +
       "  --read-comparison ID                 Прочитать сохранённый отчёт об изменениях (JSON)\n" +
-      "  --import-review FILE_OR_BUNDLE       Импортировать YAML review или прежний пакет\n" +
+      "  --import-review FILE                 Импортировать YAML с результатом анализа\n" +
       "  --complete-analysis REQUEST_ID       Проверить и импортировать result.yaml запроса панели\n" +
       "  --analysis-limitation ID --reason TEXT  Сохранить причину незавершённой проверки\n" +
       "  --turn-hook codex|dsh                Обработать событие UserPromptSubmit или Stop из stdin\n" +
@@ -250,15 +248,15 @@ async function execute(prepareWeb?: () => Promise<void>) {
     }
     if (values["import-review"]) {
       const source = values["import-review"];
-      const value = (await lstat(source)).isDirectory() ? await readReviewBundle(source) :
-        parseYaml(await readFile(source, "utf8"), (data) => data);
+      if (!(await lstat(source)).isFile()) throw new Error("--import-review требует обычный YAML-файл анализа");
+      const value = parseYaml(await readFile(source, "utf8"), data => data);
       // Входной шаблон редактируется агентом; хеш manifest вычисляет инструмент.
       // Все связи, доказательства и результаты проверяются при сохранении.
       if (value && typeof value === "object" && "kind" in value && value.kind === "review-input") {
         const input = value as ReviewInput;
         input.report.analysis.input_digest = digest(input.manifest);
       }
-      const id = await reports.saveReview(value);
+      const id = await analysis.importReview(value);
       process.stdout.write("Review imported: " + JSON.stringify(id) + "\n");
     }
     if (values["export-review-input"]) {

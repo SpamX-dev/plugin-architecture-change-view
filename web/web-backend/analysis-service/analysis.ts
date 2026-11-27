@@ -5,6 +5,7 @@ import type { Snapshot, SnapshotReference, ComparisonModule } from "../../../fra
 import type { SessionView } from "../../../module-operations/session-view.js";
 import { analysisInstructions } from "../../../analyse/module-review/analysis-scope.js";
 import type { AnalysisType, ReviewManifest } from "../../../framework/ai-report/types.js";
+import { normalizeAnalysisType } from "../../../framework/ai-report/types.js";
 import type { DependencySelector, ReviewEntry } from "../../../framework/static-report/types.js";
 import { readAnalysisRequest, readDelivery, type Delivery, type AnalysisRequest } from "../../../module-operations/analysis-record.js";
 import { errorDetails } from "../../../node-errors.js";
@@ -57,7 +58,12 @@ async function readRequestFile(store: SnapshotStore, directory: string, name: st
 
 /** Хранит запросы рядом с локальными снимками, отдельно от опубликованной истории проверок. */
 export class AnalysisRequests {
-  constructor(public store: SnapshotStore, public reports: ReportStore, private workspaceRoot = store.root) {}
+  constructor(public store: SnapshotStore, public reports: ReportStore, private workspaceRoot = store.root,
+    private validateCurrent?: (entry: ReviewEntry) => Promise<void>) {}
+
+  importReview(input: unknown) {
+    return this.reports.withLivePublication(() => this.reports.saveReview(input, this.validateCurrent));
+  }
 
   private target() { return { repositoryRoot: this.store.root, workspaceRoot: this.workspaceRoot }; }
   harnesses() { return listHarnesses(this.target()); }
@@ -109,7 +115,7 @@ export class AnalysisRequests {
     const finding = report.findings.find(item => item.id === findingId && item.kind !== "contract_change") ??
       { id: findingId, assessmentOnly: true };
     const reviewFile = reviewFilePath(this.store.root, this.reports.work, moduleId);
-    const prompt = findingFixPrompt(this.store.root, { reviewFile, report }, finding);
+    const prompt = findingFixPrompt(this.store.root, { reviewFile, report, analysisType: normalizeAnalysisType(review.manifest.analysis_type) }, finding);
     if (!prompt) throw new ApplicationError("INVALID_ARGUMENT", "Замечание недоступно для исправления");
     const directory = path.join(this.store.directory, "snapshots", "finding-fixes", digest([id, moduleId, reviewId, findingId]).slice(7));
     await assertStateLocation(this.store.root, this.store.directory, directory);
@@ -264,10 +270,10 @@ export class AnalysisRequests {
   async status(id: string): Promise<AnalysisStatus> {
     const directory = requestDirectory(this.store, id);
     const request = readAnalysisRequest(JSON.parse(await readRequestFile(this.store, directory, "request.json", MAX_METADATA_BYTES)));
-    const entry = (await this.reports.list()).entries.find(item => item.review_id === request.reviewId);
+    const completed = await this.reports.hasReview(request.moduleId, request.reviewId);
     const delivery = await this.delivery(directory);
-    const limitation = entry ? undefined : await this.limitation(id);
-    return { ...request, status: entry ? "completed" : "prepared", ...(delivery ? { delivery } : {}), ...(limitation ? {limitation} : {}) };
+    const limitation = completed ? undefined : await this.limitation(id);
+    return { ...request, status: completed ? "completed" : "prepared", ...(delivery ? { delivery } : {}), ...(limitation ? {limitation} : {}) };
   }
 
   async limitation(id: string) {
@@ -308,7 +314,7 @@ export class AnalysisRequests {
       throw new Error("Изменён manifest анализа");
     if (result.report?.id !== request.reviewId) throw new Error("Изменён идентификатор результата");
     result.report.analysis.input_digest = digest(result.manifest);
-    await this.reports.saveReview(result);
+    await this.importReview(result);
     const delivery = await this.delivery(directory);
     return { ...request, status: "completed", ...(delivery ? {delivery} : {}) };
   }

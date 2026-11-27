@@ -21,7 +21,7 @@ import { compareSnapshots } from "../analyse/git-changes/comparison.js";
 import { createStructuralReview, validateReviewBundle } from "../analyse/module-review/bundle.js";
 import { reviewIsStale } from "../analyse/module-review/freshness.js";
 import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
-import { ReviewStore, readReviewBundle } from "../analyse/module-review/review-store.js";
+import { ReportStore } from "../analyse/module-review/report-store.js";
 import { createArchiView } from "../web/web-backend/web-service/http.js";
 
 /** Фикстура задаёт проверяемые обязанности явно, не выводя их из имени каталога. */
@@ -146,8 +146,8 @@ test("review evidence, checks and findings can only reference sides present in t
   assert.equal(validateReview(report), report);
 });
 
-test("reviews retain old evidence and own clauses, remain immutable and become stale", async (t) => {
-  const { root, state } = await fixture(t);
+test("structural checks retain their own clauses and captured evidence", async (t) => {
+  const { root } = await fixture(t);
   const before = await captureWorkingTree(root);
   await writeFile(path.join(root, ".archiview/modules/child.yaml"), stringify({ ...contract("child"), boundaries: { B1: "Не выполнять запись." } }));
   const after = await captureWorkingTree(root);
@@ -160,10 +160,7 @@ test("reviews retain old evidence and own clauses, remain immutable and become s
   assert.ok(bundle.report.checks.length);
   assert.ok(bundle.report.checks.every((c) => c.contract.module_id === bundle.report.module.id));
   assert.ok(bundle.report.checks.every((c) => c.verdict === "not_checked"));
-  const store = new ReviewStore(new SnapshotStore(root, state));
-  await store.save(bundle);
-  await assert.rejects(store.save(bundle));
-  const loaded = await readReviewBundle(store.pathFor(bundle.report.id));
+  const loaded = validateReviewBundle(bundle);
   assert.equal(reviewIsStale(loaded, before, after), false);
   await writeFile(path.join(root, "child/code.js"), "export const read = () => 2;\n");
   assert.equal(reviewIsStale(loaded, before, await captureWorkingTree(root)), true);
@@ -180,7 +177,7 @@ test("reviews retain old evidence and own clauses, remain immutable and become s
   const tampered = structuredClone(loaded);
   tampered.current.facts[0].text += "tampered";
   assert.throws(() => validateReviewBundle(tampered), /digest mismatch/);
-  const yaml = await readFile(path.join(store.pathFor(bundle.report.id), "review.yaml"), "utf8");
+  const yaml = stringify(loaded.report);
   assert.ok(!yaml.includes("stale:"));
 });
 
@@ -225,5 +222,5 @@ test("external storage cannot resolve into project through a directory link", as
   const store = new SnapshotStore(root, state);
   await assert.rejects(store.list(), /inside source/);
   await assert.rejects(store.save(await captureWorkingTree(root)), /inside source/);
-  await assert.rejects(new ReviewStore(store).list(), /inside source/);
+  await assert.rejects(new ReportStore(store).list(), /inside source/);
 });

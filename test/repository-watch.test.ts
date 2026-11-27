@@ -45,7 +45,7 @@ test("linked worktree subscriptions ignore local storage, wake all readers and s
   git("update-ref", "refs/heads/linked", newTip);
   const refs = await watcher.wait(stable, AbortSignal.timeout(5000));
   assert.notEqual(refs.cursor, stable);
-  await writeFile(path.join(storage, "work/module.review.yaml"), "analysis");
+  await writeFile(path.join(storage, "work/module.analysis.yaml"), "analysis");
   let review = await watcher.wait(refs.cursor, AbortSignal.timeout(5000));
   if (!review.reviewsChanged) review = await watcher.wait(review.cursor, AbortSignal.timeout(5000));
   assert.equal(review.reviewsChanged, true);

@@ -1,7 +1,7 @@
 import { initTestRepository } from "./support.js";
 import { writeModuleTree } from "./support.js";
 import type { Snapshot, ComparisonModule } from "../framework/snapshots/types.js";
-import type { TechnicalReport, ReviewHistory } from "../framework/static-report/types.js";
+import type { CurrentModuleReviews, TechnicalReport } from "../framework/static-report/types.js";
 import type { TestContext } from "node:test";
 /** Переносимость, неизменность реальных попыток и восстановление публикаций v2. */
 import assert from "node:assert/strict";
@@ -17,7 +17,6 @@ import { digest } from "../framework/serialization/digest.js";
 import { captureWorkingTree } from "../analyse/git-changes/capture.js";
 import { compareSnapshots } from "../analyse/git-changes/comparison.js";
 import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
-import { ReviewStore } from "../analyse/module-review/review-store.js";
 import { ANALYZER, createStructuralReview } from "../analyse/module-review/bundle.js";
 import { createReviewInput } from "../analyse/module-review/review-input.js";
 import { createReviewEntry } from "../analyse/module-review/review-entry.js";
@@ -38,7 +37,7 @@ test("Git tree and files remain available when a review archive is damaged", asy
   const first = await session.getComparison({ baseline: "auto" });
   const meta = path.join(root, ".archiview");
   await mkdir(path.join(meta,"work"), {recursive:true});
-  const file = path.join(meta,"work",moduleReportName("child")+".review.yaml");
+  const file = path.join(meta,"work",moduleReportName("child")+".analysis.yaml");
   await writeFile(file,"broken: true");
   const reads = t.mock.method(fs, "readFile");
   syncBuiltinESMExports();
@@ -72,9 +71,10 @@ async function fixture(t: TestContext) {
 }
 
 /** Готовит настоящий импорт с явными LLM-метаданными, не объявляя код проверенным. */
-function nativeReview(snapshotStore: SnapshotStore, baseline: Snapshot | null, current: Snapshot, id = "attempt-1", moduleId = "child", summary?: string) {
+function nativeReview(snapshotStore: SnapshotStore, baseline: Snapshot | null, current: Snapshot, id = "attempt-1", moduleId = "child", summary?: string,
+  analysisType?: "composition" | "implementation") {
   const input = createReviewInput(digest(snapshotStore.snapshotRoot), baseline, current, moduleId,
-    { reviewId: id, dependencyCoverage: { status: "complete", potential_influence: [] } });
+    { reviewId: id, dependencyCoverage: { status: "complete", potential_influence: [] }, analysisType });
   input.report.analysis.created_at = "2026-11-09T10:00:00.000Z";
   input.report.analysis.model = { provider: "test", id: "fixture-model" };
   input.report.analysis.prompt_digest = digest("fixture-prompt");
@@ -82,6 +82,12 @@ function nativeReview(snapshotStore: SnapshotStore, baseline: Snapshot | null, c
   input.manifest.prompt_digest = input.report.analysis.prompt_digest;
   input.report.analysis.input_digest = digest(input.manifest);
   if (summary) input.report.assessment.current.summary = summary;
+  if (analysisType) {
+    input.report.analysis.coverage = {status:"complete",limitations:[]};
+    input.report.assessment.current = {verdict:"consistent",summary:"Fixture"};
+    for (const check of input.report.checks) Object.assign(check, {verdict:"consistent",explanation:"Fixture",
+      evidence:[{snapshot:"current",fact_id:input.current.facts[0].id}]});
+  }
   return createReviewEntry(input);
 }
 
@@ -100,7 +106,7 @@ test("unchanged rebuild replaces obsolete derived review statuses without rewrit
   await store.rebuild(baseline, current, comparison.modules);
   await store.saveReview(nativeReview(snapshotStore, baseline, current));
   const technicalFile = path.join(store.work, moduleReportName("child") + ".archi.yaml");
-  const reviewFile = path.join(store.work, moduleReportName("child") + ".review.yaml");
+  const reviewFile = path.join(store.work, moduleReportName("child") + ".analysis.yaml");
   const proof = await readFile(reviewFile, "utf8");
   const previous = parseReportYaml<TechnicalReport>(await readFile(technicalFile, "utf8"));
   previous.review_status!.self.current.status = "stale";
@@ -168,7 +174,7 @@ test("published tree reads only work, loads one module's exact reviews, and dete
   const detail = await saved.getModule(args);
   assert.equal(detail.review?.id, "attempt-1");
   assert.equal(detail.reviews[0].report.id, detail.review.id);
-  assert.equal(detail.reviews[0].reviewFile, ".archiview/work/" + moduleReportName("child") + ".review.yaml");
+  assert.equal(detail.reviews[0].reviewFile, ".archiview/work/" + moduleReportName("child") + ".analysis.yaml");
   assert.deepEqual(detail.after, stored(current.modules.find(module => module.directory === "child")));
   assert.deepEqual(await workFiles(), before);
   await store.saveReview(nativeReview(snapshotStore, baseline, current, "next-attempt"));
@@ -192,7 +198,7 @@ test("published tree reads only work, loads one module's exact reviews, and dete
   assert.equal(filesOnly.moduleId, "child");
   assert.deepEqual(filesOnly.reviews, []);
   assert.equal(filesOnly.analyses, undefined);
-  await assert.rejects(copy.getModule({ view: copy.comparison.id, path: "child" }), /Invalid review history schema/);
+  await assert.rejects(copy.getModule({ view: copy.comparison.id, path: "child" }), /Unsupported module review format/);
   assert.deepEqual((await readdir(path.join(clone, ".archiview"))).sort(), ["project.json", "work"]);
 });
 
@@ -217,7 +223,7 @@ test("supported analyzer versions retain exact snapshots and review history acro
   const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
   await store.rebuild(baseline, current, comparison.modules);
   await store.saveReview(nativeReview(snapshotStore, baseline, current, "before-upgrade"));
-  const reviewFile = path.join(store.work, moduleReportName("child") + ".review.yaml");
+  const reviewFile = path.join(store.work, moduleReportName("child") + ".analysis.yaml");
   const reviewBytes = await readFile(reviewFile, "utf8");
   const files = await publicationVersion(store, "1.0.1");
   assert.deepEqual(await store.publishedComparison(), stored({ baseline, current }));
@@ -270,7 +276,7 @@ test("a supported earlier version keeps checksum, analyzer identity and snapshot
   }
 });
 
-test("unchanged rebuild preserves the publication files and still detects external raw reviews", async (t) => {
+test("unchanged rebuild preserves publication files and ignores raw reviews", async (t) => {
   const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
   const first = await store.rebuild(baseline, current, comparison.modules);
   const file = path.join(store.work, moduleReportName("child") + ".archi.yaml");
@@ -285,17 +291,21 @@ test("unchanged rebuild preserves the publication files and still detects extern
   assert.deepEqual(new Map(unchanged.reports.map((report) => [report.module_id, report])),
     new Map(first.reports.map((report) => [report.module_id, report])));
 
-  // Raw может содержать завершённый импорт другого процесса до его публикации work.
   const entry = nativeReview(snapshotStore, baseline, current, "external-raw-attempt");
   const raw = path.join(store.raw, entry.check_hash);
-  await mkdir(raw, { recursive: true });
-  await writeFile(path.join(raw, moduleReportName("child") + ".review.yaml"), stringify({
-    schema_version: 2, kind: "review_history", module_id: "child", entries: [entry],
-  }, { aliasDuplicateObjects: false }));
+  await mkdir(raw, {recursive:true});
+  const obsoleteName = moduleReportName("child") + ".review.yaml";
+  const obsolete = path.join(store.work, obsoleteName);
+  await writeFile(obsolete, "unreadable old publication");
+  await writeFile(path.join(raw, obsoleteName), "unreadable raw review");
   const updated = await store.rebuild(baseline, current, comparison.modules);
-  assert.deepEqual(updated.entries.map((item) => item.review_id), ["external-raw-attempt"]);
-  const published = parseReportYaml<ReviewHistory>(await readFile(path.join(store.work, moduleReportName("child") + ".review.yaml"), "utf8"));
-  assert.equal(published.entries[0].review_id, "external-raw-attempt");
+  assert.deepEqual(updated.entries, []);
+  assert.deepEqual(updated.diagnostics, []);
+  await assert.rejects(stat(path.join(store.work, moduleReportName("child") + ".analysis.yaml")), {code:"ENOENT"});
+  assert.deepEqual(await store.readReviews(), []);
+  await store.saveReview(entry);
+  await assert.rejects(stat(obsolete), {code:"ENOENT"});
+  assert.equal(await readFile(path.join(raw, obsoleteName), "utf8"), "unreadable raw review");
 });
 
 test("unchanged rebuild detects damage to its raw report and published baselines remain independent of raw", async (t) => {
@@ -338,7 +348,7 @@ test("incomplete inputs cannot replace the last complete publication or its raw 
   assert.deepEqual(await readdir(store.raw), rawBefore);
 });
 
-test("keeps every real native attempt, stable order and import idempotence", async (t) => {
+test("keeps one generic slot and recognizes retries and collisions after replacement", async (t) => {
   const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
   await store.rebuild(baseline, current, comparison.modules);
   const first = nativeReview(snapshotStore, baseline, current);
@@ -347,7 +357,9 @@ test("keeps every real native attempt, stable order and import idempotence", asy
   assert.equal(await store.saveReview(second), "attempt-2");
   await store.saveReview(first);
   let history = await store.list();
-  assert.deepEqual(history.entries.map((entry) => [entry.review_id, entry.registration_order]), [["attempt-1", 1], ["attempt-2", 2]]);
+  assert.deepEqual(history.entries.map((entry) => [entry.review_id, entry.registration_order]), [["attempt-2", 2]]);
+  assert.equal(await store.hasReview("child", "attempt-1"), true);
+  assert.equal(await store.hasReview("root", "attempt-1"), false);
   for (const entry of history.entries) validateReviewEntry(entry);
   assert.equal(history.entries[0].current.scoped, true);
   assert.equal(history.entries[0].current.modules.some((module) => module.directory === "." && module.files.some((file) => file.path.endsWith("code.js"))), false);
@@ -355,8 +367,36 @@ test("keeps every real native attempt, stable order and import idempotence", asy
   await assert.rejects(store.saveReview(changed), /Review ID collision/);
   await store.rebuild(baseline, current, comparison.modules);
   history = await store.list();
-  assert.deepEqual(history.entries.map((entry) => entry.review_id), ["attempt-1", "attempt-2"]);
+  assert.deepEqual(history.entries.map((entry) => entry.review_id), ["attempt-2"]);
   assert.deepEqual(history.diagnostics, []);
+});
+
+test("publishes one approved result per slot and rejects obsolete work containers without migration", async t => {
+  const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
+  await store.rebuild(baseline, current, comparison.modules);
+  const typed = (id: string, type: "implementation" | "composition") =>
+    nativeReview(snapshotStore, null, current, id, "child", undefined, type);
+  await store.saveReview(typed("first", "implementation"));
+  await store.saveReview(typed("composition", "composition"));
+  await store.saveReview(nativeReview(snapshotStore, baseline, current));
+  const next = typed("next", "implementation");
+  await assert.rejects(store.saveReview(next, async () => { throw new Error("stale request"); }), /stale request/);
+  assert.equal(await store.hasReview("child", "next"), false);
+  await store.saveReview(next);
+  await store.saveReview(typed("first", "implementation"), async () => { throw new Error("duplicate revalidated"); });
+  const file = path.join(store.work, moduleReportName("child") + ".analysis.yaml");
+  const compact = parseReportYaml<CurrentModuleReviews>(await readFile(file, "utf8"));
+  assert.equal(compact.kind, "module_reviews");
+  assert.deepEqual(Object.fromEntries(Object.entries(compact.results).map(([slot,entry]) => [slot, entry.review_id])),
+    {implementation:"next",composition:"composition",generic:"attempt-1"});
+  await assert.rejects(stat(path.join(store.raw, next.check_hash, path.basename(file))), {code:"ENOENT"});
+  const old = {schema_version:2, kind:"review_history", module_id:"child", entries:[next]};
+  await assert.rejects(store.saveReview(old), /Unsupported review import/);
+  const text = stringify(old, {aliasDuplicateObjects:false});
+  await writeFile(file, text);
+  await assert.rejects(store.readModuleReviews("child"), /Unsupported module review format/);
+  await assert.rejects(store.rebuild(baseline, current, comparison.modules), /Unsupported module review format/);
+  assert.equal(await readFile(file, "utf8"), text);
 });
 
 test("clone needs only project.json and work to retain proof and selected baseline", async (t) => {
@@ -380,7 +420,7 @@ test("clone needs only project.json and work to retain proof and selected baseli
   assert.deepEqual(history.diagnostics, []);
 });
 
-test("A to B to A keeps all attempts and deleted modules keep their complete history", async (t) => {
+test("A to B to A replaces the current result and a removed module retains its last result", async (t) => {
   const { root, store, snapshotStore, baseline, current, comparison } = await fixture(t);
   await store.rebuild(baseline, current, comparison.modules);
   await store.saveReview(nativeReview(snapshotStore, baseline, current, "at-A-first"));
@@ -392,56 +432,25 @@ test("A to B to A keeps all attempts and deleted modules keep their complete his
   const returned = await captureWorkingTree(root);
   await store.rebuild(baseline, returned, compareSnapshots(baseline, returned).modules);
   await store.saveReview(nativeReview(snapshotStore, baseline, returned, "at-A-again"));
-  assert.deepEqual((await store.list()).entries.map((entry) => entry.review_id), ["at-A-first", "at-B", "at-A-again"]);
+  assert.deepEqual((await store.list()).entries.map((entry) => entry.review_id), ["at-A-again"]);
   await rm(path.join(root, "child"), { recursive: true });
   await writeModuleTree(root, { root: "." });
   await rm(path.join(root, ".archiview/modules/child.yaml"));
   const removed = await captureWorkingTree(root);
   await store.rebuild(baseline, removed, compareSnapshots(baseline, removed).modules);
   await store.rebuild(removed, removed, compareSnapshots(removed, removed).modules);
-  assert.equal((await store.list()).entries.length, 3);
+  assert.equal((await store.list()).entries.length, 1);
   assert.deepEqual(await store.selectedBaseline(), stored(removed));
   assert.deepEqual(await readPublishedSnapshots(snapshotStore), stored([removed, removed]));
 });
 
-test("migrates legacy LLM bundles once, preserves originals and excludes structure", async (t) => {
+test("rejects unversioned review bundles and legacy-v1 entries", async t => {
   const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
-  const legacy = new ReviewStore(snapshotStore);
-  const child = comparison.modules.find((module) => module.moduleId === "child");
-  const bundle = legacyReview(baseline, current, child!, "legacy-llm");
-  await legacy.save(bundle);
-  const structural = createStructuralReview(baseline, current, child!);
-  await legacy.save(structural);
-  const original = await readFile(path.join(legacy.pathFor(bundle.report.id), "review.yaml"), "utf8");
-  await store.migrate();
-  await store.migrate();
-  const history = await store.list();
-  assert.deepEqual(history.entries.map((entry) => entry.review_id), ["legacy-llm"]);
-  assert.deepEqual(history.bundles[0], stored(bundle));
-  assert.equal(await readFile(path.join(legacy.pathFor(bundle.report.id), "review.yaml"), "utf8"), original);
-  await assert.rejects(store.saveReview(structural), /not an LLM review/);
-});
-
-test("migration compares the original v1 bundle when derived metadata changes between versions", async (t) => {
-  const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
-  const bundle = legacyReview(baseline, current, comparison.modules.find((module) => module.moduleId === "child")!, "migrated-before-check-manifest");
-  const oldEntry = createReviewEntry(bundle, { projectId: digest(snapshotStore.snapshotRoot) });
-  delete oldEntry.check_manifest;
-  oldEntry.project_id = null; // Прежний перенос ещё не вычислял идентичность проекта.
-  const { content_digest, ...oldContent } = oldEntry;
-  oldEntry.content_digest = digest(oldContent);
-  validateReviewEntry(oldEntry);
-  assert.notDeepEqual(oldEntry, createReviewEntry(bundle, { projectId: digest(snapshotStore.snapshotRoot) }));
-  await store.saveReview(oldEntry);
-  const originalEntry = (await store.list()).entries[0];
-  await new ReviewStore(snapshotStore).save(bundle);
-  await store.migrate();
-  await store.rebuild(baseline, current, comparison.modules);
-  await store.saveReview(bundle);
-  assert.deepEqual((await store.list()).entries, [originalEntry]);
-  const changed = stored(bundle);
-  changed.report.assessment.current.summary = "A different original result.";
-  await assert.rejects(store.saveReview(changed), /Review ID collision/);
+  const bundle = legacyReview(baseline, current, comparison.modules.find(module => module.moduleId === "child")!, "legacy");
+  await assert.rejects(store.saveReview(bundle), /Unsupported review import/);
+  const legacy = createReviewEntry(bundle, {projectId:digest(snapshotStore.snapshotRoot)});
+  await assert.rejects(store.saveReview(legacy), /Unsupported review import/);
+  assert.deepEqual(await store.readModuleReviews("child"), []);
 });
 
 test("serializes simultaneous writers and retains stable registration for tied timestamps", async (t) => {
@@ -451,30 +460,30 @@ test("serializes simultaneous writers and retains stable registration for tied t
   await Promise.all([store.saveReview(nativeReview(snapshotStore, baseline, current, "parallel-a")),
     other.saveReview(nativeReview(snapshotStore, baseline, current, "parallel-b"))]);
   const first = (await store.list()).entries.map((entry) => [entry.review_id, entry.registration_order]);
-  assert.equal(first.length, 2);
-  assert.deepEqual(new Set(first.map(([, order]) => order)), new Set([1, 2]));
+  assert.equal(first.length, 1);
+  assert.equal(first[0][1], 2);
+  assert.equal(await store.hasReview("child", "parallel-a"), true);
+  assert.equal(await other.hasReview("child", "parallel-b"), true);
   assert.deepEqual((await other.list()).entries.map((entry) => [entry.review_id, entry.registration_order]), first);
 });
 
 test("does not replace damaged published history and reports the exact failure", async (t) => {
   const { store, baseline, current, comparison } = await fixture(t);
   await store.rebuild(baseline, current, comparison.modules);
-  const file = path.join(store.work, moduleReportName("child") + ".review.yaml");
+  const file = path.join(store.work, moduleReportName("child") + ".analysis.yaml");
   await writeFile(file, "schema_version: 999\nkind: review_history\nmodule_id: child\nentries: []\n");
   const before = await readFile(file, "utf8");
-  assert.match((await store.list()).diagnostics.join("\n"), /Invalid review history schema/);
+  assert.match((await store.list()).diagnostics.join("\n"), /Unsupported module review format/);
   await assert.rejects(store.rebuild(baseline, current, comparison.modules), /refusing to replace/);
   assert.equal(await readFile(file, "utf8"), before);
 });
 
-test("detects technical-state tampering and persists incomplete legacy-migration diagnostics", async (t) => {
+test("detects technical-state tampering while ignoring old bundle directories", async (t) => {
   const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
   await mkdir(path.join(snapshotStore.directory, "reviews/broken"), { recursive: true });
   await writeFile(path.join(snapshotStore.directory, "reviews/broken/review.yaml"), "broken: true\n");
   const result = await store.rebuild(baseline, current, comparison.modules);
-  assert.match(result.diagnostics.join("\n"), /reviews\/broken/);
-  await rm(path.join(snapshotStore.directory, "reviews"), { recursive: true });
-  assert.match((await store.list()).diagnostics.join("\n"), /reviews\/broken/);
+  assert.deepEqual(result.diagnostics, []);
   const file = path.join(store.work, moduleReportName("child") + ".archi.yaml");
   const report = parseReportYaml<TechnicalReport>(await readFile(file, "utf8"));
   report.current!.self.own_files = [];
@@ -507,10 +516,10 @@ test("module histories remain readable while a project-wide reader holds the sto
 test("a module reader retries when the archive file is replaced during a cold read", async (t) => {
   const { directory, store, snapshotStore, baseline, current } = await fixture(t);
   await mkdir(store.work, { recursive: true });
-  const file = path.join(store.work, moduleReportName("child") + ".review.yaml");
+  const file = path.join(store.work, moduleReportName("child") + ".analysis.yaml");
   const replacement = path.join(directory, "replacement.yaml");
-  const history = (id: string) => stringify({ schema_version: 2, kind: "review_history", module_id: "child",
-    entries: [nativeReview(snapshotStore, baseline, current, id)] }, { aliasDuplicateObjects: false });
+  const history = (id: string) => stringify({ schema_version: 3, kind: "module_reviews", module_id: "child",
+    results: {generic:nativeReview(snapshotStore, baseline, current, id)} }, { aliasDuplicateObjects: false });
   await writeFile(file, history("previous"));
   await writeFile(replacement, history("replacement"));
 
