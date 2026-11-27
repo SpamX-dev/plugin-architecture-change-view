@@ -28,6 +28,7 @@ import { parseReportYaml } from "../framework/serialization/yaml.js";
 import { createPublishedView } from "../module-operations/published-view.js";
 import { createWorkspaceSession } from "../web/web-backend/workspace-session.js";
 import { createArchiViewSession } from "../web/web-backend/session.js";
+import { withFileLock } from "../storage/file-lock.js";
 
 const stored = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -482,9 +483,57 @@ test("detects technical-state tampering and persists incomplete legacy-migration
   await assert.rejects(store.rebuild(baseline, current, comparison.modules), /refusing to replace/);
 });
 
-test("recovers a committed directory replacement and an abandoned dead-process lock", async (t) => {
-  const { store, baseline, current, comparison } = await fixture(t);
+test("module histories remain readable while a project-wide reader holds the store lock", async (t) => {
+  const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
   await store.rebuild(baseline, current, comparison.modules);
+  await store.saveReview(nativeReview(snapshotStore, baseline, current));
+  const reader = new ReportStore(snapshotStore);
+  await withFileLock(store.control, ".report-store.lock", async () => {
+    const acquire = t.mock.method(fs, "link", () => { throw new Error("Module reader attempted to take the store lock"); });
+    syncBuiltinESMExports();
+    try {
+      const entries = await reader.readModuleReviews("child");
+      assert.deepEqual(entries.map(entry => entry.review_id), ["attempt-1"]);
+      entries[0].review_id = "changed-by-caller";
+      assert.equal((await reader.readModuleReviews("child"))[0].review_id, "attempt-1");
+      assert.deepEqual(await reader.readModuleReviews("root"), []);
+    } finally {
+      acquire.mock.restore();
+      syncBuiltinESMExports();
+    }
+  });
+});
+
+test("a module reader retries when the archive file is replaced during a cold read", async (t) => {
+  const { directory, store, snapshotStore, baseline, current } = await fixture(t);
+  await mkdir(store.work, { recursive: true });
+  const file = path.join(store.work, moduleReportName("child") + ".review.yaml");
+  const replacement = path.join(directory, "replacement.yaml");
+  const history = (id: string) => stringify({ schema_version: 2, kind: "review_history", module_id: "child",
+    entries: [nativeReview(snapshotStore, baseline, current, id)] }, { aliasDuplicateObjects: false });
+  await writeFile(file, history("previous"));
+  await writeFile(replacement, history("replacement"));
+
+  const read = fs.readFile;
+  let replaced = false;
+  const reads = t.mock.method(fs, "readFile", async (...args: Parameters<typeof read>) => {
+    const bytes = await read(...args);
+    if (!replaced && args[0] === file) {
+      await rename(replacement, file);
+      replaced = true;
+    }
+    return bytes;
+  });
+  syncBuiltinESMExports();
+  t.after(() => { reads.mock.restore(); syncBuiltinESMExports(); });
+  assert.deepEqual((await store.readModuleReviews("child")).map(entry => entry.review_id), ["replacement"]);
+  assert.ok(replaced);
+});
+
+test("recovers a committed directory replacement and an abandoned dead-process lock", async (t) => {
+  const { store, snapshotStore, baseline, current, comparison } = await fixture(t);
+  await store.rebuild(baseline, current, comparison.modules);
+  await store.saveReview(nativeReview(snapshotStore, baseline, current));
   const id = randomUUID();
   const pending = ".publication-" + id, backup = ".previous-" + id;
   await cp(store.work, path.join(store.control, pending), { recursive: true });
@@ -493,6 +542,7 @@ test("recovers a committed directory replacement and an abandoned dead-process l
   await writeFile(path.join(store.control, ".report-store.lock"), JSON.stringify({ pid: 2147483647, token: "dead-owner" }));
   assert.equal(await createPublishedView({ root: store.root }), null);
   assert.ok((await readdir(store.control)).includes(".publication.yaml"));
+  assert.deepEqual((await store.readModuleReviews("child")).map(entry => entry.review_id), ["attempt-1"]);
   const result = await store.list();
   assert.equal(result.reports.length, 2);
   assert.deepEqual(result.diagnostics, []);

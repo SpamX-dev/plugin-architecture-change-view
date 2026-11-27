@@ -1,4 +1,4 @@
-import { lstat, readdir } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { readSnapshotRoot } from "../../storage/identity.js";
@@ -7,22 +7,11 @@ import { digest } from "../../framework/serialization/digest.js";
 import { validateReviewRelations } from "./review-identity.js";
 import type { ReviewHistory, TechnicalReport } from "../../framework/static-report/types.js";
 import { errorDetails } from "../../node-errors.js";
-import { moduleReportName, readYaml, validateHistoryFile } from "./report-store.js";
+import { moduleReportName, publishedPathVersion as stamp, readYaml, validateHistoryFile } from "./report-store.js";
 import { reconstruct, validateStoredReport } from "./publication.js";
 
 export class PublicationChanged extends Error {
   constructor() { super("Публикация изменилась. Откройте сохранённое состояние ещё раз."); }
-}
-
-async function stamp(file: string, directory = false) {
-  try {
-    const info = await lstat(file, { bigint: true });
-    if (directory ? !info.isDirectory() : !info.isFile()) throw new Error("Invalid published " + (directory ? "directory" : "file") + ": " + file);
-    return [info.dev, info.ino, info.size, info.ctimeNs, info.mtimeNs].join("/");
-  } catch (cause) {
-    if (errorDetails(cause).code === "ENOENT") return null;
-    throw cause;
-  }
 }
 
 /** Readers do not open the mutable stores. An atomic swap also changes this ticket

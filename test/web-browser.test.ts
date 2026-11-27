@@ -832,10 +832,19 @@ test("the file tab starts at each snapshot's module directory and excludes its c
   await docs.getByRole("button", { name: "Новый — renamed/docs/" + name }).waitFor();
 });
 
-test("files remain browsable while independent review statuses load, fail and retry", browserOptions, async t => {
+test("files and the selected analysis remain browsable while tree statuses load, fail and retry", browserOptions, async t => {
   const defer = await fixtureCleanup(t);
   const root = await browserProject(defer);
-  const origin = await cliOrigin(defer, root);
+  const app = await createArchiView({root});
+  const origin = await listen(defer, app.server);
+  const review = createReviewInput(digest(app.store.snapshotRoot), null, await captureWorkingTree(root),
+    "browser-feature", {analysisType:"implementation"});
+  completeChecks(review);
+  review.report.analysis.model = review.manifest.model = {provider:"test", id:"loading-fixture"};
+  review.report.analysis.prompt_digest = review.manifest.prompt_digest = digest("Independent module loading");
+  review.report.analysis.input_digest = digest(review.manifest);
+  review.report.assessment.current = {verdict:"consistent", summary:"Отчёт выбранного модуля"};
+  await app.reports.saveReview(review);
   const page = await (await browserContext(defer)).newPage();
   let capture!: (route: import("playwright").Route) => void;
   const pending = new Promise<import("playwright").Route>(resolve => { capture = resolve; });
@@ -846,17 +855,21 @@ test("files remain browsable while independent review statuses load, fail and re
   await page.getByRole("tab", {name:/^Файлы/}).click();
   await page.locator("#document-panel").getByText("feature.ts", {exact:true}).waitFor();
   assert.equal(await page.locator(".review-marker").count(),0);
+  await page.locator("#tab-implementation").click();
+  const report = page.locator(".review-body").getByText(review.report.assessment.current.summary, {exact:true});
+  await report.waitFor();
   await request.fulfill({status:500,json:{error:"Ошибка чтения анализа"}});
   await page.locator("#updated").filter({hasText:"Ошибка чтения анализа"}).waitFor();
-  await page.locator("#tab-composition").click();
+  assert.equal(await report.isVisible(), true);
   await page.route("**/api/review-statuses?**", async route => {
     const response = await route.fetch();
     const statuses = await response.json();
     await route.fulfill({response, json:{...statuses, diagnostics:["Предупреждение из отчёта анализа"]}});
   }, {times:1});
-  await page.getByRole("button",{name:"Повторить"}).click();
+  await page.locator("#updated").getByRole("button",{name:"Повторить"}).click();
   await page.locator('.tree-row[data-key="src"] .review-marker').waitFor();
   await page.locator("#warning").filter({hasText:"Предупреждение из отчёта анализа"}).waitFor();
+  assert.equal(await report.isVisible(), true);
 });
 
 test("a reused directory retains its exact module under search and status filters", browserOptions, async (t) => {

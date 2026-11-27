@@ -6,7 +6,7 @@ import type { PublishedComparison } from "../../framework/static-report/types.js
 import type { SessionView } from "../../module-operations/session-view.js";
 import { errorDetails } from "../../node-errors.js";
 /** Прикладная сессия проекта: снимки и операции просмотра без зависимости от транспорта. */
-import { followsAnalysis } from "../../analyse/module-review/analysis-timeline.js";
+import { AnalysisHistory, followsAnalysis } from "../../analyse/module-review/analysis-timeline.js";
 import { DecisionConflict, FindingDecisions } from "../../analyse/module-review/dispositions.js";
 import { currentAnalysisEntries, analysisSummary } from "../../module-operations/module-view.js";
 import { observeModules } from "../../analyse/module-review/module-observations.js";
@@ -42,6 +42,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   const analysis = new AnalysisRequests(store, reports, workspaceRoot ?? root);
   const settings = projectReviewSettings(root, store.directory);
   const reader = new GitTreeReader(root, store.snapshotRoot);
+  const analysisHistory = new AnalysisHistory(reader);
   const watcher = new RepositoryWatch(root, store.directory);
   const editor = createContractEditor(root);
   const captureOptions = { snapshotRoot: store.snapshotRoot };
@@ -224,7 +225,7 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
   }
 
   function selectedAnalyses(entries: SessionView["reviews"], view: SessionView) {
-    return currentAnalysisEntries(entries, view.reportModel, view.currentSnapshot, entry => followsAnalysis(entry, view.currentSnapshot, reader));
+    return currentAnalysisEntries(entries, view.reportModel, view.currentSnapshot, entry => followsAnalysis(entry, view.currentSnapshot, analysisHistory));
   }
 
   async function loadAnalysisSummaries(view: SessionView, entries = view.reviews) {
@@ -553,6 +554,6 @@ export async function createArchiViewSession({ root: requestedRoot, stateDirecto
       const head = await readGitHeadRevision(root);
       const tree = await liveTree(head);
       return evidence && tree.complete ? workingEvidence(tree, head) : tree;
-    }), (entry, snapshot) => followsAnalysis(entry, snapshot, reader));
+    }), (entry, snapshot) => followsAnalysis(entry, snapshot, analysisHistory));
   return { root, store, migration, reviews, reports, changes, analysis, turns, startupComparison, ...operations, close: () => watcher.close() };
 }

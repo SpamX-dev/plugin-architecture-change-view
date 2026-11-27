@@ -54,6 +54,18 @@ export async function readYaml<T = unknown>(file: string): Promise<T> {
   return parseReportYaml<T>(await readFile(file, "utf8"));
 }
 
+/** Identifies the publication directory or an ordinary file across an atomic replacement. */
+export async function publishedPathVersion(file: string, directory = false) {
+  try {
+    const info = await lstat(file, { bigint: true });
+    if (directory ? !info.isDirectory() : !info.isFile()) throw new Error("Invalid published " + (directory ? "directory" : "file") + ": " + file);
+    return [info.dev, info.ino, info.size, info.ctimeNs, info.mtimeNs].join("/");
+  } catch (cause) {
+    if (errorDetails(cause).code === "ENOENT") return null;
+    throw cause;
+  }
+}
+
 /** A portable review file contains the attempts of exactly one module. */
 export function validateHistoryFile(data: ReviewHistory, name: string, snapshotRoot: string) {
   if (data.schema_version !== REPORT_SCHEMA_VERSION || data.kind !== "review_history" ||
@@ -121,15 +133,28 @@ export class ReportStore {
   }
 
   async readModuleReviews(moduleId: string) {
-    return this.#locked(async () => {
-      const file = path.join(this.work, moduleReportName(moduleId) + ".review.yaml");
+    const file = path.join(this.work, moduleReportName(moduleId) + ".review.yaml");
+    const journal = path.join(this.control, ".publication.yaml");
+    const read = async () => {
       await this.snapshotStore.assertLocation(file);
       try {
         const checked = await this.#checkedFile(file, true);
         if (checked.kind !== "reviews") throw new Error("Invalid module review history");
         return structuredClone(checked.entries);
       } catch (error) { if (errorDetails(error).code === "ENOENT") return []; throw error; }
-    });
+    };
+    await this.snapshotStore.open();
+    try {
+      await this.snapshotStore.assertLocation(this.work);
+      const generation = await publishedPathVersion(this.work, true);
+      const entries = await read();
+      await this.snapshotStore.assertLocation(journal);
+      if (!await publishedPathVersion(journal) && await publishedPathVersion(this.work, true) === generation) return entries;
+    } catch {
+      // A swap may interrupt path resolution or the archive cache's file-version check.
+      // Retry under the writer lock, which also reports persistent read or integrity errors.
+    }
+    return this.#locked(read);
   }
 
   /** Read consolidated review attempts without parsing technical reports or scanning raw snapshots. */

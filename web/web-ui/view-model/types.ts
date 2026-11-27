@@ -51,8 +51,6 @@ export interface WorkspaceSelection {
 export interface WorkspaceContext {
   readonly view: ComparisonView | null;
   readonly refreshing: boolean;
-  readonly reviewError?: string;
-  readonly statusLoaded: boolean;
   refresh(selection?: WorkspaceSelection): Promise<void>;
   loadStatuses(view: ComparisonView): Promise<void>;
   reveal(module: ModuleSummary): void;

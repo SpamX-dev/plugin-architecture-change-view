@@ -22,14 +22,10 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
   let generation = 0;
   let refreshing = false;
   let subscription: AbortController | undefined;
-  let reviewError: string | undefined;
-  let statusLoaded = false;
   let statusGeneration = 0;
   const card = openModule({
     get view() { return current; },
     get refreshing() { return refreshing; },
-    get reviewError() { return reviewError; },
-    get statusLoaded() { return statusLoaded; },
     reveal: module => tree.reveal(module),
     refresh, loadStatuses,
   });
@@ -53,8 +49,9 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
     const request = ++statusGeneration;
     const comparison = generation;
     const active = () => view === current && request === statusGeneration && comparison === generation;
-    reviewError = undefined;
-    statusLoaded = false;
+    const updated = byId("updated");
+    const timestamp = (view.target.id === "current" ? "Обновлено " : "Состояние от ") + timelineDate(view.after.capturedAt);
+    updated.textContent = timestamp + " · Загружаем анализ…";
     try {
       const result = await client.getReviewStatuses({view:view.id, repository:view.workspace?.repository});
       if (!active()) return;
@@ -62,16 +59,18 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
       for (const module of view.modules) Object.assign(module, byKey.get(module.key));
       view.reviewDiagnostics = result.diagnostics;
       renderWarnings(view);
-      statusLoaded = true;
+      updated.textContent = timestamp;
       tree.refreshStatuses();
       const selected = view.modules.find(module => module.key === card.selected);
       if (selected) card.renderHeading(selected);
     } catch (error) {
       if (!active()) return;
-      reviewError = "Не удалось загрузить анализ: " + errorMessage(error);
+      updated.textContent = timestamp + " · Не удалось загрузить статусы анализа: " + errorMessage(error) + " ";
+      const retry = el("button", "text-button", "Повторить");
+      retry.type = "button";
+      retry.onclick = () => { void loadStatuses(view); };
+      updated.append(retry);
     }
-    byId("updated").textContent = (view.target.id === "current" ? "Обновлено " : "Состояние от ") + timelineDate(view.after.capturedAt) +
-      (reviewError ? " · " + reviewError : "");
     card.renderPanel();
   }
 
@@ -80,7 +79,6 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
     card.setRepository(view.root, sameRepository);
     current = view;
     byId("project-settings").disabled = false;
-    statusLoaded = false; reviewError = undefined;
     currentTarget = view.target.id;
     byId("new-prototype").hidden = Boolean(view.published) || currentTarget !== "current";
     currentHistoryLimit = historyLimit;
@@ -97,11 +95,8 @@ export async function openWorkspace(client: ArchiViewClient, openModule: (worksp
       view.modules.some((module) => module.key === directory)) ?? view.modules[0]?.key;
     tree.showComparison(view, historyLimit, automatic);
     refreshing = false;
-    if (view.separateAnalysis) {
-      byId("updated").textContent += " · Загружаем анализ…";
-      void loadStatuses(view);
-    }
     if (selected !== undefined) await card.selectModule(selected, clause, reviewId, automatic);
+    if (view.separateAnalysis) void loadStatuses(view);
   }
 
   // Keep one long poll per live view. Navigation owns cancellation; module and tab selection stay interactive.

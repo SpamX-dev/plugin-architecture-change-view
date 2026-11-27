@@ -205,22 +205,21 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
       void showRelations(cycles, currentView(), state.detail, selectModule, "cycles");
     }
     const needsReview = viewNeedsReview();
-    if (needsReview && state.detail !== reviewDetail && state.tab !== "files") {
+    if (needsReview && state.detail !== reviewDetail) {
       if (isAnalysisType(state.tab)) {
-        reviewPanel.replaceChildren(el("div", "loading-state", detailError ?? workspace.reviewError ?? "Загружаем анализ…"));
-        if (detailError || workspace.reviewError) {
+        reviewPanel.replaceChildren(el("div", "loading-state", detailError ?? "Загружаем анализ…"));
+        if (detailError) {
           const retry = el("button", "button button-quiet", "Повторить");
           retry.onclick = () => {
             detailError = undefined;
-            if (workspace.reviewError) void workspace.loadStatuses(currentView());
-            else renderPanel(navigation);
+            renderPanel(navigation);
           };
           reviewPanel.append(retry);
           return;
         }
       }
       const detail = state.detail;
-      if (workspace.statusLoaded && !detailError && detailRequest !== detail) {
+      if (!detailError && detailRequest !== detail) {
         detailRequest = detail;
         const view = currentView();
         void client.getModule({currentOnly:true,view:view.id, path:detail.key, repository:view.workspace?.repository, analysis:true}).then(result => {
@@ -292,7 +291,9 @@ export function createModulePresenter(client: ArchiViewClient, workspace: Worksp
     const view = workspace.view;
     if (!view?.separateAnalysis) return false;
     if (isAnalysisType(state.tab)) return true;
-    return state.tab === "document" && Boolean(Object.keys(view.modules.find(m => m.key === state.selected)?.analyses ?? {}).length);
+    if (state.tab !== "document") return false;
+    const analyses = view.modules.find(module => module.key === state.selected)?.analyses;
+    return analyses === undefined || Object.keys(analyses).length > 0;
   }
 
   /** Копирует путь выбранного модуля или файла без изменения документов. */

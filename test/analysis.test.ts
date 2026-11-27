@@ -16,6 +16,7 @@ import { turnHook } from "../cli/turn-hook.js";
 import { createArchiView } from "../web/web-backend/web-service/http.js";
 import { digest } from "../framework/serialization/digest.js";
 import { captureWorkingTree } from "../analyse/git-changes/capture.js";
+import { GitTreeReader } from "../analyse/git-changes/git-tree.js";
 import { SnapshotStore } from "../analyse/git-changes/snapshot-store.js";
 import { analysisFingerprint } from "../analyse/module-review/analysis-scope.js";
 import { observeModules } from "../analyse/module-review/module-observations.js";
@@ -182,6 +183,35 @@ test("current reviews select by typed freshness after commits, reparenting and d
   await rm(path.join(root,".archiview/modules/child.yaml"));
   await writeModuleTree(root, {root:".",other:"other"});
   assert.deepEqual(await selected(), ["other/composition"]);
+});
+
+test("tree, module and current checks share one Git history traversal past the snapshot cache", async t => {
+  const root = await repositoryFixture(t);
+  commitTestFiles(root);
+  const app = await createArchiViewSession({root, deferPublication:true});
+  t.after(() => app.close());
+  for (const [owner, type] of [["root", "composition"], ["child", "implementation"]] as const) {
+    const request = await app.turns.prepareCurrent(owner, type);
+    await completeCurrentReview(root, request.id);
+    await app.analysis.complete(request.id);
+  }
+  for (let i = 0; i < 6; i++) {
+    await writeFile(path.join(root, "notes.txt"), String(i));
+    commitTestFiles(root);
+  }
+
+  const view = (await app.getComparison()).id;
+  const reads = t.mock.method(GitTreeReader.prototype, "revision");
+  const [tree, detail] = await Promise.all([
+    app.getReviewStatuses({view}), app.getModule({view, path:"child", currentOnly:true}),
+  ]);
+  assert.ok(tree.modules.find(module => module.key === ".")?.analyses?.composition);
+  assert.ok(detail.analyses?.implementation);
+  assert.equal(new Set(reads.mock.calls.map(call => call.arguments[0])).size, 6);
+  assert.equal(reads.mock.callCount(), 6);
+  const {checks} = await app.turns.current();
+  assert.deepEqual(checks.map(check => [check.moduleId, check.type]), [["root", "implementation"], ["child", "composition"]]);
+  assert.equal(reads.mock.callCount(), 6);
 });
 
 test("Stop and the CLI share module and relation review work without opening review chats", async t => {
